@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<node id="UPLINK">
+  <node id="RESET"       address="0x0" mask="0x00000001" permission="w" description="Reset this Uplink"/>
+  <node id="READY"       address="0x1" mask="0x00000001" permission="r" description="LPGBT Uplink Ready"/>
+  <node id="FEC_ERR_CNT" address="0x1" mask="0xFFFF0000" permission="r" description="Data Corrected Count"/>
+  <node id="ALIGN_0"     address="0x2" mask="0x00000007" permission="rw" description=""/>
+  <node id="ALIGN_1"     address="0x2" mask="0x00000070" permission="rw" description=""/>
+  <node id="ALIGN_2"     address="0x2" mask="0x00000700" permission="rw" description=""/>
+  <node id="ALIGN_3"     address="0x2" mask="0x00007000" permission="rw" description=""/>
+  <node id="ALIGN_4"     address="0x2" mask="0x00070000" permission="rw" description=""/>
+  <node id="ALIGN_5"     address="0x2" mask="0x00700000" permission="rw" description=""/>
+  <node id="ALIGN_6"     address="0x2" mask="0x07000000" permission="rw" description=""/>
+  <node id="ALIGN_7"     address="0x2" mask="0x70000000" permission="rw" description=""/>
+  <node id="ALIGN_8"     address="0x3" mask="0x00000007" permission="rw" description=""/>
+  <node id="ALIGN_9"     address="0x3" mask="0x00000070" permission="rw" description=""/>
+  <node id="ALIGN_10"    address="0x3" mask="0x00000700" permission="rw" description=""/>
+  <node id="ALIGN_11"    address="0x3" mask="0x00007000" permission="rw" description=""/>
+  <node id="ALIGN_12"    address="0x3" mask="0x00070000" permission="rw" description=""/>
+  <node id="ALIGN_13"    address="0x3" mask="0x00700000" permission="rw" description=""/>
+  <node id="ALIGN_14"    address="0x3" mask="0x07000000" permission="rw" description=""/>
+  <node id="ALIGN_15"    address="0x3" mask="0x70000000" permission="rw" description=""/>
+  <node id="ALIGN_16"    address="0x4" mask="0x00000007" permission="rw" description=""/>
+  <node id="ALIGN_17"    address="0x4" mask="0x00000070" permission="rw" description=""/>
+  <node id="ALIGN_18"    address="0x4" mask="0x00000700" permission="rw" description=""/>
+  <node id="ALIGN_19"    address="0x4" mask="0x00007000" permission="rw" description=""/>
+  <node id="ALIGN_20"    address="0x4" mask="0x00070000" permission="rw" description=""/>
+  <node id="ALIGN_21"    address="0x4" mask="0x00700000" permission="rw" description=""/>
+  <node id="ALIGN_22"    address="0x4" mask="0x07000000" permission="rw" description=""/>
+  <node id="ALIGN_23"    address="0x4" mask="0x70000000" permission="rw" description=""/>
+  <node id="ALIGN_24"    address="0x5" mask="0x00000007" permission="rw" description=""/>
+  <node id="ALIGN_25"    address="0x5" mask="0x00000070" permission="rw" description=""/>
+  <node id="ALIGN_26"    address="0x5" mask="0x00000700" permission="rw" description=""/>
+  <node id="ALIGN_27"    address="0x5" mask="0x00007000" permission="rw" description=""/>
+</node>
