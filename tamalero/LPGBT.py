@@ -82,8 +82,8 @@ class LPGBT(RegParser):
         # turn on clock outputs
         self.configure_clocks(0x0fc0081f, 0x0)
 
-        ## setup up sca eptx/rx
-        #sca_setup() # maybe not needed???
+        # setup up sca eptx/rx
+        # sca_setup() # maybe not needed???
 
     def status(self):
         print("Readout Board %s LPGBT Link Status:" % self.rb)

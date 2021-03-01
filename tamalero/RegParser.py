@@ -53,8 +53,8 @@ class RegParser(object):
     def make_tree(self, node, base_name, base_address, nodes, parent_node, vars, is_generated):
         if ((is_generated is None or is_generated is False)
             and node.get('generate') is not None
-            and node.get('generate') == 'true'):
-    
+                and node.get('generate') == 'true'):
+
             generate_size = self.parse_int(node.get('generate_size'))
             generate_step = self.parse_int(node.get('generate_address_step'))
             generate_var = node.get('generate_idx_var')
@@ -62,7 +62,7 @@ class RegParser(object):
                 vars[generate_var] = i
                 self.make_tree(node, base_name, base_address + generate_step * i, nodes, parent_node, vars, True)
             return
-    
+
         new_node = Node()
         name = base_name
         if base_name != '':
@@ -137,18 +137,18 @@ class RegParser(object):
         except:
             print('Reg', reg, 'not a Node')
             return
-    
+
         if 'r' not in reg.permission:
             print('No read permission!')
             return 'No read permission!'
-    
+
         # read
         value = mpeek(address)
-    
+
         # Apply Mask
         if reg.mask != 0:
             value = (reg.mask & value) >> reg.lsb_pos
-    
+
         return value
 
     def write_reg(self, mpoke, mpeek, reg, value, readback=False):
@@ -159,7 +159,7 @@ class RegParser(object):
             return
         if 'w' not in reg.permission:
             return 'No write permission!'
-    
+
         if readback:
             read = read_reg(mpeek, reg)
             if value != read:
@@ -181,7 +181,7 @@ class RegParser(object):
         for varKey in vars.keys():
             ret = ret.replace('${' + varKey + '}', str(vars[varKey]))
         return ret
-    
+
     def mask_to_lsb(self, mask):
         if mask is None:
             return 0
@@ -194,7 +194,7 @@ class RegParser(object):
                 if (mask & 0x1):
                     return idx
                 idx = idx+1
-    
+
     def parse_int(self, s):
         if s is None:
             return None
