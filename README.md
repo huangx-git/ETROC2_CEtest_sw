@@ -2,6 +2,7 @@
 
 ## Software structure
 
+```
 ── Control Board (KCU105)
    ├── Readout Board 0
    │   ├── LPGBT
@@ -19,6 +20,8 @@
    ├── Readout Board 2
    ├── ...
    └── Readout Board 9
+```
+
 
 ## Setup and Dependencies
 
