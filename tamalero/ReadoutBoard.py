@@ -1,4 +1,4 @@
-from module_test_sw.LPGBT import LPGBT
+from tamalero.LPGBT import LPGBT
 
 
 class ReadoutBoard:

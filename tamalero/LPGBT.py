@@ -1,4 +1,6 @@
-from module_test_sw.RegParser import RegParser
+from tamalero.RegParser import RegParser
+
+import random
 
 
 class LPGBT(RegParser):
@@ -8,13 +10,11 @@ class LPGBT(RegParser):
         self.rb = rb
         self.trigger = trigger
 
-
     def connect_KCU(self, kcu):
         '''
         We need to connect to the KCU somehow
         '''
         self.kcu = kcu
-
 
     def wr_adr(self, adr, data):
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_GBTX_ADDR" % self.rb, 115)
@@ -23,7 +23,6 @@ class LPGBT(RegParser):
         self.kcu.action("READOUT_BOARD_%d.SC.TX_WR" % self.rb)
         self.kcu.action("READOUT_BOARD_%d.SC.TX_START_WRITE" % self.rb)
         self.rd_flush()
-
 
     def rd_adr(self, adr):
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_GBTX_ADDR" % self.rb, 115)
@@ -34,26 +33,22 @@ class LPGBT(RegParser):
         while (not self.kcu.read_node("READOUT_BOARD_%d.SC.RX_EMPTY" % self.rb)):
             self.kcu.action("READOUT_BOARD_%d.SC.RX_RD" % self.rb)
             read = self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_FROM_GBTX" % self.rb)
-            #print("i=%d, data=0x%02x" % (i,read))
             if i == 6:
                 return read
             i += 1
         print("lpgbt read failed!! SC RX empty")
         return 0xE9
 
-
     def wr_reg(self, id, data):
         node = self.get_node(id)
         self.write_reg(self.wr_adr, self.rd_adr, node, data)
-
 
     def rd_flush(self):
         i = 0
         while (not self.kcu.read_node("READOUT_BOARD_%d.SC.RX_EMPTY" % self.rb)):
             self.kcu.action("READOUT_BOARD_%d.SC.RX_RD" % self.rb)
             read = self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_FROM_GBTX" % self.rb)
-            i= i + 1
-
+            i = i + 1
 
     def configure_gpio_outputs(self, outputs=0x2401, defaults=0x0401):
         self.wr_adr(0x52, outputs >> 8)
@@ -61,11 +56,9 @@ class LPGBT(RegParser):
         self.wr_adr(0x54, defaults >> 8)
         self.wr_adr(0x55, defaults & 0xFF)
 
-
     def set_daq_uplink_alignment(self, val, link):
         id = "READOUT_BOARD_%d.LPGBT.DAQ.UPLINK.ALIGN_%d" % (self.rb, link)
         self.kcu.write_node(id, val)
-
 
     def configure_clocks(self, en_mask, invert_mask=0):
         for i in range(27):
@@ -74,18 +67,14 @@ class LPGBT(RegParser):
             if 0x1 & (invert_mask >> i):
                 self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dINVERT" % i, 1)
 
-
     def config_eport_dlls(self):
-        print ("Configuring eport dlls...")
-        #2.2.2. Uplink: ePort Inputs DLL's
-        #[0x034] EPRXDllConfig
+        print("Configuring eport dlls...")
         self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDLLCURRENT", 0x1)
         self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDLLCONFIRMCOUNT", 0x1)
         self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDLLFSMCLKALWAYSON", 0x0)
         self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDLLCOARSELOCKDETECTION", 0x0)
         self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXENABLEREINIT", 0x0)
         self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDATAGATINGENABLE", 0x1)
-
 
     def initialize(self):
         self.wr_adr(0x36, 0x80)  # "LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT"
@@ -96,13 +85,23 @@ class LPGBT(RegParser):
         ## setup up sca eptx/rx
         #sca_setup() # maybe not needed???
 
-
     def status(self):
-        print("Readout Board %s LPGBT Link Status:"%self.rb)
+        print("Readout Board %s LPGBT Link Status:" % self.rb)
         print("{:<8}{:<8}{:<50}{:<8}".format("Address", "Perm.", "Name", "Value"))
-        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.READY"%self.rb))
-        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.UPLINK.READY"%self.rb))
-        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.UPLINK.FEC_ERR_CNT"%self.rb))
+        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.READY" % self.rb))
+        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.UPLINK.READY" % self.rb))
+        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.UPLINK.FEC_ERR_CNT" % self.rb))
+
+    def loopback(self, nloops=100):
+        for i in range(nloops):
+            wr = random.randint(0, 255)
+            self.wr_adr(1, wr)
+            rd = self.rd_adr(1)
+            if wr != rd:
+                print("ERR: %d wr=0x%08X rd=0x%08X" % (i, wr, rd))
+                return
+            if (i % (nloops/100) == 0 and i != 0):
+                print("%i reads done..." % i)
 
 
 if __name__ == '__main__':
