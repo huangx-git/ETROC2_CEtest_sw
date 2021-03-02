@@ -69,10 +69,5 @@ class KCU:
     def connect_readout_board(self, rb):
         self.readout_boards.append(rb)
 
-        # align DAQ
-        for i in range(28):
-            id = "READOUT_BOARD_%d.LPGBT.DAQ.UPLINK.ALIGN_%d" % (rb.i, i)
-            self.write_node(id, 2)
-
         rb.connect_KCU(self)  # not sure if this is actually useful
         return rb

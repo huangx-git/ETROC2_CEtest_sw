@@ -16,6 +16,11 @@ class LPGBT(RegParser):
         '''
         self.kcu = kcu
 
+    def align_DAQ(self):
+        for i in range(28):
+            id = "READOUT_BOARD_%d.LPGBT.DAQ.UPLINK.ALIGN_%d" % (self.rb, i)
+            self.kcu.write_node(id, 2)
+
     def wr_adr(self, adr, data):
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_GBTX_ADDR" % self.rb, 115)
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_REGISTER_ADDR" % self.rb, adr)
@@ -41,7 +46,12 @@ class LPGBT(RegParser):
 
     def wr_reg(self, id, data):
         node = self.get_node(id)
-        self.write_reg(self.wr_adr, self.rd_adr, node, data)
+        self.write_reg(self.wr_adr, self.rd_adr, node, data)  # inherited from RegParser
+
+    def rd_reg(self, id):
+        node = self.get_node(id)
+        data = self.read_reg(self.rd_adr, node)
+        return data
 
     def rd_flush(self):
         i = 0
@@ -75,6 +85,82 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDLLCOARSELOCKDETECTION", 0x0)
         self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXENABLEREINIT", 0x0)
         self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDATAGATINGENABLE", 0x1)
+
+    def init_adc(self):
+        self.wr_reg("LPGBT.RW.ADC.ADCENABLE", 0x1)  # enable ADC
+        self.wr_reg("LPGBT.RW.ADC.TEMPSENSRESET", 0x1)  # resets temp sensor
+        self.wr_reg("LPGBT.RW.ADC.VDDMONENA", 0x1)  # enable dividers
+        self.wr_reg("LPGBT.RW.ADC.VDDTXMONENA", 0x1)  # enable dividers
+        self.wr_reg("LPGBT.RW.ADC.VDDRXMONENA", 0x1)  # enable dividers
+        self.wr_reg("LPGBT.RW.ADC.VDDPSTMONENA", 0x1,)  # enable dividers
+        self.wr_reg("LPGBT.RW.ADC.VDDANMONENA", 0x1)  # enable dividers
+        self.wr_reg("LPGBT.RWF.CALIBRATION.VREFENABLE", 0x1)  # vref enable
+        self.wr_reg("LPGBT.RWF.CALIBRATION.VREFTUNE", 0x63)
+
+    def read_adcs(self):
+        self.init_adc()
+        print("ADC Readings:")
+        for i in range(16):
+            name = ""
+            conv = 0
+            if (i==0 ): conv=1;      name="VTRX TH1"
+            if (i==1 ): conv=1/0.55; name="1V4D * 0.55"
+            if (i==2 ): conv=1/0.55; name="1V5A * 0.55"
+            if (i==3 ): conv=1/0.33; name="2V5TX * 0.33"
+            if (i==4 ): conv=1;      name="RSSI"
+            if (i==5 ): conv=1;      name="N/A"
+            if (i==6 ): conv=1/0.33; name="2V5RX * 0.33"
+            if (i==7 ): conv=1;      name="RT1"
+            if (i==8 ): conv=1;      name="EOM DAC (internal signal)"
+            if (i==9 ): conv=1/0.42; name="VDDIO * 0.42 (internal signal)"
+            if (i==10): conv=1/0.42; name="VDDTX * 0.42 (internal signal)"
+            if (i==11): conv=1/0.42; name="VDDRX * 0.42 (internal signal)"
+            if (i==12): conv=1/0.42; name="VDD * 0.42 (internal signal)"
+            if (i==13): conv=1/0.42; name="VDDA * 0.42 (internal signal)"
+            if (i==14): conv=1;      name="Temperature sensor (internal signal)"
+            if (i==15): conv=1/0.50; name="VREF/2 (internal signal)"
+    
+            read = self.read_adc(i)
+            print("\tch %X: 0x%03X = %f, reading = %f (%s)" % (i, read, read/1024., conv*read/1024., name))
+
+    def read_adc(self, channel):
+        # ADCInPSelect[3:0]  |  Input
+        # ------------------ |----------------------------------------
+        # 4'd0               |  ADC0 (external pin)
+        # 4'd1               |  ADC1 (external pin)
+        # 4'd2               |  ADC2 (external pin)
+        # 4'd3               |  ADC3 (external pin)
+        # 4'd4               |  ADC4 (external pin)
+        # 4'd5               |  ADC5 (external pin)
+        # 4'd6               |  ADC6 (external pin)
+        # 4'd7               |  ADC7 (external pin)
+        # 4'd8               |  EOM DAC (internal signal)
+        # 4'd9               |  VDDIO * 0.42 (internal signal)
+        # 4'd10              |  VDDTX * 0.42 (internal signal)
+        # 4'd11              |  VDDRX * 0.42 (internal signal)
+        # 4'd12              |  VDD * 0.42 (internal signal)
+        # 4'd13              |  VDDA * 0.42 (internal signal)
+        # 4'd14              |  Temperature sensor (internal signal)
+        # 4'd15              |  VREF/2 (internal signal)
+    
+        self.wr_reg("LPGBT.RW.ADC.ADCINPSELECT", channel)
+        self.wr_reg("LPGBT.RW.ADC.ADCINNSELECT", 0xf)
+    
+        self.wr_reg("LPGBT.RW.ADC.ADCCONVERT", 0x1)
+        self.wr_reg("LPGBT.RW.ADC.ADCENABLE", 0x1)
+    
+        # TODO: fixthis
+        #done = 0
+        #while (done==0):
+            #done = 0x1 & (mpeek(0x1b8) >> 6) # "LPGBT.RO.ADC.ADCDONE"
+    
+        val = self.rd_reg("LPGBT.RO.ADC.ADCVALUEL")
+        val |= self.rd_reg("LPGBT.RO.ADC.ADCVALUEH") << 8
+    
+        self.wr_reg("LPGBT.RW.ADC.ADCCONVERT", 0x0)
+        self.wr_reg("LPGBT.RW.ADC.ADCENABLE", 0x1)
+    
+        return val
 
     def initialize(self):
         self.wr_adr(0x36, 0x80)  # "LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT"
