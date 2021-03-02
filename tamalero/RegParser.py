@@ -14,14 +14,15 @@ class Node:
     level = 0
     mode = None
 
-    def __init__(self):
+    def __init__(self, top_node_name):
+        self.top_node_name = top_node_name
         self.children = []
 
     def addChild(self, child):
         self.children.append(child)
 
     def getVhdlName(self):
-        return self.name.replace(TOP_NODE_NAME + '.', '').replace('.', '_')
+        return self.name.replace(self.top_node_name + '.', '').replace('.', '_')
 
     def output(self):
         print('Name:', self.name)
@@ -63,7 +64,7 @@ class RegParser(object):
                 self.make_tree(node, base_name, base_address + generate_step * i, nodes, parent_node, vars, True)
             return
 
-        new_node = Node()
+        new_node = Node(self.top_node_name)
         name = base_name
         if base_name != '':
             name += '.'

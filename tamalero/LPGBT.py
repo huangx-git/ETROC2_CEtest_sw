@@ -148,11 +148,10 @@ class LPGBT(RegParser):
     
         self.wr_reg("LPGBT.RW.ADC.ADCCONVERT", 0x1)
         self.wr_reg("LPGBT.RW.ADC.ADCENABLE", 0x1)
-    
-        # TODO: fixthis
-        #done = 0
-        #while (done==0):
-            #done = 0x1 & (mpeek(0x1b8) >> 6) # "LPGBT.RO.ADC.ADCDONE"
+
+        done = 0
+        while (done==0):
+            done = self.rd_reg("LPGBT.RO.ADC.ADCDONE")
     
         val = self.rd_reg("LPGBT.RO.ADC.ADCVALUEL")
         val |= self.rd_reg("LPGBT.RO.ADC.ADCVALUEH") << 8
@@ -193,5 +192,5 @@ class LPGBT(RegParser):
 if __name__ == '__main__':
 
     lpgbt = LPGBT()
-    lpgbt.parse_xml('../address_table/lpgbt.xml')
+    lpgbt.parse_xml('../address_table/lpgbt.xml', top_node_name="LPGBT")
     lpgbt.dump(nMax=10)
