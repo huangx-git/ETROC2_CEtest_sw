@@ -143,7 +143,6 @@ class SCA:
         # TODO: read reply
         err = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_ERR" % self.rb)  # 8 bit
         if err > 0:
-            print (err)
             if (err & 0x1):
                 print("SCA Read Error :: Generic Error Flag")
             if (err & 0x2):
@@ -216,9 +215,6 @@ class SCA:
         crd |= en_adc << SCA_CRD.ENADC
         crd |= en_dac << SCA_CRD.ENDAC
 
-        print (crd)
-        print (crd << 24)
-    
         self.rw_reg(SCA_CONTROL.CTRL_W_CRB, crb << 24)
         self.rw_reg(SCA_CONTROL.CTRL_W_CRC, crc << 24)
         self.rw_reg(SCA_CONTROL.CTRL_W_CRD, crd << 24)
