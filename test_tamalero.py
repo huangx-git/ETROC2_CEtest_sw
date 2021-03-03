@@ -1,6 +1,7 @@
-
 from tamalero.KCU import KCU
 from tamalero.ReadoutBoard import ReadoutBoard
+
+from tamalero.SCA import SCA_CONTROL
 
 if __name__ == '__main__':
 

@@ -1,23 +1,27 @@
 from tamalero.LPGBT import LPGBT
+from tamalero.SCA import SCA
 
 
 class ReadoutBoard:
 
-    def __init__(self, i=0, trigger=True):
+    def __init__(self, rb=0, trigger=True):
         '''
         create a readout board.
         trigger: if true, configure a trigger lpGBT
         '''
-        self.i = i
+        self.rb = rb
 
         self.trigger = trigger
 
-        self.DAQ_LPGBT = LPGBT(rb=i)
+        self.DAQ_LPGBT = LPGBT(rb=rb)
         self.DAQ_LPGBT.parse_xml('address_table/lpgbt.xml')
+
+        self.SCA = SCA(rb=rb)
 
     def connect_KCU(self, kcu):
         self.kcu = kcu
         self.DAQ_LPGBT.connect_KCU(kcu)
+        self.SCA.connect_KCU(kcu)
 
     def configure(self):
 
