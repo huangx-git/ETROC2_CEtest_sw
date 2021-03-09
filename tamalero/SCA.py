@@ -228,3 +228,44 @@ class SCA:
             print("CRB wr=%02X, rd=%02X" % (crb, crb_rd))
             print("CRC wr=%02X, rd=%02X" % (crc, crc_rd))
             print("CRD wr=%02X, rd=%02X" % (crd, crd_rd))
+
+    def ADC_read(self, MUX_reg = 0):
+        self.configure_control_registers(en_adc=1, en_gpio=1) #enable ADC
+        self.rw_reg(0x1450, MUX_reg) #configure register we want to read
+        val = self.rw_reg(0x1402, 0x01).value() #execute and read ADC_GO command
+        self.rw_reg(0x1402, 0x0) #reset register to default (0)
+        return val
+
+    def I2C_write(self, I2C_channel, data, slave_adr):
+        ##TODO: change data input type to be not a list of bytes (?)
+        #1) write byte to DATA register
+        if type(data = int):
+            data_bytes = [data]
+        elif type(data == list):
+            data_bytes = data
+        else:
+            raise("data must be an int or list of ints")
+        nbytes = len(data_bytes)
+        cmd_codes = [0x40, 0x50, 0x60, 0x70] #[DATA0, DATA1, DATA2, DATA3] 
+        data_field = 0x0
+        for byte in range(nbytes):
+            page = byte // 4
+            num_on_page = byte % 4
+            data_field = data_field | (data_bytes[byte] << (8* (3 - num_on_page))
+            if num_on_page == 3 or byte == nbytes:
+                self.rw_cmd(cmd_codes[page], I2C_channel, data_field)
+                data_field = 0x0
+        #2) write NBYTES to control register
+        self.rw_cmd(0x30, I2C_channel, nbytes) #I2C_W_CTRL = 0x30
+        #3) I2C_M_10B_W command(0xE2) with data field = slave address
+        self.rw_cmd(0xE2, I2C_channel, slave_adr)
+        
+    def I2C_read(self, I2C_channel, nbytes=15):
+        #1) set NBYTES to recieve in control register
+        #2) I2C_M_10B_R (0xE6) with data field = slave address
+        return 0
+
+
+
+
+
