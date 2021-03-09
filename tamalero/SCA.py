@@ -229,10 +229,12 @@ class SCA:
             print("CRC wr=%02X, rd=%02X" % (crc, crc_rd))
             print("CRD wr=%02X, rd=%02X" % (crd, crd_rd))
 
-    def ADC_read(self, MUX_reg = 0x1F):
+    def ADC_read(self, MUX_reg = 0):
         self.configure_control_registers(en_adc=1, en_gpio=1) #enable ADC
         self.rw_reg(0x1450, MUX_reg) #configure register we want to read
-        return self.rw_reg(0x1402, 0x01) #execute and read ADC_GO command
+        val = self.rw_reg(0x1402, 0x01).value() #execute and read ADC_GO command
+        self.rw_reg(0x1402, 0x0) #reset register to default (0)
+        return val
 
     def I2C_write(self, I2C_channel, data, slave_adr):
         ##TODO: change data input type to be not a list of bytes (?)
@@ -250,7 +252,7 @@ class SCA:
             page = byte // 4
             num_on_page = byte % 4
             data_field = data_field | (data_bytes[byte] << (8* (3 - num_on_page))
-            if num_on_page == 4 or byte == nbytes:
+            if num_on_page == 3 or byte == nbytes:
                 self.rw_cmd(cmd_codes[page], I2C_channel, data_field)
                 data_field = 0x0
         #2) write NBYTES to control register
