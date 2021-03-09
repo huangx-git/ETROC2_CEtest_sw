@@ -233,7 +233,7 @@ class SCA:
         self.configure_control_registers(en_adc=1, en_gpio=1) #enable ADC
         self.rw_reg(0x1450, MUX_reg) #configure register we want to read
         val = self.rw_reg(0x1402, 0x01).value() #execute and read ADC_GO command
-        self.rw_reg(0x1402, 0x0) #reset register to default (0)
+        self.rw_reg(0x1450, 0x0) #reset register to default (0)
         return val
 
     def I2C_write(self, I2C_channel, data, slave_adr):
@@ -251,7 +251,7 @@ class SCA:
         for byte in range(nbytes):
             page = byte // 4
             num_on_page = byte % 4
-            data_field = data_field | (data_bytes[byte] << (8* (3 - num_on_page))
+            data_field = data_field | (data_bytes[byte] << (8* (3 - num_on_page)))
             if num_on_page == 3 or byte == nbytes:
                 self.rw_cmd(cmd_codes[page], I2C_channel, data_field)
                 data_field = 0x0
