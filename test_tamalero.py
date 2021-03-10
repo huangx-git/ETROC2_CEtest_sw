@@ -15,3 +15,9 @@ if __name__ == '__main__':
 
     rb_0.configure()
     rb_0.DAQ_LPGBT.status()
+
+
+    from tamalero.utils import get_temp
+    
+    dac_29 = rb_0.SCA.ADC_read(29)/2**12
+    print ("\nTemperature on RB is: %.3f C"%get_temp(dac_29, 1.0, 10000, 25, 10000, 3900))
