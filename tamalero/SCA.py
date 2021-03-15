@@ -229,7 +229,7 @@ class SCA:
             print("CRC wr=%02X, rd=%02X" % (crc, crc_rd))
             print("CRD wr=%02X, rd=%02X" % (crd, crd_rd))
 
-    def ADC_read(self, MUX_reg = 0):
+    def read_adc(self, MUX_reg = 0):
         self.configure_control_registers(en_adc=1, en_gpio=1) #enable ADC
         self.rw_reg(0x1450, MUX_reg) #configure register we want to read
         val = self.rw_reg(0x1402, 0x01).value() #execute and read ADC_GO command

@@ -161,6 +161,30 @@ class LPGBT(RegParser):
     
         return val
 
+    def set_dac(self, v_out):
+        if v_out >= 1.00:
+            print ("Can't set the DAC to a value larger than 1.0 V!")
+            return
+        v_ref = 1.00
+        value = int(v_out/v_ref*4096)
+        lo_bits = value & 0xFF
+        hi_bits = (value & ~lo_bits) >> 8
+        self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACENABLE", 0x1)
+        self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEL", lo_bits)
+        self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEH", hi_bits)
+
+    def read_dac(self):
+        v_ref = 1.00
+        lo_bits = self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEL")
+        hi_bits = self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEH")
+        value = lo_bits | (hi_bits << 8)
+        return value/4096*v_ref
+
+    def reset_dac(self):
+        self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEL", 0x0)
+        self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEH", 0x0)
+        self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACENABLE", 0x0)
+
     def initialize(self):
         self.wr_adr(0x36, 0x80)  # "LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT"
 
@@ -187,6 +211,24 @@ class LPGBT(RegParser):
                 return
             if (i % (nloops/100) == 0 and i != 0):
                 print("%i reads done..." % i)
+
+    def set_gpio(self, ch, val, default=0x401):
+        if (ch > 7):
+            rd = default >> 8
+            node = "LPGBT.RWF.PIO.PIOOUTH"
+            ch = ch - 8
+        else:
+            node = "LPGBT.RWF.PIO.PIOOUTL"
+            rd = default & 0xff
+
+        if val == 0:
+            rd = rd & (0xff ^ (1 << ch))
+        else:
+            rd = rd | (1 << ch)
+
+        reg = self.get_node(node)
+        adr = reg.address
+        self.wr_adr(adr, rd)
 
 
 if __name__ == '__main__':
