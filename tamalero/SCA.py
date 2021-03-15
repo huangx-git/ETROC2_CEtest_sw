@@ -236,6 +236,10 @@ class SCA:
         self.rw_reg(0x1450, 0x0) #reset register to default (0)
         return val
 
+    def read_temp(self):
+        # not very precise (according to manual), but still useful.
+        return ((self.read_adc(31)/2**12)*1000 - 716)/-1.829
+
     def I2C_write(self, I2C_channel, data, slave_adr):
         ##TODO: change data input type to be not a list of bytes (?)
         #1) write byte to DATA register
