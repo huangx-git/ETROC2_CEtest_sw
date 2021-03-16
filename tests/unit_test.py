@@ -14,6 +14,8 @@ if __name__ == '__main__':
 
     rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=False))
 
+    rb_0.DAQ_LPGBT.dump(20)
+
     from tamalero.utils import get_temp
     
     # Read ADC channel 7 on DAQ lpGBT
