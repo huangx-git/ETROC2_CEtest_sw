@@ -22,4 +22,4 @@ make_test:
   image: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA
   script:
     - source setup.sh
-    - python tests/unit_test.py
+    - python3 tests/unit_test.py
