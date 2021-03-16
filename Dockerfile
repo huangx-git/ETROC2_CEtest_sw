@@ -1,9 +1,9 @@
 FROM centos:7
 
-RUN yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
-    yum install pugixml && \
+RUN yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
+    yum install -y pugixml && \
     yum install -y python3 && \
-    yum -y install make rpm-build git-core erlang gcc-c++ boost-devel pugixml-devel python3-devel && \
+    yum install -y make rpm-build git-core erlang gcc-c++ boost-devel pugixml-devel python3-devel && \
     git clone --depth=1 -b v2.8.0 --recurse-submodules https://github.com/ipbus/ipbus-software.git && \
     cd ipbus-software && \
     make Set=uhal PYTHON=python3 && \
