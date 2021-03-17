@@ -45,6 +45,18 @@ class SCA_GPIO:
     GPIO_W_DIRECTION = 0x0220
     GPIO_R_DIRECTION = 0x0221
 
+class SCA_ADC:
+    ADC_GO     = 0x1402
+    ADC_W_MUX  = 0x1450
+    ADC_R_MUX  = 0x1451
+    ADC_W_CURR = 0x1460
+    ADC_R_CURR = 0x1461
+    ADC_W_GAIN = 0x1410
+    ADC_R_GAIN = 0x1411
+    ADC_R_DATA = 0x1421
+    ADC_R_RAW  = 0x1431
+    ADC_R_OFS  = 0x1441
+
 class SCA_JTAG:
     # JTAG COMMANDS
     JTAG_W_CTRL = 0x1380
@@ -70,6 +82,7 @@ class SCA_JTAG:
     JTAG_ARESET = 0x13C0
     JTAG_GO     = 0x13A2
     JTAG_GO_M   = 0x13B0
+
 
 
 
