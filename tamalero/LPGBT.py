@@ -5,7 +5,7 @@ import random
 
 class LPGBT(RegParser):
 
-    def __init__(self, rb=0, trigger=False):
+    def __init__(self, rb=0, trigger=False, flavor='small'):
         self.nodes = []
         self.rb = rb
         self.trigger = trigger

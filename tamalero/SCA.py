@@ -1,4 +1,6 @@
 import random
+from tamalero.utils import read_mapping
+
 
 class SCA_CRB:
     ENSPI  = 0
@@ -75,8 +77,10 @@ class SCA_JTAG:
 
 class SCA:
 
-    def __init__(self, rb=0):
+    def __init__(self, rb=0, flavor='small'):
         self.rb = rb
+        self.flavor = flavor
+        self.adc_mapping = read_mapping('configs/SCA_mapping.yaml', 'adc')
 
     def connect_KCU(self, kcu):
         self.kcu = kcu

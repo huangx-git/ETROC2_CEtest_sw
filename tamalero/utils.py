@@ -1,4 +1,9 @@
 import math
+from yaml import load, dump
+try:
+    from yaml import CLoader as Loader, CDumper as Dumper
+except ImportError:
+    from yaml import Loader, Dumper
 
 
 def get_temp(v_out, v_ref, r_ref, t_1, r_1, b, celcius=True):
@@ -21,6 +26,14 @@ def get_temp(v_out, v_ref, r_ref, t_1, r_1, b, celcius=True):
     r_t = r_ref / (v_ref/v_out - 1)
     t_2 = b/((b/(t_1+delta_t)) - math.log(r_1) + math.log(r_t))
     return t_2-delta_t
+
+
+def read_mapping(f_in, selection='adc', flavor='small'):
+    flavors = {'small':0, 'medium':1, 'large': 2}
+    i_flavor = flavors[flavor]
+    with open(f_in) as f:
+        mapping = load(f, Loader=Loader)[selection]
+    return {v:mapping[v] for v in mapping.keys() if flavors[mapping[v]['flavor']] <= flavors[flavor]}
 
 
 if __name__ == '__main__':

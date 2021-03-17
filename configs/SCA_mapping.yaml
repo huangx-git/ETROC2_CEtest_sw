@@ -1,0 +1,17 @@
+adc:
+    1V2_mon0:
+        pin: 0x01
+        conv: 1
+        flavor: small
+        comment: monitoring for 1.2V of ETROC0
+    1V2_mon6:
+        pin: 0x01
+        conv: 1
+        flavor: medium
+    BV0:
+        pin: 0x12
+        conv: 1220
+        flavor: small
+        comment: monitoring for BV line 0
+
+gpio: None
