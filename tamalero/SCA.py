@@ -83,9 +83,6 @@ class SCA_JTAG:
     JTAG_GO     = 0x13A2
     JTAG_GO_M   = 0x13B0
 
-
-
-
 class SCA:
 
     def __init__(self, rb=0):
@@ -248,6 +245,10 @@ class SCA:
         val = self.rw_reg(0x1402, 0x01).value() #execute and read ADC_GO command
         self.rw_reg(0x1402, 0x0) #reset register to default (0)
         return val
+
+    def read_adcs(self):
+        pin_dict = {}
+        return
 
     def I2C_write(self, I2C_channel, data, slave_adr):
         ##TODO: change data input type to be not a list of bytes (?)
