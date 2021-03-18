@@ -251,7 +251,18 @@ class SCA:
         self.rw_reg(SCA_ADC.ADC_W_MUX, 0x0) #reset register to default (0)
         return val
 
-    def read_temp(self):
+
+    def read_adcs(self): #read and print all adc values
+        adc_dict = self.adc_mapping['ADC']
+        for adc_reg in adc_dict.keys():
+            pin = adc_dict['pin']
+            comment = adc_dict['comment']
+            value = self.read_adc(pin)
+            out_string = "pin: {0} \t reading: {1} \t comment: '{2}'".format(pin, value, comment)
+
+
+
+   def read_temp(self):
         # not very precise (according to manual), but still useful.
         return ((self.read_adc(31)/2**12)*1000 - 716)/-1.829
 
