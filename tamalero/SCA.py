@@ -48,6 +48,18 @@ class SCA_GPIO:
     GPIO_W_DIRECTION = 0x0220
     GPIO_R_DIRECTION = 0x0221
 
+class SCA_ADC:
+    ADC_GO     = 0x1402
+    ADC_W_MUX  = 0x1450
+    ADC_R_MUX  = 0x1451
+    ADC_W_CURR = 0x1460
+    ADC_R_CURR = 0x1461
+    ADC_W_GAIN = 0x1410
+    ADC_R_GAIN = 0x1411
+    ADC_R_DATA = 0x1421
+    ADC_R_RAW  = 0x1431
+    ADC_R_OFS  = 0x1441
+
 class SCA_JTAG:
     # JTAG COMMANDS
     JTAG_W_CTRL = 0x1380
@@ -73,8 +85,6 @@ class SCA_JTAG:
     JTAG_ARESET = 0x13C0
     JTAG_GO     = 0x13A2
     JTAG_GO_M   = 0x13B0
-
-
 
 class SCA:
 
@@ -236,9 +246,9 @@ class SCA:
 
     def read_adc(self, MUX_reg = 0):
         self.configure_control_registers(en_adc=1) #enable ADC
-        self.rw_reg(0x1450, MUX_reg) #configure register we want to read
-        val = self.rw_reg(0x1402, 0x01).value() #execute and read ADC_GO command
-        self.rw_reg(0x1450, 0x0) #reset register to default (0)
+        self.rw_reg(SCA_ADC.ADC_W_MUX, MUX_reg) #configure register we want to read
+        val = self.rw_reg(SCA_ADC.ADC_GO, 0x01).value() #execute and read ADC_GO command
+        self.rw_reg(SCA_ADC.ADC_W_MUX, 0x0) #reset register to default (0)
         return val
 
     def read_temp(self):
