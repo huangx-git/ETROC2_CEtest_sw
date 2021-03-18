@@ -245,9 +245,9 @@ class SCA:
 
     def read_adc(self, MUX_reg = 0):
         self.configure_control_registers(en_adc=1, en_gpio=1) #enable ADC
-        self.rw_reg(0x1450, MUX_reg) #configure register we want to read
-        val = self.rw_reg(0x1402, 0x01).value() #execute and read ADC_GO command
-        self.rw_reg(0x1450, 0x0) #reset register to default (0)
+        self.rw_reg(SCA_ADC.ADC_W_MUX, MUX_reg) #configure register we want to read
+        val = self.rw_reg(SCA_ADC.ADC_GO, 0x01).value() #execute and read ADC_GO command
+        self.rw_reg(SCA_ADC.ADC_W_MUX, 0x0) #reset register to default (0)
         return val
 
     def read_temp(self):
