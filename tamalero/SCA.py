@@ -106,7 +106,7 @@ class SCA:
         """
 
         if transid == 0:
-            transid = random.randint(0, 2**8-1)
+            transid = random.randint(1, 2**8-2)  # transid of 0 or 255 gives error
 
         # request packet structure
         # sof
@@ -244,6 +244,12 @@ class SCA:
     def read_temp(self):
         # not very precise (according to manual), but still useful.
         return ((self.read_adc(31)/2**12)*1000 - 716)/-1.829
+
+    def read_gpio(self, line):
+        self.configure_control_registers(en_gpio=1)  # enable GPIO
+        val = self.rw_reg(SCA_GPIO.GPIO_R_DATAIN).value()
+        binary = bin(val)[:1:-1]
+        return int(binary[line])
 
     def I2C_write(self, I2C_channel, data, slave_adr):
         ##TODO: change data input type to be not a list of bytes (?)
