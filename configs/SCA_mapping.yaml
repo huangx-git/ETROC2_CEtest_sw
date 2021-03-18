@@ -72,7 +72,7 @@ adc:
         pin: 0x1E
         conv: 2.5
         flavor: small
-        comment: low voltage (?)        
+        comment: low voltage       
 
         
 gpio: None
