@@ -251,6 +251,25 @@ class SCA:
         binary = bin(val)[:1:-1]
         return int(binary[line])
 
+    def set_gpio(self, line):
+        self.configure_control_registers(en_gpio=1)  # enable GPIO
+        currently_set = self.rw_reg(SCA_GPIO.GPIO_R_DIRECTION).value()
+        currently_set |= (1 << line)
+        self.rw_reg(SCA_GPIO.GPIO_W_DIRECTION, currently_set)
+        self.rw_reg(SCA_GPIO.GPIO_W_DATAOUT, currently_set)
+        return self.read_gpio(line)  # in order to check it is actually set
+
+    def reset_gpio(self):
+        self.configure_control_registers(en_gpio=1)  # enable GPIO
+        self.rw_reg(SCA_GPIO.GPIO_W_DATAOUT, 0)
+        self.rw_reg(SCA_GPIO.GPIO_W_DIRECTION, 0)
+
+    def disable_gpio(self):
+        self.configure_control_registers(en_gpio=0)
+
+    def disable_adc(self):
+        self.configure_control_registers(en_adc=0)
+
     def I2C_write(self, I2C_channel, data, slave_adr):
         ##TODO: change data input type to be not a list of bytes (?)
         #1) write byte to DATA register
@@ -279,8 +298,3 @@ class SCA:
         #1) set NBYTES to recieve in control register
         #2) I2C_M_10B_R (0xE6) with data field = slave address
         return 0
-
-
-
-
-
