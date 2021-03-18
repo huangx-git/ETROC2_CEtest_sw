@@ -1,4 +1,6 @@
 import random
+from tamalero.utils import read_mapping
+
 
 class SCA_CRB:
     ENSPI  = 0
@@ -85,8 +87,10 @@ class SCA_JTAG:
 
 class SCA:
 
-    def __init__(self, rb=0):
+    def __init__(self, rb=0, flavor='small'):
         self.rb = rb
+        self.flavor = flavor
+        self.adc_mapping = read_mapping('configs/SCA_mapping.yaml', 'adc')
 
     def connect_KCU(self, kcu):
         self.kcu = kcu
@@ -239,16 +243,16 @@ class SCA:
             print("CRC wr=%02X, rd=%02X" % (crc, crc_rd))
             print("CRD wr=%02X, rd=%02X" % (crd, crd_rd))
 
-    def ADC_read(self, MUX_reg = 0):
+    def read_adc(self, MUX_reg = 0):
         self.configure_control_registers(en_adc=1, en_gpio=1) #enable ADC
         self.rw_reg(0x1450, MUX_reg) #configure register we want to read
         val = self.rw_reg(0x1402, 0x01).value() #execute and read ADC_GO command
-        self.rw_reg(0x1402, 0x0) #reset register to default (0)
+        self.rw_reg(0x1450, 0x0) #reset register to default (0)
         return val
 
-    def read_adcs(self):
-        pin_dict = {}
-        return
+    def read_temp(self):
+        # not very precise (according to manual), but still useful.
+        return ((self.read_adc(31)/2**12)*1000 - 716)/-1.829
 
     def I2C_write(self, I2C_channel, data, slave_adr):
         ##TODO: change data input type to be not a list of bytes (?)
@@ -265,7 +269,7 @@ class SCA:
         for byte in range(nbytes):
             page = byte // 4
             num_on_page = byte % 4
-            data_field = data_field | (data_bytes[byte] << (8* (3 - num_on_page))
+            data_field = data_field | (data_bytes[byte] << (8* (3 - num_on_page)))
             if num_on_page == 3 or byte == nbytes:
                 self.rw_cmd(cmd_codes[page], I2C_channel, data_field)
                 data_field = 0x0

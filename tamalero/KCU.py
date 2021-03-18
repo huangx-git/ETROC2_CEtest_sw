@@ -1,3 +1,6 @@
+"""
+Control board class (KCU105). Depends on uhal.
+"""
 import uhal
 
 
@@ -6,10 +9,15 @@ class KCU:
     def __init__(self,
                  name="my_device",
                  ipb_path="ipbusudp-2.0://192.168.0.10:50001",
-                 adr_table="../address_table/etl_test_fw.xml"):
-        uhal.disableLogging()
-        self.hw = uhal.getDevice("my_device", ipb_path, "file://" + adr_table)
+                 adr_table="../module_test_fw/address_tables/etl_test_fw.xml",
+                 dummy=False):
 
+        uhal.disableLogging()
+
+        if not dummy:
+            self.hw = uhal.getDevice("my_device", ipb_path, "file://" + adr_table)
+        else:
+            self.hw = None
         self.readout_boards = []
 
     def write_node(self, id, value):
@@ -66,8 +74,9 @@ class KCU:
         if perm == uhal.NodePermission.WRITE:
             return "w"
 
-    def connect_readout_board(self, rb):
+    def connect_readout_board(self, rb, dummy=False):
         self.readout_boards.append(rb)
 
-        rb.connect_KCU(self)  # not sure if this is actually useful
+        if not dummy:
+            rb.connect_KCU(self)  # not sure if this is actually useful
         return rb
