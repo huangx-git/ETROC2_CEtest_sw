@@ -3,13 +3,14 @@ from tamalero.utils import read_mapping
 
 
 class SCA_CRB:
-    ENSPI  = 0
-    ENGPIO = 1
-    ENI2C0 = 2
-    ENI2C1 = 3
-    ENI2C2 = 4
-    ENI2C3 = 5
-    ENI2C4 = 6
+    # 0 is reserved
+    ENSPI  = 1
+    ENGPIO = 2
+    ENI2C0 = 3
+    ENI2C1 = 4
+    ENI2C2 = 5
+    ENI2C3 = 6
+    ENI2C4 = 7
 
 class SCA_CRC:
     ENI2C5 = 0
@@ -234,7 +235,7 @@ class SCA:
             print("CRD wr=%02X, rd=%02X" % (crd, crd_rd))
 
     def read_adc(self, MUX_reg = 0):
-        self.configure_control_registers(en_adc=1, en_gpio=1) #enable ADC
+        self.configure_control_registers(en_adc=1) #enable ADC
         self.rw_reg(0x1450, MUX_reg) #configure register we want to read
         val = self.rw_reg(0x1402, 0x01).value() #execute and read ADC_GO command
         self.rw_reg(0x1450, 0x0) #reset register to default (0)
