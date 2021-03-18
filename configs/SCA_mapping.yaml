@@ -73,7 +73,11 @@ adc:
         conv: 2.5
         flavor: small
         comment: low voltage       
-
+    Vref:
+        pin: 0x1D
+        conv: 1
+        flavor: small
+        comment: temperature sensor
         
 gpio: None
 
