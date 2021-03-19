@@ -1,3 +1,4 @@
+import os
 from tamalero.LPGBT import LPGBT
 from tamalero.SCA import SCA
 from tamalero.utils import get_temp
@@ -16,7 +17,7 @@ class ReadoutBoard:
         self.trigger = trigger
 
         self.DAQ_LPGBT = LPGBT(rb=rb, flavor=flavor)
-        self.DAQ_LPGBT.parse_xml('address_table/lpgbt.xml')
+        self.DAQ_LPGBT.parse_xml(os.path.expandvars('$TAMALERO_BASE/address_table/lpgbt.xml'))
 
         self.SCA = SCA(rb=rb, flavor=flavor)
 

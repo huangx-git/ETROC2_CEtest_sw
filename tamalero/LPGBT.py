@@ -1,6 +1,8 @@
 from tamalero.RegParser import RegParser
 
 import random
+import tamalero.colors as colors
+from time import sleep
 
 
 class LPGBT(RegParser):
@@ -229,6 +231,83 @@ class LPGBT(RegParser):
         reg = self.get_node(node)
         adr = reg.address
         self.wr_adr(adr, rd)
+
+    def reset_pattern_checkers(self):
+    
+        self.kcu.action("READOUT_BOARD_%i.LPGBT.PATTERN_CHECKER.RESET" % self.rb)
+    
+        for link in (0, 1):
+            prbs_en_id = "READOUT_BOARD_%d.LPGBT.PATTERN_CHECKER.CHECK_PRBS_EN_%d" % (self.rb, link)
+            upcnt_en_id = "READOUT_BOARD_%d.LPGBT.PATTERN_CHECKER.CHECK_UPCNT_EN_%d" % (self.rb, link)
+            self.kcu.write_node(prbs_en_id, 0)
+            self.kcu.write_node(upcnt_en_id, 0)
+    
+            self.kcu.write_node(prbs_en_id, 0x00FFFFFF)
+            self.kcu.write_node(upcnt_en_id, 0x00FFFFFF)
+    
+        self.kcu.action("READOUT_BOARD_%d.LPGBT.PATTERN_CHECKER.CNT_RESET" % self.rb)
+    
+    
+    def read_pattern_checkers(self, quiet=False):
+    
+        for link in (0, 1):
+    
+            prbs_en = self.kcu.read_node("READOUT_BOARD_%d.LPGBT.PATTERN_CHECKER.CHECK_PRBS_EN_%d" % (self.rb, link))
+            upcnt_en = self.kcu.read_node("READOUT_BOARD_%d.LPGBT.PATTERN_CHECKER.CHECK_UPCNT_EN_%d" % (self.rb, link))
+    
+            prbs_errs = 28*[0]
+            upcnt_errs = 28*[0]
+    
+            for mode in ["PRBS", "UPCNT"]:
+                if quiet is False:
+                    print("Link " + str(link) + " " + mode + ":")
+                for i in range(28):
+    
+                    check = False
+    
+                    if mode == "UPCNT" and ((upcnt_en >> i) & 0x1):
+                        check = True
+                    if mode == "PRBS" and ((prbs_en >> i) & 0x1):
+                        check = True
+    
+                    if check:
+                        self.kcu.write_node("READOUT_BOARD_%d.LPGBT.PATTERN_CHECKER.SEL" % (self.rb), link*28+i)
+    
+                        uptime_msbs = self.kcu.read_node("READOUT_BOARD_%d.LPGBT.PATTERN_CHECKER.TIMER_MSBS" % (self.rb))
+                        uptime_lsbs = self.kcu.read_node("READOUT_BOARD_%d.LPGBT.PATTERN_CHECKER.TIMER_LSBS" % (self.rb))
+    
+                        uptime = (uptime_msbs << 32) | uptime_lsbs
+    
+                        errs = self.kcu.read_node("READOUT_BOARD_%d.LPGBT.PATTERN_CHECKER.%s_ERRORS" % (self.rb, mode))
+    
+                        if quiet is False:
+                            s = "    Channel %02d %s bad frames of %s (%.0f Gb)" % (i, ("{:.2e}".format(errs)), "{:.2e}".format(uptime), uptime*8*40/1000000000.0)
+                            if (errs == 0):
+                                s += " (ber <%s)" % ("{:.1e}".format(1/(uptime*8)))
+                                print(colors.green(s))
+                            else:
+                                s += " (ber>=%s)" % ("{:.1e}".format((1.0*errs)/uptime))
+                                print(colors.red(s))
+    
+                        if mode == "UPCNT":
+                            upcnt_errs[i] = errs
+                        if mode == "PRBS":
+                            prbs_errs[i] = errs
+    
+                    else:
+                        if mode == "UPCNT":
+                            upcnt_errs[i] = 0xFFFFFFFF
+                        if mode == "PRBS":
+                            prbs_errs[i] = 0xFFFFFFFF
+    
+        return (prbs_errs, upcnt_errs)
+
+    def set_ps0_phase(self, phase):
+        phase = phase & 0x1ff
+        msb = 0x1 & (phase >> 8)
+        self.wr_reg("LPGBT.RWF.PHASE_SHIFTER.PS0ENABLEFINETUNE", 1)
+        self.wr_reg("LPGBT.RWF.PHASE_SHIFTER.PS0DELAY_7TO0", 0xff & phase)
+        self.wr_reg("LPGBT.RWF.PHASE_SHIFTER.PS0DELAY_8", msb)
 
 
 if __name__ == '__main__':
