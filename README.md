@@ -105,7 +105,7 @@ adc:
 
 [RB v1.6 schematic](http://physics.bu.edu/~wusx/download/ETL_RB/v1.6/ETL_RB_V1.6.PDF)
 
-![module connectivity](docs/module-connectivity.svg)
+![module connectivity](docs/module-connectivity.pdf)
 
 
 ## References
