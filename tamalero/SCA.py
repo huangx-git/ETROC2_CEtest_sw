@@ -257,8 +257,10 @@ class SCA:
             pin = adc_dict[adc_reg]['pin']
             comment = adc_dict[adc_reg]['comment']
             value = self.read_adc(pin)
+            input_voltage = value / (2**12 - 1) * adc_dict[adc_reg]['conv']
             out_string = "register: {0}".format(adc_reg).ljust(23)+\
-            "pin: {0}".format(pin).ljust(10)+"reading: {0}".format(value).ljust(16)+"comment: '{0}'".format(comment)
+            "pin: {0}".format(pin).ljust(10)+"reading: {0}".format(value).ljust(16)+\
+            "in voltage: {0}".format(input_voltage).ljust(15) + "comment: '{0}'".format(comment)
             print(out_string)
 
     def read_temp(self):
