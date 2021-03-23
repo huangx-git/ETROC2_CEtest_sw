@@ -25,6 +25,9 @@ if __name__ == '__main__':
     # Read ADC channel 29 on GBT-SCA
     adc_in29 = rb_0.SCA.read_adc(29)/2**12
 
+    print("reading ADC values:")
+    rb_0.SCA.read_adcs()
+
     # Check what the lpGBT DAC is set to
     v_ref = rb_0.DAQ_LPGBT.read_dac()
     print ("\nV_ref is set to: %.3f V"%v_ref)

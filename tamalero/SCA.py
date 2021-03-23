@@ -2,7 +2,6 @@ import os
 import random
 from tamalero.utils import read_mapping
 
-
 class SCA_CRB:
     # 0 is reserved
     ENSPI  = 1
@@ -251,6 +250,19 @@ class SCA:
         val = self.rw_reg(SCA_ADC.ADC_GO, 0x01).value() #execute and read ADC_GO command
         self.rw_reg(SCA_ADC.ADC_W_MUX, 0x0) #reset register to default (0)
         return val
+
+    def read_adcs(self): #read and print all adc values
+        #import pdb; pdb.set_trace()
+        adc_dict = self.adc_mapping
+        for adc_reg in adc_dict.keys():
+            pin = adc_dict[adc_reg]['pin']
+            comment = adc_dict[adc_reg]['comment']
+            value = self.read_adc(pin)
+            input_voltage = value / (2**12 - 1) * adc_dict[adc_reg]['conv']
+            out_string = "register: {0}".format(adc_reg).ljust(22)+\
+            "pin: {0}".format(pin).ljust(10)+"reading: {0}".format(value).ljust(16)+\
+            "in voltage: {0:.4f}".format(input_voltage).ljust(22) + "comment: '{0}'".format(comment)
+            print(out_string)
 
     def read_temp(self):
         # not very precise (according to manual), but still useful.
