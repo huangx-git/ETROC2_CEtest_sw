@@ -251,12 +251,15 @@ class SCA:
         return val
 
     def read_adcs(self): #read and print all adc values
-        adc_dict = self.adc_mapping['ADC']
+        #import pdb; pdb.set_trace()
+        adc_dict = self.adc_mapping
         for adc_reg in adc_dict.keys():
-            pin = adc_dict['pin']
-            comment = adc_dict['comment']
+            pin = adc_dict[adc_reg]['pin']
+            comment = adc_dict[adc_reg]['comment']
             value = self.read_adc(pin)
-            out_string = "pin: {0} \t reading: {1} \t comment: '{2}'".format(pin, value, comment)
+            out_string = "register: {0}".format(adc_reg).ljust(23)+\
+            "pin: {0}".format(pin).ljust(10)+"reading: {0}".format(value).ljust(16)+"comment: '{0}'".format(comment)
+            print(out_string)
 
     def read_temp(self):
         # not very precise (according to manual), but still useful.
