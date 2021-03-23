@@ -34,7 +34,7 @@
 To properly set all paths run `source setup.sh`.
 
 A minimal example of usage of this package is given in `test_tamalero.py`, which can be run as:
-`ipython -i test_tamalero.py`
+`ipython3 -i test_tamalero.py`
 
 The code is organized similar to the physical objects.
 The 0th readout board object can be initialzied with

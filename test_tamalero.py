@@ -16,17 +16,17 @@ if __name__ == '__main__':
     rb_0.configure()
     rb_0.DAQ_LPGBT.status()
 
+    print("reading ADC values:")
+    rb_0.SCA.read_adcs()
+
     from tamalero.utils import get_temp
     
     # Low level reading of temperatures
     # Read ADC channel 7 on DAQ lpGBT
-    adc_7 = rb_0.DAQ_LPGBT.read_adc(7)/2**10
+    adc_7 = rb_0.DAQ_LPGBT.read_adc(7)/(2**10-1)
 
     # Read ADC channel 29 on GBT-SCA
-    adc_in29 = rb_0.SCA.read_adc(29)/2**12
-
-    print("reading ADC values:")
-    rb_0.SCA.read_adcs()
+    adc_in29 = rb_0.SCA.read_adc(29)/(2**12-1)
 
     # Check what the lpGBT DAC is set to
     v_ref = rb_0.DAQ_LPGBT.read_dac()
