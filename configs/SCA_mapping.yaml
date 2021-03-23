@@ -35,47 +35,47 @@ adc:
         flavor: medium
     BV0:
         pin: 0x12
-        conv: 1220
+        conv: 1220.51
         flavor: small
         comment: monitoring for BV line 0
     BV1:
         pin: 0x15
-        conv: 1220
+        conv: 1220.51
         flavor: small
         comment: monitoring for BV line 1
     BV2:
         pin: 0x1C
-        conv: 1220
+        conv: 1220.51
         flavor: small
         comment: monitoring for BV line 2
     1V2A:
         pin: 0x17
-        conv: 2.5
+        conv: 3.5
         flavor: small
         comment: 1.2v reference voltage A        
     1V2B:
         pin: 0x18
-        conv: 2.5
+        conv: 3.5
         flavor: small
         comment: 1.2v reference voltage B        
     1V2C:
         pin: 0x19
-        conv: 2.5
+        conv: 3.5
         flavor: small
         comment: 1.2v reference voltage C        
     1V2D:
         pin: 0x16
-        conv: 2.5
+        conv:  3.5
         flavor: small
         comment: 1.2v reference voltage D        
     LV_RB:
         pin: 0x1E
-        conv: 2.5
+        conv: 11.
         flavor: small
         comment: low voltage       
     Vref:
         pin: 0x1D
-        conv: 1
+        conv: 1.
         flavor: small
         comment: temperature sensor
         
