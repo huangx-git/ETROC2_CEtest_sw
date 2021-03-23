@@ -70,7 +70,7 @@ adc:
         comment: 1.2v reference voltage D        
     LV_RB:
         pin: 0x1E
-        conv: 2.5
+        conv: 8.33
         flavor: small
         comment: low voltage       
     Vref:
