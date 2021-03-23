@@ -101,6 +101,19 @@ adc:
         comment: monitoring for BV line 0
 ```
 
+## Notebook
+
+To use the jupyter notebooks do:
+```
+source setup.sh
+jupyter notebook --no-browser
+```
+and then on your local machine
+```
+ssh -N -f -L localhost:8888:localhost:8888 daniel@weber.bu.edu
+```
+with your username, using the ports as given by the jupyter server.
+
 ## Useful block diagrams for connectivity and data flow
 
 [RB v1.6 schematic](http://physics.bu.edu/~wusx/download/ETL_RB/v1.6/ETL_RB_V1.6.PDF)
