@@ -12,6 +12,11 @@ class LPGBT(RegParser):
         self.rb = rb
         self.trigger = trigger
 
+    def power_up_init(self):
+        self.wr_addr(0x118, 6)
+        sleep (0.1)
+        self.wr_adr(0x118, 0)
+
     def connect_KCU(self, kcu):
         '''
         We need to connect to the KCU somehow
