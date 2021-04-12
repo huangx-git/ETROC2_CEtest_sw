@@ -25,7 +25,7 @@
 
 ## Dependencies
 
-- [ipbus](https://github.com/ipbus/ipbus-firmware) for uhal. Needs to be compiled from source for linking with python3 (done on weber.bu.edu, docker image available [here](https://hub.docker.com/repository/docker/danbarto/centos-uhal-py3)).
+- [ipbus](https://github.com/ipbus/ipbus-firmware) for uhal. Needs to be compiled from source for linking with python3 (done on strange.bu.edu, docker image available [here](https://hub.docker.com/repository/docker/danbarto/centos-uhal-py3)).
 - [pyyaml](https://pypi.org/project/PyYAML/) for reading the mapping. Install with `pip install pyyaml`.
 - [jupyter](https://jupyter.org) for notebook usage. Install with `pip install jupyter`.
 
@@ -110,7 +110,7 @@ jupyter notebook --no-browser
 ```
 and then on your local machine
 ```
-ssh -N -f -L localhost:8888:localhost:8888 daniel@weber.bu.edu
+ssh -N -f -L localhost:8888:localhost:8888 daniel@strange.bu.edu
 ```
 with your username, using the ports as given by the jupyter server.
 
