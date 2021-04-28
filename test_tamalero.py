@@ -5,6 +5,14 @@ from tamalero.SCA import SCA_CONTROL
 
 if __name__ == '__main__':
 
+
+    import argparse
+
+    argParser = argparse.ArgumentParser(description = "Argument parser")
+    argParser.add_argument('--power_up', action='store_true', default=False, help="Do lpGBT power up init?")
+    args = argParser.parse_args()
+
+
     kcu = KCU(name="my_device",
               ipb_path="ipbusudp-2.0://192.168.0.10:50001",
               adr_table="module_test_fw/address_tables/etl_test_fw.xml")
@@ -13,7 +21,11 @@ if __name__ == '__main__':
 
     rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=False))
 
+    if args.power_up:
+        rb_0.DAQ_LPGBT.power_up_init()
+
     rb_0.configure()
+
     rb_0.DAQ_LPGBT.status()
 
     print("reading ADC values:")

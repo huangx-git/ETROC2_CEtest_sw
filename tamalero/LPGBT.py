@@ -13,7 +13,7 @@ class LPGBT(RegParser):
         self.trigger = trigger
 
     def power_up_init(self):
-        self.wr_addr(0x118, 6)
+        self.wr_adr(0x118, 6)
         sleep (0.1)
         self.wr_adr(0x118, 0)
 
