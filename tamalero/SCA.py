@@ -1,13 +1,16 @@
+import os
 import random
+from tamalero.utils import read_mapping
 
 class SCA_CRB:
-    ENSPI  = 0
-    ENGPIO = 1
-    ENI2C0 = 2
-    ENI2C1 = 3
-    ENI2C2 = 4
-    ENI2C3 = 5
-    ENI2C4 = 6
+    # 0 is reserved
+    ENSPI  = 1
+    ENGPIO = 2
+    ENI2C0 = 3
+    ENI2C1 = 4
+    ENI2C2 = 5
+    ENI2C3 = 6
+    ENI2C4 = 7
 
 class SCA_CRC:
     ENI2C5 = 0
@@ -45,6 +48,18 @@ class SCA_GPIO:
     GPIO_W_DIRECTION = 0x0220
     GPIO_R_DIRECTION = 0x0221
 
+class SCA_ADC:
+    ADC_GO     = 0x1402
+    ADC_W_MUX  = 0x1450
+    ADC_R_MUX  = 0x1451
+    ADC_W_CURR = 0x1460
+    ADC_R_CURR = 0x1461
+    ADC_W_GAIN = 0x1410
+    ADC_R_GAIN = 0x1411
+    ADC_R_DATA = 0x1421
+    ADC_R_RAW  = 0x1431
+    ADC_R_OFS  = 0x1441
+
 class SCA_JTAG:
     # JTAG COMMANDS
     JTAG_W_CTRL = 0x1380
@@ -71,12 +86,12 @@ class SCA_JTAG:
     JTAG_GO     = 0x13A2
     JTAG_GO_M   = 0x13B0
 
-
-
 class SCA:
 
-    def __init__(self, rb=0):
+    def __init__(self, rb=0, flavor='small'):
         self.rb = rb
+        self.flavor = flavor
+        self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping.yaml'), 'adc')
 
     def connect_KCU(self, kcu):
         self.kcu = kcu
@@ -101,7 +116,7 @@ class SCA:
         """
 
         if transid == 0:
-            transid = random.randint(0, 2**8-1)
+            transid = random.randint(1, 2**8-2)  # transid of 0 or 255 gives error
 
         # request packet structure
         # sof
@@ -230,15 +245,53 @@ class SCA:
             print("CRD wr=%02X, rd=%02X" % (crd, crd_rd))
 
     def read_adc(self, MUX_reg = 0):
-        self.configure_control_registers(en_adc=1, en_gpio=1) #enable ADC
-        self.rw_reg(0x1450, MUX_reg) #configure register we want to read
-        val = self.rw_reg(0x1402, 0x01).value() #execute and read ADC_GO command
-        self.rw_reg(0x1450, 0x0) #reset register to default (0)
+        self.configure_control_registers(en_adc=1) #enable ADC
+        self.rw_reg(SCA_ADC.ADC_W_MUX, MUX_reg) #configure register we want to read
+        val = self.rw_reg(SCA_ADC.ADC_GO, 0x01).value() #execute and read ADC_GO command
+        self.rw_reg(SCA_ADC.ADC_W_MUX, 0x0) #reset register to default (0)
         return val
+
+    def read_adcs(self): #read and print all adc values
+        #import pdb; pdb.set_trace()
+        adc_dict = self.adc_mapping
+        for adc_reg in adc_dict.keys():
+            pin = adc_dict[adc_reg]['pin']
+            comment = adc_dict[adc_reg]['comment']
+            value = self.read_adc(pin)
+            input_voltage = value / (2**12 - 1) * adc_dict[adc_reg]['conv']
+            out_string = "register: {0}".format(adc_reg).ljust(22)+\
+            "pin: {0}".format(pin).ljust(10)+"reading: {0}".format(value).ljust(16)+\
+            "in voltage: {0:.4f}".format(input_voltage).ljust(22) + "comment: '{0}'".format(comment)
+            print(out_string)
 
     def read_temp(self):
         # not very precise (according to manual), but still useful.
         return ((self.read_adc(31)/2**12)*1000 - 716)/-1.829
+
+    def read_gpio(self, line):
+        self.configure_control_registers(en_gpio=1)  # enable GPIO
+        val = self.rw_reg(SCA_GPIO.GPIO_R_DATAIN).value()
+        binary = bin(val)[:1:-1]
+        return int(binary[line])
+
+    def set_gpio(self, line):
+        self.configure_control_registers(en_gpio=1)  # enable GPIO
+        currently_set = self.rw_reg(SCA_GPIO.GPIO_R_DIRECTION).value()
+        currently_set |= (1 << line)
+        self.rw_reg(SCA_GPIO.GPIO_W_DIRECTION, currently_set)
+        self.rw_reg(SCA_GPIO.GPIO_W_DATAOUT, currently_set)
+        return self.read_gpio(line)  # in order to check it is actually set
+
+    def reset_gpio(self):
+        self.configure_control_registers(en_gpio=1)  # enable GPIO
+        self.rw_reg(SCA_GPIO.GPIO_W_DATAOUT, 0)
+        self.rw_reg(SCA_GPIO.GPIO_W_DIRECTION, 0)
+
+    def disable_gpio(self):
+        self.configure_control_registers(en_gpio=0)
+
+    def disable_adc(self):
+        self.configure_control_registers(en_adc=0)
 
     def I2C_write(self, I2C_channel, data, slave_adr):
         ##TODO: change data input type to be not a list of bytes (?)
@@ -268,8 +321,3 @@ class SCA:
         #1) set NBYTES to recieve in control register
         #2) I2C_M_10B_R (0xE6) with data field = slave address
         return 0
-
-
-
-
-
