@@ -4,6 +4,7 @@ import random
 import tamalero.colors as colors
 from time import sleep
 
+from tamalero.lpgbt_constants import LpgbtConstants
 
 class LPGBT(RegParser):
 
@@ -11,6 +12,7 @@ class LPGBT(RegParser):
         self.nodes = []
         self.rb = rb
         self.trigger = trigger
+        self.LPGBT_CONST = LpgbtConstants()
 
     def power_up_init(self):
         self.wr_adr(0x118, 6)
@@ -313,6 +315,135 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.PHASE_SHIFTER.PS0ENABLEFINETUNE", 1)
         self.wr_reg("LPGBT.RWF.PHASE_SHIFTER.PS0DELAY_7TO0", 0xff & phase)
         self.wr_reg("LPGBT.RWF.PHASE_SHIFTER.PS0DELAY_8", msb)
+
+    def I2C_write(self, reg=0x0, val=10, master=2, slave_addr=0x70):
+        #Parameters specific to our FPGA##########
+        #slave_addr: Which LPGBT chip we are referencing (depends on how the board is set up)
+        #reg: register which is going to be written to. 0x0, 0x1, 0x2, 0x3 are all available for testing
+        #the write process is specify the config parameters (a), load the data registers (b), then execute multi-write command word (c)
+        #####################
+        i2cm     = 2
+        OFFSET_WR = i2cm*(self.LPGBT_CONST.I2CM1CMD - self.LPGBT_CONST.I2CM0CMD) #shift the master by 2 registers (we can change this)
+        OFFSET_RD = i2cm*(self.LPGBT_CONST.I2CM1STATUS - self.LPGBT_CONST.I2CM0STATUS)
+        regl = (int(reg) & 0xFF) >> 0
+        regh = (int(reg)) >> 8
+        address_and_data = [val]
+        address_and_data.insert(0, regl)
+        address_and_data.insert(1, regh)
+        nbytes = len(address_and_data)
+        #import pdb; pdb.set_trace()
+    
+        # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-write-cr-0x0
+        self.wr_adr(self.LPGBT_CONST.I2CM0DATA0+OFFSET_WR, nbytes<<self.LPGBT_CONST.I2CM_CR_NBYTES_of | 2<<self.LPGBT_CONST.I2CM_CR_FREQ_of)
+        self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_CRA)# write config registers (a)
+    
+        # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-w-multi-4byte0-0x8
+    
+        for i, data_byte in enumerate(address_and_data): # there are 4 pages with 4 registers each
+            page = i/4
+            offset = i%4
+            self.wr_adr(self.LPGBT_CONST.I2CM0DATA0 + OFFSET_WR + offset, int(data_byte))
+            if i%4==3 or i==len(address_and_data)-1:
+                # load the data we want to write into registers (b)
+                self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, int(self.LPGBT_CONST.I2CM_W_MULTI_4BYTE0+page))
+    
+        # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-write-multi-0xc
+        self.wr_adr(self.LPGBT_CONST.I2CM0ADDRESS+OFFSET_WR, slave_addr)# write the address of the follower
+        self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_MULTI)# execute write (c)
+
+        status = self.rd_adr(self.LPGBT_CONST.I2CM0STATUS+OFFSET_RD)
+        retries = 0
+        while (status != self.LPGBT_CONST.I2CM_SR_SUCC_bm):
+            status = self.rd_adr(self.LPGBT_CONST.I2CM0STATUS+OFFSET_RD)
+            #if (status & self.LPGBT_CONST.I2CM_SR_LEVEERR_bm):
+            #    print ("The SDA line is pulled low before initiating a transaction")
+            #if (status & self.LPGBT_CONST.I2CM_SR_NOACK_bm):
+            #    print("The I2C transaction was not acknowledged by the I2C slave")
+            retries += 1
+            if retries > 50:
+                print ("Write not successfull!")
+                break
+
+    def I2C_read(self, reg=0x0, master=2, slave_addr=0x60, nbytes=1):
+        #https://gitlab.cern.ch/lpgbt/pigbt/-/blob/master/backend/apiapp/lpgbtLib/lowLevelDrivers/MASTERI2C.py#L83
+        i2cm      = master
+	
+        # we can also switch to sth like this:
+        # i2cm1cmd = self.get_node('LPGBT.RW.I2C.I2CM1CMD').real_address
+
+        OFFSET_WR = i2cm*(self.LPGBT_CONST.I2CM1CMD - self.LPGBT_CONST.I2CM0CMD) #using the offset trick to switch between masters easily
+        OFFSET_RD = i2cm*(self.LPGBT_CONST.I2CM1STATUS - self.LPGBT_CONST.I2CM0STATUS)
+    
+        regl = (int(reg) & 0xFF) >> 0
+        regh = (int(reg)) >> 8
+    
+        # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-write-cr-0x0
+        self.wr_adr(self.LPGBT_CONST.I2CM0DATA0+OFFSET_WR, 2<<self.LPGBT_CONST.I2CM_CR_NBYTES_of | (2<<self.LPGBT_CONST.I2CM_CR_FREQ_of))
+        self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_CRA) #write to config register
+    
+        # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-w-multi-4byte0-0x8
+        self.wr_adr(self.LPGBT_CONST.I2CM0DATA0 + OFFSET_WR , regl)
+        self.wr_adr(self.LPGBT_CONST.I2CM0DATA1 + OFFSET_WR , regh)
+        self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_W_MULTI_4BYTE0) # prepare a multi-write
+    
+        # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-write-multi-0xc
+        self.wr_adr(self.LPGBT_CONST.I2CM0ADDRESS+OFFSET_WR, slave_addr)
+        self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_MULTI)# execute multi-write
+    
+        # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-write-cr-0x0
+        self.wr_adr(self.LPGBT_CONST.I2CM0DATA0+OFFSET_WR, nbytes<<self.LPGBT_CONST.I2CM_CR_NBYTES_of | 2<<self.LPGBT_CONST.I2CM_CR_FREQ_of)
+        self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_CRA) #write to config register
+    
+        # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-read-multi-0xd
+        self.wr_adr(self.LPGBT_CONST.I2CM0ADDRESS+OFFSET_WR, slave_addr) #write the address of follower first
+        self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_READ_MULTI)# execute read
+        
+        status = self.rd_adr(self.LPGBT_CONST.I2CM0STATUS+OFFSET_RD)
+        retries = 0
+        while (status != self.LPGBT_CONST.I2CM_SR_SUCC_bm):
+            status = self.rd_adr(self.LPGBT_CONST.I2CM0STATUS+OFFSET_RD)
+            #if (status & self.LPGBT_CONST.I2CM_SR_LEVEERR_bm):
+            #    print ("The SDA line is pulled low before initiating a transaction")
+            #if (status & self.LPGBT_CONST.I2CM_SR_NOACK_bm):
+            #    print("The I2C transaction was not acknowledged by the I2C slave")
+            retries += 1
+            if retries > 50:
+                print ("Read not successfull!")
+                return None
+
+        read_values = []
+
+        i2cm0read15 = self.LPGBT_CONST.I2CM0READ15
+        for i in range(0, nbytes):
+            tmp_adr = abs(i-i2cm0read15)+OFFSET_RD
+            read_values.append(self.rd_adr(tmp_adr).value())
+
+        #print (self.rd_adr(self.LPGBT_CONST.I2CM0READ15+OFFSET_RD).value())
+        #print (self.rd_adr(self.LPGBT_CONST.I2CM0READ14+OFFSET_RD).value())
+        #print (self.rd_adr(self.LPGBT_CONST.I2CM0READ13+OFFSET_RD).value())
+        #print (self.rd_adr(self.LPGBT_CONST.I2CM0READ12+OFFSET_RD).value())
+
+        #read_value = self.rd_adr(self.LPGBT_CONST.I2CM0READ15+OFFSET_RD) # get the read value. this is just the first byte
+    
+        return read_values
+
+    def program_slave_from_file (self, filename):
+        f = open(filename, "r")
+        for line in f:
+            adr, data = line.split(" ")
+            adr = int(adr)
+            wr = int(data.replace("0x",""), 16)
+            if (wr != 0):
+                print("lpgbt_wr_adr(%d, 0x%02x)" % (adr, wr))
+                self.I2C_write(reg=adr, val=wr, master=2)
+                rd = self.I2C_read(reg=adr, master=2)
+                if (wr!=rd):
+                    print("LPGBT readback error 0x%02X != 0x%02X at adr %d" % (wr, rd, adr))
+
+    def read_temp_i2c(self):
+        res = self.I2C_read(reg=0x0, master=1, slave_addr=0x48, nbytes=2)
+        temp_dig = (res[0] << 4) + (res[1] >> 4)
+        return temp_dig*0.0625
 
 
 if __name__ == '__main__':

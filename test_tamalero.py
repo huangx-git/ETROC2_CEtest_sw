@@ -3,6 +3,8 @@ from tamalero.ReadoutBoard import ReadoutBoard
 
 from tamalero.SCA import SCA_CONTROL
 
+import time
+
 if __name__ == '__main__':
 
 
@@ -10,6 +12,7 @@ if __name__ == '__main__':
 
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--power_up', action='store_true', default=False, help="Do lpGBT power up init?")
+    argParser.add_argument('--i2c_temp', action='store_true', default=False, help="Do temp monitoring on I2C?")
     args = argParser.parse_args()
 
 
@@ -50,3 +53,10 @@ if __name__ == '__main__':
 
     # High level reading of temperatures
     temp = rb_0.read_temp(verbose=1)
+
+    if args.i2c_temp:
+
+        for i in range(100):
+            print ( rb_0.DAQ_LPGBT.read_temp_i2c() )
+            time.sleep(1)
+
