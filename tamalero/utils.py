@@ -1,8 +1,8 @@
 import math
 import numpy as np
 from time import sleep
-import matplotlib.pyplot as plt
 from yaml import load, dump
+
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
@@ -54,6 +54,7 @@ def prbs_phase_scan(lpgbt, f_out='phase_scan.txt'):
 
 
 def plot_phase_scan(f_in, channel):
+    import matplotlib.pyplot as plt
     data = np.loadtxt(f_in)
     plt.yscale("log")
     plt.plot(data[:,0], data[:,channel])
