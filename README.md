@@ -31,6 +31,8 @@
 
 `ipython -i test_tamalero.py`
 
+![module connectivity](https://gitlab.cern.ch/cms-etl-electronics/readout-board-pcb/-/blob/master/docs/module-connectivity.svg)
+
 ## References
 
 [BU EDF](http://ohm.bu.edu/trac/edf/wiki/CMSMipTiming)
