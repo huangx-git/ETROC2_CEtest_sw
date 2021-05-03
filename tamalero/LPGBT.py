@@ -364,7 +364,7 @@ class LPGBT(RegParser):
                 print ("Write not successfull!")
                 break
 
-    def I2C_read(self, reg=0x0, master=2, slave_addr=0x60, nbytes=1):
+    def I2C_read(self, reg=0x0, master=2, slave_addr=0x70, nbytes=1):
         #https://gitlab.cern.ch/lpgbt/pigbt/-/blob/master/backend/apiapp/lpgbtLib/lowLevelDrivers/MASTERI2C.py#L83
         i2cm      = master
 	
@@ -418,25 +418,20 @@ class LPGBT(RegParser):
             tmp_adr = abs(i-i2cm0read15)+OFFSET_RD
             read_values.append(self.rd_adr(tmp_adr).value())
 
-        #print (self.rd_adr(self.LPGBT_CONST.I2CM0READ15+OFFSET_RD).value())
-        #print (self.rd_adr(self.LPGBT_CONST.I2CM0READ14+OFFSET_RD).value())
-        #print (self.rd_adr(self.LPGBT_CONST.I2CM0READ13+OFFSET_RD).value())
-        #print (self.rd_adr(self.LPGBT_CONST.I2CM0READ12+OFFSET_RD).value())
-
         #read_value = self.rd_adr(self.LPGBT_CONST.I2CM0READ15+OFFSET_RD) # get the read value. this is just the first byte
-    
+        
         return read_values
 
-    def program_slave_from_file (self, filename):
+    def program_slave_from_file (self, filename, master=2, slave_addr=0x70):
         f = open(filename, "r")
         for line in f:
             adr, data = line.split(" ")
             adr = int(adr)
             wr = int(data.replace("0x",""), 16)
             if (wr != 0):
-                print("lpgbt_wr_adr(%d, 0x%02x)" % (adr, wr))
-                self.I2C_write(reg=adr, val=wr, master=2)
-                rd = self.I2C_read(reg=adr, master=2)
+                print("Writing address: %d, value: 0x%02x" % (adr, wr))
+                self.I2C_write(reg=adr, val=wr, master=master, slave_addr=slave_addr)
+                rd = self.I2C_read(reg=adr, master=master, slave_addr=slave_addr)[0]
                 if (wr!=rd):
                     print("LPGBT readback error 0x%02X != 0x%02X at adr %d" % (wr, rd, adr))
 
