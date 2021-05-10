@@ -292,7 +292,7 @@ class SCA:
     def disable_adc(self):
         self.configure_control_registers(en_adc=0)
 
-    def I2C_write(self, I2C_channel, data, slave_adr):
+    def I2C_write(self, I2C_channel, data, servant_adr):
         ##TODO: change data input type to be not a list of bytes (?)
         #1) write byte to DATA register
         if type(data = int):
@@ -313,10 +313,24 @@ class SCA:
                 data_field = 0x0
         #2) write NBYTES to control register
         self.rw_cmd(0x30, I2C_channel, nbytes) #I2C_W_CTRL = 0x30
-        #3) I2C_M_10B_W command(0xE2) with data field = slave address
-        self.rw_cmd(0xE2, I2C_channel, slave_adr)
+        #3) I2C_M_10B_W command(0xE2) with data field = servant address
+        self.rw_cmd(0xE2, I2C_channel, servant_adr)
         
-    def I2C_read(self, I2C_channel, nbytes=15):
+    def I2C_read(self, servant_adr, I2C_channel=0, SCA_address=0x0, nbytes=15):
         #1) set NBYTES to recieve in control register
+        #   -> using I2C_W_CTRL command (0x30)
+        breakpoint()
+        self.rw_reg(0x30, I2C_channel, nbytes, SCA_address) 
         #2) I2C_M_10B_R (0xE6) with data field = slave address
+        status = self.rw_reg(0xDA, I2C_channel, servant_adr, SCA_address)
+        print(status)
+        #3) read the data registers
+        out_bytes = []
+
+
+        self.rw_reg(0x30, I2C_channel, 0x0, SCA_address) #clear the command register
+        self.rw_reg(0xDA, I2C_channel, 0x0, SCA_address) #clear the servant address
         return 0
+
+
+
