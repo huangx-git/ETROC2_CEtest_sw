@@ -320,7 +320,8 @@ class SCA:
         #1) set NBYTES to recieve in control register
         #   -> using I2C_W_CTRL command (0x30)
         breakpoint()
-        self.rw_cmd(0x30, I2C_channel, nbytes, SCA_address) 
+        ctrl_param = (nbytes >> 2) | 0x0 #bits 0-1 are FREQ, bits 2-6 is NBYTES
+        self.rw_cmd(0x30, I2C_channel, ctrl_param, SCA_address) 
         #2) I2C_M_10B_R (0xE6) with data field = slave address
         status = self.rw_cmd(0xDA, I2C_channel, servant_adr, SCA_address)
         print(status)
