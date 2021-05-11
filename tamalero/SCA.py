@@ -316,11 +316,12 @@ class SCA:
         #3) I2C_M_10B_W command(0xE2) with data field = servant address
         self.rw_cmd(0xE2, I2C_channel, servant_adr)
         
-    def I2C_read(self, servant_adr, I2C_channel=0, SCA_address=0x0, nbytes=15):
+    def I2C_read(self, servant_adr=0x48, I2C_channel=0x3, SCA_address=0x0, nbytes=15):
         #1) set NBYTES to recieve in control register
         #   -> using I2C_W_CTRL command (0x30)
         breakpoint()
-        ctrl_param = (nbytes >> 2) | 0x0 #bits 0-1 are FREQ, bits 2-6 is NBYTES
+        self.rw_cmd(0xDA, I2C_channel, 0x0, SCA_address) #clear the servant address
+        ctrl_param = (nbytes << 2) | 0x0 #bits 0-1 are FREQ, bits 2-6 is NBYTES
         self.rw_cmd(0x30, I2C_channel, ctrl_param, SCA_address) 
         #2) I2C_M_10B_R (0xE6) with data field = slave address
         status = self.rw_cmd(0xDA, I2C_channel, servant_adr, SCA_address)
