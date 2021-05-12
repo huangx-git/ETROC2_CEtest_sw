@@ -321,8 +321,8 @@ class SCA:
         #   -> using I2C_W_CTRL command (0x30)
         ctrl_param = (nbytes << 2) | 0x0 #bits 0-1 are FREQ, bits 2-6 is NBYTES
         self.rw_cmd(0x30, I2C_channel, ctrl_param, SCA_address) 
-        #2) I2C_M_10B_R (0xE6) with data field = servant address
-        status = self.rw_cmd(0xDA, I2C_channel, servant_adr, SCA_address) #need to check the status of the read?
+        #2) I2C_M_7B_R (0xDE) with data field = servant address
+        status = self.rw_cmd(0xDE, I2C_channel, servant_adr, SCA_address) #need to check the status of the read?
         breakpoint()
         #3) read the data registers
         data_registers = [0x41, 0x51, 0x61, 0x71]
