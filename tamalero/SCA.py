@@ -317,15 +317,14 @@ class SCA:
         self.rw_cmd(0xE2, I2C_channel, servant_adr)
         
     def I2C_read(self, servant_adr=0x48, I2C_channel=0x3, SCA_address=0x0, nbytes=15):
-        #1) set NBYTES to recieve in control register
-        #   -> using I2C_W_CTRL command (0x30)
-        ctrl_param = (nbytes << 2) | 0x0 #bits 0-1 are FREQ, bits 2-6 is NBYTES
+        #1) set NBYTES to recieve in control register using I2C_W_CTRL (0x30)
+        ctrl_param = (nbytes << 2) | 0x0 #bits 0-1 are FREQ, bits 2-6 are NBYTES
         self.rw_cmd(0x30, I2C_channel, ctrl_param, SCA_address) 
         #2) I2C_M_7B_R (0xDE) with data field = servant address
         status = self.rw_cmd(0xDE, I2C_channel, servant_adr, SCA_address) #need to check the status of the read?
         breakpoint()
         #3) read the data registers
-        data_registers = [0x41, 0x51, 0x61, 0x71]
+        data_registers = [0x41, 0x51, 0x61, 0x71] # [I2C_R_DATA0,I2C_R_DATA1, I2C_R_DATA2, I2C_R_DATA3]
         out_bytes = []
         for page in range((nbytes//4) + 1):
             page_value = self.rw_cmd(data_registers[page], I2C_channel, 0x0) #execute I2C_R_DATA[0,1,2,3]
