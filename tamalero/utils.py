@@ -1,5 +1,8 @@
 import math
+import numpy as np
+from time import sleep
 from yaml import load, dump
+
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
@@ -34,6 +37,28 @@ def read_mapping(f_in, selection='adc', flavor='small'):
     with open(f_in) as f:
         mapping = load(f, Loader=Loader)[selection]
     return {v:mapping[v] for v in mapping.keys() if flavors[mapping[v]['flavor']] <= flavors[flavor]}
+
+
+def prbs_phase_scan(lpgbt, f_out='phase_scan.txt'):
+    with open(f_out, "w") as f:
+        for phase in range(0x0, 0x1ff, 1):
+            phase_ns = (50.0*(phase&0xf) + 800.0*(phase>>4))/1000
+            lpgbt.set_ps0_phase(phase)
+            lpgbt.reset_pattern_checkers()
+            sleep(0.5)
+            #read_pattern_checkers()
+            prbs_errs = lpgbt.read_pattern_checkers(quiet=True)[0]
+            s = ("{} "*(len(prbs_errs)+1)).format(*([phase_ns]+prbs_errs))
+            f.write("%s\n" % s)
+            print (s)
+
+
+def plot_phase_scan(f_in, channel):
+    import matplotlib.pyplot as plt
+    data = np.loadtxt(f_in)
+    plt.yscale("log")
+    plt.plot(data[:,0], data[:,channel])
+    plt.show()
 
 
 if __name__ == '__main__':
