@@ -321,3 +321,16 @@ class SCA:
         #1) set NBYTES to recieve in control register
         #2) I2C_M_10B_R (0xE6) with data field = slave address
         return 0
+
+    def I2C_read_single_byte(self, channel=0x06, servant=0x48):
+        # enable corresponding channel. only one enabled at a time
+        self.configure_control_registers(en_i2c=0x08)  # fix this
+        # single byte read
+        res = self.rw_cmd(0x86, channel, servant<<24, 0x0).value()
+        status = (res >> 24)
+        success = (status & 4)
+        if success:
+            return (res >> 16) & 255
+        else:
+            print ("Read not successful")
+            return 0
