@@ -323,6 +323,14 @@ class SCA:
         self.rw_cmd(0x30, I2C_channel, ctrl_param, SCA_address) 
         #2) I2C_M_7B_R (0xDE) with data field = servant address
         status = self.rw_cmd(0xDE, I2C_channel, servant_adr, SCA_address) #need to check the status of the read?
+        if status & 0x8:
+            print( "LEVERR: the SDA line was pulled low before the transaction")
+        if status & 0x4:
+            print("transaction successful")
+        if status & 0x20:
+            print( "INVCOM: Invalid command")
+        if status & 0x40:
+            print( "NOACK: operation not acknowledged by the servant")
         breakpoint()
         #3) read the data registers
         data_registers = [0x41, 0x51, 0x61, 0x71] # [I2C_R_DATA0,I2C_R_DATA1, I2C_R_DATA2, I2C_R_DATA3]
