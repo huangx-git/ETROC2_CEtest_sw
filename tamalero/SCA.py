@@ -86,6 +86,12 @@ class SCA_JTAG:
     JTAG_GO     = 0x13A2
     JTAG_GO_M   = 0x13B0
 
+class SCA_I2C:
+    # I2C commands
+    I2C_R_STR  = 0x11 # read status register
+    I2C_S_7B_W = 0x82 # single byte write
+    I2C_S_7B_R = 0x86 # single byte read
+
 class SCA:
 
     def __init__(self, rb=0, flavor='small'):
@@ -293,7 +299,11 @@ class SCA:
     def disable_adc(self):
         self.configure_control_registers(en_adc=0)
 
-    def I2C_write(self, I2C_channel, data, servant_adr):
+    def get_I2C_channel(self, channel):
+        # this only works for channel 0-4 right now, enough for the tests. Needs to be fixed!
+        return getattr(SCA_CRB, "ENI2C%s"%channel)
+
+    def I2C_write(self, I2C_channel, data, slave_adr):
         ##TODO: change data input type to be not a list of bytes (?)
         #1) write byte to DATA register
         if type(data = int):
@@ -341,5 +351,23 @@ class SCA:
 
         return out_bytes
 
+    def I2C_read_single_byte(self, channel=3, servant=0x48):
+        # enable corresponding channel. only one enabled at a time
+        self.configure_control_registers(en_i2c=(1<<channel))
+        # single byte read
+        res = self.rw_cmd(SCA_I2C.I2C_S_7B_R, self.get_I2C_channel(channel), servant<<24, 0x0).value()
+        status = (res >> 24)
+        success = (status & 4)
+        if success:
+            return (res >> 16) & 255
+        else:
+            print ("Read not successful")
+            return 0
 
-
+    def I2C_status(self, channel=3):
+        # returns whether last transaction was successful
+        self.configure_control_registers(en_i2c=(1<<channel))
+        res = self.rw_cmd(SCA_I2C.I2C_R_STR, self.get_I2C_channel(channel), 0x0, 0x0).value()
+        status = (res >> 24)
+        success = (status & 4) >> 2
+        return success
