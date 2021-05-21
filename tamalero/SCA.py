@@ -1,6 +1,7 @@
 import os
 import random
 from tamalero.utils import read_mapping
+import time
 
 class SCA_CRB:
     # 0 is reserved
@@ -96,7 +97,8 @@ class SCA_I2C:
     I2C_M_7B_R = 0xDE # multi-byte read
     I2C_M_7B_W = 0xDA # multi-byte write
     I2C_W_DATA0 = 0x40 # write to data register 0
-    I2C_R_DATA0 = 0x41 # read from data register 1
+    I2C_R_DATA0 = 0x41 # read from data register 0
+    I2C_R_DATA3 = 0x71 # read from data register 3
     I2C_RW_DATA_OFFSET = 16 # offset to access data register 1, 2, 3
 
 
@@ -335,34 +337,33 @@ class SCA:
         #3) I2C_M_10B_W command(0xE2) with data field = servant address
         self.rw_cmd(0xE2, I2C_channel, servant_adr)
         
-    def I2C_read(self, servant_adr=0x48, I2C_channel=0x3, SCA_address=0x0, nbytes=15):
-        #1) set NBYTES to recieve in control register using I2C_W_CTRL (0x30)
-        ctrl_param = (nbytes << 2) | 0x0 #bits 0-1 are FREQ, bits 2-6 are NBYTES
-        self.rw_cmd(0x30, I2C_channel, ctrl_param, SCA_address) 
-        #2) I2C_M_7B_R (0xDE) with data field = servant address
-        status = self.rw_cmd(0xDE, I2C_channel, servant_adr, SCA_address) #need to check the status of the read?
-        if status & 0x8:
-            print( "LEVERR: the SDA line was pulled low before the transaction")
-        if status & 0x4:
-            print("transaction successful")
-        if status & 0x20:
-            print( "INVCOM: Invalid command")
-        if status & 0x40:
-            print( "NOACK: operation not acknowledged by the servant")
-        breakpoint()
-        #3) read the data registers
-        data_registers = [0x41, 0x51, 0x61, 0x71] # [I2C_R_DATA0,I2C_R_DATA1, I2C_R_DATA2, I2C_R_DATA3]
-        out_bytes = []
-        for page in range((nbytes//4) + 1):
-            page_value = self.rw_cmd(data_registers[page], I2C_channel, 0x0) #execute I2C_R_DATA[0,1,2,3]
-            out_bytes.append(page_value)
+    #def I2C_read(self, servant_adr=0x48, I2C_channel=0x3, SCA_address=0x0, nbytes=15):
+    #    #1) set NBYTES to recieve in control register using I2C_W_CTRL (0x30)
+    #    ctrl_param = (nbytes << 2) | 0x0 #bits 0-1 are FREQ, bits 2-6 are NBYTES
+    #    self.rw_cmd(0x30, I2C_channel, ctrl_param, SCA_address) 
+    #    #2) I2C_M_7B_R (0xDE) with data field = servant address
+    #    status = self.rw_cmd(0xDE, I2C_channel, servant_adr, SCA_address) #need to check the status of the read?
+    #    if status & 0x8:
+    #        print( "LEVERR: the SDA line was pulled low before the transaction")
+    #    if status & 0x4:
+    #        print("transaction successful")
+    #    if status & 0x20:
+    #        print( "INVCOM: Invalid command")
+    #    if status & 0x40:
+    #        print( "NOACK: operation not acknowledged by the servant")
+    #    breakpoint()
+    #    #3) read the data registers
+    #    data_registers = [0x41, 0x51, 0x61, 0x71] # [I2C_R_DATA0,I2C_R_DATA1, I2C_R_DATA2, I2C_R_DATA3]
+    #    out_bytes = []
+    #    for page in range((nbytes//4) + 1):
+    #        page_value = self.rw_cmd(data_registers[page], I2C_channel, 0x0) #execute I2C_R_DATA[0,1,2,3]
+    #        out_bytes.append(page_value)
 
-        return out_bytes
+    #    return out_bytes
 
     def I2C_read_single_byte(self, channel=3, servant=0x48):
         # enable corresponding channel. only one enabled at a time
         self.configure_control_registers(en_i2c=(1<<channel))
-        breakpoint()
         # single byte read
         res = self.rw_cmd(SCA_I2C.I2C_S_7B_R, self.get_I2C_channel(channel), servant<<24, 0x0).value()
         status = (res >> 24)
@@ -404,25 +405,32 @@ class SCA:
 
     def I2C_read_multi(self, channel=3, servant=0x48, nbytes=15):
         #enable channel
-        breakpoint()
         self.configure_control_registers(en_i2c=(1<<channel))
         #configure NBYTES in the control register
         self.I2C_write_ctrl(channel, nbytes<<2)
         #multi-byte read
+        start_time = time.time()
         cmd_res = self.rw_cmd(SCA_I2C.I2C_M_7B_R, self.get_I2C_channel(channel), (servant<<24), 0x0).value()
         status = cmd_res >> 24
         success = status & 4
-        if not success:
-            print("I2C_M_7B_R not successful, status = {}".format(status))
-            return
+        while not success:
+            cmd_res = self.rw_cmd(SCA_I2C.I2C_M_7B_R, self.get_I2C_channel(channel), (servant<<24), 0x0).value()
+            status = cmd_res >> 24
+            success = status & 4
+            if time.time() - start_time > 0.1:
+                raise TimeoutError("I2C_M_7B_R not successful, status = {}".format(status))
+
         #read data register
-        data_registers = [SCA_I2C.I2C_R_DATA0 + SCA_I2C.I2C_RW_OFFSET * n for n in range((nbytes//4) + 1)] # [I2C_R_DATA0, I2C_R_DATA1, I2C_R_DATA2, I2C_R_DATA3]
-        out_bytes = []
-        for page in range((nbytes//4) + 1):
-            page_value = self.rw_cmd(data_registers[page], I2C_channel, 0x0) #execute I2C_R_DATA[0,1,2,3]
+        #we are counting backwards because we need to call I2C_R_DATA3 to get data bytes 0, 1, 2, 3, and so on.
+        data_registers = [SCA_I2C.I2C_R_DATA3 - SCA_I2C.I2C_RW_DATA_OFFSET * n for n in range((nbytes//4) + 1)] # [I2C_R_DATA3, I2C_R_DATA2, I2C_R_DATA1, I2C_R_DATA0]
+        out_bytes = [] 
+        for page in range(((nbytes//4) + 1)):  
+            page_value = self.rw_cmd(data_registers[page], self.get_I2C_channel(channel), 0x0, 0x0).value() #execute I2C_R_DATA[3,2,1,0]
             for byte in range(4):
-                if byte <= nbytes:
-                    out_bytes.append(page_value)
+                if (byte + 4*page) < nbytes:
+                    mask = 255 << (8 * (3 - byte))
+                    return_byte = (page_value & mask) >> (8 * (3 - byte))
+                    out_bytes.append(return_byte)
 
         return out_bytes
 
