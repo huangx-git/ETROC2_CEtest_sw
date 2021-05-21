@@ -88,9 +88,17 @@ class SCA_JTAG:
 
 class SCA_I2C:
     # I2C commands
+    I2C_W_CTRL = 0x30 # write control register
+    I2C_R_CTRL = 0x31 # read control register
     I2C_R_STR  = 0x11 # read status register
     I2C_S_7B_W = 0x82 # single byte write
     I2C_S_7B_R = 0x86 # single byte read
+    I2C_M_7B_R = 0xDE # multi-byte read
+    I2C_M_7B_W = 0xDA # multi-byte write
+    I2C_W_DATA0 = 0x40 # write to data register 0
+    I2C_R_DATA0 = 0x41 # read from data register 1
+    I2C_RW_DATA_OFFSET = 16 # offset to access data register 1, 2, 3
+
 
 class SCA:
 
@@ -354,6 +362,7 @@ class SCA:
     def I2C_read_single_byte(self, channel=3, servant=0x48):
         # enable corresponding channel. only one enabled at a time
         self.configure_control_registers(en_i2c=(1<<channel))
+        breakpoint()
         # single byte read
         res = self.rw_cmd(SCA_I2C.I2C_S_7B_R, self.get_I2C_channel(channel), servant<<24, 0x0).value()
         status = (res >> 24)
@@ -363,6 +372,60 @@ class SCA:
         else:
             print ("Read not successful")
             return 0
+
+    def I2C_write_single_byte(self, channel, servant, data):
+        #enable channel
+        self.configure_control_registers(en_i2c=(1<<channel))
+        #single byte write
+        data_field = (servant<<24) | ((data & 255) << 16) #[31:24] is servant address, [23:16] is data byte
+        res = self.rw_cmd(SCA_I2C.I2C_S_7B_W, self.get_I2C_channel(channel), data_field).value()
+        status = res >> 24
+        success = status & 4
+        if success:
+            print("single write successful")
+            return
+        else:
+            print("write not successful: status = {}".format(status))
+
+    def I2C_write_ctrl(self, channel, data):
+        #enable channel
+        self.configure_control_registers(en_i2c=(1<<channel))
+        #write control register
+        data_field = data << 24
+        res = self.rw_cmd(SCA_I2C.I2C_W_CTRL, self.get_I2C_channel(channel), data_field).value()
+        return #no status register to return?
+
+    def I2C_read_ctrl(self, channel):
+        #enable channel
+        self.configure_control_registers(en_i2c=(1<<channel))
+        #read control register
+        res = self.rw_cmd(SCA_I2C.I2C_R_CTRL, self.get_I2C_channel(channel), 0x0).value()
+        return res >> 24
+
+    def I2C_read_multi(self, channel=3, servant=0x48, nbytes=15):
+        #enable channel
+        breakpoint()
+        self.configure_control_registers(en_i2c=(1<<channel))
+        #configure NBYTES in the control register
+        self.I2C_write_ctrl(channel, nbytes<<2)
+        #multi-byte read
+        cmd_res = self.rw_cmd(SCA_I2C.I2C_M_7B_R, self.get_I2C_channel(channel), (servant<<24), 0x0).value()
+        status = cmd_res >> 24
+        success = status & 4
+        if not success:
+            print("I2C_M_7B_R not successful, status = {}".format(status))
+            return
+        #read data register
+        data_registers = [SCA_I2C.I2C_R_DATA0 + SCA_I2C.I2C_RW_OFFSET * n for n in range((nbytes//4) + 1)] # [I2C_R_DATA0, I2C_R_DATA1, I2C_R_DATA2, I2C_R_DATA3]
+        out_bytes = []
+        for page in range((nbytes//4) + 1):
+            page_value = self.rw_cmd(data_registers[page], I2C_channel, 0x0) #execute I2C_R_DATA[0,1,2,3]
+            for byte in range(4):
+                if byte <= nbytes:
+                    out_bytes.append(page_value)
+
+        return out_bytes
+
 
     def I2C_status(self, channel=3):
         # returns whether last transaction was successful
