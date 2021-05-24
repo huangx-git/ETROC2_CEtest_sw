@@ -434,7 +434,6 @@ class SCA:
 
         return out_bytes
 
-
     def I2C_status(self, channel=3):
         # returns whether last transaction was successful
         self.configure_control_registers(en_i2c=(1<<channel))
@@ -442,3 +441,8 @@ class SCA:
         status = (res >> 24)
         success = (status & 4) >> 2
         return success
+
+    def read_temp_i2c(self, channel=3):
+        res = self.I2C_read_multi(channel=channel, servant = 0x48, nbytes=2)
+        temp_dig = (res[0] << 4) + (res[1] >> 4)
+        return temp_dig*0.0625
