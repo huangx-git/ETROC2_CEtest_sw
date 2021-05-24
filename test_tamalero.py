@@ -4,6 +4,7 @@ from tamalero.ReadoutBoard import ReadoutBoard
 from tamalero.SCA import SCA_CONTROL
 
 import time
+import random
 
 if __name__ == '__main__':
 
@@ -60,3 +61,13 @@ if __name__ == '__main__':
             print ( rb_0.DAQ_LPGBT.read_temp_i2c() )
             time.sleep(1)
 
+    print("Writing and Reading I2C_ctrl register:")
+    for n in range(10):
+        wr = random.randint(0, 100)
+        rb_0.SCA.I2C_write_ctrl(channel=3, data=wr)
+        rd = rb_0.SCA.I2C_read_ctrl(channel=3)
+        print("write: {} \t read: {}".format(wr, rd))
+
+    print("Testing multi-byte read:")
+    multi_out = rb_0.SCA.I2C_read_multi(channel=3, servant = 0x48, nbytes=2)
+    print("servant: 0x48, channel: 3, nbytes: 2, output = {}".format(multi_out))
