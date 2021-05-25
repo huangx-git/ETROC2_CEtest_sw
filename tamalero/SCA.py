@@ -361,9 +361,13 @@ class SCA:
 
     #    return out_bytes
 
-    def I2C_read_single_byte(self, channel=3, servant=0x48):
+    def I2C_read_single_byte(self, channel=3, servant=0x48, reg=0x00):
         # enable corresponding channel. only one enabled at a time
         self.configure_control_registers(en_i2c=(1<<channel))
+        
+        # write to the pointer reg
+        self.I2C_write_single_byte(channel=channel, servant=servant, data=reg)
+
         # single byte read
         res = self.rw_cmd(SCA_I2C.I2C_S_7B_R, self.get_I2C_channel(channel), servant<<24, 0x0).value()
         status = (res >> 24)
@@ -383,7 +387,7 @@ class SCA:
         status = res >> 24
         success = status & 4
         if success:
-            print("single write successful")
+            #print("single write successful")
             return
         else:
             print("write not successful: status = {}".format(status))
