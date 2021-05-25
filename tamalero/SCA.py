@@ -403,18 +403,20 @@ class SCA:
         res = self.rw_cmd(SCA_I2C.I2C_R_CTRL, self.get_I2C_channel(channel), 0x0).value()
         return res >> 24
 
-    def I2C_read_multi(self, channel=3, servant=0x48, nbytes=15):
+    def I2C_read_multi(self, channel=3, servant=0x48, nbytes=15, reg=0x0):
         #enable channel
         self.configure_control_registers(en_i2c=(1<<channel))
         #configure NBYTES in the control register
         self.I2C_write_ctrl(channel, nbytes<<2)
+        # write to the pointer reg
+        self.I2C_write_single_byte(channel=channel, servant=servant, data=reg)
         #multi-byte read
         start_time = time.time()
-        cmd_res = self.rw_cmd(SCA_I2C.I2C_M_7B_R, self.get_I2C_channel(channel), (servant<<24), 0x0).value()
+        cmd_res = self.rw_cmd(SCA_I2C.I2C_M_7B_R, self.get_I2C_channel(channel), (servant<<24)).value()
         status = cmd_res >> 24
         success = status & 4
         while not success:
-            cmd_res = self.rw_cmd(SCA_I2C.I2C_M_7B_R, self.get_I2C_channel(channel), (servant<<24), 0x0).value()
+            cmd_res = self.rw_cmd(SCA_I2C.I2C_M_7B_R, self.get_I2C_channel(channel), (servant<<24)).value()
             status = cmd_res >> 24
             success = status & 4
             if time.time() - start_time > 0.1:
@@ -425,7 +427,7 @@ class SCA:
         data_registers = [SCA_I2C.I2C_R_DATA3 - SCA_I2C.I2C_RW_DATA_OFFSET * n for n in range((nbytes//4) + 1)] # [I2C_R_DATA3, I2C_R_DATA2, I2C_R_DATA1, I2C_R_DATA0]
         out_bytes = [] 
         for page in range(((nbytes//4) + 1)):  
-            page_value = self.rw_cmd(data_registers[page], self.get_I2C_channel(channel), 0x0, 0x0).value() #execute I2C_R_DATA[3,2,1,0]
+            page_value = self.rw_cmd(data_registers[page], self.get_I2C_channel(channel), 0x0).value() #execute I2C_R_DATA[3,2,1,0]
             for byte in range(4):
                 if (byte + 4*page) < nbytes:
                     mask = 255 << (8 * (3 - byte))
@@ -434,12 +436,26 @@ class SCA:
 
         return out_bytes
 
-    def I2C_status(self, channel=3):
+    def I2C_status(self, channel=3, verbose=1):
         # returns whether last transaction was successful
         self.configure_control_registers(en_i2c=(1<<channel))
         res = self.rw_cmd(SCA_I2C.I2C_R_STR, self.get_I2C_channel(channel), 0x0, 0x0).value()
         status = (res >> 24)
-        success = (status & 4) >> 2
+        success = (status & (1<<2)) >> 2 # bit 2 is for success
+        if success:
+            if verbose:
+                print ("Last transaction successful!")
+            else:
+                pass
+        else:
+            print ("Last transaction not successful!")
+        if (status & (1<<3)):
+            print ("SDA/I2C bus broken")
+        if (status & (1<<5)):
+            print ("Invalid command")
+        if (status & (1<<6)):
+            print ("Operation not acknowledged by servant")
+
         return success
 
     def read_temp_i2c(self, channel=3):
