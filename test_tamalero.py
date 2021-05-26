@@ -71,3 +71,10 @@ if __name__ == '__main__':
     print("Testing multi-byte read:")
     multi_out = rb_0.SCA.I2C_read_multi(channel=3, servant = 0x48, nbytes=2)
     print("servant: 0x48, channel: 3, nbytes: 2, output = {}".format(multi_out))
+
+    print("Testing multi-byte write:")
+    write_value = [0x2, 25, 27]
+    print("servant: 0x48, channel: 3, nbytes: 2, data:{}".format(write_value))
+    rb_0.SCA.I2C_write_multi(write_value, channel=3, servant=0x48)
+    print("read value = {}".format(rb_0.SCA.I2C_read_multi(channel=3, servant=0x48, nbytes = 2, reg=0x2)))
+
