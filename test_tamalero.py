@@ -14,6 +14,9 @@ if __name__ == '__main__':
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--power_up', action='store_true', default=False, help="Do lpGBT power up init?")
     argParser.add_argument('--i2c_temp', action='store_true', default=False, help="Do temp monitoring on I2C?")
+    argParser.add_argument('--i2c_temp_sca', action='store_true', default=False, help="Do temp monitoring on I2C over GBT-SCA?")
+    argParser.add_argument('--run_pattern_checker', action='store_true', default=False, help="Read pattern checker?")
+    argParser.add_argument('--reset_pattern_checker', action='store_true', default=False, help="Reset pattern checker?")
     args = argParser.parse_args()
 
 
@@ -68,13 +71,24 @@ if __name__ == '__main__':
         rd = rb_0.SCA.I2C_read_ctrl(channel=3)
         print("write: {} \t read: {}".format(wr, rd))
 
-    print("Testing multi-byte read:")
-    multi_out = rb_0.SCA.I2C_read_multi(channel=3, servant = 0x48, nbytes=2)
-    print("servant: 0x48, channel: 3, nbytes: 2, output = {}".format(multi_out))
+    if args.i2c_temp_sca:
+        print("Testing multi-byte read:")
+        multi_out = rb_0.SCA.I2C_read_multi(channel=3, servant = 0x48, nbytes=2)
+        print("servant: 0x48, channel: 3, nbytes: 2, output = {}".format(multi_out))
 
-    print("Testing multi-byte write:")
-    write_value = [0x2, 25, 27]
-    print("servant: 0x48, channel: 3, nbytes: 2, data:{}".format(write_value))
-    rb_0.SCA.I2C_write_multi(write_value, channel=3, servant=0x48)
-    print("read value = {}".format(rb_0.SCA.I2C_read_multi(channel=3, servant=0x48, nbytes = 2, reg=0x2)))
+        print("Testing multi-byte write:")
+        write_value = [0x2, 25, 27]
+        print("servant: 0x48, channel: 3, nbytes: 2, data:{}".format(write_value))
+        rb_0.SCA.I2C_write_multi(write_value, channel=3, servant=0x48)
+        print("read value = {}".format(rb_0.SCA.I2C_read_multi(channel=3, servant=0x48, nbytes = 2, reg=0x2)))
+
+
+    if args.reset_pattern_checker:
+        print ("\nResetting the pattern checker.")
+        #rb_0.DAQ_LPGBT.set_uplink_group_data_source("normal")
+        rb_0.DAQ_LPGBT.reset_pattern_checkers()
+    if args.run_pattern_checker:
+        print ("\nReading the pattern checker counter.")
+        rb_0.DAQ_LPGBT.set_uplink_group_data_source("normal")
+        rb_0.DAQ_LPGBT.read_pattern_checkers()
 

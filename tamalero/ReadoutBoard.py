@@ -59,6 +59,10 @@ class ReadoutBoard:
         self.DAQ_LPGBT.configure_gpio_outputs()
         self.DAQ_LPGBT.initialize()
         self.DAQ_LPGBT.config_eport_dlls()
+        self.DAQ_LPGBT.configure_eptx()
+        self.DAQ_LPGBT.configure_eprx()
+
+
 
         # SCA init
         self.sca_hard_reset()

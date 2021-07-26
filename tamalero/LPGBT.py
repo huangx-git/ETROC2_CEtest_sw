@@ -83,6 +83,7 @@ class LPGBT(RegParser):
         for i in range(27):
             if 0x1 & (en_mask >> i):
                 self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dFREQ" % i, 1)
+                self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dDRIVESTRENGTH" % i, 4)
             if 0x1 & (invert_mask >> i):
                 self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dINVERT" % i, 1)
 
@@ -94,6 +95,115 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDLLCOARSELOCKDETECTION", 0x0)
         self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXENABLEREINIT", 0x0)
         self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDATAGATINGENABLE", 0x1)
+
+    def configure_eptx(self):
+        #[0x0a7] EPTXDataRate
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX0DATARATE", 0x3)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX1DATARATE", 0x3)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX2DATARATE", 0x3)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX3DATARATE", 0x3)
+
+        #EPTXxxEnable
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX12ENABLE", 0x1)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX10ENABLE", 0x1)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX20ENABLE", 0x1)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX00ENABLE", 0x1)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX23ENABLE", 0x1)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX02ENABLE", 0x1)
+
+        #EPTXxxDriveStrength
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX6DRIVESTRENGTH", 0x3)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX4DRIVESTRENGTH", 0x3)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX8DRIVESTRENGTH", 0x3)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX0DRIVESTRENGTH", 0x3)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX11DRIVESTRENGTH", 0x3)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX2DRIVESTRENGTH", 0x3)
+
+        # enable mirror feature
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX0MIRRORENABLE", 0x1)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX1MIRRORENABLE", 0x1)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX2MIRRORENABLE", 0x1)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX3MIRRORENABLE", 0x1)
+
+        #turn on 320 MHz clocks
+        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK3FREQ",  0x4)
+        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK5FREQ",  0x4)
+        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK6FREQ",  0x4)
+        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK7FREQ",  0x4)
+        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK15FREQ", 0x4)
+        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK16FREQ", 0x4)
+
+        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK3DRIVESTRENGTH", 0x3)
+        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK5DRIVESTRENGTH", 0x3)
+        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK6DRIVESTRENGTH", 0x3)
+        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK7DRIVESTRENGTH", 0x3)
+        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK15DRIVESTRENGTH", 0x3)
+        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK16DRIVESTRENGTH", 0x3)
+
+    def configure_eprx(self):
+        print ("Configuring elink inputs...")
+        # Enable Elink-inputs
+    
+        #set banks to 320 Mbps
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX0DATARATE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX1DATARATE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX2DATARATE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX3DATARATE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX4DATARATE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX5DATARATE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX6DATARATE", 1)
+    
+        #set banks to fixed phase
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX0TRACKMODE", 0)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX1TRACKMODE", 0)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX2TRACKMODE", 0)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX3TRACKMODE", 0)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX4TRACKMODE", 0)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX5TRACKMODE", 0)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX6TRACKMODE", 0)
+    
+        #enable inputs
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX00ENABLE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX01ENABLE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX02ENABLE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX03ENABLE", 1)
+    
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX10ENABLE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX11ENABLE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX12ENABLE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX13ENABLE", 1)
+    
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX20ENABLE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX21ENABLE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX22ENABLE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX23ENABLE", 1)
+    
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX30ENABLE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX31ENABLE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX32ENABLE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX33ENABLE", 1)
+    
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX40ENABLE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX41ENABLE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX42ENABLE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX43ENABLE", 1)
+    
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX50ENABLE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX51ENABLE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX52ENABLE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX53ENABLE", 1)
+    
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX60ENABLE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX61ENABLE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX62ENABLE", 1)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX63ENABLE", 1)
+    
+        for i in [22]:
+            self.wr_reg("LPGBT.RWF.EPORTRX.EPRX_CHN_CONTROL.EPRX%dINVERT" % i, 1)
+    
+        #enable 100 ohm termination
+        for i in range (28):
+            self.wr_reg("LPGBT.RWF.EPORTRX.EPRX_CHN_CONTROL.EPRX%dTERM" % i, 1)
 
     def init_adc(self):
         self.wr_reg("LPGBT.RW.ADC.ADCENABLE", 0x1)  # enable ADC
@@ -198,7 +308,7 @@ class LPGBT(RegParser):
         self.wr_adr(0x36, 0x80)  # "LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT"
 
         # turn on clock outputs
-        self.configure_clocks(0x0fc0081f, 0x0)
+        self.configure_clocks(0x0fffffff, 0x0)
 
         # setup up sca eptx/rx
         # sca_setup() # maybe not needed???
@@ -288,7 +398,7 @@ class LPGBT(RegParser):
                         errs = self.kcu.read_node("READOUT_BOARD_%d.LPGBT.PATTERN_CHECKER.%s_ERRORS" % (self.rb, mode))
     
                         if quiet is False:
-                            s = "    Channel %02d %s bad frames of %s (%.0f Gb)" % (i, ("{:.2e}".format(errs)), "{:.2e}".format(uptime), uptime*8*40/1000000000.0)
+                            s = "    Channel %02d %s bad frames of %s (%.0f Gb)" % (i, ("{:.2e}".format(errs)), "{:.2e}".format(uptime), uptime*8/1000000000.0)
                             if (errs == 0):
                                 s += " (ber <%s)" % ("{:.1e}".format(1/(uptime*8)))
                                 print(colors.green(s))
@@ -308,6 +418,41 @@ class LPGBT(RegParser):
                             prbs_errs[i] = 0xFFFFFFFF
     
         return (prbs_errs, upcnt_errs)
+
+    def set_uplink_group_data_source(self, type, pattern=0x55555555):
+        setting = 0
+        if (type == "normal"):
+            setting = 0
+        elif(type == "prbs7"):
+            setting = 1
+        elif(type == "cntup"):
+            setting = 2
+        elif(type == "cntdown"):
+            setting = 3
+        elif(type == "pattern"):
+            setting = 4
+        elif(type == "invpattern"):
+            setting = 5
+        elif(type == "loopback"):
+            setting = 6
+        else:
+            print("Setting invalid in set_uplink_group_data_source")
+            return
+    
+        self.wr_reg("LPGBT.RW.TESTING.ULG0DATASOURCE", setting)
+        self.wr_reg("LPGBT.RW.TESTING.ULG1DATASOURCE", setting)
+        self.wr_reg("LPGBT.RW.TESTING.ULG2DATASOURCE", setting)
+        self.wr_reg("LPGBT.RW.TESTING.ULG3DATASOURCE", setting)
+        self.wr_reg("LPGBT.RW.TESTING.ULG4DATASOURCE", setting)
+        self.wr_reg("LPGBT.RW.TESTING.ULG5DATASOURCE", setting)
+        self.wr_reg("LPGBT.RW.TESTING.ULG6DATASOURCE", setting)
+    
+        if (setting == 4 or setting == 5):
+            self.wr_reg("LPGBT.RW.TESTING.DPDATAPATTERN0", 0xff & (pattern >> 0))
+            self.wr_reg("LPGBT.RW.TESTING.DPDATAPATTERN1", 0xff & (pattern >> 8))
+            self.wr_reg("LPGBT.RW.TESTING.DPDATAPATTERN2", 0xff & (pattern >> 16))
+            self.wr_reg("LPGBT.RW.TESTING.DPDATAPATTERN3", 0xff & (pattern >> 24))
+
 
     def set_ps0_phase(self, phase):
         phase = phase & 0x1ff
