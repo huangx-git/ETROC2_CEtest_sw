@@ -13,7 +13,8 @@ if __name__ == '__main__':
 
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--power_up', action='store_true', default=False, help="Do lpGBT power up init?")
-    argParser.add_argument('--i2c_temp', action='store_true', default=False, help="Do temp monitoring on I2C?")
+    argParser.add_argument('--i2c_temp', action='store_true', default=False, help="Do temp monitoring on I2C from lpGBT?")
+    argParser.add_argument('--i2c_sca', action='store_true', default=False, help="I2C tests on SCA?")
     args = argParser.parse_args()
 
 
@@ -61,20 +62,26 @@ if __name__ == '__main__':
             print ( rb_0.DAQ_LPGBT.read_temp_i2c() )
             time.sleep(1)
 
-    print("Writing and Reading I2C_ctrl register:")
-    for n in range(10):
-        wr = random.randint(0, 100)
-        rb_0.SCA.I2C_write_ctrl(channel=3, data=wr)
-        rd = rb_0.SCA.I2C_read_ctrl(channel=3)
-        print("write: {} \t read: {}".format(wr, rd))
+    if args.i2c_sca:
 
-    print("Testing multi-byte read:")
-    multi_out = rb_0.SCA.I2C_read_multi(channel=3, servant = 0x48, nbytes=2)
-    print("servant: 0x48, channel: 3, nbytes: 2, output = {}".format(multi_out))
+        print("Writing and Reading I2C_ctrl register:")
+        for n in range(10):
+            wr = random.randint(0, 100)
+            rb_0.SCA.I2C_write_ctrl(channel=3, data=wr)
+            rd = rb_0.SCA.I2C_read_ctrl(channel=3)
+            print("write: {} \t read: {}".format(wr, rd))
 
-    print("Testing multi-byte write:")
-    write_value = [0x2, 25, 27]
-    print("servant: 0x48, channel: 3, nbytes: 2, data:{}".format(write_value))
-    rb_0.SCA.I2C_write_multi(write_value, channel=3, servant=0x48)
-    print("read value = {}".format(rb_0.SCA.I2C_read_multi(channel=3, servant=0x48, nbytes = 2, reg=0x2)))
+        print("Testing multi-byte read:")
+        multi_out = rb_0.SCA.I2C_read_multi(channel=3, servant = 0x48, nbytes=2)
+        print("servant: 0x48, channel: 3, nbytes: 2, output = {}".format(multi_out))
+
+        print("Testing multi-byte write:")
+        write_value = [0x2, 25, (27&240)]
+        print("servant: 0x48, channel: 3, nbytes: 2, data:{}".format(write_value))
+        rb_0.SCA.I2C_write_multi(write_value, channel=3, servant=0x48)
+        read_value = rb_0.SCA.I2C_read_multi(channel=3, servant=0x48, nbytes = 2, reg=0x2)
+
+        if read_value == write_value[1:]:
+            print ("write/read successful!")
+        print("read value = {}".format(rb_0.SCA.I2C_read_multi(channel=3, servant=0x48, nbytes = 2, reg=0x2)))
 

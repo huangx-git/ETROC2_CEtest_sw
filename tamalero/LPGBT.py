@@ -198,7 +198,8 @@ class LPGBT(RegParser):
         self.wr_adr(0x36, 0x80)  # "LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT"
 
         # turn on clock outputs
-        self.configure_clocks(0x0fc0081f, 0x0)
+        print ("Configuring clocks now.")
+        self.configure_clocks(0x0fffffff, 0x0)
 
         # setup up sca eptx/rx
         # sca_setup() # maybe not needed???
