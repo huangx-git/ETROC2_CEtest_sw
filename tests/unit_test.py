@@ -12,7 +12,7 @@ if __name__ == '__main__':
               adr_table="module_test_fw/address_tables/etl_test_fw.xml",
               dummy=True)
 
-    rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=False))
+    rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=True))
 
     rb_0.DAQ_LPGBT.dump(20)
 
