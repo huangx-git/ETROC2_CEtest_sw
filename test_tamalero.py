@@ -30,6 +30,7 @@ if __name__ == '__main__':
 
     if args.power_up:
         rb_0.DAQ_LPGBT.power_up_init()
+        rb_0.DAQ_LPGBT.power_up_init_trigger()
 
     rb_0.configure()
 
@@ -92,9 +93,12 @@ if __name__ == '__main__':
     if args.reset_pattern_checker:
         print ("\nResetting the pattern checker.")
         #rb_0.DAQ_LPGBT.set_uplink_group_data_source("normal")
+        rb_0.DAQ_LPGBT.set_downlink_data_src('prbs')
         rb_0.DAQ_LPGBT.reset_pattern_checkers()
+
     if args.run_pattern_checker:
         print ("\nReading the pattern checker counter.")
-        rb_0.DAQ_LPGBT.set_uplink_group_data_source("normal")
+        #rb_0.DAQ_LPGBT.set_uplink_group_data_source("normal")
+        rb_0.DAQ_LPGBT.set_downlink_data_src('prbs')
         rb_0.DAQ_LPGBT.read_pattern_checkers()
 

@@ -14,6 +14,13 @@ class LPGBT(RegParser):
         self.trigger = trigger
         self.LPGBT_CONST = LpgbtConstants()
 
+    def power_up_init_trigger(self):
+        self.I2C_write(reg=0x118, val=6, master=2, slave_addr=0x70)
+        sleep (0.1)
+        self.I2C_write(reg=0x118, val=0, master=2, slave_addr=0x70)
+        self.I2C_write(reg=0xe0, val=0x0a, master=2, slave_addr=0x70)
+        self.I2C_write(reg=0xe2, val=0x0a, master=2, slave_addr=0x70)
+
     def power_up_init(self):
         self.wr_adr(0x118, 6)
         sleep (0.1)
@@ -77,6 +84,10 @@ class LPGBT(RegParser):
 
     def set_daq_uplink_alignment(self, val, link):
         id = "READOUT_BOARD_%d.LPGBT.DAQ.UPLINK.ALIGN_%d" % (self.rb, link)
+        self.kcu.write_node(id, val)
+
+    def set_trig_uplink_alignment(self, val, link):
+        id = "READOUT_BOARD_%d.LPGBT.TRIGGER.UPLINK.ALIGN_%d" % (self.rb, link)
         self.kcu.write_node(id, val)
 
     def configure_clocks(self, en_mask, invert_mask=0):
@@ -454,6 +465,14 @@ class LPGBT(RegParser):
             self.wr_reg("LPGBT.RW.TESTING.DPDATAPATTERN2", 0xff & (pattern >> 16))
             self.wr_reg("LPGBT.RW.TESTING.DPDATAPATTERN3", 0xff & (pattern >> 24))
 
+    def set_downlink_data_src(self, source):
+        id = "READOUT_BOARD_%d.LPGBT.DAQ.DOWNLINK.DL_SRC" % self.rb
+        if (source == "etroc"):
+            self.kcu.write_node(id, 0)
+        if (source == "upcnt"):
+            self.kcu.write_node(id, 1)
+        if (source == "prbs"):
+            self.kcu.write_node(id, 2)
 
     def set_ps0_phase(self, phase):
         phase = phase & 0x1ff

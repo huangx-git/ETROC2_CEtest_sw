@@ -54,7 +54,7 @@ class ReadoutBoard:
         # use n for loopback, 0 for internal data generators
         for i in range(28):
             self.DAQ_LPGBT.set_daq_uplink_alignment(2, i)  # 2 for daq loopback
-            # set_trig_uplink_alignment(4, i) # 4 for trigger loopback
+            self.DAQ_LPGBT.set_trig_uplink_alignment(6, i) # 4 for trigger loopback
 
         self.DAQ_LPGBT.configure_gpio_outputs()
         self.DAQ_LPGBT.initialize()
