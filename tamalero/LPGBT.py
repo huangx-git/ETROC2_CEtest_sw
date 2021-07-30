@@ -8,10 +8,17 @@ from tamalero.lpgbt_constants import LpgbtConstants
 
 class LPGBT(RegParser):
 
-    def __init__(self, rb=0, trigger=False, flavor='small'):
+    def __init__(self, rb=0, trigger=False, flavor='small', master=None):
+        '''
+        Initialize lpGBT for a certain readout board number (rb).
+        The trigger lpGBT is accessed through I2C of the master (= DAQ lpGBT).
+        '''
         self.nodes = []
         self.rb = rb
         self.trigger = trigger
+        if self.trigger:
+            assert isinstance(master, LPGBT), "Trying to initialize a trigger lpGBT but got no lpGBT master."
+            self.master = master
         self.LPGBT_CONST = LpgbtConstants()
 
     def power_up_init_trigger(self):
@@ -22,9 +29,18 @@ class LPGBT(RegParser):
         self.I2C_write(reg=0xe2, val=0x0a, master=2, slave_addr=0x70)
 
     def power_up_init(self):
-        self.wr_adr(0x118, 6)
-        sleep (0.1)
-        self.wr_adr(0x118, 0)
+        if not self.trigger:
+            self.wr_adr(0x118, 6)
+            sleep (0.1)
+            self.wr_adr(0x118, 0)
+        else:
+            #self.master.program_slave_from_file('configs/config_slave.txt')  #FIXME check if we still need this black box after power cycle.
+            self.master.I2C_write(reg=0x118, val=6, master=2, slave_addr=0x70)
+            sleep (0.1)
+            self.master.I2C_write(reg=0x118, val=0, master=2, slave_addr=0x70)
+            self.master.I2C_write(reg=0xe0, val=0x0a, master=2, slave_addr=0x70)
+            self.master.I2C_write(reg=0xe2, val=0x0a, master=2, slave_addr=0x70)
+            
 
     def connect_KCU(self, kcu):
         '''
@@ -62,7 +78,10 @@ class LPGBT(RegParser):
 
     def wr_reg(self, id, data):
         node = self.get_node(id)
-        self.write_reg(self.wr_adr, self.rd_adr, node, data)  # inherited from RegParser
+        if self.trigger:
+            self.write_reg(self.master.I2C_write, self.master.I2C_read, node, data)  # inherited from RegParser
+        else:
+            self.write_reg(self.wr_adr, self.rd_adr, node, data)  # inherited from RegParser
 
     def rd_reg(self, id):
         node = self.get_node(id)
@@ -82,12 +101,11 @@ class LPGBT(RegParser):
         self.wr_adr(0x54, defaults >> 8)
         self.wr_adr(0x55, defaults & 0xFF)
 
-    def set_daq_uplink_alignment(self, val, link):
-        id = "READOUT_BOARD_%d.LPGBT.DAQ.UPLINK.ALIGN_%d" % (self.rb, link)
-        self.kcu.write_node(id, val)
-
-    def set_trig_uplink_alignment(self, val, link):
-        id = "READOUT_BOARD_%d.LPGBT.TRIGGER.UPLINK.ALIGN_%d" % (self.rb, link)
+    def set_uplink_alignment(self, val, link):
+        if self.trigger:
+            id = "READOUT_BOARD_%d.LPGBT.DAQ.UPLINK.ALIGN_%d" % (self.rb, link)
+        else:
+            id = "READOUT_BOARD_%d.LPGBT.TRIGGER.UPLINK.ALIGN_%d" % (self.rb, link)
         self.kcu.write_node(id, val)
 
     def configure_clocks(self, en_mask, invert_mask=0):
@@ -584,17 +602,21 @@ class LPGBT(RegParser):
             read_values.append(self.rd_adr(tmp_adr).value())
 
         #read_value = self.rd_adr(self.LPGBT_CONST.I2CM0READ15+OFFSET_RD) # get the read value. this is just the first byte
-        
-        return read_values
+        if nbytes==1:
+            return read_values[0]  # this is so bad, but needed for compatibility with wr_reg
+        else:
+            return read_values
 
-    def program_slave_from_file (self, filename, master=2, slave_addr=0x70):
+    def program_slave_from_file (self, filename, master=2, slave_addr=0x70, verbose=False):
+        print("Programming Trigger lpGBT from file.")
         f = open(filename, "r")
         for line in f:
             adr, data = line.split(" ")
             adr = int(adr)
             wr = int(data.replace("0x",""), 16)
             if (wr != 0):
-                print("Writing address: %d, value: 0x%02x" % (adr, wr))
+                if verbose:
+                    print("Writing address: %d, value: 0x%02x" % (adr, wr))
                 self.I2C_write(reg=adr, val=wr, master=master, slave_addr=slave_addr)
                 rd = self.I2C_read(reg=adr, master=master, slave_addr=slave_addr)[0]
                 if (wr!=rd):

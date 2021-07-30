@@ -13,6 +13,7 @@ if __name__ == '__main__':
 
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--power_up', action='store_true', default=False, help="Do lpGBT power up init?")
+    argParser.add_argument('--reconfigure', action='store_true', default=False, help="Configure the RB electronics: SCA and lpGBT?")
     argParser.add_argument('--i2c_temp', action='store_true', default=False, help="Do temp monitoring on I2C from lpGBT?")
     argParser.add_argument('--i2c_sca', action='store_true', default=False, help="I2C tests on SCA?")
     argParser.add_argument('--run_pattern_checker', action='store_true', default=False, help="Read pattern checker?")
@@ -26,15 +27,18 @@ if __name__ == '__main__':
 
     kcu.status()
 
-    rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=False))
+    rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=True))
 
     if args.power_up:
         rb_0.DAQ_LPGBT.power_up_init()
-        rb_0.DAQ_LPGBT.power_up_init_trigger()
+        rb_0.TRIG_LPGBT.power_up_init()
 
-    rb_0.configure()
+    if args.power_up or args.reconfigure:
+        rb_0.configure()  # this is very slow, especially for the trigger lpGBT.
 
     rb_0.DAQ_LPGBT.status()
+    #FIXME add trigger status?
+    # READOUT_BOARD_0.LPGBT.TRIGGER.DOWNLINK.READY does not exist (yet)
 
     print("reading ADC values:")
     rb_0.SCA.read_adcs()

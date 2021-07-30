@@ -9,7 +9,7 @@ class ReadoutBoard:
     def __init__(self, rb=0, trigger=True, flavor='small'):
         '''
         create a readout board.
-        trigger: if true, configure a trigger lpGBT
+        trigger: if true, also configure a trigger lpGBT
         '''
         self.rb = rb
         self.flavor = flavor
@@ -19,11 +19,16 @@ class ReadoutBoard:
         self.DAQ_LPGBT = LPGBT(rb=rb, flavor=flavor)
         self.DAQ_LPGBT.parse_xml(os.path.expandvars('$TAMALERO_BASE/address_table/lpgbt.xml'))
 
+        if self.trigger:
+            self.TRIG_LPGBT = LPGBT(rb=rb, flavor=flavor, trigger=True, master=self.DAQ_LPGBT)
+            self.TRIG_LPGBT.parse_xml(os.path.expandvars('$TAMALERO_BASE/address_table/lpgbt.xml'))
+
         self.SCA = SCA(rb=rb, flavor=flavor)
 
     def connect_KCU(self, kcu):
         self.kcu = kcu
         self.DAQ_LPGBT.connect_KCU(kcu)
+        self.TRIG_LPGBT.connect_KCU(kcu)
         self.SCA.connect_KCU(kcu)
 
     def sca_setup(self):
@@ -51,10 +56,10 @@ class ReadoutBoard:
 
     def configure(self):
 
+        ## DAQ
         # use n for loopback, 0 for internal data generators
         for i in range(28):
-            self.DAQ_LPGBT.set_daq_uplink_alignment(2, i)  # 2 for daq loopback
-            self.DAQ_LPGBT.set_trig_uplink_alignment(6, i) # 4 for trigger loopback
+            self.DAQ_LPGBT.set_uplink_alignment(2, i)  # 2 for daq loopback
 
         self.DAQ_LPGBT.configure_gpio_outputs()
         self.DAQ_LPGBT.initialize()
@@ -62,6 +67,15 @@ class ReadoutBoard:
         self.DAQ_LPGBT.configure_eptx()
         self.DAQ_LPGBT.configure_eprx()
 
+        ## Trigger
+        for i in range(28):
+            self.TRIG_LPGBT.set_uplink_alignment(6, i) # 4 for trigger loopback
+
+        self.TRIG_LPGBT.configure_gpio_outputs()
+        self.TRIG_LPGBT.initialize()
+        self.TRIG_LPGBT.config_eport_dlls()
+        self.TRIG_LPGBT.configure_eptx()
+        self.TRIG_LPGBT.configure_eprx()
 
 
         # SCA init
