@@ -41,7 +41,6 @@ class LPGBT(RegParser):
             self.master.I2C_write(reg=0xe0, val=0x0a, master=2, slave_addr=0x70)
             self.master.I2C_write(reg=0xe2, val=0x0a, master=2, slave_addr=0x70)
             
-
     def connect_KCU(self, kcu):
         '''
         We need to connect to the KCU somehow

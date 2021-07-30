@@ -120,7 +120,6 @@ with your username, using the ports as given by the jupyter server.
 
 ![module connectivity](docs/module-connectivity.pdf)
 
-
 ## References
 
 [BU EDF](http://ohm.bu.edu/trac/edf/wiki/CMSMipTiming)
