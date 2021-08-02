@@ -21,26 +21,61 @@ class LPGBT(RegParser):
             self.master = master
         self.LPGBT_CONST = LpgbtConstants()
 
-    def power_up_init_trigger(self):
-        self.I2C_write(reg=0x118, val=6, master=2, slave_addr=0x70)
+    def reset_tx_mgt_by_mask(self, mask):
+        id = "MGT.MGT_TX_RESET"
+        self.kcu.write_node(id, mask)
+
+    def reset_rx_mgt_by_mask(self, mask):
+        id = "MGT.MGT_RX_RESET"
+        self.kcu.write_node(id, mask)
+
+    def reset_trigger_mgts(self):
+        id = "MGT.MGT_RX_RESET"
+        # trigger links on 1,3,5,7,9
+        self.kcu.write_node(id, 0x2aa)
+        self.kcu.write_node(id, 0x000)
+
+    def reset_daq_mgts(self):
+
+        for id in ["MGT.MGT_RX_RESET", "MGT.MGT_TX_RESET"]:
+            # daq links on 0,2,4,6,8
+            self.kcu.write_node(id, 0x155)
+            self.kcu.write_node(id, 0x000)
+
+    def init_trigger_links(self):
+        if self.trigger:
+            lpgbt = self.master
+        else:
+            lpgbt = self
+
+        lpgbt.I2C_write(reg=0x118, val=6, master=2, slave_addr=0x70)
         sleep (0.1)
-        self.I2C_write(reg=0x118, val=0, master=2, slave_addr=0x70)
-        self.I2C_write(reg=0xe0, val=0x0a, master=2, slave_addr=0x70)
-        self.I2C_write(reg=0xe2, val=0x0a, master=2, slave_addr=0x70)
+        lpgbt.I2C_write(reg=0x118, val=0, master=2, slave_addr=0x70)
+        # eport rx inversions
+        lpgbt.I2C_write(reg=0xe0, val=0x0a, master=2, slave_addr=0x70)
+        lpgbt.I2C_write(reg=0xe2, val=0x0a, master=2, slave_addr=0x70)
+
+        self.reset_trigger_mgts()
 
     def power_up_init(self):
         if not self.trigger:
+
+            # toggle the uplink to and from 40MHz clock, for some reason this is
+            # needed for the mgt to lock
+
             self.wr_adr(0x118, 6)
-            sleep (0.1)
+            sleep(0.1)
             self.wr_adr(0x118, 0)
         else:
-            #self.master.program_slave_from_file('configs/config_slave.txt')  #FIXME check if we still need this black box after power cycle.
-            self.master.I2C_write(reg=0x118, val=6, master=2, slave_addr=0x70)
-            sleep (0.1)
-            self.master.I2C_write(reg=0x118, val=0, master=2, slave_addr=0x70)
-            self.master.I2C_write(reg=0xe0, val=0x0a, master=2, slave_addr=0x70)
-            self.master.I2C_write(reg=0xe2, val=0x0a, master=2, slave_addr=0x70)
-            
+            # servant lpgbt base configuration
+            self.master.program_slave_from_file('configs/config_slave.txt')  #FIXME check if we still need this black box after power cycle.
+
+            # toggle the uplink to and from 40MHz clock, for some reason this is
+            # needed for the mgt to lock
+
+            self.init_trigger_links()
+
+
     def connect_KCU(self, kcu):
         '''
         We need to connect to the KCU somehow
@@ -102,10 +137,16 @@ class LPGBT(RegParser):
 
     def set_uplink_alignment(self, val, link):
         if self.trigger:
-            id = "READOUT_BOARD_%d.LPGBT.DAQ.UPLINK.ALIGN_%d" % (self.rb, link)
-        else:
+            print ("Setting uplink alignment for trigger link %i to %i"%(link, val))
             id = "READOUT_BOARD_%d.LPGBT.TRIGGER.UPLINK.ALIGN_%d" % (self.rb, link)
+        else:
+            print ("Setting uplink alignment for DAQ link %i to %i"%(link, val))
+            id = "READOUT_BOARD_%d.LPGBT.DAQ.UPLINK.ALIGN_%d" % (self.rb, link)
         self.kcu.write_node(id, val)
+
+    #def find_uplink_alignment(self):
+    #    for i in range(8):
+
 
     def configure_clocks(self, en_mask, invert_mask=0):
         for i in range(27):
@@ -182,13 +223,13 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.EPORTRX.EPRX6DATARATE", 1)
     
         #set banks to fixed phase
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX0TRACKMODE", 0)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX1TRACKMODE", 0)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX2TRACKMODE", 0)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX3TRACKMODE", 0)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX4TRACKMODE", 0)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX5TRACKMODE", 0)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX6TRACKMODE", 0)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX0TRACKMODE", 2)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX1TRACKMODE", 2)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX2TRACKMODE", 2)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX3TRACKMODE", 2)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX4TRACKMODE", 2)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX5TRACKMODE", 2)
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX6TRACKMODE", 2)
     
         #enable inputs
         self.wr_reg("LPGBT.RWF.EPORTRX.EPRX00ENABLE", 1)
@@ -606,7 +647,7 @@ class LPGBT(RegParser):
         else:
             return read_values
 
-    def program_slave_from_file (self, filename, master=2, slave_addr=0x70, verbose=False):
+    def program_slave_from_file (self, filename, master=2, slave_addr=0x70, verbose=True):
         print("Programming Trigger lpGBT from file.")
         f = open(filename, "r")
         for line in f:
@@ -617,7 +658,7 @@ class LPGBT(RegParser):
                 if verbose:
                     print("Writing address: %d, value: 0x%02x" % (adr, wr))
                 self.I2C_write(reg=adr, val=wr, master=master, slave_addr=slave_addr)
-                rd = self.I2C_read(reg=adr, master=master, slave_addr=slave_addr)[0]
+                rd = self.I2C_read(reg=adr, master=master, slave_addr=slave_addr)
                 if (wr!=rd):
                     print("LPGBT readback error 0x%02X != 0x%02X at adr %d" % (wr, rd, adr))
 

@@ -59,7 +59,7 @@ class ReadoutBoard:
         ## DAQ
         # use n for loopback, 0 for internal data generators
         for i in range(28):
-            self.DAQ_LPGBT.set_uplink_alignment(2, i)  # 2 for daq loopback
+            self.DAQ_LPGBT.set_uplink_alignment(1, i)  # was 2 for daq loopback. does this behave stochastically?
 
         self.DAQ_LPGBT.configure_gpio_outputs()
         self.DAQ_LPGBT.initialize()
@@ -69,13 +69,13 @@ class ReadoutBoard:
 
         ## Trigger
         for i in range(28):
-            self.TRIG_LPGBT.set_uplink_alignment(6, i) # 4 for trigger loopback
+            self.TRIG_LPGBT.set_uplink_alignment(5, i) # 4 for trigger loopback
 
-        self.TRIG_LPGBT.configure_gpio_outputs()
-        self.TRIG_LPGBT.initialize()
-        self.TRIG_LPGBT.config_eport_dlls()
-        self.TRIG_LPGBT.configure_eptx()
-        self.TRIG_LPGBT.configure_eprx()
+        #self.TRIG_LPGBT.configure_gpio_outputs()
+        #self.TRIG_LPGBT.initialize()
+        #self.TRIG_LPGBT.config_eport_dlls()
+        #self.TRIG_LPGBT.configure_eptx()
+        #self.TRIG_LPGBT.configure_eprx()
 
 
         # SCA init
