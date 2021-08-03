@@ -1,5 +1,7 @@
 from tamalero.RegParser import RegParser
-
+import os
+import pickle
+import copy
 import random
 import tamalero.colors as colors
 from time import sleep
@@ -435,8 +437,14 @@ class LPGBT(RegParser):
         self.kcu.action("READOUT_BOARD_%d.LPGBT.PATTERN_CHECKER.CNT_RESET" % self.rb)
     
     
-    def read_pattern_checkers(self, quiet=False):
-    
+    def read_pattern_checkers(self, quiet=False, log=True, log_dir="./tests/"):
+        if log_dir and os.path.isfile(log_dir + "pattern_checks.p") and log:
+            log_dict = pickle.load(open(log_dir + "pattern_checks.p", "rb"))
+        elif log:
+            default_dict = {key:{"error":[], "total_frames":[]} for key in range(24)}
+            link_dict = {"PRBS":copy.deepcopy(default_dict), "UPCNT":copy.deepcopy(default_dict)}
+            log_dict = {"Link 0":copy.deepcopy(link_dict), "Link 1":copy.deepcopy(link_dict)}
+
         for link in (0, 1):
     
             prbs_en = self.kcu.read_node("READOUT_BOARD_%d.LPGBT.PATTERN_CHECKER.CHECK_PRBS_EN_%d" % (self.rb, link))
@@ -480,14 +488,18 @@ class LPGBT(RegParser):
                             upcnt_errs[i] = errs
                         if mode == "PRBS":
                             prbs_errs[i] = errs
+                        if log:
+                            log_dict["Link {}".format(link)][mode][i]["error"].append(int(errs))
+                            log_dict["Link {}".format(link)][mode][i]["total_frames"].append(int(uptime))
     
                     else:
                         if mode == "UPCNT":
                             upcnt_errs[i] = 0xFFFFFFFF
                         if mode == "PRBS":
                             prbs_errs[i] = 0xFFFFFFFF
-    
-        return (prbs_errs, upcnt_errs)
+        if log and log_dir:
+            pickle.dump(log_dict, open(log_dir + "pattern_checks.p", "wb"))
+        return log_dict
 
     def set_uplink_group_data_source(self, type, pattern=0x55555555):
         setting = 0
