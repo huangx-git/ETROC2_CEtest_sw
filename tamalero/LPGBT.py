@@ -137,18 +137,16 @@ class LPGBT(RegParser):
         self.wr_adr(0x54, defaults >> 8)
         self.wr_adr(0x55, defaults & 0xFF)
 
-    def set_uplink_alignment(self, val, link):
+    def set_uplink_alignment(self, val, link, quiet=False):
         if self.trigger:
-            print ("Setting uplink alignment for trigger link %i to %i"%(link, val))
+            if not quiet:
+                print ("Setting uplink alignment for trigger link %i to %i"%(link, val))
             id = "READOUT_BOARD_%d.LPGBT.TRIGGER.UPLINK.ALIGN_%d" % (self.rb, link)
         else:
-            print ("Setting uplink alignment for DAQ link %i to %i"%(link, val))
+            if not quiet:
+                print ("Setting uplink alignment for DAQ link %i to %i"%(link, val))
             id = "READOUT_BOARD_%d.LPGBT.DAQ.UPLINK.ALIGN_%d" % (self.rb, link)
         self.kcu.write_node(id, val)
-
-    #def find_uplink_alignment(self):
-    #    for i in range(8):
-
 
     def configure_clocks(self, en_mask, invert_mask=0):
         for i in range(27):
@@ -384,13 +382,6 @@ class LPGBT(RegParser):
 
         # setup up sca eptx/rx
         # sca_setup() # maybe not needed???
-
-    def status(self):
-        print("Readout Board %s LPGBT Link Status:" % self.rb)
-        print("{:<8}{:<8}{:<50}{:<8}".format("Address", "Perm.", "Name", "Value"))
-        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.READY" % self.rb))
-        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.UPLINK.READY" % self.rb))
-        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.UPLINK.FEC_ERR_CNT" % self.rb))
 
     def loopback(self, nloops=100):
         for i in range(nloops):

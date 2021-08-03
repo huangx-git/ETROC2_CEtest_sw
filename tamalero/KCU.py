@@ -45,12 +45,16 @@ class KCU:
         self.action_reg(reg)
 
     def status(self):
-        print("LPGBT Link Status:")
+        print("LPGBT Link Status from KCU:")
         for id in self.hw.getNodes(".*LPGBT.*DAQ.*DOWNLINK.*READY"):
             self.print_reg(self.hw.getNode(id))
         for id in self.hw.getNodes(".*LPGBT.*DAQ.*UPLINK.*READY"):
             self.print_reg(self.hw.getNode(id))
         for id in self.hw.getNodes(".*LPGBT.*DAQ.*UPLINK.*FEC_ERR_CNT"):
+            self.print_reg(self.hw.getNode(id))
+        for id in self.hw.getNodes(".*LPGBT.*TRIGGER.*UPLINK.*READY"):
+            self.print_reg(self.hw.getNode(id))
+        for id in self.hw.getNodes(".*LPGBT.*TRIGGER.*UPLINK.*FEC_ERR_CNT"):
             self.print_reg(self.hw.getNode(id))
 
     def print_reg(self, reg):

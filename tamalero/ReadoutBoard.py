@@ -3,6 +3,7 @@ from tamalero.LPGBT import LPGBT
 from tamalero.SCA import SCA
 from tamalero.utils import get_temp
 
+from time import sleep
 
 class ReadoutBoard:
 
@@ -54,12 +55,50 @@ class ReadoutBoard:
         self.DAQ_LPGBT.set_gpio(bit, 0)
         self.DAQ_LPGBT.set_gpio(bit, 1)
 
+    def find_uplink_alignment(self, scan_time=1, default=0):
+        print ("Scanning for uplink alignment")
+        alignment = {}
+        # make alignment dict
+        for link in ['Link 0', 'Link 1']:
+            alignment[link] = {i:default for i in range(24)}
+        # now, scan
+        for shift in range(8):
+            for channel in range(24):
+                self.DAQ_LPGBT.set_uplink_alignment(shift, channel, quiet=True)
+                self.TRIG_LPGBT.set_uplink_alignment(shift, channel, quiet=True)
+            self.DAQ_LPGBT.set_uplink_group_data_source("normal")  # actually needed??
+            self.DAQ_LPGBT.set_downlink_data_src('upcnt')
+            self.DAQ_LPGBT.reset_pattern_checkers()
+            sleep(scan_time)
+            res = self.DAQ_LPGBT.read_pattern_checkers(log_dir=None, quiet=True)
+            for link in ['Link 0', 'Link 1']:
+                for channel in range(24):
+                    if res[link]['UPCNT'][channel]['error'][0] == 0:
+                        print ("Found uplink alignment for %s, channel %s: %s"%(link, channel, shift))
+                        alignment[link][channel] = shift
+
+        # Reset alignment to default values for the channels where no good alignment has been found
+        print ("Now setting uplink alignment to optimal values (default values if no good alignment was found)")
+        for channel in range(24):
+            self.DAQ_LPGBT.set_uplink_alignment(alignment['Link 0'][channel], channel, quiet=True)
+            self.TRIG_LPGBT.set_uplink_alignment(alignment['Link 1'][channel], channel, quiet=True)
+
+        return alignment
+
+    def status(self):
+        print("Readout Board %s LPGBT Link Status:" % self.rb)
+        print("{:<8}{:<8}{:<50}{:<8}".format("Address", "Perm.", "Name", "Value"))
+        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.READY" % self.rb))
+        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.UPLINK.READY" % self.rb))
+        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.UPLINK.FEC_ERR_CNT" % self.rb))
+        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.READY" % self.rb))
+        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT" % self.rb))
+
     def configure(self):
 
         ## DAQ
-        # use n for loopback, 0 for internal data generators
-        for i in range(28):
-            self.DAQ_LPGBT.set_uplink_alignment(1, i)  # was 2 for daq loopback. does this behave stochastically?
+        #for i in range(28):
+        #    self.DAQ_LPGBT.set_uplink_alignment(1, i)  # was 2 for daq loopback. does this behave stochastically?
 
         self.DAQ_LPGBT.configure_gpio_outputs()
         self.DAQ_LPGBT.initialize()
@@ -68,8 +107,8 @@ class ReadoutBoard:
         self.DAQ_LPGBT.configure_eprx()
 
         ## Trigger
-        for i in range(28):
-            self.TRIG_LPGBT.set_uplink_alignment(5, i) # 4 for trigger loopback
+        #for i in range(28):
+        #    self.TRIG_LPGBT.set_uplink_alignment(5, i) # 4 for trigger loopback
 
         #self.TRIG_LPGBT.configure_gpio_outputs()
         #self.TRIG_LPGBT.initialize()
@@ -77,6 +116,7 @@ class ReadoutBoard:
         #self.TRIG_LPGBT.configure_eptx()
         #self.TRIG_LPGBT.configure_eprx()
 
+        _ = self.find_uplink_alignment()
 
         # SCA init
         self.sca_hard_reset()

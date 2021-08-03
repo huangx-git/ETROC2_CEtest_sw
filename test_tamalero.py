@@ -17,7 +17,7 @@ if __name__ == '__main__':
     argParser.add_argument('--i2c_temp', action='store_true', default=False, help="Do temp monitoring on I2C from lpGBT?")
     argParser.add_argument('--i2c_sca', action='store_true', default=False, help="I2C tests on SCA?")
     argParser.add_argument('--run_pattern_checker', action='store_true', default=False, help="Read pattern checker?")
-    argParser.add_argument('--reset_pattern_checker', action='store_true', default=False, help="Reset pattern checker?")
+    argParser.add_argument('--reset_pattern_checker', action='store', choices=[None, 'prbs', 'upcnt'], default=None, help="Reset pattern checker?")
     args = argParser.parse_args()
 
 
@@ -39,9 +39,7 @@ if __name__ == '__main__':
         rb_0.configure()  # this is very slow, especially for the trigger lpGBT.
         time.sleep(1.0)
 
-    rb_0.DAQ_LPGBT.status()
-    #FIXME add trigger status?
-    # READOUT_BOARD_0.LPGBT.TRIGGER.DOWNLINK.READY does not exist (yet)
+    rb_0.status()
 
     print("reading ADC values:")
     rb_0.SCA.read_adcs()
@@ -100,14 +98,12 @@ if __name__ == '__main__':
     if args.reset_pattern_checker:
         print ("\nResetting the pattern checker.")
         rb_0.DAQ_LPGBT.set_uplink_group_data_source("normal")
-        rb_0.DAQ_LPGBT.set_downlink_data_src('upcnt')
+        rb_0.DAQ_LPGBT.set_downlink_data_src(args.reset_pattern_checker)
         time.sleep(0.1)
         rb_0.DAQ_LPGBT.reset_pattern_checkers()
         time.sleep(0.1)
 
     if args.run_pattern_checker:
         print ("\nReading the pattern checker counter.")
-        rb_0.DAQ_LPGBT.set_uplink_group_data_source("normal")
-        rb_0.DAQ_LPGBT.set_downlink_data_src('upcnt')
         rb_0.DAQ_LPGBT.read_pattern_checkers()
 
