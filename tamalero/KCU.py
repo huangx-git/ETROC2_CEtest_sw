@@ -19,6 +19,14 @@ class KCU:
         else:
             self.hw = None
         self.readout_boards = []
+        self.auto_dispatch = True  # default -> True
+
+    def toggle_dispatch(self):
+        self.auto_dispatch = False
+
+    def dispatch(self):
+        self.hw.dispatch()
+        self.auto_dispatch = True
 
     def write_node(self, id, value):
         reg = self.hw.getNode(id)
@@ -26,19 +34,22 @@ class KCU:
             self.action_reg(reg)
         else:
             reg.write(value)
-            self.hw.dispatch()
+            if self.auto_dispatch:
+                self.dispatch()
 
     def read_node(self, id):
         reg = self.hw.getNode(id)
         ret = reg.read()
-        self.hw.dispatch()
+        if self.auto_dispatch:
+            self.dispatch()
         return ret
 
     def action_reg(self, reg):
         addr = reg.getAddress()
         mask = reg.getMask()
         self.hw.getClient().write(addr, mask)
-        self.hw.dispatch()
+        if self.auto_dispatch:
+            self.dispatch()
 
     def action(self, id):
         reg = self.hw.getNode(id)
@@ -60,7 +71,7 @@ class KCU:
     def print_reg(self, reg):
         val = reg.read()
         id = reg.getPath()
-        self.hw.dispatch()
+        self.dispatch()
         print(self.format_reg(reg.getAddress(), id[4:], val,
                               self.format_permission(reg.getPermission())))
 

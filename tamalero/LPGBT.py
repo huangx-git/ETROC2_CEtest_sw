@@ -54,8 +54,8 @@ class LPGBT(RegParser):
         sleep (0.1)
         lpgbt.I2C_write(reg=0x118, val=0, master=2, slave_addr=0x70)
         # eport rx inversions
-        lpgbt.I2C_write(reg=0xe0, val=0x0a, master=2, slave_addr=0x70)
-        lpgbt.I2C_write(reg=0xe2, val=0x0a, master=2, slave_addr=0x70)
+        for i in [0,6,10,12,14,20,22]:
+            lpgbt.I2C_write(reg=0xcc+i, val=0x0a, master=2, slave_addr=0x70)
 
         self.reset_trigger_mgts()
 
@@ -90,12 +90,16 @@ class LPGBT(RegParser):
             self.kcu.write_node(id, 2)
 
     def wr_adr(self, adr, data):
+        defer= not self.kcu.auto_dispatch  # if auto dispatch is turned off, keep it off.
+        self.kcu.toggle_dispatch()  # turn off auto dispatch for this transaction
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_GBTX_ADDR" % self.rb, 115)
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_REGISTER_ADDR" % self.rb, adr)
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_DATA_TO_GBTX" % self.rb, data)
         self.kcu.action("READOUT_BOARD_%d.SC.TX_WR" % self.rb)
         self.kcu.action("READOUT_BOARD_%d.SC.TX_START_WRITE" % self.rb)
-        self.rd_flush()
+        if not defer:  # turn auto dispatch back on only if it wasn't set to false before
+            self.kcu.dispatch()
+        #self.rd_flush()
 
     def rd_adr(self, adr):
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_GBTX_ADDR" % self.rb, 115)
@@ -173,20 +177,20 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.EPORTTX.EPTX3DATARATE", 0x3)
 
         #EPTXxxEnable
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX12ENABLE", 0x1)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX00ENABLE", 0x1)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX02ENABLE", 0x1)
         self.wr_reg("LPGBT.RWF.EPORTTX.EPTX10ENABLE", 0x1)
         self.wr_reg("LPGBT.RWF.EPORTTX.EPTX20ENABLE", 0x1)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX00ENABLE", 0x1)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX23ENABLE", 0x1)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX02ENABLE", 0x1)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX22ENABLE", 0x1)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX30ENABLE", 0x1)
 
         #EPTXxxDriveStrength
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX6DRIVESTRENGTH", 0x3)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX0DRIVESTRENGTH", 0x3)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX2DRIVESTRENGTH", 0x3)
         self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX4DRIVESTRENGTH", 0x3)
         self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX8DRIVESTRENGTH", 0x3)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX0DRIVESTRENGTH", 0x3)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX11DRIVESTRENGTH", 0x3)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX2DRIVESTRENGTH", 0x3)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX10DRIVESTRENGTH", 0x3)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX12DRIVESTRENGTH", 0x3)
 
         # enable mirror feature
         self.wr_reg("LPGBT.RWF.EPORTTX.EPTX0MIRRORENABLE", 0x1)
@@ -267,7 +271,7 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.EPORTRX.EPRX62ENABLE", 1)
         self.wr_reg("LPGBT.RWF.EPORTRX.EPRX63ENABLE", 1)
     
-        for i in [22]:
+        for i in [0,10,12,16,22]:
             self.wr_reg("LPGBT.RWF.EPORTRX.EPRX_CHN_CONTROL.EPRX%dINVERT" % i, 1)
     
         #enable 100 ohm termination
@@ -558,7 +562,7 @@ class LPGBT(RegParser):
         address_and_data.insert(1, regh)
         nbytes = len(address_and_data)
         #import pdb; pdb.set_trace()
-    
+
         # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-write-cr-0x0
         self.wr_adr(self.LPGBT_CONST.I2CM0DATA0+OFFSET_WR, nbytes<<self.LPGBT_CONST.I2CM_CR_NBYTES_of | 2<<self.LPGBT_CONST.I2CM_CR_FREQ_of)
         self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_CRA)# write config registers (a)
@@ -602,7 +606,7 @@ class LPGBT(RegParser):
     
         regl = (int(reg) & 0xFF) >> 0
         regh = (int(reg)) >> 8
-    
+
         # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-write-cr-0x0
         self.wr_adr(self.LPGBT_CONST.I2CM0DATA0+OFFSET_WR, 2<<self.LPGBT_CONST.I2CM_CR_NBYTES_of | (2<<self.LPGBT_CONST.I2CM_CR_FREQ_of))
         self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_CRA) #write to config register

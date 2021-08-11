@@ -29,7 +29,8 @@ class ReadoutBoard:
     def connect_KCU(self, kcu):
         self.kcu = kcu
         self.DAQ_LPGBT.connect_KCU(kcu)
-        self.TRIG_LPGBT.connect_KCU(kcu)
+        if self.trigger:
+            self.TRIG_LPGBT.connect_KCU(kcu)
         self.SCA.connect_KCU(kcu)
 
     def sca_setup(self):
@@ -65,7 +66,8 @@ class ReadoutBoard:
         for shift in range(8):
             for channel in range(24):
                 self.DAQ_LPGBT.set_uplink_alignment(shift, channel, quiet=True)
-                self.TRIG_LPGBT.set_uplink_alignment(shift, channel, quiet=True)
+                if self.trigger:
+                    self.TRIG_LPGBT.set_uplink_alignment(shift, channel, quiet=True)
             self.DAQ_LPGBT.set_uplink_group_data_source("normal")  # actually needed??
             self.DAQ_LPGBT.set_downlink_data_src('upcnt')
             self.DAQ_LPGBT.reset_pattern_checkers()
@@ -81,7 +83,8 @@ class ReadoutBoard:
         print ("Now setting uplink alignment to optimal values (default values if no good alignment was found)")
         for channel in range(24):
             self.DAQ_LPGBT.set_uplink_alignment(alignment['Link 0'][channel], channel, quiet=True)
-            self.TRIG_LPGBT.set_uplink_alignment(alignment['Link 1'][channel], channel, quiet=True)
+            if self.trigger:
+                self.TRIG_LPGBT.set_uplink_alignment(alignment['Link 1'][channel], channel, quiet=True)
 
         return alignment
 
