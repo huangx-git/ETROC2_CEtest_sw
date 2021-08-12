@@ -594,7 +594,7 @@ class LPGBT(RegParser):
                 print ("Write not successfull!")
                 break
 
-    def I2C_read(self, reg=0x0, master=2, slave_addr=0x70, nbytes=1):
+    def I2C_read(self, reg=0x0, master=2, slave_addr=0x70, nbytes=1, quiet=False):
         #https://gitlab.cern.ch/lpgbt/pigbt/-/blob/master/backend/apiapp/lpgbtLib/lowLevelDrivers/MASTERI2C.py#L83
         i2cm      = master
 	
@@ -638,7 +638,8 @@ class LPGBT(RegParser):
             #    print("The I2C transaction was not acknowledged by the I2C slave")
             retries += 1
             if retries > 50:
-                print ("Read not successfull!")
+                if not quiet:
+                    print ("Read not successfull!")
                 return None
 
         read_values = []
@@ -673,6 +674,58 @@ class LPGBT(RegParser):
         res = self.I2C_read(reg=0x0, master=1, slave_addr=0x48, nbytes=2)
         temp_dig = (res[0] << 4) + (res[1] >> 4)
         return temp_dig*0.0625
+
+    def get_board_id(self):
+        '''
+        |-------+------+---------------+--------------------------------------|
+        | Range | Bits | Meaning       | Description                          |
+        |-------+------+---------------+--------------------------------------|
+        |  15:0 |   16 | Serial Number | Board serial number                  |
+        | 31:29 |    3 | Version Major | Major version of RB (e.g. 1 in v1.6) |
+        | 28:25 |    4 | Version Minor | Major version of RB (e.g. 6 in v1.6) |
+        | 24:23 |    2 | LPGBT Version | 0x0 = v0; 0x1 = v1                   |
+        | 22:19 |    4 | Board Flavor  | 0x0 = 3 module; 0x1 =                |
+        |-------+------+---------------+--------------------------------------|
+
+        * User IDs
+        #+begin_src python :results output
+        def user_id (serial, major, minor, lpgbt, flavor):
+          data = 0
+          data |= serial & 0xffff
+          data |= (major & 0x7) << 29
+          data |= (minor & 0xf) << 25
+          data |= (lpgbt & 0x3) << 23
+          data |= (flavor & 0xf) << 19
+          return data
+
+        0x003 -> 7:0
+        0x002 -> 15:8
+        0x001 -> 23:16
+        0x000 -> 
+
+        '''
+
+        board_id = {}
+        flavors = {0: '3 module', 1: '6 module', 2: '7 module'}
+
+        user_id =   self.rd_adr(0x007).value() << 24 |\
+                    self.rd_adr(0x006).value() << 16 |\
+                    self.rd_adr(0x005).value() << 8 |\
+                    self.rd_adr(0x004).value()
+        board_id['rb_ver_major']    = user_id >> 29
+        board_id['rb_ver_minor']    = user_id >> 25 & (2**4-1)
+        board_id['lpgbt_ver']       = user_id >> 23 & (2**2-1)
+        board_id['rb_flavor']       = flavors[user_id >> 19 & (2**4-1)]
+        board_id['serial_number']   = user_id & (2**16-1)
+        board_id['lpgbt_serial']    = self.get_chip_serial()
+        
+        return board_id
+
+    def get_chip_serial(self):
+        return self.rd_adr(0x003).value() << 24 |\
+               self.rd_adr(0x002).value() << 16 |\
+               self.rd_adr(0x001).value() << 8 |\
+               self.rd_adr(0x000).value()
 
 
 if __name__ == '__main__':

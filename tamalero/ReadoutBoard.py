@@ -20,17 +20,22 @@ class ReadoutBoard:
         self.DAQ_LPGBT = LPGBT(rb=rb, flavor=flavor)
         self.DAQ_LPGBT.parse_xml(os.path.expandvars('$TAMALERO_BASE/address_table/lpgbt.xml'))
 
-        if self.trigger:
-            self.TRIG_LPGBT = LPGBT(rb=rb, flavor=flavor, trigger=True, master=self.DAQ_LPGBT)
-            self.TRIG_LPGBT.parse_xml(os.path.expandvars('$TAMALERO_BASE/address_table/lpgbt.xml'))
-
         self.SCA = SCA(rb=rb, flavor=flavor)
+
+    def get_trigger(self):
+        # Self-check if a trigger lpGBT is present, if trigger is not explicitely set to False
+        if self.DAQ_LPGBT.I2C_read(reg=0x0, master=2, slave_addr=0x70, quiet=True) is not None and self.trigger:
+            self.trigger = True
+
+        if self.trigger:
+            self.TRIG_LPGBT = LPGBT(rb=self.rb, flavor=self.flavor, master=self.DAQ_LPGBT)
+            self.TRIG_LPGBT.parse_xml(os.path.expandvars('$TAMALERO_BASE/address_table/lpgbt.xml'))
+            self.TRIG_LPGBT.connect_KCU(self.kcu)
+
 
     def connect_KCU(self, kcu):
         self.kcu = kcu
         self.DAQ_LPGBT.connect_KCU(kcu)
-        if self.trigger:
-            self.TRIG_LPGBT.connect_KCU(kcu)
         self.SCA.connect_KCU(kcu)
 
     def sca_setup(self):

@@ -6,6 +6,17 @@ from tamalero.SCA import SCA_CONTROL
 import time
 import random
 
+def make_version_header(res):
+    
+    print ("\n\n ### Testing ETL Readout Board: ###")
+    print ("- Version: %s.%s"%(res["rb_ver_major"], res["rb_ver_minor"]))
+    print ("- Flavor: %s"%res["rb_flavor"])
+    print ("- Serial number: %s"%res["serial_number"])
+    print ("- lpGBT version: %s"%res["lpgbt_ver"])
+    print ("- lpGBT serial number: %s"%res['lpgbt_serial'])
+    print ("- Trigger lpGBT mounted: %s"%res['trigger'])
+    print ("\n")
+
 if __name__ == '__main__':
 
 
@@ -27,17 +38,23 @@ if __name__ == '__main__':
 
     kcu.status()
 
-    rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=True))
+    rb_0 = kcu.connect_readout_board(ReadoutBoard(0))
+    rb_0.get_trigger()
 
     if args.power_up:
         rb_0.DAQ_LPGBT.power_up_init()
-        rb_0.TRIG_LPGBT.power_up_init()
+        if rb_0.trigger:
+            rb_0.TRIG_LPGBT.power_up_init()
         #rb_0.DAQ_LPGBT.power_up_init_trigger()
         time.sleep(1.0)
 
     if args.power_up or args.reconfigure:
         rb_0.configure()  # this is very slow, especially for the trigger lpGBT.
         time.sleep(1.0)
+
+    res = rb_0.DAQ_LPGBT.get_board_id()
+    res['trigger'] = 'yes' if rb_0.trigger else 'no'
+    make_version_header(res)
 
     rb_0.status()
 
