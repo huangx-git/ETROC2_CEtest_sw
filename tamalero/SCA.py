@@ -107,6 +107,7 @@ class SCA:
     def __init__(self, rb=0, flavor='small'):
         self.rb = rb
         self.flavor = flavor
+        self.err_count = 0
         self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping.yaml'), 'adc')
 
     def connect_KCU(self, kcu):
@@ -174,24 +175,36 @@ class SCA:
         # TODO: read reply
         err = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_ERR" % self.rb)  # 8 bit
         if err > 0:
-            if (err & 0x1):
-                print("SCA Read Error :: Generic Error Flag")
-            if (err & 0x2):
-                print("SCA Read Error :: Invalid Channel Request")
-            if (err & 0x4):
-                print("SCA Read Error :: Invalid Command Request")
-            if (err & 0x8):
-                print("SCA Read Error :: Invalid Transaction Number Request")
-            if (err & 0x10):
-                print("SCA Read Error :: Invalid Length")
-            if (err & 0x20):
-                print("SCA Read Error :: Channel Not Enabled")
-            if (err & 0x40):
-                print("SCA Read Error :: Command In Treatment")
-    
+            if self.err_count < 10:
+                self.rw_cmd(cmd, channel, data, adr=adr, transid=transid)
+                self.err_count += 1
+            else:
+                print ("Failed %s times: %s. Last error:"%self.err_count)
+                if (err & 0x1):
+                    print("SCA Read Error :: Generic Error Flag")
+                if (err & 0x2):
+                    print("SCA Read Error :: Invalid Channel Request")
+                if (err & 0x4):
+                    print("SCA Read Error :: Invalid Command Request")
+                if (err & 0x8):
+                    print("SCA Read Error :: Invalid Transaction Number Request")
+                if (err & 0x10):
+                    print("SCA Read Error :: Invalid Length")
+                if (err & 0x20):
+                    print("SCA Read Error :: Channel Not Enabled")
+                if (err & 0x40):
+                    print("SCA Read Error :: Command In Treatment")
+        else:
+            self.err_count = 0
+
         if transid != self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_TRANSID" % self.rb):
-            print("SCA Read Error :: Transaction ID Does Not Match")
-    
+            if self.err_count < 10:
+                self.rw_cmd(cmd, channel, data, adr=adr, transid=transid)
+                self.err_count += 1
+            else:
+                print("SCA Read Error :: Transaction ID Does Not Match")
+        else:
+            self.err_count = 0
     
         return self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_DATA" % self.rb)  # 32 bit read data
     
@@ -261,10 +274,16 @@ class SCA:
             print("CRD wr=%02X, rd=%02X" % (crd, crd_rd))
 
     def read_adc(self, MUX_reg = 0):
+        #print ("enable")
         self.configure_control_registers(en_adc=1) #enable ADC
+        #time.sleep(0.01)
+        #print ("configure")
         self.rw_reg(SCA_ADC.ADC_W_MUX, MUX_reg) #configure register we want to read
+        #print ("execute")
         val = self.rw_reg(SCA_ADC.ADC_GO, 0x01).value() #execute and read ADC_GO command
+        #print ("reset")
         self.rw_reg(SCA_ADC.ADC_W_MUX, 0x0) #reset register to default (0)
+        #print ("done")
         return val
 
     def read_adcs(self): #read and print all adc values

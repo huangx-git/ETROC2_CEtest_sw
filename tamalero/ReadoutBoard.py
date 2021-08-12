@@ -24,13 +24,22 @@ class ReadoutBoard:
 
     def get_trigger(self):
         # Self-check if a trigger lpGBT is present, if trigger is not explicitely set to False
-        if self.DAQ_LPGBT.I2C_read(reg=0x0, master=2, slave_addr=0x70, quiet=True) is not None and self.trigger:
+        sleep(0.5)
+        test_read = self.DAQ_LPGBT.I2C_read(reg=0x0, master=2, slave_addr=0x70, quiet=True)
+        if test_read is not None and self.trigger:
+            print ("Found trigger lpGBT, will configure it now.")
             self.trigger = True
+        elif test_read is None:
+            print ("No trigger lpGBT found.")
+            self.trigger = False
+        else:
+            print ("Trigger lpGBT was found, but will not be added.")
 
         if self.trigger:
-            self.TRIG_LPGBT = LPGBT(rb=self.rb, flavor=self.flavor, master=self.DAQ_LPGBT)
+            self.TRIG_LPGBT = LPGBT(rb=self.rb, flavor=self.flavor, trigger=True, master=self.DAQ_LPGBT)
             self.TRIG_LPGBT.parse_xml(os.path.expandvars('$TAMALERO_BASE/address_table/lpgbt.xml'))
             self.TRIG_LPGBT.connect_KCU(self.kcu)
+            print ("Connected to trigger lpGBT to KCU.")
 
 
     def connect_KCU(self, kcu):
@@ -138,11 +147,11 @@ class ReadoutBoard:
         adc_7    = self.DAQ_LPGBT.read_adc(7)/2**10
         adc_in29 = self.SCA.read_adc(29)/2**12
         v_ref    = self.DAQ_LPGBT.read_dac()
-        t_SCA    = self.SCA.read_temp()
+        t_SCA    = self.SCA.read_temp()  # internal temp from SCA
 
         if v_ref>0:
-            t1 = get_temp(adc_7, v_ref, 10000, 25, 10000, 3900)
-            t2 = get_temp(adc_in29, v_ref, 10000, 25, 10000, 3900)
+            t1 = get_temp(adc_7, v_ref, 10000, 25, 10000, 3900)  # this comes from the lpGBT ADC
+            t2 = get_temp(adc_in29, v_ref, 10000, 25, 10000, 3900)  # this comes from the SCA ADC
 
             if verbose>0:
                 print ("\nV_ref is set to: %.3f V"%v_ref)

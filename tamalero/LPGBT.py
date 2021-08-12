@@ -4,6 +4,7 @@ import pickle
 import copy
 import random
 import tamalero.colors as colors
+from tamalero.utils import read_mapping
 from time import sleep
 
 from tamalero.lpgbt_constants import LpgbtConstants
@@ -22,6 +23,7 @@ class LPGBT(RegParser):
             assert isinstance(master, LPGBT), "Trying to initialize a trigger lpGBT but got no lpGBT master."
             self.master = master
         self.LPGBT_CONST = LpgbtConstants()
+        self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping.yaml'), 'adc')
 
     def reset_tx_mgt_by_mask(self, mask):
         id = "MGT.MGT_TX_RESET"
@@ -90,7 +92,7 @@ class LPGBT(RegParser):
             self.kcu.write_node(id, 2)
 
     def wr_adr(self, adr, data):
-        defer= not self.kcu.auto_dispatch  # if auto dispatch is turned off, keep it off.
+        defer = not self.kcu.auto_dispatch  # if auto dispatch is turned off, keep it off.
         self.kcu.toggle_dispatch()  # turn off auto dispatch for this transaction
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_GBTX_ADDR" % self.rb, 115)
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_REGISTER_ADDR" % self.rb, adr)
@@ -289,31 +291,44 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.CALIBRATION.VREFENABLE", 0x1)  # vref enable
         self.wr_reg("LPGBT.RWF.CALIBRATION.VREFTUNE", 0x63)
 
-    def read_adcs(self):
+    #def read_adcs(self):
+    #    self.init_adc()
+    #    print("ADC Readings:")
+    #    for i in range(16):
+    #        name = ""
+    #        conv = 0
+    #        if (i==0 ): conv=1;      name="VTRX TH1"
+    #        if (i==1 ): conv=1/0.55; name="1V4D * 0.55"
+    #        if (i==2 ): conv=1/0.55; name="1V5A * 0.55"
+    #        if (i==3 ): conv=1/0.33; name="2V5TX * 0.33"
+    #        if (i==4 ): conv=1;      name="RSSI"
+    #        if (i==5 ): conv=1;      name="N/A"
+    #        if (i==6 ): conv=1/0.33; name="2V5RX * 0.33"
+    #        if (i==7 ): conv=1;      name="RT1"
+    #        if (i==8 ): conv=1;      name="EOM DAC (internal signal)"
+    #        if (i==9 ): conv=1/0.42; name="VDDIO * 0.42 (internal signal)"
+    #        if (i==10): conv=1/0.42; name="VDDTX * 0.42 (internal signal)"
+    #        if (i==11): conv=1/0.42; name="VDDRX * 0.42 (internal signal)"
+    #        if (i==12): conv=1/0.42; name="VDD * 0.42 (internal signal)"
+    #        if (i==13): conv=1/0.42; name="VDDA * 0.42 (internal signal)"
+    #        if (i==14): conv=1;      name="Temperature sensor (internal signal)"
+    #        if (i==15): conv=1/0.50; name="VREF/2 (internal signal)"
+    #
+    #        read = self.read_adc(i)
+    #        print("\tch %X: 0x%03X = %f, reading = %f (%s)" % (i, read, read/1024., conv*read/1024., name))
+
+    def read_adcs(self): #read and print all adc values
         self.init_adc()
-        print("ADC Readings:")
-        for i in range(16):
-            name = ""
-            conv = 0
-            if (i==0 ): conv=1;      name="VTRX TH1"
-            if (i==1 ): conv=1/0.55; name="1V4D * 0.55"
-            if (i==2 ): conv=1/0.55; name="1V5A * 0.55"
-            if (i==3 ): conv=1/0.33; name="2V5TX * 0.33"
-            if (i==4 ): conv=1;      name="RSSI"
-            if (i==5 ): conv=1;      name="N/A"
-            if (i==6 ): conv=1/0.33; name="2V5RX * 0.33"
-            if (i==7 ): conv=1;      name="RT1"
-            if (i==8 ): conv=1;      name="EOM DAC (internal signal)"
-            if (i==9 ): conv=1/0.42; name="VDDIO * 0.42 (internal signal)"
-            if (i==10): conv=1/0.42; name="VDDTX * 0.42 (internal signal)"
-            if (i==11): conv=1/0.42; name="VDDRX * 0.42 (internal signal)"
-            if (i==12): conv=1/0.42; name="VDD * 0.42 (internal signal)"
-            if (i==13): conv=1/0.42; name="VDDA * 0.42 (internal signal)"
-            if (i==14): conv=1;      name="Temperature sensor (internal signal)"
-            if (i==15): conv=1/0.50; name="VREF/2 (internal signal)"
-    
-            read = self.read_adc(i)
-            print("\tch %X: 0x%03X = %f, reading = %f (%s)" % (i, read, read/1024., conv*read/1024., name))
+        adc_dict = self.adc_mapping
+        for adc_reg in adc_dict.keys():
+            pin = adc_dict[adc_reg]['pin']
+            comment = adc_dict[adc_reg]['comment']
+            value = self.read_adc(pin)
+            input_voltage = value / (2**10 - 1) * adc_dict[adc_reg]['conv']
+            out_string = "register: {0}".format(adc_reg).ljust(22)+\
+            "pin: {0}".format(pin).ljust(10)+"reading: {0}".format(value).ljust(16)+\
+            "in voltage: {0:.4f}".format(input_voltage).ljust(22) + "comment: '{0}'".format(comment)
+            print(out_string)
 
     def read_adc(self, channel):
         # ADCInPSelect[3:0]  |  Input
@@ -354,13 +369,15 @@ class LPGBT(RegParser):
         return val
 
     def set_dac(self, v_out):
-        if v_out >= 1.00:
+        if v_out > 1.00:
             print ("Can't set the DAC to a value larger than 1.0 V!")
             return
         v_ref = 1.00
-        value = int(v_out/v_ref*4096)
+        value = min(int(v_out/v_ref*4095), 4095)
         lo_bits = value & 0xFF
         hi_bits = (value & ~lo_bits) >> 8
+        self.wr_reg("LPGBT.RWF.CALIBRATION.VREFENABLE", 0x1)  # vref enable
+        self.wr_reg("LPGBT.RWF.CALIBRATION.VREFTUNE", 0x63)
         self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACENABLE", 0x1)
         self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEL", lo_bits)
         self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEH", hi_bits)
@@ -376,6 +393,7 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEL", 0x0)
         self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEH", 0x0)
         self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACENABLE", 0x0)
+        self.wr_reg("LPGBT.RWF.CALIBRATION.VREFENABLE", 0x0)
 
     def initialize(self):
         self.wr_adr(0x36, 0x80)  # "LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT"

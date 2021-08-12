@@ -61,6 +61,29 @@ def plot_phase_scan(f_in, channel):
     plt.show()
 
 
+def header():
+    print("\n\
+    ████████╗ █████╗ ███╗   ███╗ █████╗ ██╗     ███████╗███████╗\n\
+    ╚══██╔══╝██╔══██╗████╗ ████║██╔══██╗██║     ██╔════╝██╔════╝\n\
+       ██║   ███████║██╔████╔██║███████║██║     █████╗  ███████╗\n\
+       ██║   ██╔══██║██║╚██╔╝██║██╔══██║██║     ██╔══╝  ╚════██║\n\
+       ██║   ██║  ██║██║ ╚═╝ ██║██║  ██║███████╗███████╗███████║\n\
+       ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝\n\n\
+    ")                                                           
+
+
+def make_version_header(res):
+    
+    print ("\n\n ### Testing ETL Readout Board: ###")
+    print ("- Version: %s.%s"%(res["rb_ver_major"], res["rb_ver_minor"]))
+    print ("- Flavor: %s"%res["rb_flavor"])
+    print ("- Serial number: %s"%res["serial_number"])
+    print ("- lpGBT version: %s"%res["lpgbt_ver"])
+    print ("- lpGBT serial number: %s"%res['lpgbt_serial'])
+    print ("- Trigger lpGBT mounted: %s"%res['trigger'])
+    print ("\n")
+
+
 if __name__ == '__main__':
     print ("Temperature example:")
     print (get_temp(0.8159, 1.5, 10000, 25, 10000, 3900))
