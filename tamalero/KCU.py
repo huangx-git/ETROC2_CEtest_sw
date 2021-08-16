@@ -58,22 +58,30 @@ class KCU:
     def status(self):
         print("LPGBT Link Status from KCU:")
         for id in self.hw.getNodes(".*LPGBT.*DAQ.*DOWNLINK.*READY"):
-            self.print_reg(self.hw.getNode(id))
+            self.print_reg(self.hw.getNode(id), use_color=True, threshold=1)
         for id in self.hw.getNodes(".*LPGBT.*DAQ.*UPLINK.*READY"):
-            self.print_reg(self.hw.getNode(id))
+            self.print_reg(self.hw.getNode(id), use_color=True, threshold=1)
         for id in self.hw.getNodes(".*LPGBT.*DAQ.*UPLINK.*FEC_ERR_CNT"):
-            self.print_reg(self.hw.getNode(id))
+            self.print_reg(self.hw.getNode(id), use_color=True, threshold=1, invert=True)
         for id in self.hw.getNodes(".*LPGBT.*TRIGGER.*UPLINK.*READY"):
-            self.print_reg(self.hw.getNode(id))
+            self.print_reg(self.hw.getNode(id), use_color=True, threshold=1)
         for id in self.hw.getNodes(".*LPGBT.*TRIGGER.*UPLINK.*FEC_ERR_CNT"):
-            self.print_reg(self.hw.getNode(id))
+            self.print_reg(self.hw.getNode(id), use_color=True, threshold=1, invert=True)
 
-    def print_reg(self, reg):
+    def print_reg(self, reg, threshold=1, use_color=False, invert=False):
+        from tamalero.colors import green, red, dummy
         val = reg.read()
         id = reg.getPath()
         self.dispatch()
-        print(self.format_reg(reg.getAddress(), id[4:], val,
-                              self.format_permission(reg.getPermission())))
+        if use_color:
+            if invert:
+                colored = green if val<threshold else red
+            else:
+                colored = green if val>=threshold else red
+        else:
+            colored = dummy
+        print(colored(self.format_reg(reg.getAddress(), id[4:], val,
+                              self.format_permission(reg.getPermission()))))
 
     def format_reg(self, address, name, val, permission=""):
         s = "{:<8}{:<8}{:<50}".format("0x%04X" % address, permission, name)

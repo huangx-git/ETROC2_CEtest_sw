@@ -62,25 +62,26 @@ def plot_phase_scan(f_in, channel):
 
 
 def header():
-    print("\n\
+    from tamalero.colors import magenta
+    print(magenta("\n\n\
     ████████╗ █████╗ ███╗   ███╗ █████╗ ██╗     ███████╗███████╗\n\
     ╚══██╔══╝██╔══██╗████╗ ████║██╔══██╗██║     ██╔════╝██╔════╝\n\
        ██║   ███████║██╔████╔██║███████║██║     █████╗  ███████╗\n\
        ██║   ██╔══██║██║╚██╔╝██║██╔══██║██║     ██╔══╝  ╚════██║\n\
        ██║   ██║  ██║██║ ╚═╝ ██║██║  ██║███████╗███████╗███████║\n\
        ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝\n\n\
-    ")                                                           
+    "))
 
 
 def make_version_header(res):
-    
+    from tamalero.colors import blue
     print ("\n\n ### Testing ETL Readout Board: ###")
-    print ("- Version: %s.%s"%(res["rb_ver_major"], res["rb_ver_minor"]))
-    print ("- Flavor: %s"%res["rb_flavor"])
-    print ("- Serial number: %s"%res["serial_number"])
-    print ("- lpGBT version: %s"%res["lpgbt_ver"])
-    print ("- lpGBT serial number: %s"%res['lpgbt_serial'])
-    print ("- Trigger lpGBT mounted: %s"%res['trigger'])
+    print (blue("- Version: %s.%s"%(res["rb_ver_major"], res["rb_ver_minor"])))
+    print (blue("- Flavor: %s"%res["rb_flavor"]))
+    print (blue("- Serial number: %s"%res["serial_number"]))
+    print (blue("- lpGBT version: %s"%res["lpgbt_ver"]))
+    print (blue("- lpGBT serial number: %s"%res['lpgbt_serial']))
+    print (blue("- Trigger lpGBT mounted: %s"%res['trigger']))
     print ("\n")
 
 

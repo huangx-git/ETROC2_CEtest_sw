@@ -49,3 +49,12 @@ def magenta(s):
 
 def cyan(s):
     return(Colors.CYAN + s + Colors.ENDC)
+
+def dummy(s):
+    return s
+
+def conditional(val, threshold=1):
+    if val>=threshold:
+        return green(str(val))
+    else:
+        return red(str(val))

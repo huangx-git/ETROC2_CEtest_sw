@@ -2,6 +2,8 @@
 Documentation: https://edms.cern.ch/ui/file/1719330/1/VLplus_quadLDD_spec_v1.2_prototypes.pdf
 '''
 
+from tamalero.colors import conditional
+
 global_status_bits = {
     0: "Global Chip Enable",
     1: "Global Limiting Amplifier Enable",
@@ -51,6 +53,7 @@ class VTRX:
         header = [""] + ["Channel %s"%i for i in range(4) ]
         print("{:40}{:12}{:12}{:12}{:12}".format(*header))
         for b in channel_status_bits.keys():
+            #line = [channel_status_bits[b]] + [ conditional((ctrl_reg[i] & 2**b)>0) for i in range(4) ]
             line = [channel_status_bits[b]] + [ ((ctrl_reg[i] & 2**b)>0) for i in range(4) ]
             print("{:40}{:^12}{:^12}{:^12}{:^12}".format(*line))
 
