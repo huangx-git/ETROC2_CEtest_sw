@@ -157,7 +157,7 @@ class LPGBT(RegParser):
     def configure_clocks(self, en_mask, invert_mask=0):
         for i in range(27):
             if 0x1 & (en_mask >> i):
-                self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dFREQ" % i, 1)
+                self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dFREQ" % i, 3)
                 self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dDRIVESTRENGTH" % i, 4)
             if 0x1 & (invert_mask >> i):
                 self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dINVERT" % i, 1)
@@ -390,6 +390,7 @@ class LPGBT(RegParser):
         return value/4096*v_ref
 
     def reset_dac(self):
+        # reset means: output is set to maximum voltage
         self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEL", 0x0)
         self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEH", 0x0)
         self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACENABLE", 0x0)
@@ -416,23 +417,49 @@ class LPGBT(RegParser):
             if (i % (nloops/100) == 0 and i != 0):
                 print("%i reads done..." % i)
 
-    def set_gpio(self, ch, val, default=0x401):
+    def gpio_init(self, outputs=0x2401):
+        self.wr_adr(0x52, outputs >> 8)
+        self.wr_adr(0x53, outputs & 0xFF)
+
+        self.set_gpio(0,1) # GBT_RESET_B
+        self.set_gpio(10,1) # VTRX RESET_B
+        self.set_gpio(13,0) # VTRX DIS
+
+    def set_gpio(self, ch, val):
         if (ch > 7):
-            rd = default >> 8
             node = "LPGBT.RWF.PIO.PIOOUTH"
             ch = ch - 8
         else:
             node = "LPGBT.RWF.PIO.PIOOUTL"
-            rd = default & 0xff
 
+        reg = self.get_node(node)
+        adr = reg.address
+        rd = self.rd_adr(adr)
+        
         if val == 0:
             rd = rd & (0xff ^ (1 << ch))
         else:
             rd = rd | (1 << ch)
 
-        reg = self.get_node(node)
-        adr = reg.address
         self.wr_adr(adr, rd)
+
+    #def set_gpio(self, ch, val, default=0x401):
+    #    if (ch > 7):
+    #        rd = default >> 8
+    #        node = "LPGBT.RWF.PIO.PIOOUTH"
+    #        ch = ch - 8
+    #    else:
+    #        node = "LPGBT.RWF.PIO.PIOOUTL"
+    #        rd = default & 0xff
+
+    #    if val == 0:
+    #        rd = rd & (0xff ^ (1 << ch))
+    #    else:
+    #        rd = rd | (1 << ch)
+
+    #    reg = self.get_node(node)
+    #    adr = reg.address
+    #    self.wr_adr(adr, rd)
 
     def reset_pattern_checkers(self):
     
@@ -564,12 +591,7 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.PHASE_SHIFTER.PS0DELAY_7TO0", 0xff & phase)
         self.wr_reg("LPGBT.RWF.PHASE_SHIFTER.PS0DELAY_8", msb)
 
-    def I2C_write(self, reg=0x0, val=10, master=2, slave_addr=0x70):
-        #Parameters specific to our FPGA##########
-        #slave_addr: Which LPGBT chip we are referencing (depends on how the board is set up)
-        #reg: register which is going to be written to. 0x0, 0x1, 0x2, 0x3 are all available for testing
-        #the write process is specify the config parameters (a), load the data registers (b), then execute multi-write command word (c)
-        #####################
+    def I2C_write(self, reg=0x0, val=10, master=2, slave_addr=0x70, adr_nbytes=2, freq=2):
         i2cm     = 2
         OFFSET_WR = i2cm*(self.LPGBT_CONST.I2CM1CMD - self.LPGBT_CONST.I2CM0CMD) #shift the master by 2 registers (we can change this)
         OFFSET_RD = i2cm*(self.LPGBT_CONST.I2CM1STATUS - self.LPGBT_CONST.I2CM0STATUS)
@@ -579,10 +601,9 @@ class LPGBT(RegParser):
         address_and_data.insert(0, regl)
         address_and_data.insert(1, regh)
         nbytes = len(address_and_data)
-        #import pdb; pdb.set_trace()
 
         # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-write-cr-0x0
-        self.wr_adr(self.LPGBT_CONST.I2CM0DATA0+OFFSET_WR, nbytes<<self.LPGBT_CONST.I2CM_CR_NBYTES_of | 2<<self.LPGBT_CONST.I2CM_CR_FREQ_of)
+        self.wr_adr(self.LPGBT_CONST.I2CM0DATA0+OFFSET_WR, nbytes<<self.LPGBT_CONST.I2CM_CR_NBYTES_of | freq<<self.LPGBT_CONST.I2CM_CR_FREQ_of)
         self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_CRA)# write config registers (a)
     
         # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-w-multi-4byte0-0x8
@@ -612,7 +633,7 @@ class LPGBT(RegParser):
                 print ("Write not successfull!")
                 break
 
-    def I2C_read(self, reg=0x0, master=2, slave_addr=0x70, nbytes=1, quiet=False):
+    def I2C_read(self, reg=0x0, master=2, slave_addr=0x70, nbytes=1, adr_nbytes=2, freq=2, quiet=False):
         #https://gitlab.cern.ch/lpgbt/pigbt/-/blob/master/backend/apiapp/lpgbtLib/lowLevelDrivers/MASTERI2C.py#L83
         i2cm      = master
 	
@@ -622,24 +643,37 @@ class LPGBT(RegParser):
         OFFSET_WR = i2cm*(self.LPGBT_CONST.I2CM1CMD - self.LPGBT_CONST.I2CM0CMD) #using the offset trick to switch between masters easily
         OFFSET_RD = i2cm*(self.LPGBT_CONST.I2CM1STATUS - self.LPGBT_CONST.I2CM0STATUS)
     
-        regl = (int(reg) & 0xFF) >> 0
-        regh = (int(reg)) >> 8
+        #adr = []
+        #for i in range(adr_nbytes): 
+        #    adr.append((reg >> (8*i)) & 0xff)
+
+        #regl = (int(reg) & 0xFF) >> 0
+        #regh = (int(reg)) >> 8
+
+        ################################################################################
+        # Write the register address
+        ################################################################################
 
         # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-write-cr-0x0
-        self.wr_adr(self.LPGBT_CONST.I2CM0DATA0+OFFSET_WR, 2<<self.LPGBT_CONST.I2CM_CR_NBYTES_of | (2<<self.LPGBT_CONST.I2CM_CR_FREQ_of))
+        self.wr_adr(self.LPGBT_CONST.I2CM0DATA0+OFFSET_WR, adr_nbytes<<self.LPGBT_CONST.I2CM_CR_NBYTES_of | (freq<<self.LPGBT_CONST.I2CM_CR_FREQ_of))
         self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_CRA) #write to config register
     
         # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-w-multi-4byte0-0x8
-        self.wr_adr(self.LPGBT_CONST.I2CM0DATA0 + OFFSET_WR , regl)
-        self.wr_adr(self.LPGBT_CONST.I2CM0DATA1 + OFFSET_WR , regh)
+        for i in range (adr_nbytes): 
+            self.wr_adr(getattr(self.LPGBT_CONST, "I2CM0DATA%d"%i) + OFFSET_WR, (reg >> (8*i)) & 0xff )
+        # self.wr_adr(self.LPGBT_CONST.I2CM0DATA1 + OFFSET_WR , regh)
         self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_W_MULTI_4BYTE0) # prepare a multi-write
     
         # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-write-multi-0xc
         self.wr_adr(self.LPGBT_CONST.I2CM0ADDRESS+OFFSET_WR, slave_addr)
         self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_MULTI)# execute multi-write
+
+        ################################################################################
+        # Write the data
+        ################################################################################
     
         # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-write-cr-0x0
-        self.wr_adr(self.LPGBT_CONST.I2CM0DATA0+OFFSET_WR, nbytes<<self.LPGBT_CONST.I2CM_CR_NBYTES_of | 2<<self.LPGBT_CONST.I2CM_CR_FREQ_of)
+        self.wr_adr(self.LPGBT_CONST.I2CM0DATA0+OFFSET_WR, nbytes<<self.LPGBT_CONST.I2CM_CR_NBYTES_of | freq<<self.LPGBT_CONST.I2CM_CR_FREQ_of)
         self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_CRA) #write to config register
     
         # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-read-multi-0xd

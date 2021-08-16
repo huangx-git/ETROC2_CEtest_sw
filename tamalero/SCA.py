@@ -274,20 +274,13 @@ class SCA:
             print("CRD wr=%02X, rd=%02X" % (crd, crd_rd))
 
     def read_adc(self, MUX_reg = 0):
-        #print ("enable")
         self.configure_control_registers(en_adc=1) #enable ADC
-        #time.sleep(0.01)
-        #print ("configure")
         self.rw_reg(SCA_ADC.ADC_W_MUX, MUX_reg) #configure register we want to read
-        #print ("execute")
         val = self.rw_reg(SCA_ADC.ADC_GO, 0x01).value() #execute and read ADC_GO command
-        #print ("reset")
         self.rw_reg(SCA_ADC.ADC_W_MUX, 0x0) #reset register to default (0)
-        #print ("done")
         return val
 
     def read_adcs(self): #read and print all adc values
-        #import pdb; pdb.set_trace()
         adc_dict = self.adc_mapping
         for adc_reg in adc_dict.keys():
             pin = adc_dict[adc_reg]['pin']
@@ -309,13 +302,27 @@ class SCA:
         binary = bin(val)[:1:-1]
         return int(binary[line])
 
-    def set_gpio(self, line):
+    def set_gpio(self, line, to=1):
         self.configure_control_registers(en_gpio=1)  # enable GPIO
-        currently_set = self.rw_reg(SCA_GPIO.GPIO_R_DIRECTION).value()
-        currently_set |= (1 << line)
-        self.rw_reg(SCA_GPIO.GPIO_W_DIRECTION, currently_set)
+        currently_set = self.rw_reg(SCA_GPIO.GPIO_R_DATAOUT).value()
+        if (currently_set & (1 << line)) and to==0:
+            currently_set ^= (1 << line)
+        elif to==1:
+            currently_set |= (1 << line)
+        #self.rw_reg(SCA_GPIO.GPIO_W_DIRECTION, currently_set)
         self.rw_reg(SCA_GPIO.GPIO_W_DATAOUT, currently_set)
         return self.read_gpio(line)  # in order to check it is actually set
+
+    def set_gpio_direction(self, line, to=1):
+        self.configure_control_registers(en_gpio=1)  # enable GPIO
+        currently_set = self.rw_reg(SCA_GPIO.GPIO_R_DIRECTION).value()
+        if (currently_set & (1 << line)) and to==0:
+            currently_set ^= (1 << line)
+        elif to==1:
+            currently_set |= (1 << line)
+        self.rw_reg(SCA_GPIO.GPIO_W_DIRECTION, currently_set)
+        currently_set = self.rw_reg(SCA_GPIO.GPIO_R_DIRECTION).value()
+        return (currently_set >> line) & 1  # in order to check it is actually set
 
     def reset_gpio(self):
         self.configure_control_registers(en_gpio=1)  # enable GPIO
