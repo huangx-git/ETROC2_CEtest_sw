@@ -84,6 +84,10 @@ def make_version_header(res):
     print ("\n")
 
 
+def chunk(in_list, n):
+    return [in_list[i * n:(i + 1) * n] for i in range((len(in_list) + n - 1) // n )] 
+
+
 if __name__ == '__main__':
     print ("Temperature example:")
     print (get_temp(0.8159, 1.5, 10000, 25, 10000, 3900))

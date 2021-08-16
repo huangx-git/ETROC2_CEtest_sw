@@ -58,6 +58,8 @@ if __name__ == '__main__':
 
     rb_0.status()
 
+    _ = rb_0.VTRX.status()
+
     rb_0.DAQ_LPGBT.set_dac(1.0)  # set the DAC / Vref to 1.0V
     print("\n\nReading GBT-SCA ADC values:")
     rb_0.SCA.read_adcs()

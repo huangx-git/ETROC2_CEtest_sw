@@ -4,7 +4,7 @@ import pickle
 import copy
 import random
 import tamalero.colors as colors
-from tamalero.utils import read_mapping
+from tamalero.utils import read_mapping, chunk
 from time import sleep
 
 from tamalero.lpgbt_constants import LpgbtConstants
@@ -443,24 +443,6 @@ class LPGBT(RegParser):
 
         self.wr_adr(adr, rd)
 
-    #def set_gpio(self, ch, val, default=0x401):
-    #    if (ch > 7):
-    #        rd = default >> 8
-    #        node = "LPGBT.RWF.PIO.PIOOUTH"
-    #        ch = ch - 8
-    #    else:
-    #        node = "LPGBT.RWF.PIO.PIOOUTL"
-    #        rd = default & 0xff
-
-    #    if val == 0:
-    #        rd = rd & (0xff ^ (1 << ch))
-    #    else:
-    #        rd = rd | (1 << ch)
-
-    #    reg = self.get_node(node)
-    #    adr = reg.address
-    #    self.wr_adr(adr, rd)
-
     def reset_pattern_checkers(self):
     
         self.kcu.action("READOUT_BOARD_%i.LPGBT.PATTERN_CHECKER.RESET" % self.rb)
@@ -592,31 +574,52 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.PHASE_SHIFTER.PS0DELAY_8", msb)
 
     def I2C_write(self, reg=0x0, val=10, master=2, slave_addr=0x70, adr_nbytes=2, freq=2):
+        '''
+        reg: target register
+        val: has to be a single byte, or a list of single bytes.
+        master: lpGBT master (2 by default)
+        this function is following https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#example-2-multi-byte-write
+        '''
+
         i2cm     = 2
         OFFSET_WR = i2cm*(self.LPGBT_CONST.I2CM1CMD - self.LPGBT_CONST.I2CM0CMD) #shift the master by 2 registers (we can change this)
         OFFSET_RD = i2cm*(self.LPGBT_CONST.I2CM1STATUS - self.LPGBT_CONST.I2CM0STATUS)
-        regl = (int(reg) & 0xFF) >> 0
-        regh = (int(reg)) >> 8
-        address_and_data = [val]
-        address_and_data.insert(0, regl)
-        address_and_data.insert(1, regh)
-        nbytes = len(address_and_data)
 
-        # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-write-cr-0x0
-        self.wr_adr(self.LPGBT_CONST.I2CM0DATA0+OFFSET_WR, nbytes<<self.LPGBT_CONST.I2CM_CR_NBYTES_of | freq<<self.LPGBT_CONST.I2CM_CR_FREQ_of)
-        self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_CRA)# write config registers (a)
-    
-        # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-w-multi-4byte0-0x8
-    
-        for i, data_byte in enumerate(address_and_data): # there are 4 pages with 4 registers each
-            page = i/4
-            offset = i%4
-            self.wr_adr(self.LPGBT_CONST.I2CM0DATA0 + OFFSET_WR + offset, int(data_byte))
-            if i%4==3 or i==len(address_and_data)-1:
-                # load the data we want to write into registers (b)
-                self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, int(self.LPGBT_CONST.I2CM_W_MULTI_4BYTE0+page))
-    
-        # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-write-multi-0xc
+        adr_bytes = [ ((reg >> (8*i)) & 0xff) for i in range(adr_nbytes) ]
+
+        if type(val == int):
+            data_bytes = [val]
+        elif type(val == list):
+            data_bytes = val
+        else:
+            raise("data must be an int or list of ints")
+
+        nbytes = len(adr_bytes+data_bytes)
+
+        self.wr_adr(
+            self.LPGBT_CONST.I2CM0DATA0+OFFSET_WR,
+            nbytes<<self.LPGBT_CONST.I2CM_CR_NBYTES_of | freq<<self.LPGBT_CONST.I2CM_CR_FREQ_of,
+        )
+        self.wr_adr(
+            self.LPGBT_CONST.I2CM0CMD+OFFSET_WR,
+            self.LPGBT_CONST.I2CM_WRITE_CRA,
+        )
+        
+        for i, data_byte in enumerate(adr_bytes+data_bytes):
+            page    = int(i/4)
+            offset  = int(i%4)
+
+            self.wr_adr(
+                self.LPGBT_CONST.I2CM0DATA0 + OFFSET_WR + offset,
+                data_byte
+            )
+
+            if i%4==3 or i==(nbytes-1):
+                self.wr_adr(
+                    self.LPGBT_CONST.I2CM0CMD+OFFSET_WR,
+                    self.LPGBT_CONST.I2CM_W_MULTI_4BYTE0+page,
+                )
+
         self.wr_adr(self.LPGBT_CONST.I2CM0ADDRESS+OFFSET_WR, slave_addr)# write the address of the follower
         self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_MULTI)# execute write (c)
 

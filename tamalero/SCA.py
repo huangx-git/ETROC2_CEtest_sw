@@ -342,7 +342,7 @@ class SCA:
     def I2C_write(self, I2C_channel, data, slave_adr):
         ##TODO: change data input type to be not a list of bytes (?)
         #1) write byte to DATA register
-        if type(data = int):
+        if type(data == int):
             data_bytes = [data]
         elif type(data == list):
             data_bytes = data

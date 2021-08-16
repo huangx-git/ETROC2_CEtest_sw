@@ -2,6 +2,7 @@ import os
 from tamalero.LPGBT import LPGBT
 from tamalero.SCA import SCA
 from tamalero.utils import get_temp
+from tamalero.VTRX import VTRX
 
 from time import sleep
 
@@ -19,6 +20,8 @@ class ReadoutBoard:
 
         self.DAQ_LPGBT = LPGBT(rb=rb, flavor=flavor)
         self.DAQ_LPGBT.parse_xml(os.path.expandvars('$TAMALERO_BASE/address_table/lpgbt.xml'))
+
+        self.VTRX = VTRX(self.DAQ_LPGBT)
 
         self.SCA = SCA(rb=rb, flavor=flavor)
 
