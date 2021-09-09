@@ -4,6 +4,7 @@ import pickle
 import copy
 import random
 import tamalero.colors as colors
+from tamalero.utils import read_mapping, chunk
 from time import sleep
 
 from tamalero.lpgbt_constants import LpgbtConstants
@@ -22,6 +23,7 @@ class LPGBT(RegParser):
             assert isinstance(master, LPGBT), "Trying to initialize a trigger lpGBT but got no lpGBT master."
             self.master = master
         self.LPGBT_CONST = LpgbtConstants()
+        self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping.yaml'), 'adc')
 
     def reset_tx_mgt_by_mask(self, mask):
         id = "MGT.MGT_TX_RESET"
@@ -54,8 +56,8 @@ class LPGBT(RegParser):
         sleep (0.1)
         lpgbt.I2C_write(reg=0x118, val=0, master=2, slave_addr=0x70)
         # eport rx inversions
-        lpgbt.I2C_write(reg=0xe0, val=0x0a, master=2, slave_addr=0x70)
-        lpgbt.I2C_write(reg=0xe2, val=0x0a, master=2, slave_addr=0x70)
+        for i in [0,6,10,12,14,20,22]:
+            lpgbt.I2C_write(reg=0xcc+i, val=0x0a, master=2, slave_addr=0x70)
 
         self.reset_trigger_mgts()
 
@@ -90,11 +92,17 @@ class LPGBT(RegParser):
             self.kcu.write_node(id, 2)
 
     def wr_adr(self, adr, data):
+        #defer = not self.kcu.auto_dispatch  # if auto dispatch is turned off, keep it off.
+        #self.kcu.toggle_dispatch()  # turn off auto dispatch for this transaction
+        #self.kcu.write_node("READOUT_BOARD_%d.SC.TX_GBTX_ADDR" % self.rb, 115)
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_REGISTER_ADDR" % self.rb, adr)
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_DATA_TO_GBTX" % self.rb, data)
         self.kcu.action("READOUT_BOARD_%d.SC.TX_WR" % self.rb)
         self.kcu.action("READOUT_BOARD_%d.SC.TX_START_WRITE" % self.rb)
         return self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_FROM_GBTX" % self.rb)
+        #if not defer:  # turn auto dispatch back on only if it wasn't set to false before
+        #    self.kcu.dispatch()
+        #self.rd_flush()
 
     def rd_adr(self, adr):
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_REGISTER_ADDR" % self.rb, adr)
@@ -116,7 +124,10 @@ class LPGBT(RegParser):
 
     def rd_reg(self, id):
         node = self.get_node(id)
-        data = self.read_reg(self.rd_adr, node)
+        if self.trigger:
+            data = self.read_reg(self.master.I2C_read, node)  # inherited from RegParser
+        else:
+            data = self.read_reg(self.rd_adr, node)
         return data
 
     def rd_flush(self):
@@ -168,20 +179,20 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.EPORTTX.EPTX3DATARATE", 0x3)
 
         #EPTXxxEnable
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX12ENABLE", 0x1)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX00ENABLE", 0x1)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX02ENABLE", 0x1)
         self.wr_reg("LPGBT.RWF.EPORTTX.EPTX10ENABLE", 0x1)
         self.wr_reg("LPGBT.RWF.EPORTTX.EPTX20ENABLE", 0x1)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX00ENABLE", 0x1)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX23ENABLE", 0x1)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX02ENABLE", 0x1)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX22ENABLE", 0x1)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX30ENABLE", 0x1)
 
         #EPTXxxDriveStrength
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX6DRIVESTRENGTH", 0x3)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX0DRIVESTRENGTH", 0x3)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX2DRIVESTRENGTH", 0x3)
         self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX4DRIVESTRENGTH", 0x3)
         self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX8DRIVESTRENGTH", 0x3)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX0DRIVESTRENGTH", 0x3)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX11DRIVESTRENGTH", 0x3)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX2DRIVESTRENGTH", 0x3)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX10DRIVESTRENGTH", 0x3)
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX12DRIVESTRENGTH", 0x3)
 
         # enable mirror feature
         self.wr_reg("LPGBT.RWF.EPORTTX.EPTX0MIRRORENABLE", 0x1)
@@ -262,7 +273,7 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.EPORTRX.EPRX62ENABLE", 1)
         self.wr_reg("LPGBT.RWF.EPORTRX.EPRX63ENABLE", 1)
     
-        for i in [22]:
+        for i in [0,10,12,16,22]:
             self.wr_reg("LPGBT.RWF.EPORTRX.EPRX_CHN_CONTROL.EPRX%dINVERT" % i, 1)
     
         #enable 100 ohm termination
@@ -280,31 +291,44 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.CALIBRATION.VREFENABLE", 0x1)  # vref enable
         self.wr_reg("LPGBT.RWF.CALIBRATION.VREFTUNE", 0x63)
 
-    def read_adcs(self):
+    #def read_adcs(self):
+    #    self.init_adc()
+    #    print("ADC Readings:")
+    #    for i in range(16):
+    #        name = ""
+    #        conv = 0
+    #        if (i==0 ): conv=1;      name="VTRX TH1"
+    #        if (i==1 ): conv=1/0.55; name="1V4D * 0.55"
+    #        if (i==2 ): conv=1/0.55; name="1V5A * 0.55"
+    #        if (i==3 ): conv=1/0.33; name="2V5TX * 0.33"
+    #        if (i==4 ): conv=1;      name="RSSI"
+    #        if (i==5 ): conv=1;      name="N/A"
+    #        if (i==6 ): conv=1/0.33; name="2V5RX * 0.33"
+    #        if (i==7 ): conv=1;      name="RT1"
+    #        if (i==8 ): conv=1;      name="EOM DAC (internal signal)"
+    #        if (i==9 ): conv=1/0.42; name="VDDIO * 0.42 (internal signal)"
+    #        if (i==10): conv=1/0.42; name="VDDTX * 0.42 (internal signal)"
+    #        if (i==11): conv=1/0.42; name="VDDRX * 0.42 (internal signal)"
+    #        if (i==12): conv=1/0.42; name="VDD * 0.42 (internal signal)"
+    #        if (i==13): conv=1/0.42; name="VDDA * 0.42 (internal signal)"
+    #        if (i==14): conv=1;      name="Temperature sensor (internal signal)"
+    #        if (i==15): conv=1/0.50; name="VREF/2 (internal signal)"
+    #
+    #        read = self.read_adc(i)
+    #        print("\tch %X: 0x%03X = %f, reading = %f (%s)" % (i, read, read/1024., conv*read/1024., name))
+
+    def read_adcs(self): #read and print all adc values
         self.init_adc()
-        print("ADC Readings:")
-        for i in range(16):
-            name = ""
-            conv = 0
-            if (i==0 ): conv=1;      name="VTRX TH1"
-            if (i==1 ): conv=1/0.55; name="1V4D * 0.55"
-            if (i==2 ): conv=1/0.55; name="1V5A * 0.55"
-            if (i==3 ): conv=1/0.33; name="2V5TX * 0.33"
-            if (i==4 ): conv=1;      name="RSSI"
-            if (i==5 ): conv=1;      name="N/A"
-            if (i==6 ): conv=1/0.33; name="2V5RX * 0.33"
-            if (i==7 ): conv=1;      name="RT1"
-            if (i==8 ): conv=1;      name="EOM DAC (internal signal)"
-            if (i==9 ): conv=1/0.42; name="VDDIO * 0.42 (internal signal)"
-            if (i==10): conv=1/0.42; name="VDDTX * 0.42 (internal signal)"
-            if (i==11): conv=1/0.42; name="VDDRX * 0.42 (internal signal)"
-            if (i==12): conv=1/0.42; name="VDD * 0.42 (internal signal)"
-            if (i==13): conv=1/0.42; name="VDDA * 0.42 (internal signal)"
-            if (i==14): conv=1;      name="Temperature sensor (internal signal)"
-            if (i==15): conv=1/0.50; name="VREF/2 (internal signal)"
-    
-            read = self.read_adc(i)
-            print("\tch %X: 0x%03X = %f, reading = %f (%s)" % (i, read, read/1024., conv*read/1024., name))
+        adc_dict = self.adc_mapping
+        for adc_reg in adc_dict.keys():
+            pin = adc_dict[adc_reg]['pin']
+            comment = adc_dict[adc_reg]['comment']
+            value = self.read_adc(pin)
+            input_voltage = value / (2**10 - 1) * adc_dict[adc_reg]['conv']
+            out_string = "register: {0}".format(adc_reg).ljust(22)+\
+            "pin: {0}".format(pin).ljust(10)+"reading: {0}".format(value).ljust(16)+\
+            "in voltage: {0:.4f}".format(input_voltage).ljust(22) + "comment: '{0}'".format(comment)
+            print(out_string)
 
     def read_adc(self, channel):
         # ADCInPSelect[3:0]  |  Input
@@ -345,13 +369,15 @@ class LPGBT(RegParser):
         return val
 
     def set_dac(self, v_out):
-        if v_out >= 1.00:
+        if v_out > 1.00:
             print ("Can't set the DAC to a value larger than 1.0 V!")
             return
         v_ref = 1.00
-        value = int(v_out/v_ref*4096)
+        value = min(int(v_out/v_ref*4095), 4095)
         lo_bits = value & 0xFF
         hi_bits = (value & ~lo_bits) >> 8
+        self.wr_reg("LPGBT.RWF.CALIBRATION.VREFENABLE", 0x1)  # vref enable
+        self.wr_reg("LPGBT.RWF.CALIBRATION.VREFTUNE", 0x63)
         self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACENABLE", 0x1)
         self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEL", lo_bits)
         self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEH", hi_bits)
@@ -364,9 +390,11 @@ class LPGBT(RegParser):
         return value/4096*v_ref
 
     def reset_dac(self):
+        # reset means: output is set to maximum voltage
         self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEL", 0x0)
         self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEH", 0x0)
         self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACENABLE", 0x0)
+        self.wr_reg("LPGBT.RWF.CALIBRATION.VREFENABLE", 0x0)
 
     def initialize(self):
         self.wr_adr(0x36, 0x80)  # "LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT"
@@ -389,22 +417,30 @@ class LPGBT(RegParser):
             if (i % (nloops/100) == 0 and i != 0):
                 print("%i reads done..." % i)
 
-    def set_gpio(self, ch, val, default=0x401):
+    def gpio_init(self, outputs=0x2401):
+        self.wr_adr(0x52, outputs >> 8)
+        self.wr_adr(0x53, outputs & 0xFF)
+
+        self.set_gpio(0,1) # GBT_RESET_B
+        self.set_gpio(10,1) # VTRX RESET_B
+        self.set_gpio(13,0) # VTRX DIS
+
+    def set_gpio(self, ch, val):
         if (ch > 7):
-            rd = default >> 8
             node = "LPGBT.RWF.PIO.PIOOUTH"
             ch = ch - 8
         else:
             node = "LPGBT.RWF.PIO.PIOOUTL"
-            rd = default & 0xff
 
+        reg = self.get_node(node)
+        adr = reg.address
+        rd = self.rd_adr(adr)
+        
         if val == 0:
             rd = rd & (0xff ^ (1 << ch))
         else:
             rd = rd | (1 << ch)
 
-        reg = self.get_node(node)
-        adr = reg.address
         self.wr_adr(adr, rd)
 
     def reset_pattern_checkers(self):
@@ -537,38 +573,53 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.PHASE_SHIFTER.PS0DELAY_7TO0", 0xff & phase)
         self.wr_reg("LPGBT.RWF.PHASE_SHIFTER.PS0DELAY_8", msb)
 
-    def I2C_write(self, reg=0x0, val=10, master=2, slave_addr=0x70):
-        #Parameters specific to our FPGA##########
-        #slave_addr: Which LPGBT chip we are referencing (depends on how the board is set up)
-        #reg: register which is going to be written to. 0x0, 0x1, 0x2, 0x3 are all available for testing
-        #the write process is specify the config parameters (a), load the data registers (b), then execute multi-write command word (c)
-        #####################
+    def I2C_write(self, reg=0x0, val=10, master=2, slave_addr=0x70, adr_nbytes=2, freq=2):
+        '''
+        reg: target register
+        val: has to be a single byte, or a list of single bytes.
+        master: lpGBT master (2 by default)
+        this function is following https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#example-2-multi-byte-write
+        '''
+
         i2cm     = 2
         OFFSET_WR = i2cm*(self.LPGBT_CONST.I2CM1CMD - self.LPGBT_CONST.I2CM0CMD) #shift the master by 2 registers (we can change this)
         OFFSET_RD = i2cm*(self.LPGBT_CONST.I2CM1STATUS - self.LPGBT_CONST.I2CM0STATUS)
-        regl = (int(reg) & 0xFF) >> 0
-        regh = (int(reg)) >> 8
-        address_and_data = [val]
-        address_and_data.insert(0, regl)
-        address_and_data.insert(1, regh)
-        nbytes = len(address_and_data)
-        #import pdb; pdb.set_trace()
-    
-        # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-write-cr-0x0
-        self.wr_adr(self.LPGBT_CONST.I2CM0DATA0+OFFSET_WR, nbytes<<self.LPGBT_CONST.I2CM_CR_NBYTES_of | 2<<self.LPGBT_CONST.I2CM_CR_FREQ_of)
-        self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_CRA)# write config registers (a)
-    
-        # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-w-multi-4byte0-0x8
-    
-        for i, data_byte in enumerate(address_and_data): # there are 4 pages with 4 registers each
-            page = i/4
-            offset = i%4
-            self.wr_adr(self.LPGBT_CONST.I2CM0DATA0 + OFFSET_WR + offset, int(data_byte))
-            if i%4==3 or i==len(address_and_data)-1:
-                # load the data we want to write into registers (b)
-                self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, int(self.LPGBT_CONST.I2CM_W_MULTI_4BYTE0+page))
-    
-        # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-write-multi-0xc
+
+        adr_bytes = [ ((reg >> (8*i)) & 0xff) for i in range(adr_nbytes) ]
+
+        if type(val == int):
+            data_bytes = [val]
+        elif type(val == list):
+            data_bytes = val
+        else:
+            raise("data must be an int or list of ints")
+
+        nbytes = len(adr_bytes+data_bytes)
+
+        self.wr_adr(
+            self.LPGBT_CONST.I2CM0DATA0+OFFSET_WR,
+            nbytes<<self.LPGBT_CONST.I2CM_CR_NBYTES_of | freq<<self.LPGBT_CONST.I2CM_CR_FREQ_of,
+        )
+        self.wr_adr(
+            self.LPGBT_CONST.I2CM0CMD+OFFSET_WR,
+            self.LPGBT_CONST.I2CM_WRITE_CRA,
+        )
+        
+        for i, data_byte in enumerate(adr_bytes+data_bytes):
+            page    = int(i/4)
+            offset  = int(i%4)
+
+            self.wr_adr(
+                self.LPGBT_CONST.I2CM0DATA0 + OFFSET_WR + offset,
+                data_byte
+            )
+
+            if i%4==3 or i==(nbytes-1):
+                self.wr_adr(
+                    self.LPGBT_CONST.I2CM0CMD+OFFSET_WR,
+                    self.LPGBT_CONST.I2CM_W_MULTI_4BYTE0+page,
+                )
+
         self.wr_adr(self.LPGBT_CONST.I2CM0ADDRESS+OFFSET_WR, slave_addr)# write the address of the follower
         self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_MULTI)# execute write (c)
 
@@ -585,7 +636,7 @@ class LPGBT(RegParser):
                 print ("Write not successfull!")
                 break
 
-    def I2C_read(self, reg=0x0, master=2, slave_addr=0x70, nbytes=1):
+    def I2C_read(self, reg=0x0, master=2, slave_addr=0x70, nbytes=1, adr_nbytes=2, freq=2, quiet=False):
         #https://gitlab.cern.ch/lpgbt/pigbt/-/blob/master/backend/apiapp/lpgbtLib/lowLevelDrivers/MASTERI2C.py#L83
         i2cm      = master
 	
@@ -595,24 +646,37 @@ class LPGBT(RegParser):
         OFFSET_WR = i2cm*(self.LPGBT_CONST.I2CM1CMD - self.LPGBT_CONST.I2CM0CMD) #using the offset trick to switch between masters easily
         OFFSET_RD = i2cm*(self.LPGBT_CONST.I2CM1STATUS - self.LPGBT_CONST.I2CM0STATUS)
     
-        regl = (int(reg) & 0xFF) >> 0
-        regh = (int(reg)) >> 8
-    
+        #adr = []
+        #for i in range(adr_nbytes): 
+        #    adr.append((reg >> (8*i)) & 0xff)
+
+        #regl = (int(reg) & 0xFF) >> 0
+        #regh = (int(reg)) >> 8
+
+        ################################################################################
+        # Write the register address
+        ################################################################################
+
         # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-write-cr-0x0
-        self.wr_adr(self.LPGBT_CONST.I2CM0DATA0+OFFSET_WR, 2<<self.LPGBT_CONST.I2CM_CR_NBYTES_of | (2<<self.LPGBT_CONST.I2CM_CR_FREQ_of))
+        self.wr_adr(self.LPGBT_CONST.I2CM0DATA0+OFFSET_WR, adr_nbytes<<self.LPGBT_CONST.I2CM_CR_NBYTES_of | (freq<<self.LPGBT_CONST.I2CM_CR_FREQ_of))
         self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_CRA) #write to config register
     
         # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-w-multi-4byte0-0x8
-        self.wr_adr(self.LPGBT_CONST.I2CM0DATA0 + OFFSET_WR , regl)
-        self.wr_adr(self.LPGBT_CONST.I2CM0DATA1 + OFFSET_WR , regh)
+        for i in range (adr_nbytes): 
+            self.wr_adr(getattr(self.LPGBT_CONST, "I2CM0DATA%d"%i) + OFFSET_WR, (reg >> (8*i)) & 0xff )
+        # self.wr_adr(self.LPGBT_CONST.I2CM0DATA1 + OFFSET_WR , regh)
         self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_W_MULTI_4BYTE0) # prepare a multi-write
     
         # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-write-multi-0xc
         self.wr_adr(self.LPGBT_CONST.I2CM0ADDRESS+OFFSET_WR, slave_addr)
         self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_MULTI)# execute multi-write
+
+        ################################################################################
+        # Write the data
+        ################################################################################
     
         # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-write-cr-0x0
-        self.wr_adr(self.LPGBT_CONST.I2CM0DATA0+OFFSET_WR, nbytes<<self.LPGBT_CONST.I2CM_CR_NBYTES_of | 2<<self.LPGBT_CONST.I2CM_CR_FREQ_of)
+        self.wr_adr(self.LPGBT_CONST.I2CM0DATA0+OFFSET_WR, nbytes<<self.LPGBT_CONST.I2CM_CR_NBYTES_of | freq<<self.LPGBT_CONST.I2CM_CR_FREQ_of)
         self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_CRA) #write to config register
     
         # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-read-multi-0xd
@@ -629,7 +693,8 @@ class LPGBT(RegParser):
             #    print("The I2C transaction was not acknowledged by the I2C slave")
             retries += 1
             if retries > 50:
-                print ("Read not successfull!")
+                if not quiet:
+                    print ("Read not successfull!")
                 return None
 
         read_values = []
@@ -664,6 +729,98 @@ class LPGBT(RegParser):
         res = self.I2C_read(reg=0x0, master=1, slave_addr=0x48, nbytes=2)
         temp_dig = (res[0] << 4) + (res[1] >> 4)
         return temp_dig*0.0625
+
+    def get_board_id(self):
+        '''
+        |-------+------+---------------+--------------------------------------|
+        | Range | Bits | Meaning       | Description                          |
+        |-------+------+---------------+--------------------------------------|
+        |  15:0 |   16 | Serial Number | Board serial number                  |
+        | 31:29 |    3 | Version Major | Major version of RB (e.g. 1 in v1.6) |
+        | 28:25 |    4 | Version Minor | Major version of RB (e.g. 6 in v1.6) |
+        | 24:23 |    2 | LPGBT Version | 0x0 = v0; 0x1 = v1                   |
+        | 22:19 |    4 | Board Flavor  | 0x0 = 3 module; 0x1 =                |
+        |-------+------+---------------+--------------------------------------|
+
+        * User IDs
+        #+begin_src python :results output
+        def user_id (serial, major, minor, lpgbt, flavor):
+          data = 0
+          data |= serial & 0xffff
+          data |= (major & 0x7) << 29
+          data |= (minor & 0xf) << 25
+          data |= (lpgbt & 0x3) << 23
+          data |= (flavor & 0xf) << 19
+          return data
+
+        0x003 -> 7:0
+        0x002 -> 15:8
+        0x001 -> 23:16
+        0x000 -> 
+
+        '''
+
+        board_id = {}
+        flavors = {0: '3 module', 1: '6 module', 2: '7 module'}
+
+        user_id =   self.rd_adr(0x007).value() << 24 |\
+                    self.rd_adr(0x006).value() << 16 |\
+                    self.rd_adr(0x005).value() << 8 |\
+                    self.rd_adr(0x004).value()
+        board_id['rb_ver_major']    = user_id >> 29
+        board_id['rb_ver_minor']    = user_id >> 25 & (2**4-1)
+        board_id['lpgbt_ver']       = user_id >> 23 & (2**2-1)
+        board_id['rb_flavor']       = flavors[user_id >> 19 & (2**4-1)]
+        board_id['serial_number']   = user_id & (2**16-1)
+        board_id['lpgbt_serial']    = self.get_chip_serial()
+        
+        return board_id
+
+    def get_chip_serial(self):
+        return self.rd_adr(0x003).value() << 24 |\
+               self.rd_adr(0x002).value() << 16 |\
+               self.rd_adr(0x001).value() << 8 |\
+               self.rd_adr(0x000).value()
+
+    def get_power_up_state_machine(self, quiet=True):
+        
+        pusmstate = self.rd_reg("LPGBT.RO.PUSM.PUSMSTATE")
+
+        if not quiet:
+
+            print ("PUSM State:")
+
+            if (pusmstate==0):  print ("\t0  = ARESET - the FSM stays in this state when power-on-reset or an external reset (RSTB) is asserted. \n\t When external signal PORdisable is asserted, the signal generated by the internal power-on-reset is ignored. All action flags are reset in this state.")
+            if (pusmstate==1):  print ("\t1  = RESET - synchronous reset state. In this state, the FSM produces synchronous reset signal for various circuits. \n\t All action flags are not reset in this state.")
+            if (pusmstate==2):  print ("\t2  = WAIT_VDD_STABLE - the FSM waits for VDD to raise. It has fixed duration of 4,000 clock cycles (~100us).")
+            if (pusmstate==3):  print ("\t3  = WAIT_VDD_HIGHER_THAN_0V90 - the FSM monitors the VDD voltage. \n\t It waits until VDD stays above 0.9V for a period longer than 1us.\n\t This state is bypassed if PORdisable is active.")
+            if (pusmstate==4):  print ("\t4  = FUSE_SAMPLING - initiate fuse sampling.")
+            if (pusmstate==5):  print ("\t5  = UPDATE FROM FUSES - transfer fuse values into registers. Transfer executed only if updateEnable fuse in POWERUP2 register is blown.")
+            if (pusmstate==6):  print ("\t6  = PAUSE_FOR_PLL_CONFIG - this state is foreseen for initial testing of the chip when optimal registers settings are not yet known and the e-fuses have not been burned. The FSM will wait in this state until pllConfigDone bit is asserted. While in this state, the user can use the I2C interface to write values to the registers. For more details about intended use please refer to Section 3.7.")
+            if (pusmstate==7):  print ("\t7  = WAIT_POWER_GOOD - this state is foreseen to make sure that the power supply voltage is stable before proceeding with further initialization. When PGEnable bit is enabled the FSM will wait until VDD level stays above value configured by PGLevel[2:0] for longer than time configured by PGDelay[4:0]. If PGEnable is not set, one can use PGDelay[4:0] as a fixed delay. The PGLevel[2:0] and PGDelay[4:0] are interpreted according to Table 8.1 and Table 8.2.")
+            if (pusmstate==8):  print ("\t8  = RESETOUT - in this state a reset signal is generated on the resetout pin. The reset signal is active low. The duration of the reset pulse is controlled by value of ResetOutLength[1:0] field according to Table 8.3.")
+            if (pusmstate==9):  print ("\t9  = I2C_TRANS - this state is foreseen to execute one I2C transaction. This feature can be used to configure a laser driver chip or any other component in the system. To enable transaction, the I2CMTransEnable bit has to be programmed and master channel has to be selected by I2CMTransChannel[1:0]. Remaining configuration like I2CMTransAddressExt[2:0], I2CMTransAddress[6:0], and I2CMTransCtrl[127:0] should be configured according to the description in the I2C slaves chapter.")
+            if (pusmstate==10): print ("\t10 = RESET_PLL - reset PLL/CDR control logic.")
+            if (pusmstate==11): print ("\t11 = WAIT_PLL_LOCK - waits for the PLL/CDR to lock. \n\t When lpGBT is configured in simplex RX or transceiver mode the lock signal comes from frame aligner. \n\t It means that the valid lpGBT frame has to be sent in the downlink. \n\t This state can be interrupted by timeout action (see the description below).")
+            if (pusmstate==12): print ("\t12 = INIT_SCRAM - initializes scrambler in the uplink data path.")
+            if (pusmstate==13): print ("\t13 = PAUSE_FOR_DLL_CONFIG - this state is foreseen for the case in which user wants to use serial interface (IC/EC) to configure the chip. The FSM will wait in this state until dllConfigDone bit is asserted. While in this state, the user can use the serial interface (IC/EC) or I2C interface to write values to the registers. For more details about intended use please refer to Section 3.7.")
+            if (pusmstate==14): print ("\t14 = RESET_DLLS - reset DLLs in ePortRx groups and phase-shifter.")
+            if (pusmstate==15): print ("\t15 = WAIT_DLL_LOCK - wait until all DLL report to be locked. This state can be interrupted by timeout action (see the description below).")
+            if (pusmstate==16): print ("\t16 = RESET_LOGIC_USING_DLL - reset a logic using DLL circuitry. In case of ePortRx groups, this signal is used to initialize automatic phase training. This state has no impact on a phase-shifter operation.")
+            if (pusmstate==17): print ("\t17 = WAIT_CHNS_LOCKED - in this state, FSM waits until automatic phase training is finished for all enabled ePortRx groups. One should keep in mind, that data transitions have to be present on the enabled channels to acquire lock. By default this state is bypassed, it can be enabled asserting PUSMReadyWhenChnsLocked bit in POWERUP register. This state can be interrupted by timeout action (see the description below).")
+            if (pusmstate==18): print ("\t18 = READY - initialization is completed. Chip is operational. READY signal is asserted.")
+
+        return pusmstate
+
+    def monitor_pusm(self, maxcount=10000):
+        print ("Initial PUSM state:")
+        tmp = self.get_power_up_state_machine(quiet=False)
+        for i in range(maxcount): 
+            pusm = self.get_power_up_state_machine() 
+            if not (tmp==pusm): 
+                print ("Changed state to:", pusm) 
+            tmp = pusm
+
 
 
 if __name__ == '__main__':

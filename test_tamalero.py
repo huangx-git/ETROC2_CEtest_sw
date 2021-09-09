@@ -1,11 +1,13 @@
 from tamalero.KCU import KCU
 from tamalero.ReadoutBoard import ReadoutBoard
+from tamalero.utils import header, make_version_header
 
 from tamalero.SCA import SCA_CONTROL
 
 import time
 import random
 import sys
+
 
 if __name__ == '__main__':
 
@@ -19,35 +21,59 @@ if __name__ == '__main__':
     argParser.add_argument('--i2c_sca', action='store_true', default=False, help="I2C tests on SCA?")
     argParser.add_argument('--run_pattern_checker', action='store_true', default=False, help="Read pattern checker?")
     argParser.add_argument('--reset_pattern_checker', action='store', choices=[None, 'prbs', 'upcnt'], default=None, help="Reset pattern checker?")
+    argParser.add_argument('--kcu', action='store', default="192.168.0.10", help="Reset pattern checker?")
+    argParser.add_argument('--force_no_trigger', action='store_true', help="Never initialize the trigger lpGBT.")
     args = argParser.parse_args()
 
+    header()
+
+    print ("Using KCU at address: %s"%args.kcu)
 
     kcu = KCU(name="my_device",
-              ipb_path="chtcp-2.0://localhost:10203?target=192.168.0.10:50001",
+              ipb_path="chtcp-2.0://localhost:10203?target=%s:50001"%args.kcu,
               #ipb_path="ipbusudp-2.0://192.168.0.10:50001",
               adr_table="module_test_fw/address_tables/etl_test_fw.xml")
 
     kcu.status()
 
-    rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=False))
+
+    rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=(not args.force_no_trigger)))
 
     if args.power_up:
+        print ("Power up init sequence for: DAQ")
         rb_0.DAQ_LPGBT.power_up_init()
         if (rb_0.DAQ_LPGBT.rd_adr(0x1c5) != 0xa5):
             print(hex(rb_0.DAQ_LPGBT.rd_adr(0x1c5)))
             print ("No communication with DAQ LPGBT... quitting")
             sys.exit(0)
         #rb_0.TRIG_LPGBT.power_up_init()
+        rb_0.get_trigger()
+        if rb_0.trigger:
+            print ("Power up init sequence for: Trigger")
+            rb_0.TRIG_LPGBT.power_up_init()
         #rb_0.DAQ_LPGBT.power_up_init_trigger()
+
+    if not hasattr(rb_0, "TRIG_LPGBT"):
+        rb_0.get_trigger()
 
     if args.power_up or args.reconfigure:
         rb_0.configure()  # this is very slow, especially for the trigger lpGBT.
         time.sleep(1.0)
 
+    res = rb_0.DAQ_LPGBT.get_board_id()
+    res['trigger'] = 'yes' if rb_0.trigger else 'no'
+    make_version_header(res)
+
     rb_0.status()
 
-    print("reading ADC values:")
+    _ = rb_0.VTRX.status()
+
+    rb_0.DAQ_LPGBT.set_dac(1.0)  # set the DAC / Vref to 1.0V.
+    print("\n\nReading GBT-SCA ADC values:")
     rb_0.SCA.read_adcs()
+
+    print("\n\nReading DAQ lpGBT ADC values:")
+    rb_0.DAQ_LPGBT.read_adcs()
 
     from tamalero.utils import get_temp
     

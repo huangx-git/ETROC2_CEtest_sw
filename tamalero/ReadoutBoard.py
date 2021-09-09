@@ -2,6 +2,7 @@ import os
 from tamalero.LPGBT import LPGBT
 from tamalero.SCA import SCA
 from tamalero.utils import get_temp
+from tamalero.VTRX import VTRX
 
 from time import sleep
 
@@ -20,16 +21,33 @@ class ReadoutBoard:
         self.DAQ_LPGBT = LPGBT(rb=rb, flavor=flavor)
         self.DAQ_LPGBT.parse_xml(os.path.expandvars('$TAMALERO_BASE/address_table/lpgbt.xml'))
 
-        if self.trigger:
-            self.TRIG_LPGBT = LPGBT(rb=rb, flavor=flavor, trigger=True, master=self.DAQ_LPGBT)
-            self.TRIG_LPGBT.parse_xml(os.path.expandvars('$TAMALERO_BASE/address_table/lpgbt.xml'))
+        self.VTRX = VTRX(self.DAQ_LPGBT)
 
         self.SCA = SCA(rb=rb, flavor=flavor)
+
+    def get_trigger(self):
+        # Self-check if a trigger lpGBT is present, if trigger is not explicitely set to False
+        sleep(0.5)
+        test_read = self.DAQ_LPGBT.I2C_read(reg=0x0, master=2, slave_addr=0x70, quiet=True)
+        if test_read is not None and self.trigger:
+            print ("Found trigger lpGBT, will configure it now.")
+            self.trigger = True
+        elif test_read is None:
+            print ("No trigger lpGBT found.")
+            self.trigger = False
+        else:
+            print ("Trigger lpGBT was found, but will not be added.")
+
+        if self.trigger:
+            self.TRIG_LPGBT = LPGBT(rb=self.rb, flavor=self.flavor, trigger=True, master=self.DAQ_LPGBT)
+            self.TRIG_LPGBT.parse_xml(os.path.expandvars('$TAMALERO_BASE/address_table/lpgbt.xml'))
+            self.TRIG_LPGBT.connect_KCU(self.kcu)
+            print ("Connected trigger lpGBT to KCU.")
+
 
     def connect_KCU(self, kcu):
         self.kcu = kcu
         self.DAQ_LPGBT.connect_KCU(kcu)
-        #self.TRIG_LPGBT.connect_KCU(kcu)
         self.SCA.connect_KCU(kcu)
 
     def sca_setup(self):
@@ -65,7 +83,8 @@ class ReadoutBoard:
         for shift in range(8):
             for channel in range(24):
                 self.DAQ_LPGBT.set_uplink_alignment(shift, channel, quiet=True)
-                #self.TRIG_LPGBT.set_uplink_alignment(shift, channel, quiet=True)
+                if self.trigger:
+                    self.TRIG_LPGBT.set_uplink_alignment(shift, channel, quiet=True)
             self.DAQ_LPGBT.set_uplink_group_data_source("normal")  # actually needed??
             self.DAQ_LPGBT.set_downlink_data_src('upcnt')
             self.DAQ_LPGBT.reset_pattern_checkers()
@@ -81,18 +100,19 @@ class ReadoutBoard:
         print ("Now setting uplink alignment to optimal values (default values if no good alignment was found)")
         for channel in range(24):
             self.DAQ_LPGBT.set_uplink_alignment(alignment['Link 0'][channel], channel, quiet=True)
-            #self.TRIG_LPGBT.set_uplink_alignment(alignment['Link 1'][channel], channel, quiet=True)
+            if self.trigger:
+                self.TRIG_LPGBT.set_uplink_alignment(alignment['Link 1'][channel], channel, quiet=True)
 
         return alignment
 
     def status(self):
         print("Readout Board %s LPGBT Link Status:" % self.rb)
         print("{:<8}{:<8}{:<50}{:<8}".format("Address", "Perm.", "Name", "Value"))
-        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.READY" % self.rb))
-        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.UPLINK.READY" % self.rb))
-        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.UPLINK.FEC_ERR_CNT" % self.rb))
-        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.READY" % self.rb))
-        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT" % self.rb))
+        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.READY" % self.rb), use_color=True)
+        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.UPLINK.READY" % self.rb), use_color=True)
+        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.UPLINK.FEC_ERR_CNT" % self.rb), use_color=True, invert=True)
+        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.READY" % self.rb), use_color=True)
+        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT" % self.rb), use_color=True, invert=True)
 
     def configure(self):
 
@@ -123,6 +143,7 @@ class ReadoutBoard:
         self.sca_setup()
         self.SCA.reset()
         self.SCA.connect()
+        self.SCA.config_gpios()  # this sets the directions etc according to the mapping
 
     def read_temp(self, verbose=0):
         # high level function to read all the temperature sensors
@@ -130,11 +151,11 @@ class ReadoutBoard:
         adc_7    = self.DAQ_LPGBT.read_adc(7)/2**10
         adc_in29 = self.SCA.read_adc(29)/2**12
         v_ref    = self.DAQ_LPGBT.read_dac()
-        t_SCA    = self.SCA.read_temp()
+        t_SCA    = self.SCA.read_temp()  # internal temp from SCA
 
         if v_ref>0:
-            t1 = get_temp(adc_7, v_ref, 10000, 25, 10000, 3900)
-            t2 = get_temp(adc_in29, v_ref, 10000, 25, 10000, 3900)
+            t1 = get_temp(adc_7, v_ref, 10000, 25, 10000, 3900)  # this comes from the lpGBT ADC
+            t2 = get_temp(adc_in29, v_ref, 10000, 25, 10000, 3900)  # this comes from the SCA ADC
 
             if verbose>0:
                 print ("\nV_ref is set to: %.3f V"%v_ref)

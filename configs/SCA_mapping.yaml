@@ -82,69 +82,67 @@ adc:
 gpio:
     PG0:
         pin: 0x1
-        conv: 1
-        direction: out
+        default: 0
+        direction: in
         flavor: small
         comment: Power Good 0
     PG1:
         pin: 0x6
-        conv: 1
-        direction: out
+        default: 0
+        direction: in
         flavor: small
         comment: Power Good 1
     PG2:
         pin: 0x12
-        conv: 1
-        direction: out
+        default: 1
+        direction: in
         flavor: small
         comment: Power Good 2
     PG3:
         pin: 0xC
-        conv: 1
-        direction: out
+        default: 0
+        direction: in
         flavor: small
         comment: Power Good 3
     ON0:
         pin: 0x3
-        conv: 1
+        default: 0
         direction: out
         flavor: small
         comment: Power On 0
     ON1:
         pin: 0x9
-        conv: 1
+        default: 1
         direction: out
         flavor: small
         comment: Power On 1
     ON2:
         pin: 0x15
-        conv: 1
+        default: 1
         direction: out
         flavor: small
         comment: Power On 2
     ON3:
         pin: 0xF
-        conv: 1
+        default: 1
         direction: out
         flavor: small
         comment: Power On 3
     RSTB0:
         pin: 0x1F
-        conv: 1
-        direction: in
+        default: 1
+        direction: out
         flavor: small
         comment: reset for module/ETROC 0
     RSTB1:
         pin: 0x1E
-        conv: 1
-        direction: in
+        default: 1
+        direction: out
         flavor: small
         comment: reset for module/ETROC 1
     RSTB2:
         pin: 0x1D
-        conv: 1
-        direction: in
+        default: 1
+        direction: out
         flavor: small
         comment: reset for module/ETROC 2
-
-

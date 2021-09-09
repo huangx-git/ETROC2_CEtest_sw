@@ -107,7 +107,9 @@ class SCA:
     def __init__(self, rb=0, flavor='small'):
         self.rb = rb
         self.flavor = flavor
+        self.err_count = 0
         self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping.yaml'), 'adc')
+        self.gpio_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping.yaml'), 'gpio')
 
     def connect_KCU(self, kcu):
         self.kcu = kcu
@@ -174,24 +176,36 @@ class SCA:
         # TODO: read reply
         err = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_ERR" % self.rb)  # 8 bit
         if err > 0:
-            if (err & 0x1):
-                print("SCA Read Error :: Generic Error Flag")
-            if (err & 0x2):
-                print("SCA Read Error :: Invalid Channel Request")
-            if (err & 0x4):
-                print("SCA Read Error :: Invalid Command Request")
-            if (err & 0x8):
-                print("SCA Read Error :: Invalid Transaction Number Request")
-            if (err & 0x10):
-                print("SCA Read Error :: Invalid Length")
-            if (err & 0x20):
-                print("SCA Read Error :: Channel Not Enabled")
-            if (err & 0x40):
-                print("SCA Read Error :: Command In Treatment")
-    
+            if self.err_count < 10:
+                self.rw_cmd(cmd, channel, data, adr=adr, transid=transid)
+                self.err_count += 1
+            else:
+                print ("Failed %s times: %s. Last error:"%self.err_count)
+                if (err & 0x1):
+                    print("SCA Read Error :: Generic Error Flag")
+                if (err & 0x2):
+                    print("SCA Read Error :: Invalid Channel Request")
+                if (err & 0x4):
+                    print("SCA Read Error :: Invalid Command Request")
+                if (err & 0x8):
+                    print("SCA Read Error :: Invalid Transaction Number Request")
+                if (err & 0x10):
+                    print("SCA Read Error :: Invalid Length")
+                if (err & 0x20):
+                    print("SCA Read Error :: Channel Not Enabled")
+                if (err & 0x40):
+                    print("SCA Read Error :: Command In Treatment")
+        else:
+            self.err_count = 0
+
         if transid != self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_TRANSID" % self.rb):
-            print("SCA Read Error :: Transaction ID Does Not Match")
-    
+            if self.err_count < 10:
+                self.rw_cmd(cmd, channel, data, adr=adr, transid=transid)
+                self.err_count += 1
+            else:
+                print("SCA Read Error :: Transaction ID Does Not Match")
+        else:
+            self.err_count = 0
     
         return self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_DATA" % self.rb)  # 32 bit read data
     
@@ -268,7 +282,6 @@ class SCA:
         return val
 
     def read_adcs(self): #read and print all adc values
-        #import pdb; pdb.set_trace()
         adc_dict = self.adc_mapping
         for adc_reg in adc_dict.keys():
             pin = adc_dict[adc_reg]['pin']
@@ -290,13 +303,27 @@ class SCA:
         binary = bin(val)[:1:-1]
         return int(binary[line])
 
-    def set_gpio(self, line):
+    def set_gpio(self, line, to=1):
         self.configure_control_registers(en_gpio=1)  # enable GPIO
-        currently_set = self.rw_reg(SCA_GPIO.GPIO_R_DIRECTION).value()
-        currently_set |= (1 << line)
-        self.rw_reg(SCA_GPIO.GPIO_W_DIRECTION, currently_set)
+        currently_set = self.rw_reg(SCA_GPIO.GPIO_R_DATAOUT).value()
+        if (currently_set & (1 << line)) and to==0:
+            currently_set ^= (1 << line)
+        elif to==1:
+            currently_set |= (1 << line)
+        #self.rw_reg(SCA_GPIO.GPIO_W_DIRECTION, currently_set)
         self.rw_reg(SCA_GPIO.GPIO_W_DATAOUT, currently_set)
         return self.read_gpio(line)  # in order to check it is actually set
+
+    def set_gpio_direction(self, line, to=1):
+        self.configure_control_registers(en_gpio=1)  # enable GPIO
+        currently_set = self.rw_reg(SCA_GPIO.GPIO_R_DIRECTION).value()
+        if (currently_set & (1 << line)) and to==0:
+            currently_set ^= (1 << line)
+        elif to==1:
+            currently_set |= (1 << line)
+        self.rw_reg(SCA_GPIO.GPIO_W_DIRECTION, currently_set)
+        currently_set = self.rw_reg(SCA_GPIO.GPIO_R_DIRECTION).value()
+        return (currently_set >> line) & 1  # in order to check it is actually set
 
     def reset_gpio(self):
         self.configure_control_registers(en_gpio=1)  # enable GPIO
@@ -309,6 +336,17 @@ class SCA:
     def disable_adc(self):
         self.configure_control_registers(en_adc=0)
 
+    def config_gpios(self): #read and print all adc values
+        gpio_dict = self.gpio_mapping
+        for gpio_reg in gpio_dict.keys():
+            pin         = gpio_dict[gpio_reg]['pin']
+            direction   = int(gpio_dict[gpio_reg]['direction'] == 'out')
+            comment     = gpio_dict[gpio_reg]['comment']
+            default     = gpio_dict[gpio_reg]['default']
+            print("Setting SCA GPIO pin %s (%s) to %s"%(pin, comment, gpio_dict[gpio_reg]['direction']))
+            self.set_gpio_direction(pin, direction)
+            self.set_gpio(pin, default)
+
     def get_I2C_channel(self, channel):
         # this only works for channel 0-4 right now, enough for the tests. Needs to be fixed!
         return getattr(SCA_CRB, "ENI2C%s"%channel)
@@ -316,7 +354,7 @@ class SCA:
     def I2C_write(self, I2C_channel, data, slave_adr):
         ##TODO: change data input type to be not a list of bytes (?)
         #1) write byte to DATA register
-        if type(data = int):
+        if type(data == int):
             data_bytes = [data]
         elif type(data == list):
             data_bytes = data
