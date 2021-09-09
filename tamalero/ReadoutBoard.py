@@ -29,7 +29,7 @@ class ReadoutBoard:
     def connect_KCU(self, kcu):
         self.kcu = kcu
         self.DAQ_LPGBT.connect_KCU(kcu)
-        self.TRIG_LPGBT.connect_KCU(kcu)
+        #self.TRIG_LPGBT.connect_KCU(kcu)
         self.SCA.connect_KCU(kcu)
 
     def sca_setup(self):
@@ -55,7 +55,7 @@ class ReadoutBoard:
         self.DAQ_LPGBT.set_gpio(bit, 0)
         self.DAQ_LPGBT.set_gpio(bit, 1)
 
-    def find_uplink_alignment(self, scan_time=1, default=0):
+    def find_uplink_alignment(self, scan_time=0.01, default=0):
         print ("Scanning for uplink alignment")
         alignment = {}
         # make alignment dict
@@ -65,7 +65,7 @@ class ReadoutBoard:
         for shift in range(8):
             for channel in range(24):
                 self.DAQ_LPGBT.set_uplink_alignment(shift, channel, quiet=True)
-                self.TRIG_LPGBT.set_uplink_alignment(shift, channel, quiet=True)
+                #self.TRIG_LPGBT.set_uplink_alignment(shift, channel, quiet=True)
             self.DAQ_LPGBT.set_uplink_group_data_source("normal")  # actually needed??
             self.DAQ_LPGBT.set_downlink_data_src('upcnt')
             self.DAQ_LPGBT.reset_pattern_checkers()
@@ -81,7 +81,7 @@ class ReadoutBoard:
         print ("Now setting uplink alignment to optimal values (default values if no good alignment was found)")
         for channel in range(24):
             self.DAQ_LPGBT.set_uplink_alignment(alignment['Link 0'][channel], channel, quiet=True)
-            self.TRIG_LPGBT.set_uplink_alignment(alignment['Link 1'][channel], channel, quiet=True)
+            #self.TRIG_LPGBT.set_uplink_alignment(alignment['Link 1'][channel], channel, quiet=True)
 
         return alignment
 

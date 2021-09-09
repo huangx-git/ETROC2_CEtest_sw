@@ -5,6 +5,7 @@ from tamalero.SCA import SCA_CONTROL
 
 import time
 import random
+import sys
 
 if __name__ == '__main__':
 
@@ -22,18 +23,22 @@ if __name__ == '__main__':
 
 
     kcu = KCU(name="my_device",
-              ipb_path="ipbusudp-2.0://192.168.0.10:50001",
+              ipb_path="chtcp-2.0://localhost:10203?target=192.168.0.10:50001",
+              #ipb_path="ipbusudp-2.0://192.168.0.10:50001",
               adr_table="module_test_fw/address_tables/etl_test_fw.xml")
 
     kcu.status()
 
-    rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=True))
+    rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=False))
 
     if args.power_up:
         rb_0.DAQ_LPGBT.power_up_init()
-        rb_0.TRIG_LPGBT.power_up_init()
+        if (rb_0.DAQ_LPGBT.rd_adr(0x1c5) != 0xa5):
+            print(hex(rb_0.DAQ_LPGBT.rd_adr(0x1c5)))
+            print ("No communication with DAQ LPGBT... quitting")
+            sys.exit(0)
+        #rb_0.TRIG_LPGBT.power_up_init()
         #rb_0.DAQ_LPGBT.power_up_init_trigger()
-        time.sleep(1.0)
 
     if args.power_up or args.reconfigure:
         rb_0.configure()  # this is very slow, especially for the trigger lpGBT.
