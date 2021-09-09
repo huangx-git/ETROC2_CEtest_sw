@@ -109,6 +109,7 @@ class SCA:
         self.flavor = flavor
         self.err_count = 0
         self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping.yaml'), 'adc')
+        self.gpio_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping.yaml'), 'gpio')
 
     def connect_KCU(self, kcu):
         self.kcu = kcu
@@ -334,6 +335,17 @@ class SCA:
 
     def disable_adc(self):
         self.configure_control_registers(en_adc=0)
+
+    def config_gpios(self): #read and print all adc values
+        gpio_dict = self.gpio_mapping
+        for gpio_reg in gpio_dict.keys():
+            pin         = gpio_dict[gpio_reg]['pin']
+            direction   = int(gpio_dict[gpio_reg]['direction'] == 'out')
+            comment     = gpio_dict[gpio_reg]['comment']
+            default     = gpio_dict[gpio_reg]['default']
+            print("Setting SCA GPIO pin %s (%s) to %s"%(pin, comment, gpio_dict[gpio_reg]['direction']))
+            self.set_gpio_direction(pin, direction)
+            self.set_gpio(pin, default)
 
     def get_I2C_channel(self, channel):
         # this only works for channel 0-4 right now, enough for the tests. Needs to be fixed!

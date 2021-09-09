@@ -21,6 +21,7 @@ if __name__ == '__main__':
     argParser.add_argument('--run_pattern_checker', action='store_true', default=False, help="Read pattern checker?")
     argParser.add_argument('--reset_pattern_checker', action='store', choices=[None, 'prbs', 'upcnt'], default=None, help="Reset pattern checker?")
     argParser.add_argument('--kcu', action='store', default="192.168.0.10", help="Reset pattern checker?")
+    argParser.add_argument('--force_no_trigger', action='store_true', help="Never initialize the trigger lpGBT.")
     args = argParser.parse_args()
 
     header()
@@ -33,7 +34,7 @@ if __name__ == '__main__':
 
     kcu.status()
 
-    rb_0 = kcu.connect_readout_board(ReadoutBoard(0))
+    rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=(not args.force_no_trigger)))
 
     if args.power_up:
         print ("Power up init sequence for: DAQ")
@@ -60,7 +61,7 @@ if __name__ == '__main__':
 
     _ = rb_0.VTRX.status()
 
-    rb_0.DAQ_LPGBT.set_dac(1.0)  # set the DAC / Vref to 1.0V
+    rb_0.DAQ_LPGBT.set_dac(1.0)  # set the DAC / Vref to 1.0V.
     print("\n\nReading GBT-SCA ADC values:")
     rb_0.SCA.read_adcs()
 

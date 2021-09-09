@@ -42,7 +42,7 @@ class ReadoutBoard:
             self.TRIG_LPGBT = LPGBT(rb=self.rb, flavor=self.flavor, trigger=True, master=self.DAQ_LPGBT)
             self.TRIG_LPGBT.parse_xml(os.path.expandvars('$TAMALERO_BASE/address_table/lpgbt.xml'))
             self.TRIG_LPGBT.connect_KCU(self.kcu)
-            print ("Connected to trigger lpGBT to KCU.")
+            print ("Connected trigger lpGBT to KCU.")
 
 
     def connect_KCU(self, kcu):
@@ -143,6 +143,7 @@ class ReadoutBoard:
         self.sca_setup()
         self.SCA.reset()
         self.SCA.connect()
+        self.SCA.config_gpios()  # this sets the directions etc according to the mapping
 
     def read_temp(self, verbose=0):
         # high level function to read all the temperature sensors
