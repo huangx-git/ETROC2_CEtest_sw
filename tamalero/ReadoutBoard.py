@@ -74,34 +74,45 @@ class ReadoutBoard:
         self.DAQ_LPGBT.set_gpio(bit, 1)
 
     def find_uplink_alignment(self, scan_time=0.01, default=0):
+        n_links = 24  # shouldn't that be 28?
         print ("Scanning for uplink alignment")
         alignment = {}
+        inversion = {} # also scan for inversion
         # make alignment dict
         for link in ['Link 0', 'Link 1']:
-            alignment[link] = {i:default for i in range(24)}
+            alignment[link] = {i:default for i in range(n_links)}
+            inversion[link] = {i:0x02 for i in range(n_links)}
         # now, scan
-        for shift in range(8):
-            for channel in range(24):
-                self.DAQ_LPGBT.set_uplink_alignment(shift, channel, quiet=True)
-                if self.trigger:
-                    self.TRIG_LPGBT.set_uplink_alignment(shift, channel, quiet=True)
-            self.DAQ_LPGBT.set_uplink_group_data_source("normal")  # actually needed??
-            self.DAQ_LPGBT.set_downlink_data_src('upcnt')
-            self.DAQ_LPGBT.reset_pattern_checkers()
-            sleep(scan_time)
-            res = self.DAQ_LPGBT.read_pattern_checkers(log_dir=None, quiet=True)
-            for link in ['Link 0', 'Link 1']:
-                for channel in range(24):
-                    if res[link]['UPCNT'][channel]['error'][0] == 0:
-                        print ("Found uplink alignment for %s, channel %s: %s"%(link, channel, shift))
-                        alignment[link][channel] = shift
+        for inv in [0x02, 0x0a]:  # 0x02 - not inverted, 0x0a inverted
+            for shift in range(8):
+                for channel in range(n_links):
+                    self.DAQ_LPGBT.set_uplink_alignment(shift, channel, quiet=True)
+                    self.DAQ_LPGBT.wr_adr(0xcc+channel, inv)  # this could be made nicer
+                    # FIXME: this is in the address table and could be used instead: 
+                    # self.DAQ_LPGBT.wr_reg("LPGBT.RWF.EPORTRX.EPRX_CHN_CONTROL.EPRX%dINVERT" % channel, 1)
+                    if self.trigger:
+                        self.TRIG_LPGBT.set_uplink_alignment(shift, channel, quiet=True)
+                        self.DAQ_LPGBT.I2C_write(reg=0xcc+channel, val=inv, master=2, slave_addr=0x70)  # this could be made nicer
+                self.DAQ_LPGBT.set_uplink_group_data_source("normal")  # actually needed??
+                self.DAQ_LPGBT.set_downlink_data_src('upcnt')
+                self.DAQ_LPGBT.reset_pattern_checkers()
+                sleep(scan_time)
+                res = self.DAQ_LPGBT.read_pattern_checkers(log_dir=None, quiet=True)
+                for link in ['Link 0', 'Link 1']:
+                    for channel in range(n_links):
+                        if res[link]['UPCNT'][channel]['error'][0] == 0:
+                            print ("Found uplink alignment for %s, channel %s: %s"%(link, channel, shift))
+                            alignment[link][channel] = shift
+                            inversion[link][channel] = inv
 
         # Reset alignment to default values for the channels where no good alignment has been found
         print ("Now setting uplink alignment to optimal values (default values if no good alignment was found)")
-        for channel in range(24):
+        for channel in range(n_links):
             self.DAQ_LPGBT.set_uplink_alignment(alignment['Link 0'][channel], channel, quiet=True)
+            self.DAQ_LPGBT.wr_adr(0xcc+channel, inversion['Link 0'][channel])
             if self.trigger:
                 self.TRIG_LPGBT.set_uplink_alignment(alignment['Link 1'][channel], channel, quiet=True)
+                self.DAQ_LPGBT.I2C_write(reg=0xcc+channel, val=inversion['Link 1'][channel], master=2, slave_addr=0x70)
 
         return alignment
 

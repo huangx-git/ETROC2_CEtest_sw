@@ -55,9 +55,6 @@ class LPGBT(RegParser):
         lpgbt.I2C_write(reg=0x118, val=6, master=2, slave_addr=0x70)
         sleep (0.1)
         lpgbt.I2C_write(reg=0x118, val=0, master=2, slave_addr=0x70)
-        # eport rx inversions
-        for i in [0,6,10,12,14,20,22]:
-            lpgbt.I2C_write(reg=0xcc+i, val=0x0a, master=2, slave_addr=0x70)
 
         self.reset_trigger_mgts()
 
@@ -272,9 +269,6 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.EPORTRX.EPRX61ENABLE", 1)
         self.wr_reg("LPGBT.RWF.EPORTRX.EPRX62ENABLE", 1)
         self.wr_reg("LPGBT.RWF.EPORTRX.EPRX63ENABLE", 1)
-    
-        for i in [0,10,12,16,22]:
-            self.wr_reg("LPGBT.RWF.EPORTRX.EPRX_CHN_CONTROL.EPRX%dINVERT" % i, 1)
     
         #enable 100 ohm termination
         for i in range (28):
