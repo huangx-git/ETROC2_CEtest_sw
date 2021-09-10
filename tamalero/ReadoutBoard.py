@@ -101,7 +101,7 @@ class ReadoutBoard:
                 for link in ['Link 0', 'Link 1']:
                     for channel in range(n_links):
                         if res[link]['UPCNT'][channel]['error'][0] == 0:
-                            print ("Found uplink alignment for %s, channel %s: %s"%(link, channel, shift))
+                            print ("Found uplink alignment for %s, channel %s: %s, inverted: %s"%(link, channel, shift, inv==0x0a))
                             alignment[link][channel] = shift
                             inversion[link][channel] = inv
 
