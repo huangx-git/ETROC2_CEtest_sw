@@ -73,7 +73,7 @@ class ReadoutBoard:
         self.DAQ_LPGBT.set_gpio(bit, 0)
         self.DAQ_LPGBT.set_gpio(bit, 1)
 
-    def find_uplink_alignment(self, scan_time=1, default=0):
+    def find_uplink_alignment(self, scan_time=0.01, default=0):
         print ("Scanning for uplink alignment")
         alignment = {}
         # make alignment dict

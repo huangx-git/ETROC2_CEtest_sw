@@ -92,31 +92,28 @@ class LPGBT(RegParser):
             self.kcu.write_node(id, 2)
 
     def wr_adr(self, adr, data):
-        defer = not self.kcu.auto_dispatch  # if auto dispatch is turned off, keep it off.
-        self.kcu.toggle_dispatch()  # turn off auto dispatch for this transaction
-        self.kcu.write_node("READOUT_BOARD_%d.SC.TX_GBTX_ADDR" % self.rb, 115)
+        #defer = not self.kcu.auto_dispatch  # if auto dispatch is turned off, keep it off.
+        #self.kcu.toggle_dispatch()  # turn off auto dispatch for this transaction
+        #self.kcu.write_node("READOUT_BOARD_%d.SC.TX_GBTX_ADDR" % self.rb, 115)
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_REGISTER_ADDR" % self.rb, adr)
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_DATA_TO_GBTX" % self.rb, data)
         self.kcu.action("READOUT_BOARD_%d.SC.TX_WR" % self.rb)
         self.kcu.action("READOUT_BOARD_%d.SC.TX_START_WRITE" % self.rb)
-        if not defer:  # turn auto dispatch back on only if it wasn't set to false before
-            self.kcu.dispatch()
+        return self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_FROM_GBTX" % self.rb)
+        #if not defer:  # turn auto dispatch back on only if it wasn't set to false before
+        #    self.kcu.dispatch()
         #self.rd_flush()
 
     def rd_adr(self, adr):
-        self.kcu.write_node("READOUT_BOARD_%d.SC.TX_GBTX_ADDR" % self.rb, 115)
-        self.kcu.write_node("READOUT_BOARD_%d.SC.TX_NUM_BYTES_TO_READ" % self.rb, 1)
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_REGISTER_ADDR" % self.rb, adr)
         self.kcu.action("READOUT_BOARD_%d.SC.TX_START_READ" % self.rb)
-        i = 0
-        while (not self.kcu.read_node("READOUT_BOARD_%d.SC.RX_EMPTY" % self.rb)):
-            self.kcu.action("READOUT_BOARD_%d.SC.RX_RD" % self.rb)
-            read = self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_FROM_GBTX" % self.rb)
-            if i == 6:
-                return read
-            i += 1
-        print("lpgbt read failed!! SC RX empty")
-        return 0xE9
+
+        valid = self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_VALID" % self.rb)
+        if valid:
+            return self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_FROM_GBTX" % self.rb)
+
+        print("LpGBT read failed!")
+        return None
 
     def wr_reg(self, id, data):
         node = self.get_node(id)
