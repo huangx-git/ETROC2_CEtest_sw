@@ -74,7 +74,9 @@ class ReadoutBoard:
         self.DAQ_LPGBT.set_gpio(bit, 1)
 
     def find_uplink_alignment(self, scan_time=0.01, default=0):
-        n_links = 24  # shouldn't that be 28?
+
+        # TODO: check the FEC mode and set the number of links appropriately
+        n_links = 24  #  NOTE: there are 28 e-links if the board is in FEC5 mode, but we are operating in FEC12 where there are only 24
         print ("Scanning for uplink alignment")
         alignment = {}
         inversion = {} # also scan for inversion
@@ -82,6 +84,9 @@ class ReadoutBoard:
         for link in ['Link 0', 'Link 1']:
             alignment[link] = {i:default for i in range(n_links)}
             inversion[link] = {i:0x02 for i in range(n_links)}
+
+        # TODO: the scan should check the pattern checkers first, and skip the scan for any where the pattern check is already ok
+
         # now, scan
         for inv in [0x02, 0x0a]:  # 0x02 - not inverted, 0x0a inverted
             for shift in range(8):
