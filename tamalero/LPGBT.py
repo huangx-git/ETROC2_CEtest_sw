@@ -173,33 +173,21 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDATAGATINGENABLE", 0x1)
 
     def configure_eptx(self):
-        #[0x0a7] EPTXDataRate
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX0DATARATE", 0x3)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX1DATARATE", 0x3)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX2DATARATE", 0x3)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX3DATARATE", 0x3)
 
-        #EPTXxxEnable
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX00ENABLE", 0x1)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX02ENABLE", 0x1)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX10ENABLE", 0x1)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX20ENABLE", 0x1)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX22ENABLE", 0x1)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX30ENABLE", 0x1)
+        for i in range(4):
+            # [0x0a7] EPTXDataRate
+            self.wr_reg("LPGBT.RWF.EPORTTX.EPTX%dDATARATE" % i, 0x3)
+            self.wr_reg("LPGBT.RWF.EPORTTX.EPTX%dDATARATE" % i, 0x3)
+            self.wr_reg("LPGBT.RWF.EPORTTX.EPTX%dDATARATE" % i, 0x3)
+            self.wr_reg("LPGBT.RWF.EPORTTX.EPTX%dDATARATE" % i, 0x3)
 
-        #EPTXxxDriveStrength
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX0DRIVESTRENGTH", 0x3)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX2DRIVESTRENGTH", 0x3)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX4DRIVESTRENGTH", 0x3)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX8DRIVESTRENGTH", 0x3)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX10DRIVESTRENGTH", 0x3)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX12DRIVESTRENGTH", 0x3)
-
-        # enable mirror feature
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX0MIRRORENABLE", 0x1)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX1MIRRORENABLE", 0x1)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX2MIRRORENABLE", 0x1)
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX3MIRRORENABLE", 0x1)
+        # EPTXxxEnable
+        # EPTXxxDriveStrength
+        for i in [0, 2, 4, 8, 10, 12]:
+            group = str(i//4)
+            link = str(i % 4)
+            self.wr_reg("LPGBT.RWF.EPORTTX.EPTX%s%sENABLE" % (group, link), 0x1)
+            self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX%dDRIVESTRENGTH" % i, 0x3)
 
         #turn on 320 MHz clocks
         self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK3FREQ",  0x4)
@@ -215,67 +203,29 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK7DRIVESTRENGTH", 0x3)
         self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK15DRIVESTRENGTH", 0x3)
         self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK16DRIVESTRENGTH", 0x3)
+        # enable mirror feature
+        for i in range(4):
+            self.wr_reg("LPGBT.RWF.EPORTTX.EPTX%dMIRRORENABLE" % i, 0x1)
 
     def configure_eprx(self):
-        print ("Configuring elink inputs...")
+
+        print("Configuring elink inputs...")
         # Enable Elink-inputs
-    
-        #set banks to 320 Mbps
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX0DATARATE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX1DATARATE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX2DATARATE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX3DATARATE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX4DATARATE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX5DATARATE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX6DATARATE", 1)
-    
-        #set banks to fixed phase
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX0TRACKMODE", 2)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX1TRACKMODE", 2)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX2TRACKMODE", 2)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX3TRACKMODE", 2)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX4TRACKMODE", 2)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX5TRACKMODE", 2)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX6TRACKMODE", 2)
-    
-        #enable inputs
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX00ENABLE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX01ENABLE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX02ENABLE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX03ENABLE", 1)
-    
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX10ENABLE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX11ENABLE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX12ENABLE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX13ENABLE", 1)
-    
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX20ENABLE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX21ENABLE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX22ENABLE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX23ENABLE", 1)
-    
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX30ENABLE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX31ENABLE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX32ENABLE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX33ENABLE", 1)
-    
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX40ENABLE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX41ENABLE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX42ENABLE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX43ENABLE", 1)
-    
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX50ENABLE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX51ENABLE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX52ENABLE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX53ENABLE", 1)
-    
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX60ENABLE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX61ENABLE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX62ENABLE", 1)
-        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX63ENABLE", 1)
-    
-        #enable 100 ohm termination
-        for i in range (28):
+
+        # enable inputs
+        for i in range(24):
+            group = str(i//4)
+            link = str(i % 4)
+            self.wr_reg("LPGBT.RWF.EPORTRX.EPRX%s%sENABLE" % (group, link), 1)
+
+        for i in range(7):
+            # set banks to 320 Mbps (1)
+            self.wr_reg("LPGBT.RWF.EPORTRX.EPRX%dDATARATE" % i, 1)
+            # set banks to continuous phase tracking (2)
+            self.wr_reg("LPGBT.RWF.EPORTRX.EPRX%dTRACKMODE" % i, 2)
+
+        # enable 100 ohm termination
+        for i in range(28):
             self.wr_reg("LPGBT.RWF.EPORTRX.EPRX_CHN_CONTROL.EPRX%dTERM" % i, 1)
 
     def init_adc(self):
