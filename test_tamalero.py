@@ -39,6 +39,12 @@ if __name__ == '__main__':
 
     rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=(not args.force_no_trigger)))
 
+    data = 0xabcd1234
+    kcu.write_node("LOOPBACK.LOOPBACK", data)
+    if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
+        print("No communications with KCU105... quitting")
+        sys.exit(0)
+
     if args.power_up:
         print ("Power up init sequence for: DAQ")
         rb_0.DAQ_LPGBT.power_up_init()
