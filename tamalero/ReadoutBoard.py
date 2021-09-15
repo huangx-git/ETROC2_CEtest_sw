@@ -73,8 +73,7 @@ class ReadoutBoard:
         self.DAQ_LPGBT.set_gpio(bit, 0)
         self.DAQ_LPGBT.set_gpio(bit, 1)
 
-    def find_uplink_alignment(self, scan_time=0.01, default=0):
-
+    def find_uplink_alignment(self, scan_time=0.01, default=0):  # default scan time of 0.01 is enough
         # TODO: check the FEC mode and set the number of links appropriately
         n_links = 24  #  NOTE: there are 28 e-links if the board is in FEC5 mode, but we are operating in FEC12 where there are only 24
         print ("Scanning for uplink alignment")
