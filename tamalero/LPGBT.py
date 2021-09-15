@@ -189,20 +189,6 @@ class LPGBT(RegParser):
             self.wr_reg("LPGBT.RWF.EPORTTX.EPTX%s%sENABLE" % (group, link), 0x1)
             self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX%dDRIVESTRENGTH" % i, 0x3)
 
-        #turn on 320 MHz clocks
-        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK3FREQ",  0x4)
-        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK5FREQ",  0x4)
-        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK6FREQ",  0x4)
-        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK7FREQ",  0x4)
-        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK15FREQ", 0x4)
-        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK16FREQ", 0x4)
-
-        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK3DRIVESTRENGTH", 0x3)
-        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK5DRIVESTRENGTH", 0x3)
-        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK6DRIVESTRENGTH", 0x3)
-        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK7DRIVESTRENGTH", 0x3)
-        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK15DRIVESTRENGTH", 0x3)
-        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK16DRIVESTRENGTH", 0x3)
         # enable mirror feature
         for i in range(4):
             self.wr_reg("LPGBT.RWF.EPORTTX.EPTX%dMIRRORENABLE" % i, 0x1)
