@@ -64,9 +64,13 @@ class LPGBT(RegParser):
             # toggle the uplink to and from 40MHz clock, for some reason this is
             # needed for the mgt to lock
 
-            self.wr_adr(0x118, 6)
-            sleep(0.1)
-            self.wr_adr(0x118, 0)
+            if (not self.kcu.read_node(
+                    "READOUT_BOARD_%d.LPGBT.DAQ.UPLINK.READY" % self.rb)):
+                print("  > Performing LpGBT Magic...")
+                self.wr_adr(0x118, 6)
+                sleep(0.1)
+                self.wr_adr(0x118, 0)
+                print("  > Magic Done")
         else:
             # servant lpgbt base configuration
             self.master.program_slave_from_file('configs/config_slave.txt')  #FIXME check if we still need this black box after power cycle.
