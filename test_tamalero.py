@@ -31,8 +31,8 @@ if __name__ == '__main__':
     print ("Using KCU at address: %s"%args.kcu)
 
     kcu = KCU(name="my_device",
-              ipb_path="chtcp-2.0://localhost:10203?target=%s:50001"%args.kcu,
-              #ipb_path="ipbusudp-2.0://192.168.0.10:50001",
+              #ipb_path="chtcp-2.0://localhost:10203?target=%s:50001"%args.kcu,
+              ipb_path="ipbusudp-2.0://%s:50001"%args.kcu,
               adr_table="module_test_fw/address_tables/etl_test_fw.xml")
 
     kcu.status()
