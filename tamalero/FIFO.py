@@ -18,6 +18,8 @@ class FIFO:
         
 
     def reset(self):
+        # needs to be reset twice, dunno
+        self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_RESET"%self.rb.rb, 0x01)
         self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_RESET"%self.rb.rb, 0x01)
 
     def dump(self, block=255):
