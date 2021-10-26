@@ -21,6 +21,7 @@ class FIFO:
         self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_RESET"%self.rb.rb, 0x01)
 
     def dump(self, block=255):
+        # try forcing trigger?
         res = self.rb.kcu.hw.getNode("DAQ_0.FIFO").readBlock(block)
         self.rb.kcu.hw.dispatch()
         hex_dump = [ '{0:0{1}x}'.format(r,2) for r in res.value() ]
