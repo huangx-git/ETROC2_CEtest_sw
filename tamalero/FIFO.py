@@ -44,8 +44,19 @@ class FIFO:
         return res
 
     def dump_to_file(self, hex_dump, filename='dump.hex', n_col=16):
+        tmp_chunks = chunk(['35','55'] + hex_dump, n_col)
+
+        # clean the last bytes so that we only keep full events
+        for i in range(len(tmp_chunks)):
+            if len(tmp_chunks[-1]) < n_col:
+                tmp_chunks.pop(-1)
+            elif tmp_chunks[-1][0:3] != ['95', '55', '55']:
+                tmp_chunks.pop(-1)
+            else:
+                break
+
         with open(filename, 'w') as f:
-            for line in chunk(['35','55'] + hex_dump, n_col):
+            for line in tmp_chunks:
                 for w in line:
                     f.write('%s '%w)
                 f.write('\n')
