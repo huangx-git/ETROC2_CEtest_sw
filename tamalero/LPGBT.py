@@ -155,6 +155,22 @@ class LPGBT(RegParser):
             id = "READOUT_BOARD_%d.LPGBT.DAQ.UPLINK.ALIGN_%d" % (self.rb, link)
         self.kcu.write_node(id, val)
 
+    def get_uplink_alignment(self, link):
+        if self.trigger:
+            return self.kcu.read_node("READOUT_BOARD_%d.LPGBT.TRIGGER.UPLINK.ALIGN_%d"%(self.rb, link)).value()
+        else:
+            return self.kcu.read_node("READOUT_BOARD_%d.LPGBT.DAQ.UPLINK.ALIGN_%d"%(self.rb, link)).value()
+
+    def set_uplink_invert(self, link, invert=True):
+        # 0x02 - not inverted, 0x0a - inverted. don't actually need those details any more
+        self.wr_reg("LPGBT.RWF.EPORTRX.EPRX_CHN_CONTROL.EPRX%dINVERT" % link, invert)
+
+    def get_uplink_invert(self, link):
+        if self.trigger:
+            return self.I2C_read(reg=0xcc+link, master=2, slave_addr=0x70)
+        else:
+            return self.rd_adr(0xcc+link).value()
+
     def configure_clocks(self, en_mask, invert_mask=0):
         for i in range(27):
             if 0x1 & (en_mask >> i):
