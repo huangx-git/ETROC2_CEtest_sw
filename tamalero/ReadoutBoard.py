@@ -94,7 +94,7 @@ class ReadoutBoard:
                     self.DAQ_LPGBT.set_uplink_invert(channel, inv)
                     if self.trigger:
                         self.TRIG_LPGBT.set_uplink_alignment(shift, channel, quiet=True)
-                        self.TRIG_LPGBT.set_uplink_invert(channel, val=inv)
+                        self.TRIG_LPGBT.set_uplink_invert(channel, inv)
                 self.DAQ_LPGBT.set_uplink_group_data_source("normal")  # actually needed??
                 self.DAQ_LPGBT.set_downlink_data_src('upcnt')
                 self.DAQ_LPGBT.reset_pattern_checkers()
@@ -114,7 +114,7 @@ class ReadoutBoard:
             self.DAQ_LPGBT.set_uplink_invert(channel, inversion['Link 0'][channel])
             if self.trigger:
                 self.TRIG_LPGBT.set_uplink_alignment(alignment['Link 1'][channel], channel, quiet=True)
-                self.TRIG_LPGBT.set_uplink_invert(channel, val=inversion['Link 1'][channel])
+                self.TRIG_LPGBT.set_uplink_invert(channel, inversion['Link 1'][channel])
 
         return alignment
 
