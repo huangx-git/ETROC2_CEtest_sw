@@ -90,10 +90,10 @@ class ReadoutBoard:
         for inv in [False, True]:
             for shift in range(8):
                 for channel in range(n_links):
-                    self.DAQ_LPGBT.set_uplink_alignment(shift, channel, quiet=True)
+                    self.DAQ_LPGBT.set_uplink_alignment(channel, shift, quiet=True)
                     self.DAQ_LPGBT.set_uplink_invert(channel, inv)
                     if self.trigger:
-                        self.TRIG_LPGBT.set_uplink_alignment(shift, channel, quiet=True)
+                        self.TRIG_LPGBT.set_uplink_alignment(channel, shift, quiet=True)
                         self.TRIG_LPGBT.set_uplink_invert(channel, inv)
                 self.DAQ_LPGBT.set_uplink_group_data_source("normal")  # actually needed??
                 self.DAQ_LPGBT.set_downlink_data_src('upcnt')
@@ -110,10 +110,10 @@ class ReadoutBoard:
         # Reset alignment to default values for the channels where no good alignment has been found
         print ("Now setting uplink alignment to optimal values (default values if no good alignment was found)")
         for channel in range(n_links):
-            self.DAQ_LPGBT.set_uplink_alignment(alignment['Link 0'][channel], channel, quiet=True)
+            self.DAQ_LPGBT.set_uplink_alignment(channel, alignment['Link 0'][channel], quiet=True)
             self.DAQ_LPGBT.set_uplink_invert(channel, inversion['Link 0'][channel])
             if self.trigger:
-                self.TRIG_LPGBT.set_uplink_alignment(alignment['Link 1'][channel], channel, quiet=True)
+                self.TRIG_LPGBT.set_uplink_alignment(channel, alignment['Link 1'][channel], quiet=True)
                 self.TRIG_LPGBT.set_uplink_invert(channel, inversion['Link 1'][channel])
 
         return alignment

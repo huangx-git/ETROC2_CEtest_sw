@@ -144,7 +144,7 @@ class LPGBT(RegParser):
         self.wr_adr(0x54, defaults >> 8)
         self.wr_adr(0x55, defaults & 0xFF)
 
-    def set_uplink_alignment(self, val, link, quiet=False):
+    def set_uplink_alignment(self, link, val, quiet=False):
         if self.trigger:
             if not quiet:
                 print ("Setting uplink alignment for trigger link %i to %i"%(link, val))

@@ -25,7 +25,7 @@ if __name__ == '__main__':
     argParser.add_argument('--reset_pattern_checker', action='store', choices=[None, 'prbs', 'upcnt'], default=None, help="Reset pattern checker?")
     argParser.add_argument('--kcu', action='store', default="192.168.0.10", help="Reset pattern checker?")
     argParser.add_argument('--force_no_trigger', action='store_true', help="Never initialize the trigger lpGBT.")
-    argParser.add_argument('--read_fifo', action='store', default=2, help='Read 3000 words from link N')
+    argParser.add_argument('--read_fifo', action='store', default=-1, help='Read 3000 words from link N')
     args = argParser.parse_args()
 
     header()
@@ -149,8 +149,9 @@ if __name__ == '__main__':
         print ("\nReading the pattern checker counter.")
         rb_0.DAQ_LPGBT.read_pattern_checkers()
 
-    if args.read_fifo:
-        fifo = FIFO(rb_0, elink=int(args.read_fifo))
+    fifo_link = int(args.read_fifo)
+    if fifo_link>=0:
+        fifo = FIFO(rb_0, elink=fifo_link)
         fifo.set_trigger(word0=0x35, word1=0x55, mask0=0xff, mask1=0xff)
         fifo.reset()
         hex_dump = fifo.giant_dump(3000,255)
