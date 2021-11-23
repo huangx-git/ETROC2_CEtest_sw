@@ -1,0 +1,10 @@
+ETROC1:
+  nbits: 40
+  leading:
+      header: '00'
+      data: '01'
+      trailer: '10'
+      filler: '11'
+  header: 0x355555
+  trailer: 0x555555
+  filler: 0x0AAAAAAAAA

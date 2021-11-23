@@ -1,7 +1,14 @@
+import os
 from tamalero.utils import chunk
+from yaml import load, dump
+
+try:
+    from yaml import CLoader as Loader, CDumper as Dumper
+except ImportError:
+    from yaml import Loader, Dumper
 
 class FIFO:
-    def __init__(self, rb, elink=0):
+    def __init__(self, rb, elink=0, ETROC='ETROC1'):
         self.rb = rb
         self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_ELINK_SEL"%self.rb.rb, elink)
 
@@ -9,6 +16,10 @@ class FIFO:
         self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_TRIG0_MASK"%self.rb.rb, 0x00)
         self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_TRIG1"%self.rb.rb, 0x00)
         self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_TRIG1_MASK"%self.rb.rb, 0x00)
+
+        with open(os.path.expandvars('$TAMALERO_BASE/configs/dataformat.yaml')) as f:
+            self.dataformat = load(f, Loader=Loader)[ETROC]
+
         
 
     def set_trigger(self, word0=0x0, word1=0x0, mask0=0x0, mask1=0x0):
@@ -43,20 +54,30 @@ class FIFO:
         res += self.dump(block=block%subblock)
         return res
 
-    def dump_to_file(self, hex_dump, filename='dump.hex', n_col=16):
-        tmp_chunks = chunk(['35','55'] + hex_dump, n_col)
+    def wipe(self, hex_dump, trigger_words=['35', '55'], integer=False):
+        '''
+        after a dump you need to wipe
+        '''
+        tmp_chunks = chunk(trigger_words + hex_dump, int(self.dataformat['nbits']/8))
 
         # clean the last bytes so that we only keep full events
         for i in range(len(tmp_chunks)):
-            if len(tmp_chunks[-1]) < n_col:
+            if len(tmp_chunks[-1]) < self.dataformat['nbits']/8:
                 tmp_chunks.pop(-1)
             elif tmp_chunks[-1][0:3] != ['95', '55', '55']:
                 tmp_chunks.pop(-1)
             else:
                 break
 
+        if integer:
+            tmp_chunks = [ int(''.join(line),16) for line in tmp_chunks ]
+
+        return tmp_chunks
+
+
+    def dump_to_file(self, hex_dump, filename='dump.hex'):
         with open(filename, 'w') as f:
-            for line in tmp_chunks:
+            for line in hex_dump:
                 for w in line:
                     f.write('%s '%w)
                 f.write('\n')
