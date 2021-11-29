@@ -38,6 +38,10 @@ def read_mapping(f_in, selection='adc', flavor='small'):
         mapping = load(f, Loader=Loader)[selection]
     return {v:mapping[v] for v in mapping.keys() if flavors[mapping[v]['flavor']] <= flavors[flavor]}
 
+def dump_alignment_to_file(rb, f_out):
+    res = rb.dump_uplink_alignment()
+    with open(f_out, 'w') as f:
+        dump(res, f, Dumper=Dumper)
 
 def prbs_phase_scan(lpgbt, f_out='phase_scan.txt'):
     with open(f_out, "w") as f:

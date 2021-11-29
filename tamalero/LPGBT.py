@@ -166,10 +166,12 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.EPORTRX.EPRX_CHN_CONTROL.EPRX%dINVERT" % link, invert)
 
     def get_uplink_invert(self, link):
-        if self.trigger:
-            return self.I2C_read(reg=0xcc+link, master=2, slave_addr=0x70)
-        else:
-            return self.rd_adr(0xcc+link).value()
+        return self.rd_reg("LPGBT.RWF.EPORTRX.EPRX_CHN_CONTROL.EPRX%dINVERT" % link)
+
+        #if self.trigger:
+        #    return self.I2C_read(reg=0xcc+link, master=2, slave_addr=0x70)
+        #else:
+        #    return self.rd_adr(0xcc+link).value()
 
     def configure_clocks(self, en_mask, invert_mask=0):
         for i in range(27):
