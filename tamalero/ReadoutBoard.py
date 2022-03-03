@@ -22,6 +22,9 @@ class ReadoutBoard:
         self.DAQ_LPGBT.parse_xml(os.path.expandvars('$TAMALERO_BASE/address_table/lpgbt.xml'))
 
         self.VTRX = VTRX(self.DAQ_LPGBT)
+        # This is not yet recommended:
+        #for adr in [0x06, 0x0A, 0x0E, 0x12]:
+        #    self.VTRX.wr_adr(adr, 0x20)
 
         self.SCA = SCA(rb=rb, flavor=flavor)
 
@@ -141,6 +144,16 @@ class ReadoutBoard:
 
         return alignment
 
+    def load_uplink_alignment(self, alignment, n_links=24):
+
+        for i in range(n_links):
+            self.DAQ_LPGBT.set_uplink_alignment(i ,alignment['daq']['alignment'][i])
+            self.DAQ_LPGBT.set_uplink_invert(i, alignment['daq']['inversion'][i])
+
+            if self.trigger:
+                self.TRIG_LPGBT.set_uplink_alignment(i, alignment['trigger']['alignment'][i])
+                self.TRIG_LPGBT.set_uplink_invert(i, alignment['trigger']['inversion'][i])
+
     def status(self):
         print("Readout Board %s LPGBT Link Status:" % self.rb)
         print("{:<8}{:<8}{:<50}{:<8}".format("Address", "Perm.", "Name", "Value"))
@@ -150,7 +163,26 @@ class ReadoutBoard:
         self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.READY" % self.rb), use_color=True)
         self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT" % self.rb), use_color=True, invert=True)
 
-    def configure(self):
+    def get_FEC_error_count(self, quiet=False):
+        if not quiet:
+            print("{:<8}{:<8}{:<50}{:<8}".format("Address", "Perm.", "Name", "Value"))
+            self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.UPLINK.FEC_ERR_CNT" % self.rb), use_color=True, invert=True)
+            self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT" % self.rb), use_color=True, invert=True)
+        return {
+            'DAQ': self.kcu.read_node("READOUT_BOARD_%s.LPGBT.DAQ.UPLINK.FEC_ERR_CNT" % self.rb).value(),
+            'TRIGGER': self.kcu.read_node("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT" % self.rb).value()
+        }
+
+    def reset_FEC_error_count(self, quiet=False):
+        if not quiet:
+            print("Error counts before reset:")
+            self.get_FEC_error_count()
+        self.kcu.write_node("READOUT_BOARD_%s.LPGBT.FEC_ERR_RESET" % self.rb, 0x1)
+        if not quiet:
+            print("Error counts after reset:")
+            self.get_FEC_error_count()
+
+    def configure(self, alignment=None):
 
         ## DAQ
         #for i in range(28):
@@ -172,7 +204,10 @@ class ReadoutBoard:
         #self.TRIG_LPGBT.configure_eptx()
         #self.TRIG_LPGBT.configure_eprx()
 
-        _ = self.find_uplink_alignment()
+        if alignment is not None:
+            self.load_uplink_alignment(alignment)
+        else:
+            _ = self.find_uplink_alignment()
 
         # SCA init
         self.sca_hard_reset()
@@ -180,6 +215,12 @@ class ReadoutBoard:
         self.SCA.reset()
         self.SCA.connect()
         self.SCA.config_gpios()  # this sets the directions etc according to the mapping
+
+        #if self.trigger:
+        #    self.DAQ_LPGBT.reset_trigger_mgts() 
+
+        #sleep(0.5)
+
 
     def read_temp(self, verbose=0):
         # high level function to read all the temperature sensors
