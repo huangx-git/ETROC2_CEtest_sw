@@ -1,7 +1,7 @@
 import os
 from tamalero.LPGBT import LPGBT
 from tamalero.SCA import SCA
-from tamalero.utils import get_temp
+from tamalero.utils import get_temp, chunk
 from tamalero.VTRX import VTRX
 
 from time import sleep
@@ -76,7 +76,7 @@ class ReadoutBoard:
         self.DAQ_LPGBT.set_gpio(bit, 0)
         self.DAQ_LPGBT.set_gpio(bit, 1)
 
-    def find_uplink_alignment(self, scan_time=0.01, default=0):  # default scan time of 0.01 is enough
+    def find_uplink_alignment(self, scan_time=0.01, default=0, data_mode=False):  # default scan time of 0.01 is enough
         # TODO: check the FEC mode and set the number of links appropriately
         n_links = 24  #  NOTE: there are 28 e-links if the board is in FEC5 mode, but we are operating in FEC12 where there are only 24
         print ("Scanning for uplink alignment")
@@ -90,25 +90,41 @@ class ReadoutBoard:
         # TODO: the scan should check the pattern checkers first, and skip the scan for any where the pattern check is already ok
 
         # now, scan
-        for inv in [False, True]:
-            for shift in range(8):
-                for channel in range(n_links):
-                    self.DAQ_LPGBT.set_uplink_alignment(channel, shift, quiet=True)
-                    self.DAQ_LPGBT.set_uplink_invert(channel, inv)
-                    if self.trigger:
-                        self.TRIG_LPGBT.set_uplink_alignment(channel, shift, quiet=True)
-                        self.TRIG_LPGBT.set_uplink_invert(channel, inv)
-                self.DAQ_LPGBT.set_uplink_group_data_source("normal")  # actually needed??
-                self.DAQ_LPGBT.set_downlink_data_src('upcnt')
-                self.DAQ_LPGBT.reset_pattern_checkers()
-                sleep(scan_time)
-                res = self.DAQ_LPGBT.read_pattern_checkers(log_dir=None, quiet=True)
-                for link in ['Link 0', 'Link 1']:
-                    for channel in range(n_links):
-                        if res[link]['UPCNT'][channel]['error'][0] == 0:
-                            print ("Found uplink alignment for %s, channel %s: %s, inverted: %s"%(link, channel, shift, inv==0x0a))
+        if data_mode:
+            link = 'Link 0'
+            for channel in range(n_links):
+                res = 0
+                for inv in [False, True]:
+                    for shift in range(8):
+                        self.DAQ_LPGBT.set_uplink_alignment(channel, shift, quiet=True)
+                        self.DAQ_LPGBT.set_uplink_invert(channel, inv)
+                        tmp = self.check_data_integrity(channel=channel)
+                        if tmp>res:
+                            print ("Found improved uplink alignment for %s, channel %s: %s, inverted: %s"%(link, channel, shift, inv))
+                            print (tmp, res)
                             alignment[link][channel] = shift
                             inversion[link][channel] = inv
+                            res = tmp
+        else:
+            for inv in [False, True]:
+                for shift in range(8):
+                    for channel in range(n_links):
+                        self.DAQ_LPGBT.set_uplink_alignment(channel, shift, quiet=True)
+                        self.DAQ_LPGBT.set_uplink_invert(channel, inv)
+                        if self.trigger:
+                            self.TRIG_LPGBT.set_uplink_alignment(channel, shift, quiet=True)
+                            self.TRIG_LPGBT.set_uplink_invert(channel, inv)
+                    self.DAQ_LPGBT.set_uplink_group_data_source("normal")  # actually needed??
+                    self.DAQ_LPGBT.set_downlink_data_src('upcnt')
+                    self.DAQ_LPGBT.reset_pattern_checkers()
+                    sleep(scan_time)
+                    res = self.DAQ_LPGBT.read_pattern_checkers(log_dir=None, quiet=True)
+                    for link in ['Link 0', 'Link 1']:
+                        for channel in range(n_links):
+                            if res[link]['UPCNT'][channel]['error'][0] == 0:
+                                print ("Found uplink alignment for %s, channel %s: %s, inverted: %s"%(link, channel, shift, inv))
+                                alignment[link][channel] = shift
+                                inversion[link][channel] = inv
 
         # Reset alignment to default values for the channels where no good alignment has been found
         print ("Now setting uplink alignment to optimal values (default values if no good alignment was found)")
@@ -163,6 +179,32 @@ class ReadoutBoard:
         self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.READY" % self.rb), use_color=True)
         self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT" % self.rb), use_color=True, invert=True)
 
+    def check_data_integrity(self, channel=0):
+        '''
+        Not sure where this function should live.
+        It's not necessarily a part of the RB.
+        FIXME: Needs to become transparent to the data format.
+        '''
+        from tamalero.FIFO import FIFO
+        fifo = FIFO(self, elink=channel)
+        fifo.set_trigger(word0=0x35, word1=0x55, mask0=0xff, mask1=0xff)
+        fifo.reset()
+        n_header = 0
+        n_trailer = 0
+        data  = []
+        for i in range(10):
+            data += ['35', '55'] + fifo.giant_dump(3000)  # + ['35', '55'] + fifo.giant_dump(3000)
+            fifo.reset()
+
+        long_st = ''.join(data)
+        for line in chunk(data, 5):
+            n_header  += (line[0:3] == ['35','55','55'])
+            n_trailer += (line[0:3] == ['95','55','55'])
+
+        #print (n_header, n_trailer)
+        return n_header + n_trailer
+
+
     def get_FEC_error_count(self, quiet=False):
         if not quiet:
             print("{:<8}{:<8}{:<50}{:<8}".format("Address", "Perm.", "Name", "Value"))
@@ -182,7 +224,7 @@ class ReadoutBoard:
             print("Error counts after reset:")
             self.get_FEC_error_count()
 
-    def configure(self, alignment=None):
+    def configure(self, alignment=None, data_mode=False):
 
         ## DAQ
         #for i in range(28):
@@ -207,7 +249,7 @@ class ReadoutBoard:
         if alignment is not None:
             self.load_uplink_alignment(alignment)
         else:
-            _ = self.find_uplink_alignment()
+            _ = self.find_uplink_alignment(data_mode=data_mode)
 
         # SCA init
         self.sca_hard_reset()

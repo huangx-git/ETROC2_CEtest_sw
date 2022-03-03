@@ -12,6 +12,10 @@ class FIFO:
     def __init__(self, rb, elink=0, ETROC='ETROC1'):
         self.rb = rb
         self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_ELINK_SEL"%self.rb.rb, elink)
+        self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.DL_SRC"%self.rb.rb, 3)
+        self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_IDLE"%self.rb.rb, 0xC1)
+        self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_DATA"%self.rb.rb, 0xC5)
+
 
         self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_TRIG0"%self.rb.rb, 0x00)
         self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_TRIG0_MASK"%self.rb.rb, 0x00)
@@ -39,15 +43,18 @@ class FIFO:
         #self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_FORCE_TRIG" % self.rb.rb, 1)
 
     def dump(self, block=255):
-        # make sure the fifo is not empty
-        #while (self.rb.kcu.read_node("READOUT_BOARD_%s.FIFO_EMPTY"%self.rb.rb)):
-        #    print(self.rb.kcu.read_node("READOUT_BOARD_%s.FIFO_ARMED"%self.rb.rb))
-        #    pass
-        self.rb.kcu.hw.dispatch()
+        self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_PULSE"%self.rb.rb, 0x01)  # FIXME confirm this
+        for i in range(10):
+            if self.rb.kcu.read_node("READOUT_BOARD_%s.FIFO_EMPTY"%self.rb.rb).value() < 1: break
         res = self.rb.kcu.hw.getNode("DAQ_0.FIFO").readBlock(block)
-        self.rb.kcu.hw.dispatch()
-        hex_dump = [ '{0:0{1}x}'.format(r,2) for r in res.value() ]
-        return hex_dump
+        try:
+            self.rb.kcu.hw.dispatch()
+            hex_dump = [ '{0:0{1}x}'.format(r,2) for r in res.value() ]
+            return hex_dump
+        except:
+            # NOTE: not entirely understood, but it seems this happens if FIFO is (suddenly?) empty
+            return []
+
 
     def giant_dump(self, block=3000, subblock=255):
         res = []
