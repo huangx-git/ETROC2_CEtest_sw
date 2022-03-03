@@ -26,6 +26,7 @@ if __name__ == '__main__':
     argParser.add_argument('--kcu', action='store', default="192.168.0.10", help="Reset pattern checker?")
     argParser.add_argument('--force_no_trigger', action='store_true', help="Never initialize the trigger lpGBT.")
     argParser.add_argument('--read_fifo', action='store', default=-1, help='Read 3000 words from link N')
+    argParser.add_argument('--load_alignment', action='store', default=None, help='Load predefined alignment, skips the scan.')
     args = argParser.parse_args()
 
     header()
@@ -53,8 +54,10 @@ if __name__ == '__main__':
         rb_0.DAQ_LPGBT.power_up_init()
         if (rb_0.DAQ_LPGBT.rd_adr(0x1c5) != 0xa5):
             print(hex(rb_0.DAQ_LPGBT.rd_adr(0x1c5)))
-            print ("No communication with DAQ LPGBT... quitting")
-            sys.exit(0)
+            print ("No communication with DAQ LPGBT... trying to reset DAQ MGTs")
+            rb_0.DAQ_LPGBT.reset_daq_mgts()
+            rb_0.DAQ_LPGBT.power_up_init()
+            #sys.exit(0)
         #rb_0.TRIG_LPGBT.power_up_init()
         rb_0.get_trigger()
         if rb_0.trigger:
@@ -66,7 +69,14 @@ if __name__ == '__main__':
         rb_0.get_trigger()
 
     if args.power_up or args.reconfigure:
-        rb_0.configure()  # this is very slow, especially for the trigger lpGBT.
+        if args.load_alignment is not None:
+            from tamalero.utils import load_alignment_from_file
+            alignment = load_alignment_from_file(args.load_alignment)
+        else:
+            alignment = None
+        rb_0.configure(alignment=alignment)  # this is very slow, especially for the trigger lpGBT.
+        if rb_0.trigger:
+            rb_0.DAQ_LPGBT.reset_trigger_mgts() 
         time.sleep(1.0)
 
     res = rb_0.DAQ_LPGBT.get_board_id()
@@ -146,13 +156,20 @@ if __name__ == '__main__':
         time.sleep(0.1)
 
     if args.run_pattern_checker:
-        print ("\nReading the pattern checker counter.")
+        print ("\nReading the pattern checker counter. Waiting 1 sec.")
+        time.sleep(1)
         rb_0.DAQ_LPGBT.read_pattern_checkers()
 
+    time.sleep(1)
     fifo_link = int(args.read_fifo)
     if fifo_link>=0:
         fifo = FIFO(rb_0, elink=fifo_link)
         fifo.set_trigger(word0=0x35, word1=0x55, mask0=0xff, mask1=0xff)
         fifo.reset()
-        hex_dump = fifo.giant_dump(3000,255)
+        try:
+            hex_dump = fifo.giant_dump(3000,255)
+        except:
+            print ("Dispatch failed, trying again.")
+            hex_dump = fifo.giant_dump(3000,255)
+        print (hex_dump)
         fifo.dump_to_file(fifo.wipe(hex_dump))  # use 5 columns --> better to read for our data format
