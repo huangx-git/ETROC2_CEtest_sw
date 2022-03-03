@@ -1,4 +1,5 @@
 import os
+import time
 from tamalero.utils import chunk
 from yaml import load, dump
 
@@ -42,6 +43,7 @@ class FIFO:
         #while (self.rb.kcu.read_node("READOUT_BOARD_%s.FIFO_EMPTY"%self.rb.rb)):
         #    print(self.rb.kcu.read_node("READOUT_BOARD_%s.FIFO_ARMED"%self.rb.rb))
         #    pass
+        self.rb.kcu.hw.dispatch()
         res = self.rb.kcu.hw.getNode("DAQ_0.FIFO").readBlock(block)
         self.rb.kcu.hw.dispatch()
         hex_dump = [ '{0:0{1}x}'.format(r,2) for r in res.value() ]
