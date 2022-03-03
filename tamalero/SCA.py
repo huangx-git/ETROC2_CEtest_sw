@@ -300,8 +300,7 @@ class SCA:
     def read_gpio(self, line):
         self.configure_control_registers(en_gpio=1)  # enable GPIO
         val = self.rw_reg(SCA_GPIO.GPIO_R_DATAIN).value()
-        binary = bin(val)[:1:-1]
-        return int(binary[line])
+        return int((val >> line) & 1)
 
     def set_gpio(self, line, to=1):
         self.configure_control_registers(en_gpio=1)  # enable GPIO
