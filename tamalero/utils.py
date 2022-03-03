@@ -43,6 +43,11 @@ def dump_alignment_to_file(rb, f_out):
     with open(f_out, 'w') as f:
         dump(res, f, Dumper=Dumper)
 
+def load_alignment_from_file(f_in):
+    with open(f_in, 'r') as f:
+        res = load(f, Loader=Loader)
+    return res
+
 def prbs_phase_scan(lpgbt, f_out='phase_scan.txt'):
     with open(f_out, "w") as f:
         for phase in range(0x0, 0x1ff, 1):
