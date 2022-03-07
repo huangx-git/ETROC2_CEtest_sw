@@ -10,17 +10,23 @@ except ImportError:
 
 class DataFrame:
     def __init__(self, version='ETROC1'):
-        with open(f_in, 'r') as f:
+        with open('../configs/dataformat.yaml', 'r') as f:
             self.format = load(f, Loader=Loader)[version]
 
     def read(self, val):
-        for types in self.format['identifiers']:
-            self.format
-
+        data_type = None
+        for id in self.format['identifiers']:
+            if self.format['identifiers'][id]['frame'] == (val & self.format['identifiers'][id]['mask']):
+                data_type = id
+        print (val, data_type)
+        res = {}
+        for d in self.format['data'][data_type]:
+            res[d] = (val & self.format['data'][data_type][d]['mask']) >> self.format['data'][data_type][d]['shift']
+        print (res)
 
 if __name__ == '__main__':
 
-    test = [
+    test_words = [
         0xcaaaaaaaaa,
         0xcaaaaaaaaa,
         0x35555559a7,
@@ -32,3 +38,7 @@ if __name__ == '__main__':
         0x4d02689a90,
         0x76b1f4de3a,
         ]
+
+    df = DataFrame('ETROC1')
+    for word in test_words:
+        df.read(word)
