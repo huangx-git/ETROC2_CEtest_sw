@@ -11,10 +11,9 @@ except ImportError:
 class FIFO:
     def __init__(self, rb, elink=0, ETROC='ETROC1'):
         self.rb = rb
+        self.ETROC = ETROC
         self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_ELINK_SEL"%self.rb.rb, elink)
         self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.DL_SRC"%self.rb.rb, 3)
-        self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_IDLE"%self.rb.rb, 0xC1)
-        self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_DATA"%self.rb.rb, 0xC5)
 
 
         self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_TRIG0"%self.rb.rb, 0x00)
@@ -25,6 +24,11 @@ class FIFO:
         with open(os.path.expandvars('$TAMALERO_BASE/configs/dataformat.yaml')) as f:
             self.dataformat = load(f, Loader=Loader)[ETROC]
 
+        with open(os.path.expandvars('$TAMALERO_BASE/configs/fast_commands.yaml')) as f:
+            self.fast_commands = load(f, Loader=Loader)[ETROC]
+
+        self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_IDLE"%self.rb.rb, self.fast_commands['IDLE'])
+        self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_DATA"%self.rb.rb, self.fast_commands['L1A'])
         
 
     def set_trigger(self, word0=0x0, word1=0x0, mask0=0x0, mask1=0x0):
@@ -41,9 +45,12 @@ class FIFO:
         #print(self.rb.kcu.read_node("READOUT_BOARD_%s.FIFO_ARMED"%self.rb.rb))
         #print(self.rb.kcu.read_node("READOUT_BOARD_%s.FIFO_EMPTY"%self.rb.rb))
         #self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_FORCE_TRIG" % self.rb.rb, 1)
+        if self.ETROC == 'ETROC2':
+            self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_PULSE"%self.rb.rb, 0x01)  # FIXME confirm this
+
 
     def dump(self, block=255):
-        self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_PULSE"%self.rb.rb, 0x01)  # FIXME confirm this
+        #self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_PULSE"%self.rb.rb, 0x01)  # FIXME this is not needed I think
         for i in range(10):
             if self.rb.kcu.read_node("READOUT_BOARD_%s.FIFO_EMPTY"%self.rb.rb).value() < 1: break
         res = self.rb.kcu.hw.getNode("DAQ_0.FIFO").readBlock(block)

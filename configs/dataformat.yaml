@@ -1,10 +1,125 @@
+# To find headers, data etc you'd compare the 40bit word with
+# For the identifiers this is how it works:
+# frame == ( WORD & mask )
+# To decipher the actual data use
+# (WORD & mask) >> shift
+
+# In the end the code has to split into 40bit words, and if we trigger with the first bytes of the header
+# we then only need to make sure that the words are all 40 bits or abort otherwise
+# Need to restructure Chris' code accordingly (So Young??)
+
 ETROC1:
   nbits: 40
-  leading:
-      header: '00'
-      data: '01'
-      trailer: '10'
-      filler: '11'
-  header: 0x355555
-  trailer: 0x555555
-  filler: 0x0AAAAAAAAA
+  identifiers:
+    header:
+      frame: 0x3555555000
+      mask: 0xFFFFFFF000
+    data:
+      frame: 0x4000000000
+      mask: 0xC000000000
+    trailer:
+      frame: 0x9555555000
+      mask: 0xFFFFFF4000
+    filler:
+      frame: 0xCAAAAAAAAA
+      mask: 0xFFFFFFFFFF
+  data:
+    header:
+      bcid:
+        mask: 0x0000000FFF
+        shift: 0
+    data:
+      row_id:
+        mask: 0x3C00000000
+        shift: 34
+      col_id:
+        mask: 0x03C0000000
+        shift: 30
+      toa:
+        mask: 0x003FF00000
+        shift: 20
+      tot:
+        mask: 0x00000FF800
+        shift: 11
+      cal:
+        mask: 0x00000007FE
+        shift: 1
+      parity:
+        mask: 0x0000000001
+        shift: 0
+    trailer:
+      hits:
+        mask: 0x00000003FE
+        shift: 1
+      parity:
+        mask: 0x0000000001
+        shift: 0
+
+
+ETROC2:
+  nbits: 40
+  identifiers:
+    header:
+      frame: 0x3C5C000000
+      mask: 0xFFFFC00000
+    data:
+      frame: 0x8000000000
+      mask: 0x8000000000
+    trailer:  # This is very weak
+      frame: 0x0000000000
+      mask: 0x8000000000
+    filler:
+      frame: 0x3C5C800000
+      mask: 0xFFFFC00000
+  header: # Define the different masks here?
+    l1counter:
+      mask: 0x00003FC000
+      shift: 14
+    type:
+      mask: 0x0000003000
+      shift: 12
+    bcid:
+      mask: 0x0000000FFF
+      shift: 0
+  data:
+    ea:
+      mask: 0x60 00 00 00 00
+      shift: 37
+    col_id:
+      mask: 0x1E 00 00 00 00
+      shift: 33
+    row_id:
+      mask: 0x01 70 00 00 00
+      shift: 29
+    data:
+      mask: 0x00 1F FF FF FF
+      shift: 0
+  #  prbs_col_id:
+  #    mask:
+  #    shift:
+  #trailer:
+  #  chipid:
+  #    mask:
+
+
+#ETROC1:
+#  nbits: 40
+#  leading:
+#      header: '00'
+#      data: '01'
+#      trailer: '10'
+#      filler: '11'
+#  header: 0x355555
+#  trailer: 0x555555
+#  filler: 0x0AAAAAAAAA
+#
+#ETROC2:
+#  nbits: 40
+#  leading:
+#      header: '0'
+#      data: '1'
+#      trailer: '0'
+#      filler: '0'
+#  header: 0x3C5C
+#  trailer: 0x0
+#  filler: 0x3C5C
