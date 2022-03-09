@@ -54,6 +54,10 @@ ETROC1:
       parity:
         mask: 0x0000000001
         shift: 0
+    filler:
+      nothing:
+        mask: 0x00
+        shift: 0
 
 
 ETROC2:
