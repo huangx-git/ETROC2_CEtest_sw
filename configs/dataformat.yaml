@@ -19,7 +19,7 @@ ETROC1:
       mask: 0xC000000000
     trailer:
       frame: 0x9555555000
-      mask: 0xFFFFFF4000
+      mask: 0xFFFFFF5000
     filler:
       frame: 0xCAAAAAAAAA
       mask: 0xFFFFFFFFFF

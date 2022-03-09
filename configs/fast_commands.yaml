@@ -1,0 +1,9 @@
+ETROC1:
+  IDLE: 0xC1
+  L1A: 0xC5
+
+ETROC2:
+  IDLE: 0xF0
+  LINK_RESET: 0x33
+  L1A: 0x96
+  L1ABCR: 0x99
