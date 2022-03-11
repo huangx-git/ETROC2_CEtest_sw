@@ -166,7 +166,8 @@ if __name__ == '__main__':
     fifo_link = int(args.read_fifo)
     if fifo_link>=0:
         fifo = FIFO(rb_0, elink=fifo_link)
-        fifo.set_trigger(word0=0x35, word1=0x55, mask0=0xff, mask1=0xff)
+        fifo.set_trigger(
+            word0=0x35, word1=0x55, word2=0x00, word3=0x00, mask0=0xff, mask1=0xff, mask2=0x00, mask3=0x00)
         fifo.reset()
         try:
             hex_dump = fifo.giant_dump(3000,255)
@@ -174,4 +175,4 @@ if __name__ == '__main__':
             print ("Dispatch failed, trying again.")
             hex_dump = fifo.giant_dump(3000,255)
         print (hex_dump)
-        fifo.dump_to_file(fifo.wipe(hex_dump))  # use 5 columns --> better to read for our data format
+        fifo.dump_to_file(fifo.wipe(hex_dump, trigger_words=[]))  # use 5 columns --> better to read for our data format
