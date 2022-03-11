@@ -21,7 +21,7 @@ ETROC1:
       frame: 0x9555555000
       mask: 0xFFFFFF5000
     filler:
-      frame: 0xCAAAAAAAAA
+      frame: 0xC00AAAAAAA
       mask: 0xFFFFFFFFFF
   data:
     header:
