@@ -52,7 +52,9 @@ if __name__ == '__main__':
     events = []
     fifo = FIFO(rb_0, elink=fifo_link, ETROC=args.etroc)
     fifo.set_trigger(
-        word0=0x35, word1=0x55, word2=0x00, word3=0x00, mask0=0xff, mask1=0xff, mask2=0x00, mask3=0x00)
+        word0=0x35, word1=0x55, word2=0x00, word3=0x00,
+        mask0=0xff, mask1=0xff, mask2=0x00, mask3=0x00,
+    )
     
     for i in range(int(args.triggers)):
         #print(i)
