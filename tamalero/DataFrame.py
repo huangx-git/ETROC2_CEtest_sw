@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 
 from yaml import load, dump
 
@@ -10,7 +11,7 @@ except ImportError:
 
 class DataFrame:
     def __init__(self, version='ETROC1'):
-        with open('../configs/dataformat.yaml', 'r') as f:
+        with open(os.path.expandvars('$TAMALERO_BASE/configs/dataformat.yaml'), 'r') as f:
             self.format = load(f, Loader=Loader)[version]
 
     def read(self, val):
@@ -18,11 +19,15 @@ class DataFrame:
         for id in self.format['identifiers']:
             if self.format['identifiers'][id]['frame'] == (val & self.format['identifiers'][id]['mask']):
                 data_type = id
-        print (val, data_type)
+        #print (val, data_type)
+        if data_type == 'filler': print(val)
+        if data_type == None:
+            print ("Found data of type None:", val)
         res = {}
         for d in self.format['data'][data_type]:
             res[d] = (val & self.format['data'][data_type][d]['mask']) >> self.format['data'][data_type][d]['shift']
-        print (res)
+        #print (res)
+        return data_type, res
 
 if __name__ == '__main__':
 
