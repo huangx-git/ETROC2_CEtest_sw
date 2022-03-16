@@ -187,13 +187,16 @@ class ReadoutBoard:
         '''
         from tamalero.FIFO import FIFO
         fifo = FIFO(self, elink=channel)
-        fifo.set_trigger(word0=0x35, word1=0x55, mask0=0xff, mask1=0xff)
+        fifo.set_trigger(
+            word0=0x35, word1=0x55, word2=0x00, word3=0x00,
+            mask0=0xff, mask1=0xff, mask2=0xff, mask3=0xff,
+        )
         fifo.reset()
         n_header = 0
         n_trailer = 0
         data  = []
         for i in range(10):
-            data += ['35', '55'] + fifo.giant_dump(3000)  # + ['35', '55'] + fifo.giant_dump(3000)
+            data += ['35', '55'] + fifo.giant_dump(3000, align=False)  # + ['35', '55'] + fifo.giant_dump(3000)
             fifo.reset()
 
         long_st = ''.join(data)

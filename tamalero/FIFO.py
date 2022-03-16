@@ -90,12 +90,13 @@ class FIFO:
             # NOTE: not entirely understood, but it seems this happens if FIFO is (suddenly?) empty
             return []
 
-    def giant_dump(self, block=3000, subblock=255, format=True):
+    def giant_dump(self, block=3000, subblock=255, format=True, align=True):
         stream = []
         for i in range(block//subblock):
             stream += self.dump(block=subblock, format=format)
         stream += self.dump(block=block%subblock, format=format)
-        stream = self.align_stream(stream)
+        if align:
+            stream = self.align_stream(stream)
         if format:
             hex_dump = [ '{0:0{1}x}'.format(r,2) for r in stream ]
             return hex_dump
