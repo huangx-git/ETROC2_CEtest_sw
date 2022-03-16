@@ -23,7 +23,7 @@ if __name__ == '__main__':
     argParser.add_argument('--i2c_sca', action='store_true', default=False, help="I2C tests on SCA?")
     argParser.add_argument('--run_pattern_checker', action='store_true', default=False, help="Read pattern checker?")
     argParser.add_argument('--reset_pattern_checker', action='store', choices=[None, 'prbs', 'upcnt'], default=None, help="Reset pattern checker?")
-    argParser.add_argument('--kcu', action='store', default="192.168.0.10", help="Reset pattern checker?")
+    argParser.add_argument('--kcu', action='store', default="192.168.0.10", help="Specify the IP address for KCU")
     argParser.add_argument('--force_no_trigger', action='store_true', help="Never initialize the trigger lpGBT.")
     argParser.add_argument('--read_fifo', action='store', default=-1, help='Read 3000 words from link N')
     argParser.add_argument('--load_alignment', action='store', default=None, help='Load predefined alignment, skips the scan.')

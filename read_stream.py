@@ -12,6 +12,7 @@ import random
 import sys
 import numpy as np
 from yahist import Hist1D, Hist2D
+import logging
 
 def build_events(dump, ETROC="ETROC1"):
     df = DataFrame('ETROC1')
@@ -29,16 +30,28 @@ def build_events(dump, ETROC="ETROC1"):
 
     return events
 
+def get_parity(n):
+    parity = 0
+    while n :
+        parity ^= n & 1
+        n >>=  1
+    return parity
+
 if __name__ == '__main__':
 
     import argparse
 
     argParser = argparse.ArgumentParser(description = "Argument parser")
-    argParser.add_argument('--kcu', action='store', default="192.168.0.10", help="Reset pattern checker?")
+    argParser.add_argument('--kcu', action='store', default="192.168.0.10", help="Specify the IP address for KCU")
     argParser.add_argument('--read_fifo', action='store', default=2, help='Read 3000 words from link N')
     argParser.add_argument('--etroc', action='store', default='ETROC1', help='Select ETROC version')
     argParser.add_argument('--triggers', action='store', default=10, help='How many L1As?')
+    argParser.add_argument('--log_level', default="INFO", type=str,help="Level of information printed by the logger")
     args = argParser.parse_args()
+
+    logger = logging.getLogger(__name__)
+    logger.setLevel(getattr(logging,args.log_level.upper()))
+    logger.addHandler(logging.StreamHandler())
 
     kcu = KCU(name="my_device",
               ipb_path="ipbusudp-2.0://%s:50001"%args.kcu,
@@ -67,22 +80,45 @@ if __name__ == '__main__':
     toa = Hist1D(bins=np.linspace(-0.5,2**10,50))
     tot = Hist1D(bins=np.linspace(0,2**9,50))
     #hit_matrix = Hist2D(bins=(np.linspace(-0.5,15.5,17), np.linspace(-0.5,15.5,17)))
-
+    evnt_cnt=0
+    weird_evnt=[]
     for event in events:
         try:
             nhits.fill([event['trailer'][0]['hits']])
             if event['trailer'][0]['hits'] > 0:
+                if event['trailer'][0]['hits'] != len(event['data']):
+                    logger.warning(" in event {} #hits in data doesn't match trailer info".format(evnt_cnt))
+                    logger.warning("data {} trailer {}".format(event['trailer'][0]['hits'],len(event['data'])))
+                    weird_evnt.append(evnt_cnt)
+                trailer_parity = (1 ^ get_parity(event['trailer'][0]['hits']))
+                if trailer_parity != event['trailer'][0]['parity']:
+                        logger.warning(" in event {} trailer parity and parity bit do not match".format(evnt_cnt))
+                        logger.warning("computed parity {} parity bit {}".format(trailer_parity,event['trailer'][0]['parity']) )
+                        weird_evnt.append(evnt_cnt)
                 for d in event['data']:
                     row, col = d['row_id'], d['col_id']
                     toa.fill([d['toa']])
                     tot.fill([d['tot']])
                     hits[row, col] += 1
+                    data_parity = (1 ^ get_parity(d['row_id']) ^ get_parity(d['col_id']) ^ 
+                                  get_parity(d['toa']) ^ get_parity(d['tot']) ^ 
+                                  get_parity(d['cal']))
+                    if data_parity != d['parity']:
+                        logger.warning(" in event {} data parity and parity bit do not match".format(evnt_cnt))
+                        logger.warning("computed parity {} parity bit {}".format(data_parity,d['parity']) )
+                        weird_evnt.append(evnt_cnt)
+               
         except IndexError:
+            logger.info("\nSkipping event {}, incomplete".format(evnt_cnt))
+            logger.debug("header : {}".format(event['header']))
+            logger.debug("data : {}".format(event['data']))
+            logger.debug("trailer : {}".format(event['trailer']))
             pass
-            #print ("Skipping incomplete event")
+        evnt_cnt+=1 
+        if evnt_cnt % 100 == 0: logger.debug("===>{} events processed".format(evnt_cnt))
         # FIXME: consistency checks are missing
 
-
+    logger.info("\n Making plots for {} events with a total of {} hits".format(evnt_cnt,nhits.integral))
     import matplotlib.pyplot as plt
     import mplhep as hep
 
