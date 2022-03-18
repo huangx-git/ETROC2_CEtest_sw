@@ -19,8 +19,10 @@ class DataFrame:
         for id in self.format['identifiers']:
             if self.format['identifiers'][id]['frame'] == (val & self.format['identifiers'][id]['mask']):
                 data_type = id
+                #print ("Found:", id)
+                break
         #print (val, data_type)
-        if data_type == 'filler': print(val)
+        #if data_type == 'filler': print(val)
         if data_type == None:
             print ("Found data of type None:", val)
         res = {}
