@@ -10,6 +10,7 @@
 
 ETROC1:
   nbits: 40
+  bitorder: normal
   identifiers:
     header:
       frame: 0x3555555000
@@ -62,6 +63,7 @@ ETROC1:
 
 ETROC2:
   nbits: 40
+  bitorder: reversed
   identifiers:
     header:
       frame: 0x3C5C000000
