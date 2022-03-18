@@ -127,6 +127,17 @@ if __name__ == '__main__':
         evnt_cnt+=1 
         if evnt_cnt % 100 == 0: logger.debug("===>{} events processed".format(evnt_cnt))
 
+    # LET THE PLOTTING BEGIN!
+
+    import datetime
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    plot_dir = os.path.join(
+        "plots",
+        args.etroc,
+        "link_{}".format(args.read_fifo),
+        timestamp,
+    )
+    os.makedirs(plot_dir)
 
     logger.info("\n Making plots for {} events with a total of {} hits".format(evnt_cnt,nhits.integral))
     import matplotlib.pyplot as plt
@@ -141,10 +152,10 @@ if __name__ == '__main__':
     
     fig.text(0.0, 0.995, '$\\bf{CMS}$ ETL', fontsize=20,  horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes )
     
-    name = 'nhits_ETROC1'
+    name = 'nhits'
     
-    fig.savefig(os.path.join("{}.pdf".format(name)))
-    fig.savefig(os.path.join("{}.png".format(name)))
+    fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
+    fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
 
 
     fig, ax = plt.subplots(1,1,figsize=(7,7))
@@ -156,8 +167,8 @@ if __name__ == '__main__':
     
     name = 'TOA'
     
-    fig.savefig(os.path.join("{}.pdf".format(name)))
-    fig.savefig(os.path.join("{}.png".format(name)))
+    fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
+    fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
 
 
     fig, ax = plt.subplots(1,1,figsize=(7,7))
@@ -169,8 +180,8 @@ if __name__ == '__main__':
     
     name = 'TOT'
     
-    fig.savefig(os.path.join("{}.pdf".format(name)))
-    fig.savefig(os.path.join("{}.png".format(name)))
+    fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
+    fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
 
 
     fig, ax = plt.subplots(1,1,figsize=(7,7))
@@ -183,8 +194,8 @@ if __name__ == '__main__':
     
     name = 'hit_matrix'
     
-    fig.savefig(os.path.join("{}.pdf".format(name)))
-    fig.savefig(os.path.join("{}.png".format(name)))
+    fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
+    fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
     
 
     #try:
