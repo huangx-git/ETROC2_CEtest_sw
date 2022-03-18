@@ -77,7 +77,7 @@ if __name__ == '__main__':
             alignment = load_alignment_from_file(args.load_alignment)
         else:
             alignment = None
-        rb_0.configure(alignment=alignment, data_mode=data_mode)  # this is very slow, especially for the trigger lpGBT.
+        rb_0.configure(alignment=alignment, data_mode=data_mode, etroc=args.etroc)  # this is very slow, especially for the trigger lpGBT.
         if rb_0.trigger:
             rb_0.DAQ_LPGBT.reset_trigger_mgts() 
         time.sleep(1.0)
