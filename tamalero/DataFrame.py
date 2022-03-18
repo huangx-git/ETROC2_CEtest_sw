@@ -14,7 +14,26 @@ class DataFrame:
         with open(os.path.expandvars('$TAMALERO_BASE/configs/dataformat.yaml'), 'r') as f:
             self.format = load(f, Loader=Loader)[version]
 
-    def read(self, val):
+    def get_bytes(self, word, format):
+        bytes = []
+        if self.format['bitorder'] == 'normal':
+            shifts = [32, 24, 16, 8, 0]
+        elif self.format['bitorder'] == 'reversed':
+            shifts = [0, 8, 16, 24, 32]
+        for shift in shifts:
+            bytes.append((word >> shift) & 0xFF)
+        if format:
+            return [ '{0:0{1}x}'.format(b,2) for b in bytes ]
+        else:
+            return bytes
+
+    def get_trigger_words(self, format=False):
+        return self.get_bytes(self.format['identifiers']['header']['frame'], format=format)
+
+    def get_trigger_masks(self, format=False):
+        return self.get_bytes(self.format['identifiers']['header']['mask'], format=format)
+
+    def read(self, val, quiet=True):
         data_type = None
         for id in self.format['identifiers']:
             if self.format['identifiers'][id]['frame'] == (val & self.format['identifiers'][id]['mask']):
@@ -23,9 +42,12 @@ class DataFrame:
                 break
         #print (val, data_type)
         #if data_type == 'filler': print(val)
-        if data_type == None:
-            print ("Found data of type None:", val)
         res = {}
+        if data_type == None:
+            if not quiet:
+                print ("Found data of type None:", val)
+            return None, res
+
         for d in self.format['data'][data_type]:
             res[d] = (val & self.format['data'][data_type][d]['mask']) >> self.format['data'][data_type][d]['shift']
         #print (res)
