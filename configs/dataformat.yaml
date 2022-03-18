@@ -69,61 +69,70 @@ ETROC2:
     data:
       frame: 0x8000000000
       mask: 0x8000000000
-    trailer:  # This is very weak
-      frame: 0x0000000000
-      mask: 0x8000000000
     filler:
       frame: 0x3C5C800000
       mask: 0xFFFFC00000
-  header: # Define the different masks here?
-    l1counter:
-      mask: 0x00003FC000
-      shift: 14
-    type:
-      mask: 0x0000003000
-      shift: 12
-    bcid:
-      mask: 0x0000000FFF
-      shift: 0
+    trailer:  # This is very weak
+      frame: 0x0000000000
+      mask: 0x8000000000
   data:
-    ea:
-      mask: 0x60 00 00 00 00
-      shift: 37
-    col_id:
-      mask: 0x1E 00 00 00 00
-      shift: 33
-    row_id:
-      mask: 0x01 70 00 00 00
-      shift: 29
+    header: # Define the different masks here?
+      l1counter:
+        mask: 0x00003FC000
+        shift: 14
+      type:
+        mask: 0x0000003000
+        shift: 12
+      bcid:
+        mask: 0x0000000FFF
+        shift: 0
     data:
-      mask: 0x00 1F FF FF FF
-      shift: 0
-  #  prbs_col_id:
-  #    mask:
-  #    shift:
-  #trailer:
-  #  chipid:
-  #    mask:
-
-
-#ETROC1:
-#  nbits: 40
-#  leading:
-#      header: '00'
-#      data: '01'
-#      trailer: '10'
-#      filler: '11'
-#  header: 0x355555
-#  trailer: 0x555555
-#  filler: 0x0AAAAAAAAA
-#
-#ETROC2:
-#  nbits: 40
-#  leading:
-#      header: '0'
-#      data: '1'
-#      trailer: '0'
-#      filler: '0'
-#  header: 0x3C5C
-#  trailer: 0x0
-#  filler: 0x3C5C
+      ea:
+        mask: 0x6000000000
+        shift: 37
+      col_id:
+        mask: 0x1E00000000
+        shift: 33
+      row_id:
+        mask: 0x01E0000000
+        shift: 29
+      # random test pattern specific
+      col_id2:
+        mask: 0x001E000000
+        shift: 25
+      row_id2:
+        mask: 0x0001E00000
+        shift: 21
+      bcid:
+        mask: 0x00001FFE00
+        shift: 9
+      counter_a:
+        mask: 0x00000001FF
+        shift: 0
+      # generic portion of the data
+      data:
+        mask: 0x001FFFFFFF
+        shift: 0
+    trailer:
+      chipid:
+        mask: 0x7FFFC00000
+        shift: 24
+      status:
+        mask: 0x00003F0000
+        shift: 16
+      hits:
+        mask: 0x000000FF00
+        shift: 8
+      crc:
+        mask: 0x00000000FF
+        shift: 0
+    filler:
+      l1counter:
+        mask: 0x00003FC000
+        shift: 14
+      ebs:
+        mask: 0x0000003000
+        shift: 12
+      bcid:
+        mask: 0x0000000FFF
+        shift: 0
