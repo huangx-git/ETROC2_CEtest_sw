@@ -94,24 +94,29 @@ if __name__ == '__main__':
                     logger.warning(" in event {} #hits in data doesn't match trailer info".format(evnt_cnt))
                     logger.warning("data {} trailer {}".format(event['trailer'][0]['hits'],len(event['data'])))
                     weird_evnt.append(evnt_cnt)
-                trailer_parity = (1 ^ get_parity(event['trailer'][0]['hits']))
-                if trailer_parity != event['trailer'][0]['parity']:
+
+                if args.etroc=='ETROC1':
+                    trailer_parity = (1 ^ get_parity(event['trailer'][0]['hits']))
+                    if trailer_parity != event['trailer'][0]['parity']:
                         logger.warning(" in event {} trailer parity and parity bit do not match".format(evnt_cnt))
                         logger.warning("computed parity {} parity bit {}".format(trailer_parity,event['trailer'][0]['parity']) )
                         weird_evnt.append(evnt_cnt)
+
                 for d in event['data']:
                     row, col = d['row_id'], d['col_id']
                     if not args.etroc=='ETROC2':  # NOTE: not working for ETROC2 yet
                         toa.fill([d['toa']])
                         tot.fill([d['tot']])
                     hits[row, col] += 1
-                    data_parity = (1 ^ get_parity(d['row_id']) ^ get_parity(d['col_id']) ^ 
-                                  get_parity(d['toa']) ^ get_parity(d['tot']) ^ 
-                                  get_parity(d['cal']))
-                    if data_parity != d['parity']:
-                        logger.warning(" in event {} data parity and parity bit do not match".format(evnt_cnt))
-                        logger.warning("computed parity {} parity bit {}".format(data_parity,d['parity']) )
-                        weird_evnt.append(evnt_cnt)
+
+                    if args.etroc=='ETROC1': # FIXME: [DS] consistency checks for ETROC2 not implemented. Should this rather live somewhere else?
+                        data_parity = (1 ^ get_parity(d['row_id']) ^ get_parity(d['col_id']) ^
+                                       get_parity(d['toa']) ^ get_parity(d['tot']) ^
+                                       get_parity(d['cal']))
+                        if data_parity != d['parity']:
+                            logger.warning(" in event {} data parity and parity bit do not match".format(evnt_cnt))
+                            logger.warning("computed parity {} parity bit {}".format(data_parity,d['parity']) )
+                            weird_evnt.append(evnt_cnt)
                
         except IndexError:
             logger.info("\nSkipping event {}, incomplete".format(evnt_cnt))
@@ -121,7 +126,7 @@ if __name__ == '__main__':
             pass
         evnt_cnt+=1 
         if evnt_cnt % 100 == 0: logger.debug("===>{} events processed".format(evnt_cnt))
-        # FIXME: consistency checks are missing
+
 
     logger.info("\n Making plots for {} events with a total of {} hits".format(evnt_cnt,nhits.integral))
     import matplotlib.pyplot as plt
