@@ -91,19 +91,28 @@ class ReadoutBoard:
 
         # now, scan
         if data_mode:
-            link = 'Link 0'
             for channel in range(n_links):
-                res = 0
+                res_daq = 0
+                res_trig = 0
                 for inv in [False, True]:
                     for shift in range(8):
                         self.DAQ_LPGBT.set_uplink_alignment(channel, shift, quiet=True)
                         self.DAQ_LPGBT.set_uplink_invert(channel, inv)
-                        tmp = self.check_data_integrity(channel=channel, etroc=etroc)
-                        if tmp>res and tmp>1:  # NOTE: sometimes we find a random good word
-                            print ("Found improved uplink alignment for %s, channel %s: %s, inverted: %s"%(link, channel, shift, inv))
-                            alignment[link][channel] = shift
-                            inversion[link][channel] = inv
-                            res = tmp
+                        tmp = self.check_data_integrity(channel=channel, etroc=etroc, trigger=False)
+                        if tmp>res_daq and tmp>1:  # NOTE: sometimes we find a random good word
+                            print ("Found improved uplink alignment for Link 0, channel %s: %s, inverted: %s"%(channel, shift, inv))
+                            alignment['Link 0'][channel] = shift
+                            inversion['Link 0'][channel] = inv
+                            res_daq = tmp
+                        if self.trigger:
+                            self.TRIG_LPGBT.set_uplink_alignment(channel, shift, quiet=True)
+                            self.TRIG_LPGBT.set_uplink_invert(channel, inv)
+                            tmp = self.check_data_integrity(channel=channel, etroc=etroc, trigger=True)
+                            if tmp>res_trig and tmp>1:  # NOTE: sometimes we find a random good word
+                                print ("Found improved uplink alignment for Link 1, channel %s: %s, inverted: %s"%(channel, shift, inv))
+                                alignment['Link 1'][channel] = shift
+                                inversion['Link 1'][channel] = inv
+                                res_trig = tmp
         else:
             for inv in [False, True]:
                 for shift in range(8):
@@ -178,7 +187,7 @@ class ReadoutBoard:
         self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.READY" % self.rb), use_color=True)
         self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT" % self.rb), use_color=True, invert=True)
 
-    def check_data_integrity(self, channel=0, etroc='ETROC1'):
+    def check_data_integrity(self, channel=0, etroc='ETROC1', trigger=False):
         '''
         Not sure where this function should live.
         It's not necessarily a part of the RB.
@@ -186,7 +195,8 @@ class ReadoutBoard:
         from tamalero.FIFO import FIFO
         from tamalero.DataFrame import DataFrame
         df = DataFrame(etroc)
-        fifo = FIFO(self, elink=channel, ETROC=etroc)
+        lpgbt = 1 if trigger else 0
+        fifo = FIFO(self, elink=channel, ETROC=etroc, lpgbt=lpgbt)
         fifo.set_trigger(
             df.get_trigger_words(),
             df.get_trigger_masks(),

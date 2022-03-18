@@ -47,6 +47,7 @@ if __name__ == '__main__':
     argParser.add_argument('--kcu', action='store', default="192.168.0.10", help="Specify the IP address for KCU")
     argParser.add_argument('--read_fifo', action='store', default=2, help='Read 3000 words from link N')
     argParser.add_argument('--etroc', action='store', default='ETROC1', help='Select ETROC version')
+    argParser.add_argument('--lpgbt', action='store', default=0, help='0 - DAQ, 1 - TRIGGER')
     argParser.add_argument('--triggers', action='store', default=10, help='How many L1As?')
     argParser.add_argument('--log_level', default="INFO", type=str,help="Level of information printed by the logger")
     args = argParser.parse_args()
@@ -61,11 +62,11 @@ if __name__ == '__main__':
 
     rb_0 = kcu.connect_readout_board(ReadoutBoard(0))
 
-    
+    lpgbt = int(args.lpgbt)
     fifo_link = int(args.read_fifo)
 
     events = []
-    fifo = FIFO(rb_0, elink=fifo_link, ETROC=args.etroc)
+    fifo = FIFO(rb_0, elink=fifo_link, ETROC=args.etroc, lpgbt=lpgbt)
     df = DataFrame(args.etroc)
     fifo.set_trigger(
         df.get_trigger_words(),

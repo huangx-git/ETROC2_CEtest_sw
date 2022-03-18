@@ -12,11 +12,13 @@ def revbits(x):
     return int(f'{x:08b}'[::-1],2)
 
 class FIFO:
-    def __init__(self, rb, elink=0, ETROC='ETROC1'):
+    def __init__(self, rb, elink=0, ETROC='ETROC1', lpgbt=0):
         self.rb = rb
         self.ETROC = ETROC
         self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_ELINK_SEL"%self.rb.rb, elink)
+        self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_LPGBT_SEL"%self.rb.rb, lpgbt)
         self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.DL_SRC"%self.rb.rb, 3)
+        #self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.TRIG.DOWNLINK.DL_SRC"%self.rb.rb, 3)  # This does not exist (no trigger downlink)
 
         for i in range(5):
             self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_TRIG%i"%(self.rb.rb, i), 0x00)
