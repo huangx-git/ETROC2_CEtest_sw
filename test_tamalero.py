@@ -2,6 +2,7 @@ from tamalero.KCU import KCU
 from tamalero.ReadoutBoard import ReadoutBoard
 from tamalero.utils import header, make_version_header
 from tamalero.FIFO import FIFO
+from tamalero.DataFrame import DataFrame
 
 from tamalero.SCA import SCA_CONTROL
 
@@ -165,12 +166,12 @@ if __name__ == '__main__':
 
     time.sleep(1)
     fifo_link = int(args.read_fifo)
+    df = DataFrame(args.etroc)
     if fifo_link>=0:
         fifo = FIFO(rb_0, elink=fifo_link, ETROC=args.etroc)
         fifo.set_trigger(
-            # NOTE: this could also use the data format in the future
-            words = [0x00, 0x00, 0x00, 0x5C, 0x3C] if args.etroc=="ETROC2" else [0x35, 0x55, 0x00, 0x00, 0x00],
-            masks = [0x00, 0x00, 0xC0, 0xFF, 0xFF] if args.etroc=="ETROC2" else [0xFF, 0xFF, 0x00, 0x00, 0x00],
+            df.get_trigger_words(),
+            df.get_trigger_masks(),
             )
         fifo.reset()
         try:
