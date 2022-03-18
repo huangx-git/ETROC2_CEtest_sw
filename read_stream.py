@@ -14,7 +14,7 @@ import numpy as np
 from yahist import Hist1D, Hist2D
 
 def build_events(dump, ETROC="ETROC1"):
-    df = DataFrame('ETROC1')
+    df = DataFrame(ETROC)
 
     events = []
     last_type = "filler"
@@ -22,6 +22,8 @@ def build_events(dump, ETROC="ETROC1"):
         data_type, res = df.read(word)
         if data_type == "header" and last_type in ["trailer", "filler"]:
             events.append({"header": [], "data": [], "trailer": []})
+        elif data_type == "filler":
+            events.append({"filler": []})
         if len(events) > 0:
             events[-1][data_type].append(res)
         
@@ -52,14 +54,15 @@ if __name__ == '__main__':
     events = []
     fifo = FIFO(rb_0, elink=fifo_link, ETROC=args.etroc)
     fifo.set_trigger(
-        word0=0x35, word1=0x55, word2=0x00, word3=0x00,
-        mask0=0xff, mask1=0xff, mask2=0x00, mask3=0x00,
+        # NOTE: this could also use the data format in the future
+        words = [0x00, 0x00, 0x00, 0x5C, 0x3C] if args.etroc=="ETROC2" else [0x35, 0x55, 0x00, 0x00, 0x00],
+        masks = [0x00, 0x00, 0xC0, 0xFF, 0xFF] if args.etroc=="ETROC2" else [0xFF, 0xFF, 0x00, 0x00, 0x00],
     )
     
     for i in range(int(args.triggers)):
         #print(i)
         fifo.reset()
-        test = fifo.giant_dump(block=3000, format=False)
+        test = fifo.giant_dump(block=300, format=False, align=(args.etroc=='ETROC1'))
         events += build_events(test, ETROC=args.etroc)
 
     hits = np.zeros((16,16))
@@ -69,13 +72,15 @@ if __name__ == '__main__':
     #hit_matrix = Hist2D(bins=(np.linspace(-0.5,15.5,17), np.linspace(-0.5,15.5,17)))
 
     for event in events:
+        if 'filler' in event: continue
         try:
             nhits.fill([event['trailer'][0]['hits']])
             if event['trailer'][0]['hits'] > 0:
                 for d in event['data']:
                     row, col = d['row_id'], d['col_id']
-                    toa.fill([d['toa']])
-                    tot.fill([d['tot']])
+                    if not args.etroc=='ETROC2':  # NOTE: not working for ETROC2 yet
+                        toa.fill([d['toa']])
+                        tot.fill([d['tot']])
                     hits[row, col] += 1
         except IndexError:
             pass
