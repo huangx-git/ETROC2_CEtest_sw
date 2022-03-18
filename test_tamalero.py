@@ -27,6 +27,7 @@ if __name__ == '__main__':
     argParser.add_argument('--force_no_trigger', action='store_true', help="Never initialize the trigger lpGBT.")
     argParser.add_argument('--read_fifo', action='store', default=-1, help='Read 3000 words from link N')
     argParser.add_argument('--load_alignment', action='store', default=None, help='Load predefined alignment, skips the scan.')
+    argParser.add_argument('--etroc', action='store', default="ETROC1", help='Load predefined alignment, skips the scan.')
     args = argParser.parse_args()
 
     header()
@@ -165,14 +166,17 @@ if __name__ == '__main__':
     time.sleep(1)
     fifo_link = int(args.read_fifo)
     if fifo_link>=0:
-        fifo = FIFO(rb_0, elink=fifo_link)
+        fifo = FIFO(rb_0, elink=fifo_link, ETROC=args.etroc)
         fifo.set_trigger(
-            word0=0x35, word1=0x55, word2=0x00, word3=0x00, mask0=0xff, mask1=0xff, mask2=0x00, mask3=0x00)
+            # NOTE: this could also use the data format in the future
+            words = [0x00, 0x00, 0x00, 0x5C, 0x3C] if args.etroc=="ETROC2" else [0x35, 0x55, 0x00, 0x00, 0x00],
+            masks = [0x00, 0x00, 0xC0, 0xFF, 0xFF] if args.etroc=="ETROC2" else [0xFF, 0xFF, 0x00, 0x00, 0x00],
+            )
         fifo.reset()
         try:
-            hex_dump = fifo.giant_dump(3000,255)
+            hex_dump = fifo.giant_dump(300,255, align=(args.etroc=="ETROC1"))
         except:
             print ("Dispatch failed, trying again.")
-            hex_dump = fifo.giant_dump(3000,255)
+            hex_dump = fifo.giant_dump(300,255, align=(args.etroc=="ETROC1"))
         print (hex_dump)
         fifo.dump_to_file(fifo.wipe(hex_dump, trigger_words=[]))  # use 5 columns --> better to read for our data format
