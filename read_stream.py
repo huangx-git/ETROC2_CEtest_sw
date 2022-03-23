@@ -21,14 +21,24 @@ def build_events(dump, ETROC="ETROC1"):
     last_type = "filler"
     for word in dump:
         data_type, res = df.read(word)
+        #print (res)
+        res['word'] = word
+        #print (res)
         if data_type == "header" and last_type in ["trailer", "filler"]:
             events.append({"header": [], "data": [], "trailer": []})
         elif data_type == "filler":
             events.append({"filler": []})
+        #else:
+        #    events.append({"unknown": []})  # NOTE: this should not happen
+
         if len(events) > 0:
             events[-1][data_type].append(res)
         
         last_type = data_type
+
+    if 'data' in events[-1]:
+        if len(events[-1]['data']) > 20:
+            print ([ x for x in map(hex, dump) ])
 
     return events
 
@@ -86,13 +96,16 @@ if __name__ == '__main__':
     #hit_matrix = Hist2D(bins=(np.linspace(-0.5,15.5,17), np.linspace(-0.5,15.5,17)))
     evnt_cnt=0
     weird_evnt=[]
-    for event in events:
+    data_indices = []
+    for idx, event in enumerate(events):
         if 'filler' in event: continue
+        data_indices.append(idx)
         try:
             nhits.fill([event['trailer'][0]['hits']])
             if event['trailer'][0]['hits'] > 0:
+                #hit_indices.append(idx)
                 if event['trailer'][0]['hits'] != len(event['data']):
-                    logger.warning(" in event {} #hits in data doesn't match trailer info".format(evnt_cnt))
+                    logger.warning(" in event {}, index {} #hits in data doesn't match trailer info".format(evnt_cnt, idx))
                     logger.warning("data {} trailer {}".format(event['trailer'][0]['hits'],len(event['data'])))
                     weird_evnt.append(evnt_cnt)
 

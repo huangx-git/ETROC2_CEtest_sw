@@ -66,8 +66,8 @@ ETROC2:
   bitorder: reversed
   identifiers:
     header:
-      frame: 0x3C5C000000
-      mask: 0xFFFFC00000
+      frame: 0x3C5C001000
+      mask: 0xFFFFC03000
     data:
       frame: 0x8000000000
       mask: 0x8000000000
