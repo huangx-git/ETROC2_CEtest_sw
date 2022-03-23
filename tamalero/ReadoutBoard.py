@@ -76,7 +76,7 @@ class ReadoutBoard:
         self.DAQ_LPGBT.set_gpio(bit, 0)
         self.DAQ_LPGBT.set_gpio(bit, 1)
 
-    def find_uplink_alignment(self, scan_time=0.01, default=0, data_mode=False):  # default scan time of 0.01 is enough
+    def find_uplink_alignment(self, scan_time=0.01, default=0, data_mode=False, etroc='ETROC1'):  # default scan time of 0.01 is enough
         # TODO: check the FEC mode and set the number of links appropriately
         n_links = 24  #  NOTE: there are 28 e-links if the board is in FEC5 mode, but we are operating in FEC12 where there are only 24
         print ("Scanning for uplink alignment")
@@ -91,20 +91,28 @@ class ReadoutBoard:
 
         # now, scan
         if data_mode:
-            link = 'Link 0'
             for channel in range(n_links):
-                res = 0
+                res_daq = 0
+                res_trig = 0
                 for inv in [False, True]:
                     for shift in range(8):
                         self.DAQ_LPGBT.set_uplink_alignment(channel, shift, quiet=True)
                         self.DAQ_LPGBT.set_uplink_invert(channel, inv)
-                        tmp = self.check_data_integrity(channel=channel)
-                        if tmp>res:
-                            print ("Found improved uplink alignment for %s, channel %s: %s, inverted: %s"%(link, channel, shift, inv))
-                            print (tmp, res)
-                            alignment[link][channel] = shift
-                            inversion[link][channel] = inv
-                            res = tmp
+                        tmp = self.check_data_integrity(channel=channel, etroc=etroc, trigger=False)
+                        if tmp>res_daq and tmp>1:  # NOTE: sometimes we find a random good word
+                            print ("Found improved uplink alignment for Link 0, channel %s: %s, inverted: %s"%(channel, shift, inv))
+                            alignment['Link 0'][channel] = shift
+                            inversion['Link 0'][channel] = inv
+                            res_daq = tmp
+                        if self.trigger:
+                            self.TRIG_LPGBT.set_uplink_alignment(channel, shift, quiet=True)
+                            self.TRIG_LPGBT.set_uplink_invert(channel, inv)
+                            tmp = self.check_data_integrity(channel=channel, etroc=etroc, trigger=True)
+                            if tmp>res_trig and tmp>1:  # NOTE: sometimes we find a random good word
+                                print ("Found improved uplink alignment for Link 1, channel %s: %s, inverted: %s"%(channel, shift, inv))
+                                alignment['Link 1'][channel] = shift
+                                inversion['Link 1'][channel] = inv
+                                res_trig = tmp
         else:
             for inv in [False, True]:
                 for shift in range(8):
@@ -179,33 +187,38 @@ class ReadoutBoard:
         self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.READY" % self.rb), use_color=True)
         self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT" % self.rb), use_color=True, invert=True)
 
-    def check_data_integrity(self, channel=0):
+    def check_data_integrity(self, channel=0, etroc='ETROC1', trigger=False):
         '''
         Not sure where this function should live.
         It's not necessarily a part of the RB.
-        FIXME: Needs to become transparent to the data format.
         '''
         from tamalero.FIFO import FIFO
-        fifo = FIFO(self, elink=channel)
+        from tamalero.DataFrame import DataFrame
+        df = DataFrame(etroc)
+        lpgbt = 1 if trigger else 0
+        fifo = FIFO(self, elink=channel, ETROC=etroc, lpgbt=lpgbt)
         fifo.set_trigger(
-            word0=0x35, word1=0x55, word2=0x00, word3=0x00,
-            mask0=0xff, mask1=0xff, mask2=0xff, mask3=0xff,
+            df.get_trigger_words(),
+            df.get_trigger_masks(),
         )
         fifo.reset()
         n_header = 0
         n_trailer = 0
         data  = []
-        for i in range(10):
-            data += ['35', '55'] + fifo.giant_dump(3000, align=False)  # + ['35', '55'] + fifo.giant_dump(3000)
+        for i in range(1):
+            data += fifo.giant_dump(3000, align=False, format=False)  # + ['35', '55'] + fifo.giant_dump(3000)
             fifo.reset()
 
-        long_st = ''.join(data)
-        for line in chunk(data, 5):
-            n_header  += (line[0:3] == ['35','55','55'])
-            n_trailer += (line[0:3] == ['95','55','55'])
+        good_counter = 0
+        for word in data:
+            word_type, _ = df.read(word, quiet=True)
+            if word_type == None:
+                return 0
+            elif word_type in ['header', 'filler']:
+                # ETROC2 data and filler definitions are so weak, it's easy to accidentially find them.
+                good_counter += 1
 
-        #print (n_header, n_trailer)
-        return n_header + n_trailer
+        return good_counter
 
 
     def get_FEC_error_count(self, quiet=False):
@@ -227,7 +240,7 @@ class ReadoutBoard:
             print("Error counts after reset:")
             self.get_FEC_error_count()
 
-    def configure(self, alignment=None, data_mode=False):
+    def configure(self, alignment=None, data_mode=False, etroc='ETROC1'):
 
         ## DAQ
         #for i in range(28):
@@ -252,7 +265,7 @@ class ReadoutBoard:
         if alignment is not None:
             self.load_uplink_alignment(alignment)
         else:
-            _ = self.find_uplink_alignment(data_mode=data_mode)
+            _ = self.find_uplink_alignment(data_mode=data_mode, etroc=etroc)
 
         # SCA init
         self.sca_hard_reset()

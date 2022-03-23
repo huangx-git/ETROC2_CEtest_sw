@@ -2,6 +2,7 @@ from tamalero.KCU import KCU
 from tamalero.ReadoutBoard import ReadoutBoard
 from tamalero.utils import header, make_version_header
 from tamalero.FIFO import FIFO
+from tamalero.DataFrame import DataFrame
 
 from tamalero.SCA import SCA_CONTROL
 
@@ -27,6 +28,7 @@ if __name__ == '__main__':
     argParser.add_argument('--force_no_trigger', action='store_true', help="Never initialize the trigger lpGBT.")
     argParser.add_argument('--read_fifo', action='store', default=-1, help='Read 3000 words from link N')
     argParser.add_argument('--load_alignment', action='store', default=None, help='Load predefined alignment, skips the scan.')
+    argParser.add_argument('--etroc', action='store', default="ETROC1", help='Load predefined alignment, skips the scan.')
     args = argParser.parse_args()
 
     header()
@@ -76,7 +78,7 @@ if __name__ == '__main__':
             alignment = load_alignment_from_file(args.load_alignment)
         else:
             alignment = None
-        rb_0.configure(alignment=alignment, data_mode=data_mode)  # this is very slow, especially for the trigger lpGBT.
+        rb_0.configure(alignment=alignment, data_mode=data_mode, etroc=args.etroc)  # this is very slow, especially for the trigger lpGBT.
         if rb_0.trigger:
             rb_0.DAQ_LPGBT.reset_trigger_mgts() 
         time.sleep(1.0)
@@ -164,15 +166,18 @@ if __name__ == '__main__':
 
     time.sleep(1)
     fifo_link = int(args.read_fifo)
+    df = DataFrame(args.etroc)
     if fifo_link>=0:
-        fifo = FIFO(rb_0, elink=fifo_link)
+        fifo = FIFO(rb_0, elink=fifo_link, ETROC=args.etroc)
         fifo.set_trigger(
-            word0=0x35, word1=0x55, word2=0x00, word3=0x00, mask0=0xff, mask1=0xff, mask2=0x00, mask3=0x00)
+            df.get_trigger_words(),
+            df.get_trigger_masks(),
+            )
         fifo.reset()
         try:
-            hex_dump = fifo.giant_dump(3000,255)
+            hex_dump = fifo.giant_dump(300,255, align=(args.etroc=="ETROC1"))
         except:
             print ("Dispatch failed, trying again.")
-            hex_dump = fifo.giant_dump(3000,255)
+            hex_dump = fifo.giant_dump(300,255, align=(args.etroc=="ETROC1"))
         print (hex_dump)
         fifo.dump_to_file(fifo.wipe(hex_dump, trigger_words=[]))  # use 5 columns --> better to read for our data format
