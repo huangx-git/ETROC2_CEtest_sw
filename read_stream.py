@@ -87,12 +87,13 @@ if __name__ == '__main__':
             nhits.fill([event['trailer'][0]['hits']])
             if event['trailer'][0]['hits'] > 0:
                 if event['trailer'][0]['hits'] != len(event['data']):
-                    logger.warning(" in event {} #hits in data doesn't match trailer info".format(evnt_cnt))
+                    logger.warning("in event {} #hits in data doesn't match trailer info".format(evnt_cnt))
                     logger.warning("data {} trailer {}".format(event['trailer'][0]['hits'],len(event['data'])))
                     weird_evnt.append(evnt_cnt)
-                trailer_parity = (1 ^ get_parity(event['trailer'][0]['hits']))
+                trailer_parity = (1 ^  #parity of the "fixed" bits in the trailer
+                                  get_parity(event['trailer'][0]['hits']))
                 if trailer_parity != event['trailer'][0]['parity']:
-                        logger.warning(" in event {} trailer parity and parity bit do not match".format(evnt_cnt))
+                        logger.warning("in event {} trailer parity and parity bit do not match".format(evnt_cnt))
                         logger.warning("computed parity {} parity bit {}".format(trailer_parity,event['trailer'][0]['parity']) )
                         weird_evnt.append(evnt_cnt)
                 for d in event['data']:
@@ -100,11 +101,12 @@ if __name__ == '__main__':
                     toa.fill([d['toa']])
                     tot.fill([d['tot']])
                     hits[row, col] += 1
-                    data_parity = (1 ^ get_parity(d['row_id']) ^ get_parity(d['col_id']) ^ 
+                    data_parity = (1 ^ #parity of the "fixed" bits in the data
+                                  get_parity(d['row_id']) ^ get_parity(d['col_id']) ^ 
                                   get_parity(d['toa']) ^ get_parity(d['tot']) ^ 
                                   get_parity(d['cal']))
                     if data_parity != d['parity']:
-                        logger.warning(" in event {} data parity and parity bit do not match".format(evnt_cnt))
+                        logger.warning("in event {} data parity and parity bit do not match".format(evnt_cnt))
                         logger.warning("computed parity {} parity bit {}".format(data_parity,d['parity']) )
                         weird_evnt.append(evnt_cnt)
                
@@ -116,7 +118,7 @@ if __name__ == '__main__':
             pass
         evnt_cnt+=1 
         if evnt_cnt % 100 == 0: logger.debug("===>{} events processed".format(evnt_cnt))
-        # FIXME: consistency checks are missing
+        
 
     logger.info("\n Making plots for {} events with a total of {} hits".format(evnt_cnt,nhits.integral))
     import matplotlib.pyplot as plt
