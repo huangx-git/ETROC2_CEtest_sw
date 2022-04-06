@@ -109,18 +109,18 @@ class KCU:
 
     def check_clock_frequencies(self):
         clocks = (('FW_INFO.CLK125_FREQ', 125000000),
-                  ('FW_INFO.CLK320_FREQ', 320640400),
-                  ('FW_INFO.CLKUSR_FREQ', 320640400),
+                  ('FW_INFO.CLK320_FREQ', 320640000),
+                  ('FW_INFO.CLKUSR_FREQ', 320640000),
                   ('FW_INFO.CLK_40_FREQ',  40080000),
                   ('FW_INFO.IPBCLK_FREQ',  40080000),
                   ('FW_INFO.REFCLK_FREQ', 320640000),
                   ('FW_INFO.RXCLK0_FREQ', 320640000),
-                  ('FW_INFO.RXCLK1_FREQ', 330986613),
-                  ('FW_INFO.TXCLK0_FREQ', 320640400),
-                  ('FW_INFO.TXCLK1_FREQ', 320640400))
+                  ('FW_INFO.RXCLK1_FREQ', 320640000),
+                  ('FW_INFO.TXCLK0_FREQ', 320640000),
+                  ('FW_INFO.TXCLK1_FREQ', 320640000))
 
         # freq = int(rd) / 1000000.0
         # print("%s = %6.2f MHz" % (id, freq))
 
         for clock in clocks:
-            self.print_reg(self.hw.getNode(clock[0]), use_color=True, threshold=clock[1] - 500, maxval=clock[1] + 500)
+            self.print_reg(self.hw.getNode(clock[0]), use_color=True, threshold=clock[1] - 2000, maxval=clock[1] + 2000)
