@@ -81,7 +81,9 @@ if __name__ == '__main__':
             alignment = None
         rb_0.configure(alignment=alignment, data_mode=data_mode, etroc=args.etroc)  # this is very slow, especially for the trigger lpGBT.
         if rb_0.trigger:
-            rb_0.DAQ_LPGBT.reset_trigger_mgts() 
+            time.sleep(1.0)
+            rb_0.DAQ_LPGBT.reset_trigger_mgts()
+            kcu.write_node("READOUT_BOARD_%s.LPGBT.FEC_ERR_RESET" % 0, 0x1)
         time.sleep(1.0)
 
     res = rb_0.DAQ_LPGBT.get_board_id()
