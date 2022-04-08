@@ -75,8 +75,17 @@ if __name__ == '__main__':
     lpgbt = int(args.lpgbt)
     fifo_link = int(args.read_fifo)
 
-    events = []
-    fifo = FIFO(rb_0, elink=fifo_link, ETROC=args.etroc, lpgbt=lpgbt)
+    events_0 = []
+    events_1 = []
+
+    # FIXME: this needs to be un-hardcoded again. We are reading from multiple links now.
+    links = [
+        {'elink': 2, 'lpgbt': 0},  # 6
+        {'elink': 20, 'lpgbt': 1},  # 16
+    ]
+
+    #fifo = FIFO(rb_0, elink=fifo_link, ETROC=args.etroc, lpgbt=lpgbt)
+    fifo = FIFO(rb_0, links=links, ETROC=args.etroc)
     df = DataFrame(args.etroc)
     fifo.set_trigger(
         df.get_trigger_words(),
@@ -85,9 +94,11 @@ if __name__ == '__main__':
     
     for i in range(int(args.triggers)):
         #print(i)
-        fifo.reset()
-        test = fifo.giant_dump(block=300, format=False, align=(args.etroc=='ETROC1'))
-        events += build_events(test, ETROC=args.etroc)
+        fifo.reset(l1a=True)
+        test_0 = fifo.giant_dump(block=300, format=False, align=(args.etroc=='ETROC1'), daq=0)
+        test_1 = fifo.giant_dump(block=300, format=False, align=(args.etroc=='ETROC1'), daq=1)
+        events_0 += build_events(test_0, ETROC=args.etroc)
+        events_1 += build_events(test_1, ETROC=args.etroc)
 
     hits = np.zeros((16,16))
     nhits = Hist1D(bins=np.linspace(-0.5,20.5,22))
@@ -97,49 +108,53 @@ if __name__ == '__main__':
     evnt_cnt=0
     weird_evnt=[]
     data_indices = []
-    for idx, event in enumerate(events):
-        if 'filler' in event: continue
-        data_indices.append(idx)
-        try:
-            nhits.fill([event['trailer'][0]['hits']])
-            if event['trailer'][0]['hits'] > 0:
-                #hit_indices.append(idx)
-                if event['trailer'][0]['hits'] != len(event['data']):
-                    logger.warning(" in event {}, index {} #hits in data doesn't match trailer info".format(evnt_cnt, idx))
-                    logger.warning("data {} trailer {}".format(event['trailer'][0]['hits'],len(event['data'])))
-                    weird_evnt.append(evnt_cnt)
 
-                if args.etroc=='ETROC1':
-                    trailer_parity = (1 ^ get_parity(event['trailer'][0]['hits']))
-                    if trailer_parity != event['trailer'][0]['parity']:
-                        logger.warning(" in event {} trailer parity and parity bit do not match".format(evnt_cnt))
-                        logger.warning("computed parity {} parity bit {}".format(trailer_parity,event['trailer'][0]['parity']) )
+    for events in [events_0, events_1]:
+        # FIXME: the number of hits plot is off if we don't properly merge events.
+        # TODO: implement a proper event merger
+        for idx, event in enumerate(events):
+            if 'filler' in event: continue
+            data_indices.append(idx)
+            try:
+                nhits.fill([event['trailer'][0]['hits']])
+                if event['trailer'][0]['hits'] > 0:
+                    #hit_indices.append(idx)
+                    if event['trailer'][0]['hits'] != len(event['data']):
+                        logger.warning(" in event {}, index {} #hits in data doesn't match trailer info".format(evnt_cnt, idx))
+                        logger.warning("data {} trailer {}".format(event['trailer'][0]['hits'],len(event['data'])))
                         weird_evnt.append(evnt_cnt)
 
-                for d in event['data']:
-                    row, col = d['row_id'], d['col_id']
-                    if not args.etroc=='ETROC2':  # NOTE: not working for ETROC2 yet
-                        toa.fill([d['toa']])
-                        tot.fill([d['tot']])
-                    hits[row, col] += 1
-
-                    if args.etroc=='ETROC1': # FIXME: [DS] consistency checks for ETROC2 not implemented. Should this rather live somewhere else?
-                        data_parity = (1 ^ get_parity(d['row_id']) ^ get_parity(d['col_id']) ^
-                                       get_parity(d['toa']) ^ get_parity(d['tot']) ^
-                                       get_parity(d['cal']))
-                        if data_parity != d['parity']:
-                            logger.warning(" in event {} data parity and parity bit do not match".format(evnt_cnt))
-                            logger.warning("computed parity {} parity bit {}".format(data_parity,d['parity']) )
+                    if args.etroc=='ETROC1':
+                        trailer_parity = (1 ^ get_parity(event['trailer'][0]['hits']))
+                        if trailer_parity != event['trailer'][0]['parity']:
+                            logger.warning(" in event {} trailer parity and parity bit do not match".format(evnt_cnt))
+                            logger.warning("computed parity {} parity bit {}".format(trailer_parity,event['trailer'][0]['parity']) )
                             weird_evnt.append(evnt_cnt)
-               
-        except IndexError:
-            logger.info("\nSkipping event {}, incomplete".format(evnt_cnt))
-            logger.debug("header : {}".format(event['header']))
-            logger.debug("data : {}".format(event['data']))
-            logger.debug("trailer : {}".format(event['trailer']))
-            pass
-        evnt_cnt+=1 
-        if evnt_cnt % 100 == 0: logger.debug("===>{} events processed".format(evnt_cnt))
+
+                    for d in event['data']:
+                        row, col = d['row_id'], d['col_id']
+                        if not args.etroc=='ETROC2':  # NOTE: not working for ETROC2 yet
+                            toa.fill([d['toa']])
+                            tot.fill([d['tot']])
+                        hits[row, col] += 1
+
+                        if args.etroc=='ETROC1': # FIXME: [DS] consistency checks for ETROC2 not implemented. Should this rather live somewhere else?
+                            data_parity = (1 ^ get_parity(d['row_id']) ^ get_parity(d['col_id']) ^
+                                           get_parity(d['toa']) ^ get_parity(d['tot']) ^
+                                           get_parity(d['cal']))
+                            if data_parity != d['parity']:
+                                logger.warning(" in event {} data parity and parity bit do not match".format(evnt_cnt))
+                                logger.warning("computed parity {} parity bit {}".format(data_parity,d['parity']) )
+                                weird_evnt.append(evnt_cnt)
+
+            except IndexError:
+                logger.info("\nSkipping event {}, incomplete".format(evnt_cnt))
+                logger.debug("header : {}".format(event['header']))
+                logger.debug("data : {}".format(event['data']))
+                logger.debug("trailer : {}".format(event['trailer']))
+                pass
+            evnt_cnt+=1
+            if evnt_cnt % 100 == 0: logger.debug("===>{} events processed".format(evnt_cnt))
 
     # LET THE PLOTTING BEGIN!
 
@@ -152,6 +167,8 @@ if __name__ == '__main__':
         timestamp,
     )
     os.makedirs(plot_dir)
+
+    print (f"Plots will be in {plot_dir}")
 
     logger.info("\n Making plots for {} events with a total of {} hits".format(evnt_cnt,nhits.integral))
     import matplotlib.pyplot as plt
