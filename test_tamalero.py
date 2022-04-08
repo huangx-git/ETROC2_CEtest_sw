@@ -57,10 +57,11 @@ if __name__ == '__main__':
         print ("Power up init sequence for: DAQ")
         rb_0.DAQ_LPGBT.power_up_init()
         if (rb_0.DAQ_LPGBT.rd_adr(0x1c5) != 0xa5):
-            print(hex(rb_0.DAQ_LPGBT.rd_adr(0x1c5)))
             print ("No communication with DAQ LPGBT... trying to reset DAQ MGTs")
             rb_0.DAQ_LPGBT.reset_daq_mgts()
             rb_0.DAQ_LPGBT.power_up_init()
+            time.sleep(0.01)
+            print(hex(rb_0.DAQ_LPGBT.rd_adr(0x1c5)))
             #sys.exit(0)
         #rb_0.TRIG_LPGBT.power_up_init()
         rb_0.get_trigger()
@@ -80,7 +81,9 @@ if __name__ == '__main__':
             alignment = None
         rb_0.configure(alignment=alignment, data_mode=data_mode, etroc=args.etroc)  # this is very slow, especially for the trigger lpGBT.
         if rb_0.trigger:
-            rb_0.DAQ_LPGBT.reset_trigger_mgts() 
+            time.sleep(1.0)
+            rb_0.DAQ_LPGBT.reset_trigger_mgts()
+            kcu.write_node("READOUT_BOARD_%s.LPGBT.FEC_ERR_RESET" % 0, 0x1)
         time.sleep(1.0)
 
     res = rb_0.DAQ_LPGBT.get_board_id()

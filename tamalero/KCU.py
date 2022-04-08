@@ -68,16 +68,19 @@ class KCU:
         for id in self.hw.getNodes(".*LPGBT.*TRIGGER.*UPLINK.*FEC_ERR_CNT"):
             self.print_reg(self.hw.getNode(id), use_color=True, threshold=1, invert=True)
 
-    def print_reg(self, reg, threshold=1, use_color=False, invert=False):
+        self.check_clock_frequencies()
+
+
+    def print_reg(self, reg, threshold=1, maxval=0xFFFFFFFF, use_color=False, invert=False):
         from tamalero.colors import green, red, dummy
         val = reg.read()
         id = reg.getPath()
         self.dispatch()
         if use_color:
             if invert:
-                colored = green if val<threshold else red
+                colored = green if (val < threshold and val < maxval) else red
             else:
-                colored = green if val>=threshold else red
+                colored = green if (val >= threshold and val < maxval) else red
         else:
             colored = dummy
         print(colored(self.format_reg(reg.getAddress(), id[4:], val,
@@ -103,3 +106,21 @@ class KCU:
         if not dummy:
             rb.connect_KCU(self)  # not sure if this is actually useful
         return rb
+
+    def check_clock_frequencies(self):
+        clocks = (('FW_INFO.CLK125_FREQ', 125000000),
+                  ('FW_INFO.CLK320_FREQ', 320640000),
+                  ('FW_INFO.CLKUSR_FREQ', 320640000),
+                  ('FW_INFO.CLK_40_FREQ',  40080000),
+                  ('FW_INFO.IPBCLK_FREQ',  40080000),
+                  ('FW_INFO.REFCLK_FREQ', 320640000),
+                  ('FW_INFO.RXCLK0_FREQ', 320640000),
+                  ('FW_INFO.RXCLK1_FREQ', 320640000),
+                  ('FW_INFO.TXCLK0_FREQ', 320640000),
+                  ('FW_INFO.TXCLK1_FREQ', 320640000))
+
+        # freq = int(rd) / 1000000.0
+        # print("%s = %6.2f MHz" % (id, freq))
+
+        for clock in clocks:
+            self.print_reg(self.hw.getNode(clock[0]), use_color=True, threshold=clock[1] - 2000, maxval=clock[1] + 2000)

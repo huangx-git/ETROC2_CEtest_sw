@@ -1,5 +1,6 @@
 from tamalero.RegParser import RegParser
 import os
+import sys
 import pickle
 import copy
 import random
@@ -727,6 +728,92 @@ class LPGBT(RegParser):
         board_id['lpgbt_serial']    = self.get_chip_serial()
         
         return board_id
+
+    def eyescan(self, end_of_count_sel=7):
+
+        self.wr_reg("LPGBT.RW.EOM.EOMENDOFCOUNTSEL", end_of_count_sel)
+        self.wr_reg("LPGBT.RW.EOM.EOMENABLE", 1)
+
+        # Equalizer settings
+        self.wr_reg("LPGBT.RWF.EQUALIZER.EQCAP", 0x1)
+        self.wr_reg("LPGBT.RWF.EQUALIZER.EQRES0", 0x1)
+        self.wr_reg("LPGBT.RWF.EQUALIZER.EQRES1", 0x1)
+        self.wr_reg("LPGBT.RWF.EQUALIZER.EQRES2", 0x1)
+        self.wr_reg("LPGBT.RWF.EQUALIZER.EQRES3", 0x1)
+
+        datavalregh    = "LPGBT.RO.EOM.EOMCOUNTERVALUEH"
+        datavalregl    = "LPGBT.RO.EOM.EOMCOUNTERVALUEL"
+        eomphaseselreg = "LPGBT.RW.EOM.EOMPHASESEL"
+        eomstartreg    = "LPGBT.RW.EOM.EOMSTART"
+        eomstatereg    = "LPGBT.RO.EOM.EOMSMSTATE"
+        eombusyreg     = "LPGBT.RO.EOM.EOMBUSY"
+        eomendreg      = "LPGBT.RO.EOM.EOMEND"
+        eomvofsel      = "LPGBT.RW.EOM.EOMVOFSEL"
+
+        cntvalmax = 0
+        cntvalmin = 2**20
+
+        ymin=0
+        ymax=30
+        xmin=0
+        xmax=64
+
+        eyeimage = [[0 for y in range(ymin, ymax + 1)] for x in range(xmin, xmax + 1)]
+
+        print("Starting loops: \n")
+        for y_axis in range(ymin, ymax):
+
+            # update yaxis
+            self.wr_reg(eomvofsel, y_axis)
+
+            for x_axis in range(xmin, xmax):
+
+                x_axis_wr = x_axis
+
+                # update xaxis
+                self.wr_reg(eomphaseselreg, x_axis_wr)
+
+                # start measurement
+                self.wr_reg(eomstartreg, 0x1)
+
+                countervalue = (self.rd_reg(datavalregh)) << 8 | self.rd_reg(datavalregl)
+                if (countervalue > cntvalmax):
+                    cntvalmax = countervalue
+                if (countervalue < cntvalmin):
+                    cntvalmin = countervalue
+                eyeimage[x_axis][y_axis] = countervalue
+
+                # deassert eomstart bit
+                self.wr_reg(eomstartreg, 0x0)
+
+                sys.stdout.write("%01d" % int(eyeimage[x_axis][y_axis]/1000))
+
+                sys.stdout.flush()
+
+            sys.stdout.write("\n")
+
+        print("\nEnd Loops \n")
+
+        print("Counter value max=%d" % cntvalmax)
+
+        # save to file
+        if not os.path.isdir("eye_scan_results"):
+            os.mkdir("eye_scan_results")
+        f = open ("eye_scan_results/eye_data.py", "w+")
+        f.write ("eye_data=[\n")
+        for y  in range (ymin,ymax):
+            f.write ("    [")
+            for x in range (xmin,xmax):
+                # normalize for plotting
+                f.write("%d" % (100*(cntvalmax - eyeimage[x][y])/(cntvalmax-cntvalmin)))
+                if (x<(xmax-1)):
+                    f.write(",")
+                else:
+                    f.write("]")
+            if (y<(ymax-1)):
+                f.write(",\n")
+            else:
+                f.write("]\n")
 
     def get_chip_serial(self):
         return self.rd_adr(0x003).value() << 24 |\
