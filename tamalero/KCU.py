@@ -55,6 +55,16 @@ class KCU:
         reg = self.hw.getNode(id)
         self.action_reg(reg)
 
+    def firmware_version(self):
+
+        nodes = ("FW_INFO.HOG_INFO.GLOBAL_DATE",
+                 "FW_INFO.HOG_INFO.GLOBAL_TIME",
+                 "FW_INFO.HOG_INFO.GLOBAL_VER",
+                 "FW_INFO.HOG_INFO.GLOBAL_SHA",)
+
+        for node in nodes:
+            self.print_reg(self.hw.getNode(node))
+
     def status(self):
         print("LPGBT Link Status from KCU:")
         for id in self.hw.getNodes(".*LPGBT.*DAQ.*DOWNLINK.*READY"):

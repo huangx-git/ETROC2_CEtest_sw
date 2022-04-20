@@ -44,6 +44,7 @@ if __name__ == '__main__':
 
     rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=(not args.force_no_trigger)))
 
+    kcu.firmware_version()
 
     kcu.write_node("READOUT_BOARD_%s.LPGBT.FEC_ERR_RESET" % 0, 0x1)
     kcu.status()
