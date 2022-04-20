@@ -42,10 +42,11 @@ if __name__ == '__main__':
               ipb_path="ipbusudp-2.0://%s:50001"%args.kcu,
               adr_table="module_test_fw/address_tables/etl_test_fw.xml")
 
-    kcu.status()
-
-
     rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=(not args.force_no_trigger)))
+
+
+    kcu.write_node("READOUT_BOARD_%s.LPGBT.FEC_ERR_RESET" % 0, 0x1)
+    kcu.status()
 
     data = 0xabcd1234
     kcu.write_node("LOOPBACK.LOOPBACK", data)
