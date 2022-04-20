@@ -12,11 +12,15 @@ def revbits(x):
     return int(f'{x:08b}'[::-1],2)
 
 class FIFO:
-    def __init__(self, rb, elink=0, ETROC='ETROC1', lpgbt=0):
+    #def __init__(self, rb, elink=0, ETROC='ETROC1', lpgbt=0):
+    def __init__(self, rb, links=[{'elink':0, 'lpgbt':0}], ETROC='ETROC1'):
         self.rb = rb
         self.ETROC = ETROC
-        self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_ELINK_SEL"%self.rb.rb, elink)
-        self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_LPGBT_SEL"%self.rb.rb, lpgbt)
+        self.nlinks = len(links)
+        for i, link in enumerate(links):
+            #print (f"Setting FIFO {i} to read from elink {link['elink']} and lpGBT {link['lpgbt']}.")  # This is too noisy
+            self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_ELINK_SEL%i"%(self.rb.rb, i), link['elink'])
+            self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_LPGBT_SEL%i"%(self.rb.rb, i), link['lpgbt'])
         self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.DL_SRC"%self.rb.rb, 3)
         #self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.TRIG.DOWNLINK.DL_SRC"%self.rb.rb, 3)  # This does not exist (no trigger downlink)
 
@@ -83,11 +87,11 @@ class FIFO:
                 return stream[i:]
         return []
 
-    def dump(self, block=255, format=True):
+    def dump(self, block=255, format=True, daq=0):
         #self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_PULSE"%self.rb.rb, 0x01)  # FIXME this is not needed I think
         for i in range(10):
-            if self.rb.kcu.read_node("READOUT_BOARD_%s.FIFO_EMPTY"%self.rb.rb).value() < 1: break
-        res = self.rb.kcu.hw.getNode("DAQ_0.FIFO").readBlock(block)
+            if self.rb.kcu.read_node("READOUT_BOARD_%s.FIFO_EMPTY%i"%(self.rb.rb, daq)).value() < 1: break  # FIXME I'm lazy. This should be done for all (?) FIFOS
+        res = self.rb.kcu.hw.getNode("DAQ_%i.FIFO"%daq).readBlock(block)
         try:
             self.rb.kcu.hw.dispatch()
             return res.value()
@@ -95,11 +99,11 @@ class FIFO:
             # NOTE: not entirely understood, but it seems this happens if FIFO is (suddenly?) empty
             return []
 
-    def giant_dump(self, block=3000, subblock=255, format=True, align=True, rev_bits=False):
+    def giant_dump(self, block=3000, subblock=255, format=True, align=True, rev_bits=False, daq=0):
         stream = []
         for i in range(block//subblock):
-            stream += self.dump(block=subblock, format=format)
-        stream += self.dump(block=block%subblock, format=format)
+            stream += self.dump(block=subblock, format=format, daq=daq)
+        stream += self.dump(block=block%subblock, format=format, daq=daq)
         if align:
             stream = self.align_stream(stream)
         if format:

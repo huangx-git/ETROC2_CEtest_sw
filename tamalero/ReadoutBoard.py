@@ -196,7 +196,7 @@ class ReadoutBoard:
         from tamalero.DataFrame import DataFrame
         df = DataFrame(etroc)
         lpgbt = 1 if trigger else 0
-        fifo = FIFO(self, elink=channel, ETROC=etroc, lpgbt=lpgbt)
+        fifo = FIFO(self, links=[{'elink': channel, 'lpgbt': lpgbt}], ETROC=etroc,)
         fifo.set_trigger(
             df.get_trigger_words(),
             df.get_trigger_masks(),
