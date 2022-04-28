@@ -115,6 +115,15 @@ ETROC2:
       data:
         mask: 0x001FFFFFFF
         shift: 0
+      toa:
+        mask: 0x1ff80000
+        shift: 19
+      cal:
+        mask: 0x0007fe00
+        shift: 9
+      tot:
+        mask: 0x000001ff
+        shift: 0
     trailer:
       chipid:
         mask: 0x7FFFC00000
