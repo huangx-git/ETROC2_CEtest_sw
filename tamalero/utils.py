@@ -2,6 +2,7 @@ import math
 import numpy as np
 from time import sleep
 from yaml import load, dump
+import os
 
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -97,6 +98,21 @@ def make_version_header(res):
 def chunk(in_list, n):
     return [in_list[i * n:(i + 1) * n] for i in range((len(in_list) + n - 1) // n )] 
 
+def download_address_table(version):
+    # https://gitlab.cern.ch/cms-etl-electronics/module_test_fw/-/archive/v1.0.7/module_test_fw-v1.0.7.zip?path=address_tables/modules
+    import requests
+    import zipfile
+    import shutil
+    fname = 'address_tables.zip'
+    url = f'https://gitlab.cern.ch/cms-etl-electronics/module_test_fw/-/archive/v{version}/module_test_fw-v{version}.zip?path=address_tables'
+    r = requests.get(url)
+    open(fname , 'wb').write(r.content)
+
+    #os.makedirs(f"../address_table/v{version}/")
+    with zipfile.ZipFile(fname,"r") as zip_ref:
+        zip_ref.extractall("./")
+    shutil.move(f"module_test_fw-v{version}-address_tables/address_tables/", f"address_table/v{version}/")
+    os.remove('address_tables.zip')
 
 if __name__ == '__main__':
     print ("Temperature example:")
