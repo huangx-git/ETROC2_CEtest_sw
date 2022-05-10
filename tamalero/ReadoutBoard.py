@@ -201,13 +201,13 @@ class ReadoutBoard:
             df.get_trigger_words(),
             df.get_trigger_masks(),
         )
-        fifo.reset()
+        fifo.reset(l1a=True)
         n_header = 0
         n_trailer = 0
         data  = []
         for i in range(1):
             data += fifo.giant_dump(3000, align=False, format=False)  # + ['35', '55'] + fifo.giant_dump(3000)
-            fifo.reset()
+            fifo.reset(l1a=True)
 
         good_counter = 0
         for word in data:
