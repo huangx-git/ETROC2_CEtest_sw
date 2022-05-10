@@ -66,9 +66,22 @@ if __name__ == '__main__':
     logger.setLevel(getattr(logging,args.log_level.upper()))
     logger.addHandler(logging.StreamHandler())
 
+    kcu_tmp = KCU(name="tmp_kcu",
+                  #ipb_path="chtcp-2.0://localhost:10203?target=%s:50001"%args.kcu,
+                  ipb_path="ipbusudp-2.0://%s:50001"%args.kcu,
+                  adr_table="address_table/generic/etl_test_fw.xml")
+    fw_version = kcu_tmp.firmware_version(quiet=True)
+
+    if not os.path.isdir(f"address_table/v{fw_version}"):
+        print ("Couldn't find the right address table.")
+        print ("I could download it, but you should probably reconfigure the boards.")
+        print ("Exiting.")
+        exit
+        #download_address_table(fw_version)
+
     kcu = KCU(name="my_device",
               ipb_path="ipbusudp-2.0://%s:50001"%args.kcu,
-              adr_table="module_test_fw/address_tables/etl_test_fw.xml")
+              adr_table=f"address_table/v{fw_version}/etl_test_fw.xml")
 
     rb_0 = kcu.connect_readout_board(ReadoutBoard(0))
 
