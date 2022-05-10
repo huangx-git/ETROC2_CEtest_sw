@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<node id="READOUT_BOARD" fwinfo="endpoint; width=10">
+
+  <!-- LPGBT-FPGA  -->
+  <node id="LPGBT" address="0x0">
+
+    <node id="DAQ" address="0x00">
+      <node id="UPLINK"    address="0x00" module="file://LPGBT_UPLINK.xml"/>
+      <node id="DOWNLINK"  address="0x10" module="file://LPGBT_DOWNLINK.xml"/>
+    </node>
+
+    <node id="FEC_ERR_RESET" address="0x1f" mask="0x1" permission="w" description="Write 1 to reset FEC error counter"/>
+
+    <node id="TRIGGER"  address="0x20">
+      <node id="UPLINK" address="0x00" module="file://LPGBT_UPLINK.xml"/>
+    </node>
+
+    <node id="PATTERN_CHECKER" address="0x30" module="file://PATTERN_CHECKER.xml"/>
+
+  </node>
+
+  <!-- LPGBT-FPGA  -->
+  <node id="SC"   address="0x200" module="file://GBT_SC.xml"/>
+
+  <node id="FIFO_ELINK_SEL0"     address="0x300" mask="0x1f"         permission="rw" description="Choose which e-link the readout fifo connects to (0-27)"/>
+  <node id="FIFO_LPGBT_SEL0"     address="0x300" mask="0x100"        permission="rw" description="Choose which lpgbt the readout fifo connects to (0-1)"/>
+  <node id="FIFO_FULL0"          address="0x300" mask="0x200"        permission="r"  description="FIFO is full"/>
+  <node id="FIFO_ARMED0"         address="0x300" mask="0x400"        permission="r"  description="FIFO armed"/>
+  <node id="FIFO_EMPTY0"         address="0x300" mask="0x1000"       permission="r"  description="FIFO empty"/>
+
+  <node id="FIFO_ELINK_SEL1"     address="0x310" mask="0x1f"         permission="rw" description="Choose which e-link the readout fifo connects to (0-27)"/>
+  <node id="FIFO_LPGBT_SEL1"     address="0x310" mask="0x100"        permission="rw" description="Choose which lpgbt the readout fifo connects to (0-1)"/>
+  <node id="FIFO_FULL1"          address="0x310" mask="0x200"        permission="r"  description="FIFO is full"/>
+  <node id="FIFO_ARMED1"         address="0x310" mask="0x400"        permission="r"  description="FIFO armed"/>
+  <node id="FIFO_EMPTY1"         address="0x310" mask="0x1000"       permission="r"  description="FIFO empty"/>
+
+  <node id="FIFO_RESET"          address="0x311" mask="0x1"          permission="w"  description="Reset the daq FIFO"/>
+
+  <node id="FIFO_TRIG0"          address="0x402" mask="0xffffffff"   permission="rw" description="FIFO trigger word 0"/>
+  <node id="FIFO_TRIG1"          address="0x403" mask="0xffffffff"   permission="rw" description="FIFO trigger word 0"/>
+  <node id="FIFO_TRIG2"          address="0x404" mask="0xffffffff"   permission="rw" description="FIFO trigger word 0"/>
+  <node id="FIFO_TRIG3"          address="0x405" mask="0xffffffff"   permission="rw" description="FIFO trigger word 0"/>
+  <node id="FIFO_TRIG4"          address="0x406" mask="0xffffffff"   permission="rw" description="FIFO trigger word 0"/>
+  <node id="FIFO_TRIG0_MASK"     address="0x407" mask="0xffffffff"   permission="rw" description="FIFO trigger word 0 enable mask" parameters="default=0xffffffff"/>
+  <node id="FIFO_TRIG1_MASK"     address="0x408" mask="0xffffffff"   permission="rw" description="FIFO trigger word 1 enable mask" parameters="default=0xffffffff"/>
+  <node id="FIFO_TRIG2_MASK"     address="0x409" mask="0xffffffff"   permission="rw" description="FIFO trigger word 1 enable mask" parameters="default=0xffffffff"/>
+  <node id="FIFO_TRIG3_MASK"     address="0x40A" mask="0xffffffff"   permission="rw" description="FIFO trigger word 1 enable mask" parameters="default=0xffffffff"/>
+  <node id="FIFO_TRIG4_MASK"     address="0x40B" mask="0xffffffff"   permission="rw" description="FIFO trigger word 1 enable mask" parameters="default=0xffffffff"/>
+  <node id="FIFO_FORCE_TRIG"     address="0x40C" mask="0x1"          permission="w"  description="Force trigger"/>
+  <node id="FIFO_CAPTURE_DEPTH"  address="0x40D" mask="0x00ffffff"   permission="rw" description="# of words to capture in the fifo" parameters="default=0x3fff"/>
+  <node id="FIFO_REVERSE_BITS"   address="0x40E" mask="0x00000001"   permission="rw" description="Reverse the bits going into the FIFO" parameters="default=0x1"/>
+
+</node>
