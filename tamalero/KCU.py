@@ -55,15 +55,19 @@ class KCU:
         reg = self.hw.getNode(id)
         self.action_reg(reg)
 
-    def firmware_version(self):
+    def firmware_version(self, quiet=False):
 
         nodes = ("FW_INFO.HOG_INFO.GLOBAL_DATE",
                  "FW_INFO.HOG_INFO.GLOBAL_TIME",
                  "FW_INFO.HOG_INFO.GLOBAL_VER",
                  "FW_INFO.HOG_INFO.GLOBAL_SHA",)
 
-        for node in nodes:
-            self.print_reg(self.hw.getNode(node))
+        if not quiet:
+            for node in nodes:
+                self.print_reg(self.hw.getNode(node))
+
+        res = self.read_node("FW_INFO.HOG_INFO.GLOBAL_VER")
+        return "%s.%s.%s"%(res >> 24, (res >> 16) & 0xFF, res & 0xFFFF)
 
     def status(self):
         print("LPGBT Link Status from KCU:")
