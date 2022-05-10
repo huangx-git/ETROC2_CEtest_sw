@@ -1,6 +1,6 @@
 from tamalero.KCU import KCU
 from tamalero.ReadoutBoard import ReadoutBoard
-from tamalero.utils import header, make_version_header
+from tamalero.utils import header, make_version_header, download_address_table
 from tamalero.FIFO import FIFO
 from tamalero.DataFrame import DataFrame
 
@@ -9,7 +9,7 @@ from tamalero.SCA import SCA_CONTROL
 import time
 import random
 import sys
-
+import os
 
 if __name__ == '__main__':
 
@@ -37,10 +37,21 @@ if __name__ == '__main__':
 
     print ("Using KCU at address: %s"%args.kcu)
 
+    # Get the current firmware version number
+    kcu_tmp = KCU(name="tmp_kcu",
+                  #ipb_path="chtcp-2.0://localhost:10203?target=%s:50001"%args.kcu,
+                  ipb_path="ipbusudp-2.0://%s:50001"%args.kcu,
+                  adr_table="address_table/generic/etl_test_fw.xml")
+    fw_version = kcu_tmp.firmware_version(quiet=True)
+
+    if not os.path.isdir(f"address_table/v{fw_version}"):
+        print ("Downloading latest firmware version address table.")
+        download_address_table(fw_version)
+
     kcu = KCU(name="my_device",
               #ipb_path="chtcp-2.0://localhost:10203?target=%s:50001"%args.kcu,
               ipb_path="ipbusudp-2.0://%s:50001"%args.kcu,
-              adr_table="module_test_fw/address_tables/etl_test_fw.xml")
+              adr_table=f"address_table/v{fw_version}/etl_test_fw.xml")
 
     rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=(not args.force_no_trigger)))
 
