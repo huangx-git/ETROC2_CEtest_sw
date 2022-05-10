@@ -11,6 +11,19 @@ except ImportError:
 def revbits(x):
     return int(f'{x:08b}'[::-1],2)
 
+def just_read(rb, link):
+    '''
+    very simple function that just reads whatever comes out of a link, no matter the pattern
+    '''
+    fifo = FIFO(rb, links=[{'elink':link, 'lpgbt':0}], ETROC='ETROC2')
+    # just keep the default trigger words
+    fifo.set_trigger([0x0, 0x0, 0x0, 0x0, 0x0], [0x0, 0x0, 0x0, 0x0, 0x0])
+    fifo.reset()
+    fifo.reset(l1a=True)
+    res = fifo.dump(block=255, format=True, daq=1)
+    return res
+
+
 class FIFO:
     #def __init__(self, rb, elink=0, ETROC='ETROC1', lpgbt=0):
     def __init__(self, rb, links=[{'elink':0, 'lpgbt':0}], ETROC='ETROC1'):
@@ -43,7 +56,7 @@ class FIFO:
             self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_REVERSE_BITS"%self.rb.rb, 0x00)
 
 
-    def set_trigger(self, words, masks):  # word0=0x0, word1=0x0, word2=0x0, word3=0x0, mask0=0x0, mask1=0x0, mask2=0x0, mask3=0x0):
+    def set_trigger(self, words, masks):
         assert len(words)==len(masks), "Number of trigger bytes and masks has to match"
         for i, (word, mask) in enumerate(list(zip(words, masks))):
             self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_TRIG%i"%(self.rb.rb, i), word)
@@ -88,6 +101,7 @@ class FIFO:
         return []
 
     def dump(self, block=255, format=True, daq=0):
+        # NOTE: format argument is kept for legacy, does not do anything here.
         #self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_PULSE"%self.rb.rb, 0x01)  # FIXME this is not needed I think
         for i in range(10):
             if self.rb.kcu.read_node("READOUT_BOARD_%s.FIFO_EMPTY%i"%(self.rb.rb, daq)).value() < 1: break  # FIXME I'm lazy. This should be done for all (?) FIFOS
