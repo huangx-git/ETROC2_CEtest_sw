@@ -28,10 +28,13 @@ class DataFrame:
             return bytes
 
     def get_trigger_words(self, format=False):
-        return self.get_bytes(self.format['identifiers']['header']['frame'], format=format)
+        return \
+            self.get_bytes(self.format['identifiers']['header']['frame'], format=format)  # FIXME check that this still works with FW > v1.2.0
 
     def get_trigger_masks(self, format=False):
-        return self.get_bytes(self.format['identifiers']['header']['mask'], format=format)
+        return \
+            self.get_bytes(self.format['identifiers']['header']['mask'], format=format)  # FIXME check that this still works with FW > v1.2.0
+
 
     def read(self, val, quiet=True):
         data_type = None
@@ -50,24 +53,22 @@ class DataFrame:
 
         for d in self.format['data'][data_type]:
             res[d] = (val & self.format['data'][data_type][d]['mask']) >> self.format['data'][data_type][d]['shift']
+        if not quiet:
+            print (f"Found data of type {data_type}:", res)
         #print (res)
         return data_type, res
 
 if __name__ == '__main__':
 
     test_words = [
-        0xcaaaaaaaaa,
-        0xcaaaaaaaaa,
-        0x35555559a7,
-        0x40e691e374,
-        0x6bc9425dc9,
-        0x9555555404,
-        0xcaaaaaaaaa,
-        0x355555519b,
-        0x4d02689a90,
-        0x76b1f4de3a,
+        259251636582,
+        259243266812,
+        576704960435,
+        459347591436,
+        259251651343,
+        259251651348,
         ]
 
-    df = DataFrame('ETROC1')
+    df = DataFrame('ETROC2')
     for word in test_words:
-        df.read(word)
+        df.read(word, quiet=False)
