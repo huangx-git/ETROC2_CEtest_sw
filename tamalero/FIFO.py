@@ -23,6 +23,18 @@ def just_read(rb, link):
     res = fifo.dump(block=255, format=True, daq=1)
     return res
 
+def just_read_daq(rb, link, lpgbt):
+    '''
+    very simple function that just reads whatever comes out of a link, no matter the pattern
+    this is tested with v1.2.2 @ BU test stand, DAQ elink 2 and trigger elink 20.
+    NOTE: this seems to not care about the uplink alignment?
+    '''
+    import numpy as np
+    fifo = FIFO(rb, links=[{'elink':link, 'lpgbt':lpgbt}], ETROC='ETROC2')
+    fifo.reset()
+    res = fifo.dump_daq(block=255)
+
+    return list (np.array(res[0::2])[:20] | (np.array(res[1::2]) << 32)[:20])
 
 class FIFO:
     #def __init__(self, rb, elink=0, ETROC='ETROC1', lpgbt=0):
@@ -37,9 +49,13 @@ class FIFO:
         self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.DL_SRC"%self.rb.rb, 3)
         #self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.TRIG.DOWNLINK.DL_SRC"%self.rb.rb, 3)  # This does not exist (no trigger downlink)
 
-        for i in range(5):
-            self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_TRIG%i"%(self.rb.rb, i), 0x00)
-            self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_TRIG%i_MASK"%(self.rb.rb, i), 0x00)
+        for i in range(10):
+            try:
+                self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_TRIG%i"%(self.rb.rb, i), 0x00)
+                self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_TRIG%i_MASK"%(self.rb.rb, i), 0x00)
+            except:
+                # This is dangerous, but will work as long as the right address tables are loaded
+                pass
 
         with open(os.path.expandvars('$TAMALERO_BASE/configs/dataformat.yaml')) as f:
             self.dataformat = load(f, Loader=Loader)[ETROC]
@@ -106,6 +122,16 @@ class FIFO:
         for i in range(10):
             if self.rb.kcu.read_node("READOUT_BOARD_%s.FIFO_EMPTY%i"%(self.rb.rb, daq)).value() < 1: break  # FIXME I'm lazy. This should be done for all (?) FIFOS
         res = self.rb.kcu.hw.getNode("DAQ_%i.FIFO"%daq).readBlock(block)
+        try:
+            self.rb.kcu.hw.dispatch()
+            return res.value()
+        except:
+            # NOTE: not entirely understood, but it seems this happens if FIFO is (suddenly?) empty
+            return []
+
+    def dump_daq(self, block=255):
+        # NOTE: format argument is kept for legacy, does not do anything here.
+        res = self.rb.kcu.hw.getNode("DAQ_RB0.FIFO").readBlock(block)
         try:
             self.rb.kcu.hw.dispatch()
             return res.value()
