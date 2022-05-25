@@ -11,16 +11,16 @@ except ImportError:
 def revbits(x):
     return int(f'{x:08b}'[::-1],2)
 
-def just_read(rb, link):
+def just_read(rb, link, daq=True):
     '''
     very simple function that just reads whatever comes out of a link, no matter the pattern
     '''
-    fifo = FIFO(rb, links=[{'elink':link, 'lpgbt':0}], ETROC='ETROC2')
+    fifo = FIFO(rb, links=[{'elink':link, 'lpgbt':0 if daq else 1}], ETROC='ETROC2')
     # just keep the default trigger words
     fifo.set_trigger([0x0, 0x0, 0x0, 0x0, 0x0], [0x0, 0x0, 0x0, 0x0, 0x0])
-    fifo.reset()
-    fifo.reset(l1a=True)
-    res = fifo.dump(block=255, format=True, daq=1)
+    #fifo.reset()
+    #fifo.reset(l1a=True)
+    res = fifo.dump(block=255, format=True, daq=daq)
     return res
 
 def just_read_daq(rb, link, lpgbt):

@@ -101,15 +101,17 @@ if __name__ == '__main__':
     fifo = FIFO(rb_0, links=links, ETROC=args.etroc)
     df = DataFrame(args.etroc)
     fifo.set_trigger(
+        #[0x0]*5 + df.get_trigger_words(),
+        #[0x0]*5 + df.get_trigger_masks(),
         df.get_trigger_words(),
         df.get_trigger_masks(),
     )
     
     for i in range(int(args.triggers)):
-        #print(i)
+        print(i)
         fifo.reset(l1a=True)
-        test_0 = fifo.giant_dump(block=300, format=False, align=(args.etroc=='ETROC1'), daq=0)
-        test_1 = fifo.giant_dump(block=300, format=False, align=(args.etroc=='ETROC1'), daq=1)
+        test_0 = fifo.giant_dump(block=300, format=False, align=(args.etroc=='ETROC1'), daq=1)
+        test_1 = fifo.giant_dump(block=300, format=False, align=(args.etroc=='ETROC1'), daq=0)
         events_0 += build_events(test_0, ETROC=args.etroc)
         events_1 += build_events(test_1, ETROC=args.etroc)
 
