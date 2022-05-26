@@ -27,13 +27,17 @@ def just_read_daq(rb, link, lpgbt):
     '''
     very simple function that just reads whatever comes out of a link, no matter the pattern
     this is tested with v1.2.2 @ BU test stand, DAQ elink 2 and trigger elink 20.
-    NOTE: this seems to not care about the uplink alignment?
+    With firmware v1.2.2 this function does not care about uplink alignment anymore.
+    Frames are automatically aligned by bitslipping in the firmware.
+    NOTE: It seems as if the last word is read out if the FIFO is otherwise empty, resulting in weird trailers.
+    FIXME: Fix the trailing trailers when the FIFO has no more data.
     '''
     import numpy as np
     fifo = FIFO(rb, links=[{'elink':link, 'lpgbt':lpgbt}], ETROC='ETROC2')
     fifo.reset()
     res = fifo.dump_daq(block=255)
 
+    #print (res[:20])
     return list (np.array(res[0::2])[:20] | (np.array(res[1::2]) << 32)[:20])
 
 class FIFO:
