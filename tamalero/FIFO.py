@@ -37,8 +37,9 @@ def just_read_daq(rb, link, lpgbt):
     fifo.reset()
     res = fifo.dump_daq(block=255)
 
-    #print (res[:20])
-    return list (np.array(res[0::2])[:20] | (np.array(res[1::2]) << 32)[:20])
+    empty_frame_mask = np.array(res[0::2]) > (2**8)  # masking empty fifo entries
+    len_cut = min(len(res[0::2]), len(res[1::2]))  # ensuring equal length of arrays downstream
+    return list (np.array(res[0::2])[:len_cut][empty_frame_mask[:len_cut]] | (np.array(res[1::2]) << 32)[:len_cut][empty_frame_mask[:len_cut]])
 
 class FIFO:
     #def __init__(self, rb, elink=0, ETROC='ETROC1', lpgbt=0):
