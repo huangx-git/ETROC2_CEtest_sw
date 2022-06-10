@@ -4,6 +4,7 @@ import sys
 import pickle
 import copy
 import random
+import json
 import tamalero.colors as colors
 from tamalero.utils import read_mapping, chunk
 from time import sleep
@@ -758,7 +759,7 @@ class LPGBT(RegParser):
         xmin=0
         xmax=64
 
-        eyeimage = [[0 for y in range(ymin, ymax + 1)] for x in range(xmin, xmax + 1)]
+        eyeimage = [[0 for x in range(xmin, xmax)] for y in range(ymin, ymax)]
 
         print("Starting loops: \n")
         for y_axis in range(ymin, ymax):
@@ -781,12 +782,12 @@ class LPGBT(RegParser):
                     cntvalmax = countervalue
                 if (countervalue < cntvalmin):
                     cntvalmin = countervalue
-                eyeimage[x_axis][y_axis] = countervalue
+                eyeimage[y_axis][x_axis] = countervalue
 
                 # deassert eomstart bit
                 self.wr_reg(eomstartreg, 0x0)
 
-                sys.stdout.write("%01d" % int(eyeimage[x_axis][y_axis]/1000))
+                sys.stdout.write("%01d" % int(eyeimage[y_axis][x_axis]/1000))
 
                 sys.stdout.flush()
 
@@ -796,24 +797,14 @@ class LPGBT(RegParser):
 
         print("Counter value max=%d" % cntvalmax)
 
-        # save to file
+        # normalize for plotting and save to file
+        normalize = lambda val : int(100*(cntvalmax - val)/(cntvalmax-cntvalmin))
+        eye_scan_data = [[normalize(x) for x in y] for y in eyeimage]
+
         if not os.path.isdir("eye_scan_results"):
             os.mkdir("eye_scan_results")
-        f = open ("eye_scan_results/eye_data.py", "w+")
-        f.write ("eye_data=[\n")
-        for y  in range (ymin,ymax):
-            f.write ("    [")
-            for x in range (xmin,xmax):
-                # normalize for plotting
-                f.write("%d" % (100*(cntvalmax - eyeimage[x][y])/(cntvalmax-cntvalmin)))
-                if (x<(xmax-1)):
-                    f.write(",")
-                else:
-                    f.write("]")
-            if (y<(ymax-1)):
-                f.write(",\n")
-            else:
-                f.write("]\n")
+        with open("eye_scan_results/data.json", "w") as outfile:
+            json.dump(eye_scan_data, outfile)
 
     def get_chip_serial(self):
         return self.rd_adr(0x003).value() << 24 |\

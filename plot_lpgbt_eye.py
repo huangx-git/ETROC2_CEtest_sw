@@ -3,8 +3,10 @@
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
+import json
 
-from eye_scan_results.eye_data import  eye_data
+with open('eye_scan_results/data.json', 'r') as openfile:
+    eye_data = json.load(openfile)
 
 (fig, axs) = plt.subplots(1, 1, figsize=(10, 8))
 print ("fig type = " + str(type(fig)))
