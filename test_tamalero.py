@@ -29,6 +29,7 @@ if __name__ == '__main__':
     argParser.add_argument('--read_fifo', action='store', default=-1, help='Read 3000 words from link N')
     argParser.add_argument('--load_alignment', action='store', default=None, help='Load predefined alignment, skips the scan.')
     argParser.add_argument('--etroc', action='store', default="ETROC1", help='Load predefined alignment, skips the scan.')
+    argParser.add_argument('--eyescan', action='store_true', default=False, help="Run eyescan?")
     args = argParser.parse_args()
 
     header()
@@ -179,6 +180,10 @@ if __name__ == '__main__':
         print ("\nReading the pattern checker counter. Waiting 1 sec.")
         time.sleep(1)
         rb_0.DAQ_LPGBT.read_pattern_checkers()
+
+    if args.eyescan:
+        print ("\nRunning Eyescan.")
+        rb_0.DAQ_LPGBT.eyescan()
 
     time.sleep(1)
     fifo_link = int(args.read_fifo)
