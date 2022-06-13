@@ -69,6 +69,10 @@ class KCU:
         res = self.read_node("FW_INFO.HOG_INFO.GLOBAL_VER")
         return "%s.%s.%s"%(res >> 24, (res >> 16) & 0xFF, res & 0xFFFF)
 
+    def get_serial(self):
+        # placeholder
+        return "000000"
+
     def status(self):
         print("LPGBT Link Status from KCU:")
         for id in self.hw.getNodes(".*LPGBT.*DAQ.*DOWNLINK.*READY"):

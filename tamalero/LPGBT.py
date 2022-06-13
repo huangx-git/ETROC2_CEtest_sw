@@ -796,7 +796,11 @@ class LPGBT(RegParser):
 
         if not os.path.isdir("eye_scan_results"):
             os.mkdir("eye_scan_results")
-        filename = "lpgbt%d_%s" %(self.get_chip_serial(), datetime.now().strftime("%Y%m%d_%H%M%S"))
+
+        serialnums = "lpgbt%s_kcu%s" %(self.get_chip_serial(), self.kcu.get_serial())
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = "%s_%s" %(serialnums, timestamp)
+
         with open("eye_scan_results/%s.json" %filename, "w") as outfile:
             json.dump(eye_scan_data, outfile)
         print("Data saved to eye_scan_results/%s.json\n" %filename)
