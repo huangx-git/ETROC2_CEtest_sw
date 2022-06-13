@@ -182,7 +182,6 @@ if __name__ == '__main__':
         rb_0.DAQ_LPGBT.read_pattern_checkers()
 
     if args.eyescan:
-        print ("\nRunning Eyescan.")
         rb_0.DAQ_LPGBT.eyescan()
 
     time.sleep(1)

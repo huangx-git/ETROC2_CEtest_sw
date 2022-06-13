@@ -8,6 +8,7 @@ import json
 import tamalero.colors as colors
 from tamalero.utils import read_mapping, chunk
 from time import sleep
+from datetime import datetime
 
 from tamalero.lpgbt_constants import LpgbtConstants
 
@@ -761,7 +762,7 @@ class LPGBT(RegParser):
 
         eyeimage = [[0 for x in range(xmin, xmax)] for y in range(ymin, ymax)]
 
-        print("Starting loops: \n")
+        print("\nRunning eye scan...")
         for y_axis in range(ymin, ymax):
 
             # update yaxis
@@ -787,15 +788,7 @@ class LPGBT(RegParser):
                 # deassert eomstart bit
                 self.wr_reg(eomstartreg, 0x0)
 
-                #sys.stdout.write("%01d" % int(eyeimage[y_axis][x_axis]/1000))
-
-                #sys.stdout.flush()
-
-            #sys.stdout.write("\n")
-
-        print("\nEnd Loops \n")
-
-        print("Counter value max=%d" % cntvalmax)
+        print("Counter value max=%d\n" % cntvalmax)
 
         # normalize for plotting and save to file
         normalize = lambda val : int(100*(cntvalmax - val)/(cntvalmax-cntvalmin))
@@ -803,8 +796,10 @@ class LPGBT(RegParser):
 
         if not os.path.isdir("eye_scan_results"):
             os.mkdir("eye_scan_results")
-        with open("eye_scan_results/data.json", "w") as outfile:
+        filename = "lpgbt%d_%s" %(self.get_chip_serial(), datetime.now().strftime("%Y%m%d_%H%M%S"))
+        with open("eye_scan_results/%s.json" %filename, "w") as outfile:
             json.dump(eye_scan_data, outfile)
+        print("Data saved to eye_scan_results/%s.json\n" %filename)
 
         # print results to bash
         try:
@@ -812,12 +807,11 @@ class LPGBT(RegParser):
         except:
             print("Need to pip install colored to print out results.")
             print("Eye scan results were still saved and can be plotted.")
-        # color codes from red to blue
+
         color_scale = [124,196,202,214,190,82,50,38,21,19]
         sys.stdout.write("Color Scale: ")
         for i in range(10):
             sys.stdout.write("%s%01d%s" % (bg(color_scale[i]),i,attr('reset')))
-        
         sys.stdout.write("\n\n")
         
         for y_axis in range(ymin, ymax):
