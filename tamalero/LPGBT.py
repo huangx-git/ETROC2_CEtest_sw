@@ -787,11 +787,11 @@ class LPGBT(RegParser):
                 # deassert eomstart bit
                 self.wr_reg(eomstartreg, 0x0)
 
-                sys.stdout.write("%01d" % int(eyeimage[y_axis][x_axis]/1000))
+                #sys.stdout.write("%01d" % int(eyeimage[y_axis][x_axis]/1000))
 
-                sys.stdout.flush()
+                #sys.stdout.flush()
 
-            sys.stdout.write("\n")
+            #sys.stdout.write("\n")
 
         print("\nEnd Loops \n")
 
@@ -805,6 +805,27 @@ class LPGBT(RegParser):
             os.mkdir("eye_scan_results")
         with open("eye_scan_results/data.json", "w") as outfile:
             json.dump(eye_scan_data, outfile)
+
+        # print results to bash
+        try:
+            from colored import fg, bg, attr
+        except:
+            print("Need to pip install colored to print out results.")
+            print("Eye scan results were still saved and can be plotted.")
+        # color codes from red to blue
+        color_scale = [124,196,202,214,190,82,50,38,21,19]
+        sys.stdout.write("Color Scale: ")
+        for i in range(10):
+            sys.stdout.write("%s%01d%s" % (bg(color_scale[i]),i,attr('reset')))
+        
+        sys.stdout.write("\n\n")
+        
+        for y_axis in range(ymin, ymax):
+            for x_axis in range(xmin, xmax):
+                printval = int(eyeimage[y_axis][x_axis]/1000)
+                sys.stdout.write("%s%01d%s" % (bg(color_scale[printval]), printval, attr('reset')))
+                sys.stdout.flush()
+            sys.stdout.write("\n")
 
     def get_chip_serial(self):
         return self.rd_adr(0x003).value() << 24 |\
