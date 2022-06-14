@@ -64,3 +64,39 @@ class VTRX:
     def disable(self, channel=0):
         ctrl_reg = self.rd_adr(0x04 + 4*(channel))
         self.wr_adr(0x04 + 4*(channel), ctrl_reg >> 1 << 1)
+
+    def preemph_enable(self):
+        adr = 0x0
+        ctrl_reg = self.rd_adr(0x0)
+        self.wr_adr(adr, (ctrl_reg) | (1<<4))
+
+    def preemph_disable(self):
+        adr = 0x0
+        ctrl_reg = self.rd_adr(0x0)
+        self.wr_adr(adr, (ctrl_reg) & (0xff ^ (1<<4)))
+
+    def set_preemph_rising(self, channel=0, enable=True):
+        ctrl_reg = self.rd_adr(0x04 + 4*(channel))
+        if (enable):
+            self.wr_adr(0x04 + 4*(channel), (ctrl_reg) | (1 << 4))
+        else:
+            self.wr_adr(0x04 + 4*(channel), (ctrl_reg) & (0xff ^ (1 << 4)))
+
+    def set_preemph_falling(self, channel=0, enable=True):
+        ctrl_reg = self.rd_adr(0x04 + 4*(channel))
+        if (enable):
+            self.wr_adr(0x04 + 4*(channel), (ctrl_reg) | (1 << 5))
+        else:
+            self.wr_adr(0x04 + 4*(channel), (ctrl_reg) & (0xff ^ (1 << 5)))
+
+    def set_bias_current(self, channel=0, current=0x2f):
+        ctrl_reg = self.rd_adr(0x5 + 4*(channel))
+        self.wr_adr(0x5 + 4*(channel), 0x7f & current)
+
+    def set_modulation_current(self, channel=0, current=0x26):
+        ctrl_reg = self.rd_adr(0x6 + 4*(channel))
+        self.wr_adr(0x6 + 4*(channel), 0x7f & current)
+
+    def set_emphasis_amplitude(self, channel=0, amplitude=0x0):
+        ctrl_reg = self.rd_adr(0x07 + 4*(channel))
+        self.wr_adr(0x7 + 4*(channel), amplitude & 0x7)
