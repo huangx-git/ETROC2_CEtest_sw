@@ -528,13 +528,16 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.PHASE_SHIFTER.PS0DELAY_7TO0", 0xff & phase)
         self.wr_reg("LPGBT.RWF.PHASE_SHIFTER.PS0DELAY_8", msb)
 
-    def I2C_write(self, reg=0x0, val=10, master=2, slave_addr=0x70, adr_nbytes=2, freq=2):
+    def I2C_write(self, reg=0x0, val=10, master=2, slave_addr=0x70, adr_nbytes=2, freq=2, noverify=False):
         '''
         reg: target register
         val: has to be a single byte, or a list of single bytes.
         master: lpGBT master (2 by default)
         this function is following https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#example-2-multi-byte-write
         '''
+
+        if noverify:
+            self.kcu.toggle_dispatch()
 
         i2cm     = 2
         OFFSET_WR = i2cm*(self.LPGBT_CONST.I2CM1CMD - self.LPGBT_CONST.I2CM0CMD) #shift the master by 2 registers (we can change this)
@@ -578,18 +581,20 @@ class LPGBT(RegParser):
         self.wr_adr(self.LPGBT_CONST.I2CM0ADDRESS+OFFSET_WR, slave_addr)# write the address of the follower
         self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_MULTI)# execute write (c)
 
-        status = self.rd_adr(self.LPGBT_CONST.I2CM0STATUS+OFFSET_RD)
-        retries = 0
-        while (status != self.LPGBT_CONST.I2CM_SR_SUCC_bm):
+        #don't verify if we want to queue write requests & bulk transfer
+        if not noverify:
             status = self.rd_adr(self.LPGBT_CONST.I2CM0STATUS+OFFSET_RD)
-            #if (status & self.LPGBT_CONST.I2CM_SR_LEVEERR_bm):
-            #    print ("The SDA line is pulled low before initiating a transaction")
-            #if (status & self.LPGBT_CONST.I2CM_SR_NOACK_bm):
-            #    print("The I2C transaction was not acknowledged by the I2C slave")
-            retries += 1
-            if retries > 50:
-                print ("Write not successfull!")
-                break
+            retries = 0
+            while (status != self.LPGBT_CONST.I2CM_SR_SUCC_bm):
+                status = self.rd_adr(self.LPGBT_CONST.I2CM0STATUS+OFFSET_RD)
+                #if (status & self.LPGBT_CONST.I2CM_SR_LEVEERR_bm):
+                #    print ("The SDA line is pulled low before initiating a transaction")
+                #if (status & self.LPGBT_CONST.I2CM_SR_NOACK_bm):
+                #    print("The I2C transaction was not acknowledged by the I2C slave")
+                retries += 1
+                if retries > 50:
+                    print ("Write not successfull!")
+                    break
 
     def I2C_read(self, reg=0x0, master=2, slave_addr=0x70, nbytes=1, adr_nbytes=2, freq=2, quiet=False):
         #https://gitlab.cern.ch/lpgbt/pigbt/-/blob/master/backend/apiapp/lpgbtLib/lowLevelDrivers/MASTERI2C.py#L83
@@ -675,10 +680,11 @@ class LPGBT(RegParser):
             if (wr != 0):
                 if verbose:
                     print("Writing address: %d, value: 0x%02x" % (adr, wr))
-                self.I2C_write(reg=adr, val=wr, master=master, slave_addr=slave_addr)
-                rd = self.I2C_read(reg=adr, master=master, slave_addr=slave_addr)
-                if (wr!=rd):
-                    print("LPGBT readback error 0x%02X != 0x%02X at adr %d" % (wr, rd, adr))
+                self.I2C_write(reg=adr, val=wr, master=master, slave_addr=slave_addr, noverify=True)
+                #rd = self.I2C_read(reg=adr, master=master, slave_addr=slave_addr)
+                #if (wr!=rd):
+                #    print("LPGBT readback error 0x%02X != 0x%02X at adr %d" % (wr, rd, adr))
+        self.kcu.dispatch()
 
     def read_temp_i2c(self):
         res = self.I2C_read(reg=0x0, master=1, slave_addr=0x48, nbytes=2)
