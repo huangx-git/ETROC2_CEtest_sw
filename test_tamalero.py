@@ -55,9 +55,6 @@ if __name__ == '__main__':
               adr_table=f"address_table/v{fw_version}/etl_test_fw.xml")
 
     rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=(not args.force_no_trigger)))
-    for ch in [2,3]:
-        print (f"Disabling VTRx+ channel {ch}")
-        rb_0.VTRX.disable(channel=ch)
 
     kcu.firmware_version()
 
@@ -88,6 +85,7 @@ if __name__ == '__main__':
             print ("Power up init sequence for: Trigger")
             rb_0.TRIG_LPGBT.power_up_init()
         #rb_0.DAQ_LPGBT.power_up_init_trigger()
+        #
 
     if not hasattr(rb_0, "TRIG_LPGBT"):
         rb_0.get_trigger()
@@ -108,6 +106,18 @@ if __name__ == '__main__':
     res = rb_0.DAQ_LPGBT.get_board_id()
     res['trigger'] = 'yes' if rb_0.trigger else 'no'
     make_version_header(res)
+
+    for ch in [2,3]:
+        print (f"Disabling VTRx+ channel {ch}")
+        rb_0.VTRX.disable(channel=ch)
+
+    while not rb_0.DAQ_LPGBT.link_status():
+        print ("DAQ link is not stable. Resetting.")
+        rb_0.reset_link(trigger=False)
+    if rb_0.trigger:
+        while not rb_0.TRIG_LPGBT.link_status():
+            print ("Trigger link is not stable. Resetting.")
+            rb_0.reset_link(trigger=True)
 
     rb_0.status()
 
