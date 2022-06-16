@@ -24,17 +24,35 @@ channel_status_bits = {
 
 class VTRX:
 
-    def __init__(self, master):
+    def __init__(self, master, disable_channels=[]):
         '''
         master: the lpGBT master to the VTRX
         '''
         self.master = master
 
+        for ch in disable_channels:
+            print (f"Disabling VTRx+ channel {ch}")
+            self.disable(channel=ch)
+
+
+    def reset(self, hard=False, toggle_channels=[]):
+        if hard:
+            # enable / disable
+            self.master.set_gpio(13,1)
+            self.master.set_gpio(13,0)
+        # reset_b
+        self.master.set_gpio(10,0)
+        self.master.set_gpio(10,1)
+
+        for ch in toggle_channels:
+            self.disable(channel=ch)
+            self.enable(channel=ch)
+
     def rd_adr(self, adr):
         return self.master.I2C_read(adr, master=2, slave_addr=0x50, adr_nbytes=1)
 
-    def wr_adr(self, adr, data):
-        self.master.I2C_write(adr, val=data, master=2, slave_addr=0x50, adr_nbytes=1)
+    def wr_adr(self, adr, data, ignore_response=False):
+        self.master.I2C_write(adr, val=data, master=2, slave_addr=0x50, adr_nbytes=1, ignore_response=ignore_response)
 
     def status(self, quiet=False):
         global_status = self.rd_adr(0x0)
@@ -58,12 +76,16 @@ class VTRX:
             print("{:40}{:^12}{:^12}{:^12}{:^12}".format(*line))
 
     def enable(self, channel=0):
-        ctrl_reg = self.rd_adr(0x04 + 4*(channel))
+        if channel == 0:
+            ctrl_reg = 15  # we can't read back if channel 0 is disabled, just set to default values
+        else:
+            ctrl_reg = self.rd_adr(0x04 + 4*(channel))
         self.wr_adr(0x04 + 4*(channel), ctrl_reg | 1)
 
     def disable(self, channel=0):
+        ignore_response = True if channel == 0 else False
         ctrl_reg = self.rd_adr(0x04 + 4*(channel))
-        self.wr_adr(0x04 + 4*(channel), ctrl_reg >> 1 << 1)
+        self.wr_adr(0x04 + 4*(channel), ctrl_reg >> 1 << 1, ignore_response=ignore_response)
 
     def preemph_enable(self):
         adr = 0x0
@@ -96,6 +118,10 @@ class VTRX:
     def set_modulation_current(self, channel=0, current=0x26):
         ctrl_reg = self.rd_adr(0x6 + 4*(channel))
         self.wr_adr(0x6 + 4*(channel), 0x7f & current)
+
+    def get_modulation_current(self, channel=0):
+        ctrl_reg = self.rd_adr(0x6 + 4*(channel))
+        return ctrl_reg
 
     def set_emphasis_amplitude(self, channel=0, amplitude=0x0):
         ctrl_reg = self.rd_adr(0x07 + 4*(channel))
