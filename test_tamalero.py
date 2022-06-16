@@ -55,6 +55,9 @@ if __name__ == '__main__':
               adr_table=f"address_table/v{fw_version}/etl_test_fw.xml")
 
     rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=(not args.force_no_trigger)))
+    for ch in [2,3]:
+        print (f"Disabling VTRx+ channel {ch}")
+        rb_0.VTRX.disable(channel=ch)
 
     kcu.firmware_version()
 
@@ -75,8 +78,10 @@ if __name__ == '__main__':
             rb_0.DAQ_LPGBT.reset_daq_mgts()
             rb_0.DAQ_LPGBT.power_up_init()
             time.sleep(0.01)
-            print(hex(rb_0.DAQ_LPGBT.rd_adr(0x1c5)))
-            #sys.exit(0)
+            #print(hex(rb_0.DAQ_LPGBT.rd_adr(0x1c5)))
+            if (rb_0.DAQ_LPGBT.rd_adr(0x1c5) != 0xa5):
+                print ("Still no communication with DAQ LPGBT. Quitting.")
+                sys.exit(0)
         #rb_0.TRIG_LPGBT.power_up_init()
         rb_0.get_trigger()
         if rb_0.trigger:
