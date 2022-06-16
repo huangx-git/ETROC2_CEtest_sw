@@ -279,6 +279,21 @@ class ReadoutBoard:
 
         #sleep(0.5)
 
+    def reset_link(self, trigger=False):
+        '''
+        Highly experimental
+        '''
+        if trigger:
+            self.VTRX.reset(toggle_channels=[1])
+            self.DAQ_LPGBT.reset_trigger_mgts()
+            self.TRIG_LPGBT.power_up_init(verbose=False)
+        else:
+            self.VTRX.reset(toggle_channels=[0])
+            self.DAQ_LPGBT.reset_daq_mgts()
+            self.DAQ_LPGBT.power_up_init()
+
+        self.reset_FEC_error_count(quiet=True)
+
 
     def read_temp(self, verbose=0):
         # high level function to read all the temperature sensors
