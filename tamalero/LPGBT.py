@@ -30,11 +30,13 @@ class LPGBT(RegParser):
 
     def link_status(self):
         if self.trigger:
+            print ("Checking trigger link status")
             return (
                 (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT"%self.rb).value() == 0) &
                 (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.TRIGGER.UPLINK.READY"%self.rb).value() == 1)
             )
         else:
+            print ("Checking DAQ link status")
             return (
                 (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.DAQ.UPLINK.FEC_ERR_CNT"%self.rb).value() == 0) &
                 (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.DAQ.UPLINK.READY"%self.rb).value() == 1)
@@ -590,9 +592,9 @@ class LPGBT(RegParser):
         self.wr_adr(self.LPGBT_CONST.I2CM0ADDRESS+OFFSET_WR, slave_addr)# write the address of the follower
         self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_MULTI)# execute write (c)
 
-        status = self.rd_adr(self.LPGBT_CONST.I2CM0STATUS+OFFSET_RD)
-        retries = 0
         if not ignore_response:
+            status = self.rd_adr(self.LPGBT_CONST.I2CM0STATUS+OFFSET_RD)
+            retries = 0
             while (status != self.LPGBT_CONST.I2CM_SR_SUCC_bm):
                 status = self.rd_adr(self.LPGBT_CONST.I2CM0STATUS+OFFSET_RD)
                 #if (status & self.LPGBT_CONST.I2CM_SR_LEVEERR_bm):
