@@ -80,6 +80,7 @@ class ReadoutBoard:
         # TODO: check the FEC mode and set the number of links appropriately
         n_links = 24  #  NOTE: there are 28 e-links if the board is in FEC5 mode, but we are operating in FEC12 where there are only 24
         print ("Scanning for uplink alignment")
+        print ("In data mode:", data_mode)
         alignment = {}
         inversion = {} # also scan for inversion
         # make alignment dict
