@@ -84,7 +84,10 @@ class VTRX:
 
     def disable(self, channel=0):
         ignore_response = True if channel == 0 else False
-        ctrl_reg = self.rd_adr(0x04 + 4*(channel))
+        if channel == 0:
+            ctrl_reg = 15
+        else:
+            ctrl_reg = self.rd_adr(0x04 + 4*(channel))
         self.wr_adr(0x04 + 4*(channel), ctrl_reg >> 1 << 1, ignore_response=ignore_response)
 
     def preemph_enable(self):
