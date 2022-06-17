@@ -23,7 +23,7 @@ def just_read(rb, link, daq=True):
     res = fifo.dump(block=255, format=True, daq=daq)
     return res
 
-def just_read_daq(rb, link, lpgbt):
+def just_read_daq(rb, link, lpgbt, fixed_pattern=False, trigger_rate=0):
     '''
     very simple function that just reads whatever comes out of a link, no matter the pattern
     this is tested with v1.2.2 @ BU test stand, DAQ elink 2 and trigger elink 20.
@@ -31,15 +31,22 @@ def just_read_daq(rb, link, lpgbt):
     Frames are automatically aligned by bitslipping in the firmware.
     NOTE: It seems as if the last word is read out if the FIFO is otherwise empty, resulting in weird trailers.
     FIXME: Fix the trailing trailers when the FIFO has no more data.
+    trigger_rate is roughly in Hertz
     '''
     import numpy as np
     fifo = FIFO(rb, links=[{'elink':link, 'lpgbt':lpgbt}], ETROC='ETROC2')
-    fifo.reset()
+    if fixed_pattern:
+        fifo.use_fixed_pattern()
+    rate = fifo.set_trigger_rate(trigger_rate*100)
+    print (f"Trigger rate is set to {rate} Hz")
+    fifo.reset(l1a=True)
     res = fifo.dump_daq(block=255)
+    fifo.use_etroc_data()
 
     empty_frame_mask = np.array(res[0::2]) > (2**8)  # masking empty fifo entries
     len_cut = min(len(res[0::2]), len(res[1::2]))  # ensuring equal length of arrays downstream
     return list (np.array(res[0::2])[:len_cut][empty_frame_mask[:len_cut]] | (np.array(res[1::2]) << 32)[:len_cut][empty_frame_mask[:len_cut]])
+
 
 class FIFO:
     #def __init__(self, rb, elink=0, ETROC='ETROC1', lpgbt=0):
@@ -76,6 +83,23 @@ class FIFO:
         elif ETROC == 'ETROC1':
             self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_REVERSE_BITS"%self.rb.rb, 0x00)
 
+    def turn_on_zero_surpress(self):
+        self.rb.kcu.write_node("READOUT_BOARD_%s.ZERO_SUPRESS"%self.rb.rb, 0x1)
+
+    def turn_off_zero_surpress(self):
+        self.rb.kcu.write_node("READOUT_BOARD_%s.ZERO_SUPRESS"%self.rb.rb, 0x0)
+
+    def use_fixed_pattern(self):
+        self.rb.kcu.write_node("READOUT_BOARD_%s.RX_FIFO_DATA_SRC"%self.rb.rb, 0x1)
+
+    def use_etroc_data(self):
+        self.rb.kcu.write_node("READOUT_BOARD_%s.RX_FIFO_DATA_SRC"%self.rb.rb, 0x0)
+
+    def set_trigger_rate(self, rate):
+        self.rb.kcu.write_node("READOUT_BOARD_%s.L1A_RATE"%self.rb.rb, rate)
+        time.sleep(0.5)
+        rate = self.rb.kcu.read_node("READOUT_BOARD_%s.L1A_RATE_CNT"%self.rb.rb).value()
+        return rate
 
     def set_trigger(self, words, masks):
         assert len(words)==len(masks), "Number of trigger bytes and masks has to match"
