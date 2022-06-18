@@ -15,7 +15,10 @@ class KCU:
         uhal.disableLogging()
 
         if not dummy:
-            self.hw = uhal.getDevice("my_device", ipb_path, "file://" + adr_table)
+            try:
+                self.hw = uhal.getDevice("my_device", ipb_path, "file://" + adr_table)
+            except:
+                raise Exception("uhal can't get device at"+adr_table)
         else:
             self.hw = None
         self.readout_boards = []
