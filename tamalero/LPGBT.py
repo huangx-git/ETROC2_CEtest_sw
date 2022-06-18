@@ -550,7 +550,7 @@ class LPGBT(RegParser):
         this function is following https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#example-2-multi-byte-write
         '''
 
-        if noverify:
+        if ignore_response:
             self.kcu.toggle_dispatch()
 
         i2cm     = 2
@@ -693,7 +693,7 @@ class LPGBT(RegParser):
             if (wr != 0):
                 if verbose:
                     print("Writing address: %d, value: 0x%02x" % (adr, wr))
-                self.I2C_write(reg=adr, val=wr, master=master, slave_addr=slave_addr, noverify=True)
+                self.I2C_write(reg=adr, val=wr, master=master, slave_addr=slave_addr, ignore_response=True)
                 #rd = self.I2C_read(reg=adr, master=master, slave_addr=slave_addr)
                 #if (wr!=rd):
                 #    print("LPGBT readback error 0x%02X != 0x%02X at adr %d" % (wr, rd, adr))
