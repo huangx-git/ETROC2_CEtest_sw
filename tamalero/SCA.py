@@ -199,11 +199,7 @@ class SCA:
             self.err_count = 0
 
         if transid != self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_TRANSID" % self.rb):
-            if self.err_count < 10:
-                self.rw_cmd(cmd, channel, data, adr=adr, transid=transid)
-                self.err_count += 1
-            else:
-                print("SCA Read Error :: Transaction ID Does Not Match")
+            print("SCA Read Error :: Transaction ID Does Not Match")
         else:
             self.err_count = 0
     

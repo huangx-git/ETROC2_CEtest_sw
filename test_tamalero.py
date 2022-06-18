@@ -34,7 +34,8 @@ if __name__ == '__main__':
 
     header()
 
-    if args.read_fifo: data_mode = True
+    data_mode = False
+    if args.etroc in ['ETROC1', 'ETROC2']: data_mode = True
 
     print ("Using KCU at address: %s"%args.kcu)
 
@@ -75,14 +76,17 @@ if __name__ == '__main__':
             rb_0.DAQ_LPGBT.reset_daq_mgts()
             rb_0.DAQ_LPGBT.power_up_init()
             time.sleep(0.01)
-            print(hex(rb_0.DAQ_LPGBT.rd_adr(0x1c5)))
-            #sys.exit(0)
+            #print(hex(rb_0.DAQ_LPGBT.rd_adr(0x1c5)))
+            if (rb_0.DAQ_LPGBT.rd_adr(0x1c5) != 0xa5):
+                print ("Still no communication with DAQ LPGBT. Quitting.")
+                sys.exit(0)
         #rb_0.TRIG_LPGBT.power_up_init()
         rb_0.get_trigger()
         if rb_0.trigger:
             print ("Power up init sequence for: Trigger")
             rb_0.TRIG_LPGBT.power_up_init()
         #rb_0.DAQ_LPGBT.power_up_init_trigger()
+        #
 
     if not hasattr(rb_0, "TRIG_LPGBT"):
         rb_0.get_trigger()
@@ -103,6 +107,19 @@ if __name__ == '__main__':
     res = rb_0.DAQ_LPGBT.get_board_id()
     res['trigger'] = 'yes' if rb_0.trigger else 'no'
     make_version_header(res)
+
+    for ch in [2,3]:
+        print (f"Disabling VTRx+ channel {ch}")
+        rb_0.VTRX.disable(channel=ch)
+
+    rb_0.reset_FEC_error_count()
+    while not rb_0.DAQ_LPGBT.link_status():
+        print ("DAQ link is not stable. Resetting.")
+        rb_0.reset_link(trigger=False)
+    if rb_0.trigger:
+        while not rb_0.TRIG_LPGBT.link_status():
+            print ("Trigger link is not stable. Resetting.")
+            rb_0.reset_link(trigger=True)
 
     rb_0.status()
 
@@ -184,20 +201,21 @@ if __name__ == '__main__':
     if args.eyescan:
         rb_0.DAQ_LPGBT.eyescan()
 
-    time.sleep(1)
-    fifo_link = int(args.read_fifo)
-    df = DataFrame(args.etroc)
-    if fifo_link>=0:
-        fifo = FIFO(rb_0, elink=fifo_link, ETROC=args.etroc)
-        fifo.set_trigger(
-            df.get_trigger_words(),
-            df.get_trigger_masks(),
-            )
-        fifo.reset()
-        try:
-            hex_dump = fifo.giant_dump(300,255, align=(args.etroc=="ETROC1"))
-        except:
-            print ("Dispatch failed, trying again.")
-            hex_dump = fifo.giant_dump(300,255, align=(args.etroc=="ETROC1"))
-        print (hex_dump)
-        fifo.dump_to_file(fifo.wipe(hex_dump, trigger_words=[]))  # use 5 columns --> better to read for our data format
+    if data_mode:
+        time.sleep(1)
+        fifo_link = int(args.read_fifo)
+        df = DataFrame(args.etroc)
+        if fifo_link>=0:
+            fifo = FIFO(rb_0, elink=fifo_link, ETROC=args.etroc)
+            fifo.set_trigger(
+                df.get_trigger_words(),
+                df.get_trigger_masks(),
+                )
+            fifo.reset()
+            try:
+                hex_dump = fifo.giant_dump(300,255, align=(args.etroc=="ETROC1"))
+            except:
+                print ("Dispatch failed, trying again.")
+                hex_dump = fifo.giant_dump(300,255, align=(args.etroc=="ETROC1"))
+            print (hex_dump)
+            fifo.dump_to_file(fifo.wipe(hex_dump, trigger_words=[]))  # use 5 columns --> better to read for our data format

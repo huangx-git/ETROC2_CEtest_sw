@@ -28,6 +28,20 @@ class LPGBT(RegParser):
         self.LPGBT_CONST = LpgbtConstants()
         self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping.yaml'), 'adc')
 
+    def link_status(self):
+        if self.trigger:
+            print ("Checking trigger link status")
+            return (
+                (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT"%self.rb).value() == 0) &
+                (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.TRIGGER.UPLINK.READY"%self.rb).value() == 1)
+            )
+        else:
+            print ("Checking DAQ link status")
+            return (
+                (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.DAQ.UPLINK.FEC_ERR_CNT"%self.rb).value() == 0) &
+                (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.DAQ.UPLINK.READY"%self.rb).value() == 1)
+            )
+
     def reset_tx_mgt_by_mask(self, mask):
         id = "MGT.MGT_TX_RESET"
         self.kcu.write_node(id, mask)
@@ -61,7 +75,7 @@ class LPGBT(RegParser):
 
         self.reset_trigger_mgts()
 
-    def power_up_init(self):
+    def power_up_init(self, verbose=True):
         if not self.trigger:
 
             # toggle the uplink to and from 40MHz clock, for some reason this is
@@ -76,7 +90,7 @@ class LPGBT(RegParser):
                 print("  > Magic Done")
         else:
             # servant lpgbt base configuration
-            self.master.program_slave_from_file('configs/config_slave.txt')  #FIXME check if we still need this black box after power cycle.
+            self.master.program_slave_from_file('configs/config_slave.txt', verbose=verbose)  #FIXME check if we still need this black box after power cycle.
 
             # toggle the uplink to and from 40MHz clock, for some reason this is
             # needed for the mgt to lock
@@ -528,7 +542,7 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.PHASE_SHIFTER.PS0DELAY_7TO0", 0xff & phase)
         self.wr_reg("LPGBT.RWF.PHASE_SHIFTER.PS0DELAY_8", msb)
 
-    def I2C_write(self, reg=0x0, val=10, master=2, slave_addr=0x70, adr_nbytes=2, freq=2, noverify=False):
+    def I2C_write(self, reg=0x0, val=10, master=2, slave_addr=0x70, adr_nbytes=2, freq=2, ignore_response=False):
         '''
         reg: target register
         val: has to be a single byte, or a list of single bytes.
@@ -581,8 +595,7 @@ class LPGBT(RegParser):
         self.wr_adr(self.LPGBT_CONST.I2CM0ADDRESS+OFFSET_WR, slave_addr)# write the address of the follower
         self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_MULTI)# execute write (c)
 
-        #don't verify if we want to queue write requests & bulk transfer
-        if not noverify:
+        if not ignore_response:
             status = self.rd_adr(self.LPGBT_CONST.I2CM0STATUS+OFFSET_RD)
             retries = 0
             while (status != self.LPGBT_CONST.I2CM_SR_SUCC_bm):
