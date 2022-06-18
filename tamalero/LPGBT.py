@@ -103,7 +103,7 @@ class LPGBT(RegParser):
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_DATA_TO_GBTX" % self.rb, data)
         self.kcu.action("READOUT_BOARD_%d.SC.TX_WR" % self.rb)
         self.kcu.action("READOUT_BOARD_%d.SC.TX_START_WRITE" % self.rb)
-        return self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_FROM_GBTX" % self.rb)
+        #return self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_FROM_GBTX" % self.rb)
         #if not defer:  # turn auto dispatch back on only if it wasn't set to false before
         #    self.kcu.dispatch()
         #self.rd_flush()
