@@ -3,20 +3,19 @@ from tamalero.ReadoutBoard import ReadoutBoard
 from tamalero.utils import header, make_version_header, download_address_table
 from tamalero.FIFO import FIFO
 from tamalero.DataFrame import DataFrame
-
 from tamalero.SCA import SCA_CONTROL
+from tamalero.utils import get_temp
 
 import time
-import random
 import sys
 import os
 
 def initialize(
-        kcu_adr         ="192.168.0.10",
-        force_no_trigger="False",
-        etroc_ver       ="ETROC1",
-        load_alignment  =None,
-        read_fifo       =-1
+        kcu_adr          = "192.168.0.10",
+        force_no_trigger = "False",
+        etroc_ver        = "ETROC1",
+        load_alignment   = None,
+        read_fifo        = -1
         ):
 
     header()
@@ -116,8 +115,6 @@ def initialize(
     print("\n\nReading DAQ lpGBT ADC values:")
     rb_0.DAQ_LPGBT.read_adcs()
 
-    from tamalero.utils import get_temp
-
     # Low level reading of temperatures
     # Read ADC channel 7 on DAQ lpGBT
     adc_7 = rb_0.DAQ_LPGBT.read_adc(7)/(2**10-1)
@@ -154,4 +151,5 @@ def initialize(
                 print ("Dispatch failed, trying again.")
                 hex_dump = fifo.giant_dump(300,255, align=(etroc_ver=="ETROC1"))
             print (hex_dump)
-            fifo.dump_to_file(fifo.wipe(hex_dump, trigger_words=[]))  # use 5 columns --> better to read for our data format
+            fifo.dump_to_file(fifo.wipe(hex_dump, trigger_words=[]))
+            # use 5 columns --> better to read for our data format
