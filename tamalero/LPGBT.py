@@ -127,8 +127,6 @@ class LPGBT(RegParser):
         self.kcu.action("READOUT_BOARD_%d.SC.TX_START_READ" % self.rb)
 
         valid = self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_VALID" % self.rb).valid()
-        valid = self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_VALID" % self.rb).value()
-
         if valid:
             return self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_FROM_GBTX" % self.rb)
 
