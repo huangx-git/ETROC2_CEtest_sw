@@ -126,15 +126,12 @@ class LPGBT(RegParser):
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_REGISTER_ADDR" % self.rb, adr)
         self.kcu.action("READOUT_BOARD_%d.SC.TX_START_READ" % self.rb)
 
-        valid = self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_VALID" % self.rb)
-        try:
-            if valid:
-                return self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_FROM_GBTX" % self.rb)
-            # for some reason it only hates you when you try to use it
-            # is fine when defining valid
-        except:
-            print("LpGBT read failed!")
-            return None
+        valid = self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_VALID" % self.rb).valid()
+        if valid:
+            return self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_FROM_GBTX" % self.rb)
+
+        print("LpGBT read failed!")
+        return None
 
     def wr_reg(self, id, data):
         node = self.get_node(id)
