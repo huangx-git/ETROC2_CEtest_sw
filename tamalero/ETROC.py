@@ -17,6 +17,36 @@ class ETROC():
     def test_read(self, reg):
         return self.read(reg)
 
+
+    def select_CL(self, C):
+        return
+
+    def select_Rf(self, R):
+        return
+
+    def enable_discriminator(self, row):
+        return
+
+    def enable_QInj(self, pixel):
+        return
+
+    def select_QInj(self, ):
+        return
+
+    def DAC_Discri_power(self, pixels):
+        return
+
+    def select_HysV(self, V):
+        return
+
+    def bias_selection(I):
+        return
+
+
+    # =====================
+    # == For vth s curve ==
+    # =====================
+
     def set_vth(self, vth):
         self.test_write(0x1, vth)
         print("Vth set to %d."%vth)
