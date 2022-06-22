@@ -1,3 +1,4 @@
+"""
 from ETLsystem import initialize
 
 if __name__ == '__main__':
@@ -14,6 +15,32 @@ if __name__ == '__main__':
 initialize(kcu_adr=args.kcu, force_no_trigger=args.force_no_trigger,
         etroc_ver=args.etroc, load_alignment=args.load_alignment,
         read_fifo=args.read_fifo)
+"""
 
-# run emulator...
+# software emulator...
 
+# data storage
+data = {0x0: 0,
+        0x1: 0,
+       }
+
+# emulating I2C connections
+def I2C_write(reg, data):
+    data[reg] = data
+    return None
+
+def I2C_read(reg):
+    return data[reg]
+
+
+# ===================================
+# ============== TEST ===============
+# ===================================
+
+from tamalero.ETROC import ETROC
+
+ETROCobj = ETROC(I2C_write, I2C_read)
+
+ETROCobj.test_write(0x0, 1)
+testval = ETROCobj.test_read(0x0)
+print(testval)
