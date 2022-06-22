@@ -2,17 +2,17 @@
 For ETROC control
 """
 
-class ETROC(write, read):
+class ETROC():
 
     def __init__(self, write, read):
         self.write = write
         self.read  = read
 
-    def test_write(reg, data):
-        print("Writing data %d to register %d"%(data, reg))
-        self.write(reg, data)
+    def test_write(self, reg, val):
+        print("Writing val %d to register %d"%(val, reg))
+        self.write(reg, val)
         return None
 
-    def test_read(reg):
-        print("Reading data from register %d"%reg)
+    def test_read(self, reg):
+        print("Reading val from register %d"%reg)
         return self.read(reg)

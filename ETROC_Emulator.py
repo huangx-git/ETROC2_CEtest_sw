@@ -20,17 +20,17 @@ initialize(kcu_adr=args.kcu, force_no_trigger=args.force_no_trigger,
 # software emulator...
 
 # data storage
-data = {0x0: 0,
-        0x1: 0,
-       }
+data_stor = {0x0: 0,
+             0x1: 0,
+            }
 
 # emulating I2C connections
-def I2C_write(reg, data):
-    data[reg] = data
+def I2C_write(reg, val):
+    data_stor[reg] = val
     return None
 
 def I2C_read(reg):
-    return data[reg]
+    return data_stor[reg]
 
 
 # ===================================
