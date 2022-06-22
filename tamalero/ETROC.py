@@ -1,7 +1,8 @@
 """
 For ETROC control
 """
-import numpy as np
+
+import ETROC_Emulator as etroc_em
 
 class ETROC():
 
@@ -52,21 +53,8 @@ class ETROC():
         print("Vth set to %d."%vth)
         return
 
-    def runpixel(self, N):
-        acc_num = 0
-        vth = self.test_read(0x1)
-        for i in range(N):
-            val = np.random.normal(198, 0.5)
-            if val > vth :
-                acc_num += 1
-        return acc_num
-
     def run(self, N):
-        maxpixel = 16
-        alldata = [0 for x in range(maxpixel)]
-        for pixel in range(maxpixel):
-            alldata[pixel] = self.runpixel(N)
-        self.test_write(0x2, alldata)
+        etroc_em.run(N)
 
     def run_results(self):
         return self.test_read(0x2)
