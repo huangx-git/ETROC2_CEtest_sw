@@ -132,24 +132,3 @@ def initialize(
 
     # High level reading of temperatures
     temp = rb_0.read_temp(verbose=1)
-
-
-    if data_mode:
-        time.sleep(1)
-        fifo_link = int(read_fifo)
-        df = DataFrame(etroc_ver)
-        if fifo_link>=0:
-            fifo = FIFO(rb_0, elink=fifo_link, ETROC=etroc_ver)
-            fifo.set_trigger(
-                df.get_trigger_words(),
-                df.get_trigger_masks(),
-                )
-            fifo.reset()
-            try:
-                hex_dump = fifo.giant_dump(300,255, align=(etroc_ver=="ETROC1"))
-            except:
-                print ("Dispatch failed, trying again.")
-                hex_dump = fifo.giant_dump(300,255, align=(etroc_ver=="ETROC1"))
-            print (hex_dump)
-            fifo.dump_to_file(fifo.wipe(hex_dump, trigger_words=[]))
-            # use 5 columns --> better to read for our data format

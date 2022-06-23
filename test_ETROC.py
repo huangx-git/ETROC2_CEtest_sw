@@ -2,35 +2,70 @@ from tamalero.ETROC import ETROC
 from ETROC_Emulator import I2C_write, I2C_read
 
 import numpy as np
+from scipy.optimize import curve_fit
 from matplotlib import pyplot as plt
+
 
 ETROCobj = ETROC(I2C_write, I2C_read)
 
-# ========= Test simple read/write =========
+# ==============================
+# === Test simple read/write ===
+# ==============================
+
 print("Test simple read/write...")
-ETROCobj.test_write(0x0, 1)
+ETROCobj.test_write(0x0, 42)
+print("Write 42 to test register")
 testval = ETROCobj.test_read(0x0)
-print(testval)
-print("")
+print("Reading test register...%d"%testval)
+if testval == 42: print("Read/write successful\n")
+else: print("Something's wrong\n")
 
-# ============ Test Vth S curve ============
-N = 3200
-vth_min, vth_max = 190, 210
-vth_step = 1
-testpixel = 10
-print("Testing Vth S curve scan for pixel #%d..."%testpixel)
+# ==============================
+# ======= Test Vth scan ========
+# ==============================
 
-vth_axis = np.arange(vth_min, vth_max, vth_step)
-acc_num_axis = np.zeros(vth_axis.size)
+print("Testing Vth scan...")
 
-for vth in range(vth_min, vth_max, vth_step):
+N_l1a    = 3200 # how many L1As to send
+vth_min  =  190 # scan range
+vth_max  =  210
+vth_step =  .25 # step size
+N_steps  = int((vth_max-vth_min)/vth_step)+1 # number of steps
+N_pix    =   16 # total number of pixels
+
+# do vth scan
+vth_axis    = np.linspace(vth_min, vth_max, N_steps)
+run_results = np.empty([N_steps, N_pix])
+def sigmoid(k,x,x0): return 1/(1+np.exp(k*(x-x0)))
+
+for vth in vth_axis:
     ETROCobj.set_vth(vth)
-    ETROCobj.run(N);
+    ETROCobj.run(N_l1a);
     i = int((vth-vth_min)/vth_step)
-    acc_num_axis[i] = ETROCobj.run_results()[testpixel]
+    run_results[i] = ETROCobj.run_results()
 
+# transpose so each 1d list is for a pixel
+# also normalize
+run_results = run_results.transpose().astype(np.float64)/N_l1a
+print(run_results)
+
+# fit to sigmoid
+widths = np.empty(N_pix)
+means  = np.empty(N_pix)
+p0 = [2, 198] # starting guess for fit
+for pix in range(N_pix):
+    print("for pixel #%d"%pix)
+    popt, pcov = curve_fit(sigmoid, vth_axis, run_results[pix], p0, method='dogbox',  maxfev=10000)
+    widths[pix] = popt[0] #k
+    means[pix] = popt[1] #x0
+    print("fit = "+str(popt))
+    print(pcov)
+
+# example result and fit
 plt.title("S curve test") 
 plt.xlabel("Vth") 
 plt.ylabel("accumulation number") 
-plt.plot(vth_axis, acc_num_axis)
+plt.plot(vth_axis, run_results[0])
+fit_func = sigmoid(widths[0], vth_axis, means[0])
+plt.plot(vth_axis, fit_func)
 plt.show()

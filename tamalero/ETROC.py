@@ -11,7 +11,6 @@ class ETROC():
         self.read  = read
 
     def test_write(self, reg, val):
-        print("Writing to register %d"%reg)
         self.write(reg, val)
         return None
 
@@ -50,7 +49,7 @@ class ETROC():
 
     def set_vth(self, vth):
         self.test_write(0x1, vth)
-        print("Vth set to %d."%vth)
+        print("Vth set to %f."%vth)
         return
 
     def run(self, N):

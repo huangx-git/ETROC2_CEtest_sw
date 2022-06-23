@@ -37,10 +37,21 @@ def I2C_read(reg):
 def runpixel(N):
     acc_num = 0
     vth = I2C_read(0x1)
+
+    default_mean  = 198
+    default_stdev =   1
+
     for i in range(N):
-        val = np.random.normal(198, 0.5)
+        # add some variability across pixels
+        #mean  = np.random.normal(default_mean,  default_mean /20)
+        #stdev = np.random.normal(default_stdev, default_stdev/50)
+
+        # produce random hit
+        val = np.random.normal(default_mean, default_stdev)
+        
         if val > vth :
             acc_num += 1
+
     return acc_num
 
 def run(N):
@@ -49,3 +60,4 @@ def run(N):
     for pixel in range(maxpixel):
         alldata[pixel] = runpixel(N)
     I2C_write(0x2, alldata)
+
