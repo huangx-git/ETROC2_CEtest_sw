@@ -10,26 +10,25 @@ import time
 import sys
 import os
 
+def get_fw_ver(kcu_adr):
+    kcu = KCU(name="tmp_kcu",
+            ipb_path="ipbusudp-2.0://%s:50001"%kcu_adr,
+            adr_table="address_table/generic/etl_test_fw.xml")
+    return kcu.firmware_version(quiet=True)
+
 def initialize(
         kcu_adr          = "192.168.0.10",
         force_no_trigger = "False",
         etroc_ver        = "ETROC1",
         load_alignment   = None,
-        read_fifo        = -1
         ):
 
     header()
 
-    data_mode = False
-    if etroc_ver in ['ETROC1', 'ETROC2']: data_mode = True
-
     print ("Using KCU at address: %s"%kcu_adr)
 
     # Get the current firmware version number
-    kcu_tmp = KCU(name="tmp_kcu",
-                  ipb_path="ipbusudp-2.0://%s:50001"%kcu_adr,
-                  adr_table="address_table/generic/etl_test_fw.xml")
-    fw_version = kcu_tmp.firmware_version(quiet=True)
+    fw_version = get_fw_ver(kcu_adr)
 
     if not os.path.isdir(f"address_table/v{fw_version}"):
         print ("Downloading latest firmware version address table.")
@@ -107,28 +106,3 @@ def initialize(
 
     _ = rb_0.VTRX.status()
 
-    rb_0.DAQ_LPGBT.set_dac(1.0)  # set the DAC / Vref to 1.0V.
-
-    print("\n\nReading GBT-SCA ADC values:")
-    rb_0.SCA.read_adcs()
-
-    print("\n\nReading DAQ lpGBT ADC values:")
-    rb_0.DAQ_LPGBT.read_adcs()
-
-    # Low level reading of temperatures
-    # Read ADC channel 7 on DAQ lpGBT
-    adc_7 = rb_0.DAQ_LPGBT.read_adc(7)/(2**10-1)
-
-    # Read ADC channel 29 on GBT-SCA
-    adc_in29 = rb_0.SCA.read_adc(29)/(2**12-1)
-
-    # Check what the lpGBT DAC is set to
-    v_ref = rb_0.DAQ_LPGBT.read_dac()
-    print ("\nV_ref is set to: %.3f V"%v_ref)
-
-    if v_ref>0:
-        print ("\nTemperature on RB RT1 is: %.3f C"%get_temp(adc_7, v_ref, 10000, 25, 10000, 3900))
-        print ("Temperature on RB RT2 is: %.3f C"%get_temp(adc_in29, v_ref, 10000, 25, 10000, 3900))
-
-    # High level reading of temperatures
-    temp = rb_0.read_temp(verbose=1)
