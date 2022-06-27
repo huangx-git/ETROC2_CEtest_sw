@@ -40,6 +40,7 @@ polyfit = np.polynomial.polynomial.polyfit
 def sigmoid(k,x,x0):
     return 1/(1+np.exp(k*(x-x0)))
 
+# change y = 1 / (1 + e^(-k(x-x0))) to log(1/y - 1) = -k(x-x0)
 def sigmoid_log(ylist):
     fity = []
     for y in ylist:
@@ -49,13 +50,14 @@ def sigmoid_log(ylist):
             fity.append(np.log(1/y - 1))
     return np.array(fity)
 
+# take x,y values and perform fit to sigmoid function
+# return width(k) and mean(x0)
 def sigmoid_fit(x_axis,y_axis):
-    # change y = 1 / (1 + e^(-k(x-x0))) to log(1/y - 1) = -k(x-x0)
     y_axis = sigmoid_log(y_axis)
     x_axis_fit = []
     y_axis_fit = []
     for i in range(x_axis.size):
-        if abs(y_axis[i]) > 9:
+        if abs(y_axis[i]) > 7:
             print("delete")
             print(y_axis[i])
         else:
