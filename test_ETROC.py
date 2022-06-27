@@ -45,7 +45,7 @@ def sigmoid_log(ylist):
     return np.array(fity)
 
 # take x,y values and perform fit to sigmoid function
-# return width(k) and mean(x0)
+# return steepness(k) and mean(x0)
 def sigmoid_fit(x_axis,y_axis):
     y_axis = sigmoid_log(y_axis)
     x_axis_fit = []
@@ -96,35 +96,40 @@ with open('vth_scan_results.json', 'r') as openfile:
     vth_scan_data = json.load(openfile)
 
 vth_axis = np.array(vth_scan_data[0])
-run_results = np.array(vth_scan_data[1])
+hit_rate = np.array(vth_scan_data[1])
 
-vth_min = vth_axis[0]
+vth_min = vth_axis[0]  # vth scan range
 vth_max = vth_axis[-1]
-N_pix = len(run_results)
-N_pix_w = int(round(np.sqrt(N_pix)))
+N_pix   = len(hit_rate) # total # of pixels
+N_pix_w = int(round(np.sqrt(N_pix))) # N_pix in NxN layout
 
-# fit to sigmoid
-widths = np.empty([N_pix_w, N_pix_w])
+# fit to sigmoid and save to NxN layout
+slopes = np.empty([N_pix_w, N_pix_w])
 means  = np.empty([N_pix_w, N_pix_w])
 
 for pix in range(N_pix):
-    fitresults = sigmoid_fit(vth_axis, run_results[pix])
+    fitresults = sigmoid_fit(vth_axis, hit_rate[pix])
     r = pix%N_pix_w
     c = int(np.floor(pix/N_pix_w))
     print("for pixel #%d / row = %d, col = %d"%(pix,r,c))
     print(fitresults)
-    widths[r][c] = fitresults[0]
+    slopes[r][c] = fitresults[0]
     means[r][c]  = fitresults[1]
 
 # example fit result
 fig, ax = plt.subplots()
+
 plt.title("S curve fit example (pixel #0)") 
 plt.xlabel("Vth") 
-plt.ylabel("hit percentage") 
-plt.plot(vth_axis, run_results[0])
-fit_func = sigmoid(widths[0][0], vth_axis, means[0][0])
+plt.ylabel("hit rate")
+
+plt.plot(vth_axis, hit_rate[0])
+fit_func = sigmoid(slopes[0][0], vth_axis, means[0][0])
 plt.plot(vth_axis, fit_func)
-plt.legend(["data","fit"])
+plt.axvline(x=means[0][0], color="r", linestyle="--")
+
+plt.xlim(vth_min, vth_max)
+plt.legend(["data","fit","baseline"])
 
 # 2D histogram
 fig2, ax2 = plt.subplots()
