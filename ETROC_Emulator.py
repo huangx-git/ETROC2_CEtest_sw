@@ -38,16 +38,12 @@ def runpixel(N):
     acc_num = 0
     vth = I2C_read(0x1)
 
-    default_mean  = 198
-    default_stdev =   1
+    mean  = 198
+    stdev =   1
 
     for i in range(N):
-        # add some variability across pixels
-        #mean  = np.random.normal(default_mean,  default_mean /20)
-        #stdev = np.random.normal(default_stdev, default_stdev/50)
-
         # produce random hit
-        val = np.random.normal(default_mean, default_stdev)
+        val = np.random.normal(mean, stdev)
         
         if val > vth :
             acc_num += 1
@@ -55,7 +51,7 @@ def runpixel(N):
     return acc_num
 
 def run(N):
-    maxpixel = 16
+    maxpixel = 256
     alldata = [0 for x in range(maxpixel)]
     for pixel in range(maxpixel):
         alldata[pixel] = runpixel(N)
