@@ -5,7 +5,6 @@ import numpy as np
 from scipy.optimize import curve_fit
 from matplotlib import pyplot as plt
 
-
 ETROCobj = ETROC(I2C_write, I2C_read)
 
 # ==============================
@@ -26,17 +25,52 @@ else: print("Something's wrong\n")
 
 print("Testing Vth scan...")
 
+# ==== CONSTANTS ====
 N_l1a    = 3200 # how many L1As to send
 vth_min  =  193 # scan range
 vth_max  =  203
-vth_step =  .1 # step size
+vth_step =  .25 # step size
 N_steps  = int((vth_max-vth_min)/vth_step)+1 # number of steps
 N_pix    =   16 # total number of pixels
+
+# ===== HELPERS =====
+
+polyfit = np.polynomial.polynomial.polyfit
+
+def sigmoid(k,x,x0):
+    return 1/(1+np.exp(k*(x-x0)))
+
+def sigmoid_log(ylist):
+    fity = []
+    for y in ylist:
+        if abs(y) <= 0.001:
+            fity.append(10)
+        else:
+            fity.append(np.log(1/y - 1))
+    return np.array(fity)
+
+def sigmoid_fit(x_axis,y_axis):
+    # change y = 1 / (1 + e^(-k(x-x0))) to log(1/y - 1) = -k(x-x0)
+    y_axis = sigmoid_log(y_axis)
+    x_axis_fit = []
+    y_axis_fit = []
+    for i in range(x_axis.size):
+        if abs(y_axis[i]) > 9:
+            print("delete")
+            print(y_axis[i])
+        else:
+            x_axis_fit.append(x_axis[i])
+            y_axis_fit.append(y_axis[i])
+    print(x_axis_fit)
+    print(y_axis_fit)
+    results = polyfit(x_axis_fit, y_axis_fit, 1)
+    kx0, k = results[0], results[1]
+    x0 = - kx0 / k
+    return (k, x0)
 
 # do vth scan
 vth_axis    = np.linspace(vth_min, vth_max, N_steps)
 run_results = np.empty([N_steps, N_pix])
-def sigmoid(k,x,x0): return 1/(1+np.exp(k*(x-x0)))
 
 for vth in vth_axis:
     ETROCobj.set_vth(vth)
@@ -54,23 +88,25 @@ run_results = run_results.transpose()/N_l1a
 widths = np.empty(N_pix)
 means  = np.empty(N_pix)
 guess = [2, 5] # starting guess for fit
-fitx = vth_axis-vth_min
+
 for pix in range(N_pix):
     print("for pixel #%d"%pix)
-    print(run_results[pix])
-    popt, pcov = curve_fit(sigmoid, fitx, run_results[pix],  method="trf", bounds=([1,1],[9,5]))
-    widths[pix] = popt[0] #k
-    means[pix] = popt[1] #x0
-    print("fit = "+str(popt))
+    fitresults = sigmoid_fit(vth_axis, run_results[pix])
+    print(fitresults)
+    widths[pix] = fitresults[0]
+    means[pix] = fitresults[1]
+
+    #popt, pcov = curve_fit(sigmoid, fitx, run_results[pix],  method="trf", bounds=([1,1],[9,5]))
+    #widths[pix] = popt[0] #k
+    #means[pix] = popt[1] #x0
+    #print("fit = "+str(popt))
 
 # example result and fit
 plt.title("S curve test") 
 plt.xlabel("Vth") 
 plt.ylabel("accumulation number") 
-plt.plot(fitx, run_results[0])
-fit_func = sigmoid(widths[0], fitx, means[0])
-plt.plot(fitx, fit_func)
-start_func = sigmoid(guess[0], fitx, guess[1])
-plt.plot(fitx, start_func)
+plt.plot(vth_axis, run_results[0])
+fit_func = sigmoid(widths[0], vth_axis, means[0])
+plt.plot(vth_axis, fit_func)
 plt.legend(["data","fit","guess"])
 plt.show()
