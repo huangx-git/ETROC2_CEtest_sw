@@ -188,9 +188,9 @@ fig2.colorbar(cax)
 ax2.set_xticks(np.arange(N_pix_w))
 ax2.set_yticks(np.arange(N_pix_w))
 
-#for i in range(N_pix_w):
-#    for j in range(N_pix_w):
-#        text = ax2.text(j, i, round(slopes[i, j],2),
-#                       ha="center", va="center", color="w")
+for i in range(N_pix_w):
+    for j in range(N_pix_w):
+        text = ax2.text(j, i, "%.2f\n+/-%.2f"%(means[i,j],widths[i,j]),
+                ha="center", va="center", color="w", fontsize="xx-small")
 
 plt.show()
