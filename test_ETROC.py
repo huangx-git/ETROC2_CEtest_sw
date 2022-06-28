@@ -38,7 +38,7 @@ def sigmoid(k,x,x0):
 def sigmoid_log(ylist):
     fity = []
     for y in ylist:
-        if abs(y) <= 0.001:
+        if abs(y) <= 0.01:
             fity.append(np.inf)
         else:
             fity.append(np.log(1/y - 1))
@@ -113,16 +113,27 @@ for pix in range(N_pix):
     fitresults = sigmoid_fit(vth_axis, hit_rate[pix])
     r = pix%N_pix_w
     c = int(np.floor(pix/N_pix_w))
-    print("for pixel #%d / row = %d, col = %d"%(pix,r,c))
-    print(fitresults)
     slopes[r][c] = fitresults[0]
     means[r][c]  = fitresults[1]
     widths[r][c] = 4/fitresults[0]
 
+# print out results nicely
+for r in range(N_pix_w):
+    for c in range(N_pix_w):
+        pix = c*16+r
+        print("{:8s}".format("#"+str(pix)), end='')
+    print("")
+    for c in range(N_pix_w):
+        print("%4.2f"%means[r][c], end='  ')
+    print("")
+    for c in range(N_pix_w):
+        print("+-%2.2f"%widths[r][c], end='  ')
+    print("\n")
+
 # example fit result
-expix = 15
-exr = expix%N_pix_w
-exc = int(np.floor(expix/N_pix_w))
+expix = 2 # which pixel?
+exr   = expix%N_pix_w
+exc   = int(np.floor(expix/N_pix_w))
 
 fig, ax = plt.subplots()
 
