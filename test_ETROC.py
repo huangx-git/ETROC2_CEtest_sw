@@ -107,6 +107,7 @@ N_pix_w = int(round(np.sqrt(N_pix))) # N_pix in NxN layout
 # fit to sigmoid and save to NxN layout
 slopes = np.empty([N_pix_w, N_pix_w])
 means  = np.empty([N_pix_w, N_pix_w])
+widths = np.empty([N_pix_w, N_pix_w])
 
 for pix in range(N_pix):
     fitresults = sigmoid_fit(vth_axis, hit_rate[pix])
@@ -116,18 +117,25 @@ for pix in range(N_pix):
     print(fitresults)
     slopes[r][c] = fitresults[0]
     means[r][c]  = fitresults[1]
+    widths[r][c] = 4/fitresults[0]
 
 # example fit result
+expix = 15
+exr = expix%N_pix_w
+exc = int(np.floor(expix/N_pix_w))
+
 fig, ax = plt.subplots()
 
-plt.title("S curve fit example (pixel #0)") 
+plt.title("S curve fit example (pixel #%d)"%expix) 
 plt.xlabel("Vth") 
 plt.ylabel("hit rate")
 
-plt.plot(vth_axis, hit_rate[0], ".-")
-fit_func = sigmoid(slopes[0][0], vth_axis, means[0][0])
+plt.plot(vth_axis, hit_rate[expix], '.-')
+fit_func = sigmoid(slopes[exr][exc], vth_axis, means[exr][exc])
 plt.plot(vth_axis, fit_func)
-plt.axvline(x=means[0][0], color="r", linestyle="--")
+plt.axvline(x=means[exr][exc], color='r', linestyle='--')
+plt.axvspan(means[exr][exc]-widths[exr][exc], means[exr][exc]+widths[exr][exc],
+                color='r', alpha=0.1)
 
 plt.xlim(vth_min, vth_max)
 plt.grid(True)
