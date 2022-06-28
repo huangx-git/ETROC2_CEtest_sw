@@ -44,9 +44,19 @@ def sigmoid_log(ylist):
             fity.append(np.log(1/y - 1))
     return np.array(fity)
 
+def sigmoid_fit(x_axis, y_axis):
+    res = curve_fit(
+        #sigmoid,
+        lambda x,a,b: 1/(1+np.exp(a*(x-b))),  # for whatever reason this fit only works with a lambda function?
+        x_axis-x_axis[0],
+        y_axis,
+        maxfev=10000,
+    )
+    return res[0][0], res[0][1]+x_axis[0]
+
 # take x,y values and perform fit to sigmoid function
 # return steepness(k) and mean(x0)
-def sigmoid_fit(x_axis,y_axis):
+def sigmoid_fit_log(x_axis,y_axis):
     y_axis = sigmoid_log(y_axis)
     x_axis_fit = []
     y_axis_fit = []
@@ -62,8 +72,8 @@ def sigmoid_fit(x_axis,y_axis):
 
 def vth_scan():
     N_l1a    = 3200 # how many L1As to send
-    vth_min  =  193 # scan range
-    vth_max  =  203
+    vth_min  =  190 # scan range
+    vth_max  =  208
     vth_step =  .25 # step size
     N_steps  = int((vth_max-vth_min)/vth_step)+1 # number of steps
     N_pix    =  256 # total number of pixels
@@ -131,26 +141,35 @@ for r in range(N_pix_w):
     print("\n")
 
 # example fit result
-expix = 2 # which pixel?
-exr   = expix%N_pix_w
-exc   = int(np.floor(expix/N_pix_w))
+#
+if not os.path.isdir('results'):
+    os.makedirs('results')
 
-fig, ax = plt.subplots()
+for expix in range(256):
+    #expix = 2 # which pixel?
+    exr   = expix%N_pix_w
+    exc   = int(np.floor(expix/N_pix_w))
 
-plt.title("S curve fit example (pixel #%d)"%expix) 
-plt.xlabel("Vth") 
-plt.ylabel("hit rate")
+    fig, ax = plt.subplots()
 
-plt.plot(vth_axis, hit_rate[expix], '.-')
-fit_func = sigmoid(slopes[exr][exc], vth_axis, means[exr][exc])
-plt.plot(vth_axis, fit_func)
-plt.axvline(x=means[exr][exc], color='r', linestyle='--')
-plt.axvspan(means[exr][exc]-widths[exr][exc], means[exr][exc]+widths[exr][exc],
+    plt.title("S curve fit example (pixel #%d)"%expix)
+    plt.xlabel("Vth")
+    plt.ylabel("hit rate")
+
+    plt.plot(vth_axis, hit_rate[expix], '.-')
+    fit_func = sigmoid(slopes[exr][exc], vth_axis, means[exr][exc])
+    plt.plot(vth_axis, fit_func)
+    plt.axvline(x=means[exr][exc], color='r', linestyle='--')
+    plt.axvspan(means[exr][exc]-widths[exr][exc], means[exr][exc]+widths[exr][exc],
                 color='r', alpha=0.1)
 
-plt.xlim(vth_min, vth_max)
-plt.grid(True)
-plt.legend(["data","fit","baseline"])
+    plt.xlim(vth_min, vth_max)
+    plt.grid(True)
+    plt.legend(["data","fit","baseline"])
+
+    fig.savefig(f'results/pixel_{expix}.png')
+    plt.close(fig)
+    del fig
 
 # 2D histogram
 fig2, ax2 = plt.subplots()
