@@ -20,6 +20,8 @@ initialize(kcu_adr=args.kcu, force_no_trigger=args.force_no_trigger,
 # software emulator
 import numpy as np
 
+maxpixel = 256
+
 # data storage
 data_stor = {0x0: 0, # test register
              0x1: 0, # vth
@@ -34,26 +36,31 @@ def I2C_write(reg, val):
 def I2C_read(reg):
     return data_stor[reg]
 
-def runpixel(N):
+# initiate pixel array with some noisy baseline
+def init_bl():
+    print("initiating some fake properties")
+    default_mean  = 198
+    default_stdev =   1
+    global bl_means
+    global bl_stdevs
+    bl_means  = [np.random.normal( default_mean,  1) for x in range(maxpixel)]
+    bl_stdevs = [np.random.normal(default_stdev, .1) for x in range(maxpixel)]
+
+def runpixel(N, pixel):
     acc_num = 0
     vth = I2C_read(0x1)
 
-    mean  = 198
-    stdev =   1
-
     for i in range(N):
         # produce random hit
-        val = np.random.normal(mean, stdev)
-        
+        val = np.random.normal(bl_means[pixel], bl_stdevs[pixel])
         if val > vth :
             acc_num += 1
 
     return acc_num
 
 def run(N):
-    maxpixel = 256
     alldata = [0 for x in range(maxpixel)]
     for pixel in range(maxpixel):
-        alldata[pixel] = runpixel(N)
+        alldata[pixel] = runpixel(N, pixel)
     I2C_write(0x2, alldata)
 

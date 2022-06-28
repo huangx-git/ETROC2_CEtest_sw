@@ -1,5 +1,5 @@
 from tamalero.ETROC import ETROC
-from ETROC_Emulator import I2C_write, I2C_read
+from ETROC_Emulator import I2C_write, I2C_read, init_bl
 
 import numpy as np
 from scipy.optimize import curve_fit
@@ -86,6 +86,7 @@ def vth_scan():
 # run only if no saved data
 if not os.path.isfile("vth_scan_results.json"):
     print("No data. Run new vth scan...")
+    init_bl()
     result_data = vth_scan()
     with open("vth_scan_results.json", "w") as outfile:
         json.dump(result_data, outfile)
@@ -123,17 +124,27 @@ plt.title("S curve fit example (pixel #0)")
 plt.xlabel("Vth") 
 plt.ylabel("hit rate")
 
-plt.plot(vth_axis, hit_rate[0])
+plt.plot(vth_axis, hit_rate[0], ".-")
 fit_func = sigmoid(slopes[0][0], vth_axis, means[0][0])
 plt.plot(vth_axis, fit_func)
 plt.axvline(x=means[0][0], color="r", linestyle="--")
 
 plt.xlim(vth_min, vth_max)
+plt.grid(True)
 plt.legend(["data","fit","baseline"])
 
 # 2D histogram
 fig2, ax2 = plt.subplots()
 plt.title("Mean values of baseline voltage")
 cax = ax2.matshow(means)
+
 fig2.colorbar(cax)
+ax2.set_xticks(np.arange(N_pix_w))
+ax2.set_yticks(np.arange(N_pix_w))
+
+#for i in range(N_pix_w):
+#    for j in range(N_pix_w):
+#        text = ax2.text(j, i, round(slopes[i, j],2),
+#                       ha="center", va="center", color="w")
+
 plt.show()
