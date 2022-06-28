@@ -8,7 +8,16 @@ from matplotlib import pyplot as plt
 import os
 import json
 
+# initiate
 ETROCobj = ETROC(I2C_write, I2C_read)
+
+# argsparser
+import argparse
+
+argParser = argparse.ArgumentParser(description = "Argument parser")
+argParser.add_argument('--rerun', action='store_true', default=False, help="Rerun Vth scan and overwrite data?")
+argParser.add_argument('--nofitplots', action='store_true', default=False, help="Don't create individual fit plots for all pixels?")
+args = argParser.parse_args()
 
 # ==============================
 # === Test simple read/write ===
@@ -93,14 +102,14 @@ def vth_scan():
 
 # ===== Vth scan ====
 
-# run only if no saved data
-if not os.path.isfile("vth_scan_results.json"):
+# run only if no saved data or want to rerun
+if (not os.path.isfile("vth_scan_results.json")) or args.rerun:
     print("No data. Run new vth scan...")
     init_bl()
     result_data = vth_scan()
     with open("vth_scan_results.json", "w") as outfile:
         json.dump(result_data, outfile)
-        print("New data saved to vth_scan_results.json\n")
+        print("Data saved to vth_scan_results.json\n")
 
 # read data
 with open('vth_scan_results.json', 'r') as openfile:
@@ -140,36 +149,35 @@ for r in range(N_pix_w):
         print("+-%2.2f"%widths[r][c], end='  ')
     print("\n")
 
-# example fit result
-#
-if not os.path.isdir('results'):
-    os.makedirs('results')
+# fit results
+if not args.nofitplots:
+    if not os.path.isdir('results'):
+        os.makedirs('results')
 
-for expix in range(256):
-    #expix = 2 # which pixel?
-    exr   = expix%N_pix_w
-    exc   = int(np.floor(expix/N_pix_w))
+    for expix in range(256):
+        exr   = expix%N_pix_w
+        exc   = int(np.floor(expix/N_pix_w))
 
-    fig, ax = plt.subplots()
+        fig, ax = plt.subplots()
 
-    plt.title("S curve fit example (pixel #%d)"%expix)
-    plt.xlabel("Vth")
-    plt.ylabel("hit rate")
+        plt.title("S curve fit example (pixel #%d)"%expix)
+        plt.xlabel("Vth")
+        plt.ylabel("hit rate")
 
-    plt.plot(vth_axis, hit_rate[expix], '.-')
-    fit_func = sigmoid(slopes[exr][exc], vth_axis, means[exr][exc])
-    plt.plot(vth_axis, fit_func)
-    plt.axvline(x=means[exr][exc], color='r', linestyle='--')
-    plt.axvspan(means[exr][exc]-widths[exr][exc], means[exr][exc]+widths[exr][exc],
-                color='r', alpha=0.1)
+        plt.plot(vth_axis, hit_rate[expix], '.-')
+        fit_func = sigmoid(slopes[exr][exc], vth_axis, means[exr][exc])
+        plt.plot(vth_axis, fit_func)
+        plt.axvline(x=means[exr][exc], color='r', linestyle='--')
+        plt.axvspan(means[exr][exc]-widths[exr][exc], means[exr][exc]+widths[exr][exc],
+                    color='r', alpha=0.1)
 
-    plt.xlim(vth_min, vth_max)
-    plt.grid(True)
-    plt.legend(["data","fit","baseline"])
+        plt.xlim(vth_min, vth_max)
+        plt.grid(True)
+        plt.legend(["data","fit","baseline"])
 
-    fig.savefig(f'results/pixel_{expix}.png')
-    plt.close(fig)
-    del fig
+        fig.savefig(f'results/pixel_{expix}.png')
+        plt.close(fig)
+        del fig
 
 # 2D histogram
 fig2, ax2 = plt.subplots()
