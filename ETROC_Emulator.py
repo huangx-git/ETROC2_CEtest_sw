@@ -46,6 +46,30 @@ def init_bl():
     bl_means  = [np.random.normal( default_mean,  1) for x in range(maxpixel)]
     bl_stdevs = [np.random.normal(default_stdev, .1) for x in range(maxpixel)]
 
+
+# ETROC data format
+
+class ETROCdata():
+    def __init__(self, BCID="0x000"):
+        self.BCID = BCID
+        self.hitdata = []
+
+    def add_hit(self,row,col,TOA,TOT,CAL,P):
+        self.hitdata.append(
+                format(row, '04b') + format(col,'04b')
+              + format(TOA,'010b') + format(TOT,'09b') + format(CAL, '010b')
+              + format(  P,  '1b'))
+
+    def fullevent(self):
+        Nhit    = len(self.hitdata)
+        header  = "00"+format(0x3555555,'026b')+format(BCID,'012b')
+        hitdata = "".join(self.hitdata)
+        trailer = "10"+format(0x5555555,'028b')+format(Nhit,'09b')+format(P,'1b')
+        return header + hitdata + trailer
+
+
+# run simulated hits
+
 def runpixel(N, pixel):
     acc_num = 0
     vth = I2C_read(0x1)
@@ -59,8 +83,8 @@ def runpixel(N, pixel):
     return acc_num
 
 def run(N):
-    alldata = [0 for x in range(maxpixel)]
+    rundata = [0 for x in range(maxpixel)]
     for pixel in range(maxpixel):
-        alldata[pixel] = runpixel(N, pixel)
-    I2C_write(0x2, alldata)
-
+        rundata[pixel] = runpixel(N, pixel)
+    I2C_write(0x2, rundata)
+    return ETROCformat(rundata)

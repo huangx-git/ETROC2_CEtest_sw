@@ -177,7 +177,7 @@ if not args.nofitplots:
 
         fig.savefig(f'results/pixel_{expix}.png')
         plt.close(fig)
-        del fig
+        del fig, ax
 
 # 2D histogram of the mean
 fig, ax = plt.subplots()
@@ -190,7 +190,7 @@ ax.set_yticks(np.arange(N_pix_w))
 
 for i in range(N_pix_w):
     for j in range(N_pix_w):
-        text = ax2.text(j, i, "%.2f\n+/-%.2f"%(means[i,j],widths[i,j]),
+        text = ax.text(j, i, "%.2f\n+/-%.2f"%(means[i,j],widths[i,j]),
                 ha="center", va="center", color="w", fontsize="xx-small")
 
 fig.savefig(f'results/sigmoid_mean_2D.png')
