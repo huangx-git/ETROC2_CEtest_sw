@@ -82,7 +82,7 @@ def sigmoid_fit_log(x_axis,y_axis):
 def vth_scan():
     N_l1a    = 3200 # how many L1As to send
     vth_min  =  190 # scan range
-    vth_max  =  208
+    vth_max  =  210
     vth_step =  .25 # step size
     N_steps  = int((vth_max-vth_min)/vth_step)+1 # number of steps
     N_pix    =  256 # total number of pixels
