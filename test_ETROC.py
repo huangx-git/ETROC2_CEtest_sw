@@ -179,18 +179,40 @@ if not args.nofitplots:
         plt.close(fig)
         del fig
 
-# 2D histogram
-fig2, ax2 = plt.subplots()
+# 2D histogram of the mean
+fig, ax = plt.subplots()
 plt.title("Mean values of baseline voltage")
-cax = ax2.matshow(means)
+cax = ax.matshow(means)
 
-fig2.colorbar(cax)
-ax2.set_xticks(np.arange(N_pix_w))
-ax2.set_yticks(np.arange(N_pix_w))
+fig.colorbar(cax)
+ax.set_xticks(np.arange(N_pix_w))
+ax.set_yticks(np.arange(N_pix_w))
 
 for i in range(N_pix_w):
     for j in range(N_pix_w):
         text = ax2.text(j, i, "%.2f\n+/-%.2f"%(means[i,j],widths[i,j]),
                 ha="center", va="center", color="w", fontsize="xx-small")
 
+fig.savefig(f'results/sigmoid_mean_2D.png')
+plt.show()
+
+plt.close(fig)
+del fig, ax
+
+# 2D histogram of the mean
+fig, ax = plt.subplots()
+plt.title("Width of the sigmoid")
+cax = ax.matshow(
+    widths,
+    cmap='RdYlGn_r',
+    vmin=0, vmax=5,
+)
+
+fig.colorbar(cax)
+ax.set_xticks(np.arange(N_pix_w))
+ax.set_yticks(np.arange(N_pix_w))
+
+#cax.set_zlim(0, 10)
+
+fig.savefig(f'results/sigmoid_width_2D.png')
 plt.show()
