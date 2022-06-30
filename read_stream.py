@@ -88,14 +88,13 @@ if __name__ == '__main__':
     lpgbt = int(args.lpgbt)
     fifo_link = int(args.read_fifo)
 
-    raw_data = {}
-    all_events = {}
-
     # FIXME: this needs to be un-hardcoded again. We are reading from multiple links now.
     links = [
         {'elink': 2, 'lpgbt': 0},  # 6
         #{'elink': 20, 'lpgbt': 1},  # 16
     ]
+
+    all_events = { l['elink']:[] for l in links }
 
     ##fifo = FIFO(rb_0, elink=fifo_link, ETROC=args.etroc, lpgbt=lpgbt)
     #fifo = FIFO(rb_0, links=links, ETROC=args.etroc)
