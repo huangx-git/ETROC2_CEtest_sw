@@ -88,13 +88,15 @@ if __name__ == '__main__':
     lpgbt = int(args.lpgbt)
     fifo_link = int(args.read_fifo)
 
-    events_0 = []
-    events_1 = []
+    raw_data = {}
+    all_events = {}
+    #events_0 = []
+    #events_1 = []
 
     # FIXME: this needs to be un-hardcoded again. We are reading from multiple links now.
     links = [
         {'elink': 2, 'lpgbt': 0},  # 6
-        {'elink': 20, 'lpgbt': 1},  # 16
+        #{'elink': 20, 'lpgbt': 1},  # 16
     ]
 
     #fifo = FIFO(rb_0, elink=fifo_link, ETROC=args.etroc, lpgbt=lpgbt)
@@ -110,10 +112,12 @@ if __name__ == '__main__':
     for i in range(int(args.triggers)):
         print(i)
         fifo.reset(l1a=True)
-        test_0 = fifo.giant_dump(block=300, format=False, align=(args.etroc=='ETROC1'), daq=1)
-        test_1 = fifo.giant_dump(block=300, format=False, align=(args.etroc=='ETROC1'), daq=0)
-        events_0 += build_events(test_0, ETROC=args.etroc)
-        events_1 += build_events(test_1, ETROC=args.etroc)
+        for link in links:
+            raw_data = fifo.giant_dump(block=300, format=False, align=(args.etroc=='ETROC1'), daq=link['lpgbt']==0)
+
+            if len(raw_data)>0:
+                if raw_data[0] > 0:
+                    all_events[link['elink']] += build_events(raw_data, ETROC=args.etroc)
 
     hits = np.zeros((16,16))
     nhits = Hist1D(bins=np.linspace(-0.5,20.5,22))
@@ -124,7 +128,8 @@ if __name__ == '__main__':
     weird_evnt=[]
     data_indices = []
 
-    for events in [events_0, events_1]:
+    for link in all_events:
+        events = all_events[link]
         # FIXME: the number of hits plot is off if we don't properly merge events.
         # TODO: implement a proper event merger
         for idx, event in enumerate(events):
