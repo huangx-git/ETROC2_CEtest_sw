@@ -1,7 +1,7 @@
 from tamalero.KCU import KCU
 from tamalero.ReadoutBoard import ReadoutBoard
 from tamalero.utils import header, make_version_header
-from tamalero.FIFO import FIFO
+from tamalero.FIFO import FIFO, just_read_daq
 from tamalero.DataFrame import DataFrame
 
 from tamalero.SCA import SCA_CONTROL
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--kcu', action='store', default="192.168.0.10", help="Specify the IP address for KCU")
     argParser.add_argument('--read_fifo', action='store', default=2, help='Read 3000 words from link N')
-    argParser.add_argument('--etroc', action='store', default='ETROC1', help='Select ETROC version')
+    argParser.add_argument('--etroc', action='store', default='ETROC2', help='Select ETROC version')
     argParser.add_argument('--lpgbt', action='store', default=0, help='0 - DAQ, 1 - TRIGGER')
     argParser.add_argument('--triggers', action='store', default=10, help='How many L1As?')
     argParser.add_argument('--log_level', default="INFO", type=str,help="Level of information printed by the logger")
@@ -90,8 +90,6 @@ if __name__ == '__main__':
 
     raw_data = {}
     all_events = {}
-    #events_0 = []
-    #events_1 = []
 
     # FIXME: this needs to be un-hardcoded again. We are reading from multiple links now.
     links = [
@@ -99,21 +97,22 @@ if __name__ == '__main__':
         #{'elink': 20, 'lpgbt': 1},  # 16
     ]
 
-    #fifo = FIFO(rb_0, elink=fifo_link, ETROC=args.etroc, lpgbt=lpgbt)
-    fifo = FIFO(rb_0, links=links, ETROC=args.etroc)
-    df = DataFrame(args.etroc)
-    fifo.set_trigger(
-        #[0x0]*5 + df.get_trigger_words(),
-        #[0x0]*5 + df.get_trigger_masks(),
-        df.get_trigger_words(),
-        df.get_trigger_masks(),
-    )
+    ##fifo = FIFO(rb_0, elink=fifo_link, ETROC=args.etroc, lpgbt=lpgbt)
+    #fifo = FIFO(rb_0, links=links, ETROC=args.etroc)
+    #df = DataFrame(args.etroc)
+    #fifo.set_trigger(
+    #    #[0x0]*5 + df.get_trigger_words(),
+    #    #[0x0]*5 + df.get_trigger_masks(),
+    #    df.get_trigger_words() + [0x0]*5,
+    #    df.get_trigger_masks() + [0x0]*5,
+    #)
     
     for i in range(int(args.triggers)):
         print(i)
-        fifo.reset(l1a=True)
+        #fifo.reset(l1a=True)
         for link in links:
-            raw_data = fifo.giant_dump(block=300, format=False, align=(args.etroc=='ETROC1'), daq=link['lpgbt']==0)
+            raw_data = just_read_daq(rb_0, link['elink'], link['lpgbt'])
+            #raw_data = fifo.giant_dump(block=300, format=False, align=(args.etroc=='ETROC1'), daq=(link['lpgbt']==0))
 
             if len(raw_data)>0:
                 if raw_data[0] > 0:

@@ -13,7 +13,8 @@ def revbits(x):
 
 def just_read(rb, link, daq=True):
     '''
-    very simple function that just reads whatever comes out of a link, no matter the pattern
+    very simple function that just reads whatever comes out of a link, no matter the pattern.
+    This might be broken in v1.2.2 or later, needs some more investigation
     '''
     fifo = FIFO(rb, links=[{'elink':link, 'lpgbt':0 if daq else 1}], ETROC='ETROC2')
     # just keep the default trigger words
