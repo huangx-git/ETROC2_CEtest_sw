@@ -48,6 +48,17 @@ def init_bl():
 
 
 # ETROC data format
+import yaml
+import os
+
+if not os.path.isfile("dataformat.yaml"):
+    raise Exception('missing dataformat.yaml file; run update_commands.sh to retrieve')
+
+with open('dataformat.yaml', 'r') as stream:
+    try:
+        print(yaml.safe_load(stream))
+    except yaml.YAMLError as exc:
+        print(exc)
 
 class ETROCdata():
     def __init__(self, BCID="0x000"):
