@@ -30,23 +30,26 @@ with open('dataformat.yaml', 'r') as stream:
     dataformat = yaml.safe_load(stream)['ETROC2']
 
 class software_ETROC2():
-    def __init__(self, BCID="0x000"):
+    def __init__(self, BCID=0):
         print('initiating fake ETROC2...')
-        self.BCID = BCID
+        self.bcid = BCID
         self.type = 0  #use type regular data
+        self.chipid = 0
+        self.status = 0
+        self.crc = 0
 
         self.l1counter  = 0  #cumulative num of L1As requested
         self.hitcounter = np.zeros(maxpixel) #cumulative counter of hits on each pixel
-        
+
         self.L1Adata = [] #data from most recent L1A, including TOT,TOA,CAL vals
+
+        self.nbits = dataformat['nbits']
 
         # fake baseline/noise properties per pixel
         self.bl_means  = [np.random.normal(198, .8) for x in range(maxpixel)]
         self.bl_stdevs = [np.random.normal(  1, .2) for x in range(maxpixel)]
 
     def add_hit(self,pix):
-        #dataformat['identifier']['data']['frame']
-        #dataformat['data']['data'] # ea, col_id, row_id, toa, cal, tot
         ea = 0 # temp
         
         pix_w = int(round(np.sqrt(maxpixel)))
@@ -57,17 +60,16 @@ class software_ETROC2():
         cal = np.random.randint(0,500)
         tot = np.random.randint(0,500)
         
-        form = dataformat['data']['data']
+        df = dataformat['data']['data']
         self.L1Adata.append(
                  dataformat['identifiers']['data']['frame']
-                + (ea  << form['ea']['shift'])
-                + (col << form['col_id']['shift'])
-                + (row << form['row_id']['shift'])
-                + (toa << form['toa']['shift'])
-                + (cal << form['cal']['shift'])
-                + (tot << form['tot']['shift'])
+                + ((ea  << df['ea']['shift'])&df['ea']['mask'])
+                + ((col << df['col_id']['shift'])&df['col_id']['mask'])
+                + ((row << df['row_id']['shift'])&df['row_id']['mask'])
+                + ((toa << df['toa']['shift'])&df['toa']['mask'])
+                + ((cal << df['cal']['shift'])&df['cal']['mask'])
+                + ((tot << df['tot']['shift'])&df['tot']['mask'])
                 )
-        print(self.L1Adata)
 
     def runL1A(self):
         self.L1Adata = [] # wipe previous L1A data
@@ -87,11 +89,27 @@ class software_ETROC2():
 
     # return full data package for most recent L1A
     def get_data(self):
-        Nhit    = len(self.hitdata)
-        header  = "00"+format(0x3555555,'026b')+format(BCID,'012b')
-        hitdata = "".join(self.hitdata)
-        trailer = "10"+format(0x5555555,'028b')+format(Nhit,'09b')+format(P,'1b')
-        return header + hitdata + trailer
+        df_h = dataformat['data']['header']
+        df_t = dataformat['data']['trailer']
+        
+        header = (dataformat['identifiers']['header']['frame']
+                + ((self.l1counter << df_h['l1counter']['shift'])&df_h['l1counter']['mask'])
+                + ((self.type << df_h['type']['shift'])&df_h['type']['mask'])
+                + ((self.bcid << df_h['bcid']['shift'])&df_h['bcid']['mask']) )
+        
+        trailer = (dataformat['identifiers']['trailer']['frame']
+                + ((self.chipid << df_t['chipid']['shift'])&df_t['chipid']['mask'])
+                + ((self.status << df_t['status']['shift'])&df_t['status']['mask'])
+                + ((len(self.L1Adata) << df_t['hits']['shift'])&df_t['hits']['mask'])
+                + ((self.crc << df_t['crc']['shift'])&df_t['crc']['mask']) )
+
+        # assemble
+        data = header
+        for hit in self.L1Adata:
+            data = (data << self.nbits) + hit
+        data = (data << self.nbits) + trailer
+        
+        return data
 
 
 # run simulated hits (simplified version)
