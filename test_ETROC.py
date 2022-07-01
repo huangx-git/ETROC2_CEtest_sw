@@ -103,16 +103,18 @@ def vth_scan():
 # ===== Vth scan ====
 
 # run only if no saved data or want to rerun
-if (not os.path.isfile("vth_scan_results.json")) or args.rerun:
+if (not os.path.isfile("results/vth_scan.json")) or args.rerun:
     print("No data. Run new vth scan...")
     init_bl()
     result_data = vth_scan()
-    with open("vth_scan_results.json", "w") as outfile:
+    if not os.path.isdir('results'):
+        os.makedirs('results')
+    with open("results/vth_scan.json", "w") as outfile:
         json.dump(result_data, outfile)
-        print("Data saved to vth_scan_results.json\n")
+        print("Data saved to results/vth_scan.json\n")
 
 # read data
-with open('vth_scan_results.json', 'r') as openfile:
+with open('results/vth_scan.json', 'r') as openfile:
     vth_scan_data = json.load(openfile)
 
 vth_axis = np.array(vth_scan_data[0])
@@ -151,9 +153,8 @@ for r in range(N_pix_w):
 
 # fit results
 if not args.nofitplots:
-    if not os.path.isdir('results'):
-        os.makedirs('results')
-
+    print('Creating plots and saving in ./results/...')
+    print('This may take a while.')
     for expix in range(256):
         exr   = expix%N_pix_w
         exc   = int(np.floor(expix/N_pix_w))

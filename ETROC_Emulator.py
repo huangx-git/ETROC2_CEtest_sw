@@ -87,4 +87,4 @@ def run(N):
     for pixel in range(maxpixel):
         rundata[pixel] = runpixel(N, pixel)
     I2C_write(0x2, rundata)
-    return ETROCformat(rundata)
+    return rundata
