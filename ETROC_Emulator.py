@@ -1,26 +1,13 @@
-"""
-from ETLsystem import initialize
+# ╔═╗╔═╗╔═╗╔╦╗╦ ╦╔═╗╦═╗╔═╗  ╔═╗╔╦╗╦═╗╔═╗╔═╗╔═╗
+# ╚═╗║ ║╠╣  ║ ║║║╠═╣╠╦╝║╣   ║╣  ║ ╠╦╝║ ║║  ╔═╝
+# ╚═╝╚═╝╚   ╩ ╚╩╝╩ ╩╩╚═╚═╝  ╚═╝ ╩ ╩╚═╚═╝╚═╝╚═╝
 
-if __name__ == '__main__':
-
-    import argparse
-
-    argParser = argparse.ArgumentParser(description = "Argument parser")
-    argParser.add_argument('--kcu', action='store', default="192.168.0.10", help="Specify the IP address for KCU")
-    argParser.add_argument('--force_no_trigger', action='store_true', help="Never initialize the trigger lpGBT.")
-    argParser.add_argument('--read_fifo', action='store', default=-1, help='Read 3000 words from link N')
-    argParser.add_argument('--load_alignment', action='store', default=None, help='Load predefined alignment, skips the scan.')
-    argParser.add_argument('--etroc', action='store', default="ETROC1", help='Load predefined alignment, skips the scan.')
-
-initialize(kcu_adr=args.kcu, force_no_trigger=args.force_no_trigger,
-        etroc_ver=args.etroc, load_alignment=args.load_alignment,
-        read_fifo=args.read_fifo)
-"""
-
-# software emulator
 import numpy as np
+import yaml
+import os
 
 maxpixel = 256
+
 
 # data storage
 data_stor = {0x0: 0, # test register
@@ -36,42 +23,49 @@ def I2C_write(reg, val):
 def I2C_read(reg):
     return data_stor[reg]
 
-# initiate pixel array with some noisy baseline
-def init_bl():
-    print("initiating some fake properties")
-    default_mean  = 198
-    default_stdev =   1
-    global bl_means
-    global bl_stdevs
-    bl_means  = [np.random.normal( default_mean,  1) for x in range(maxpixel)]
-    bl_stdevs = [np.random.normal(default_stdev, .1) for x in range(maxpixel)]
-
-
-# ETROC data format
-import yaml
-import os
-
 if not os.path.isfile("dataformat.yaml"):
-    raise Exception('missing dataformat.yaml file; run update_commands.sh to retrieve')
+    raise Exception('missing dataformat.yaml; run update_commands.sh to retrieve')
 
 with open('dataformat.yaml', 'r') as stream:
-    try:
-        print(yaml.safe_load(stream))
-    except yaml.YAMLError as exc:
-        print(exc)
+    dataformat = yaml.safe_load(stream)['ETROC2']
 
-class ETROCdata():
+class software_ETROC2():
     def __init__(self, BCID="0x000"):
+        print('initiating fake ETROC2...')
         self.BCID = BCID
-        self.hitdata = []
+        self.type = 0  #use type regular data
 
-    def add_hit(self,row,col,TOA,TOT,CAL,P):
+        self.l1counter  = 0  #cumulative num of L1As requested
+        self.hitcounter = np.zeros(maxpixel) #cumulative counter of hits on each pixel
+        
+        self.L1Adata = [] #data from most recent L1A, including TOT,TOA,CAL vals
+
+        # fake baseline/noise properties per pixel
+        self.bl_means  = [np.random.normal(198, .8) for x in range(maxpixel)]
+        self.bl_stdevs = [np.random.normal(  1, .2) for x in range(maxpixel)]
+
+    def add_hit(self,pix):
         self.hitdata.append(
-                format(row, '04b') + format(col,'04b')
-              + format(TOA,'010b') + format(TOT,'09b') + format(CAL, '010b')
-              + format(  P,  '1b'))
+                )
 
-    def fullevent(self):
+    def runL1A(self):
+        # wipe previous L1A data
+        self.L1Adata = []
+
+        vth = I2C_read(0x1)
+
+        for pix in range(maxpixel):
+            # produce random hit
+            val = np.random.normal(self.bl_means[pix], self.bl_stdevs[pix]) 
+            # if we have a hit
+            if val > vth :
+                self.hitcounter[pix] += 1
+                self.add_hit(pix)
+
+        return self.get_data()
+
+    # return full data package for most recent L1A
+    def get_data(self):
         Nhit    = len(self.hitdata)
         header  = "00"+format(0x3555555,'026b')+format(BCID,'012b')
         hitdata = "".join(self.hitdata)
@@ -79,8 +73,7 @@ class ETROCdata():
         return header + hitdata + trailer
 
 
-# run simulated hits
-
+# run simulated hits (simplified version)
 def runpixel(N, pixel):
     acc_num = 0
     vth = I2C_read(0x1)
