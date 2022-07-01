@@ -10,8 +10,8 @@ maxpixel = 256
 
 
 # data storage
-data_stor = {0x0: 0, # test register
-             0x1: 0, # vth
+data_stor = {0x0:   0, # test register
+             0x1: 198, # vth
              0x2: [] # accumulator nums
             }
 
@@ -45,12 +45,33 @@ class software_ETROC2():
         self.bl_stdevs = [np.random.normal(  1, .2) for x in range(maxpixel)]
 
     def add_hit(self,pix):
-        self.hitdata.append(
+        #dataformat['identifier']['data']['frame']
+        #dataformat['data']['data'] # ea, col_id, row_id, toa, cal, tot
+        ea = 0 # temp
+        
+        pix_w = int(round(np.sqrt(maxpixel)))
+        row = pix%pix_w
+        col = int(np.floor(pix/pix_w))
+        
+        toa = np.random.randint(0,500)
+        cal = np.random.randint(0,500)
+        tot = np.random.randint(0,500)
+        
+        form = dataformat['data']['data']
+        self.L1Adata.append(
+                 dataformat['identifiers']['data']['frame']
+                + (ea  << form['ea']['shift'])
+                + (col << form['col_id']['shift'])
+                + (row << form['row_id']['shift'])
+                + (toa << form['toa']['shift'])
+                + (cal << form['cal']['shift'])
+                + (tot << form['tot']['shift'])
                 )
+        print(self.L1Adata)
 
     def runL1A(self):
-        # wipe previous L1A data
-        self.L1Adata = []
+        self.L1Adata = [] # wipe previous L1A data
+        self.l1counter += 1
 
         vth = I2C_read(0x1)
 
