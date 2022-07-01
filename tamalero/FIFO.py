@@ -13,7 +13,8 @@ def revbits(x):
 
 def just_read(rb, link, daq=True):
     '''
-    very simple function that just reads whatever comes out of a link, no matter the pattern
+    very simple function that just reads whatever comes out of a link, no matter the pattern.
+    This might be broken in v1.2.2 or later, needs some more investigation
     '''
     fifo = FIFO(rb, links=[{'elink':link, 'lpgbt':0 if daq else 1}], ETROC='ETROC2')
     # just keep the default trigger words
@@ -37,8 +38,9 @@ def just_read_daq(rb, link, lpgbt, fixed_pattern=False, trigger_rate=0):
     fifo = FIFO(rb, links=[{'elink':link, 'lpgbt':lpgbt}], ETROC='ETROC2')
     if fixed_pattern:
         fifo.use_fixed_pattern()
-    rate = fifo.set_trigger_rate(trigger_rate*100)
-    print (f"Trigger rate is set to {rate} Hz")
+    if trigger_rate>0:
+        rate = fifo.set_trigger_rate(trigger_rate*100)
+        print (f"Trigger rate is currently {rate} Hz")
     fifo.reset(l1a=True)
     res = fifo.dump_daq(block=255)
     fifo.use_etroc_data()
@@ -47,6 +49,9 @@ def just_read_daq(rb, link, lpgbt, fixed_pattern=False, trigger_rate=0):
     len_cut = min(len(res[0::2]), len(res[1::2]))  # ensuring equal length of arrays downstream
     return list (np.array(res[0::2])[:len_cut][empty_frame_mask[:len_cut]] | (np.array(res[1::2]) << 32)[:len_cut][empty_frame_mask[:len_cut]])
 
+def get_event(data_frame, data_words):
+    for word in data_words:
+        print (data_frame.read(word))
 
 class FIFO:
     #def __init__(self, rb, elink=0, ETROC='ETROC1', lpgbt=0):

@@ -1,7 +1,7 @@
 from tamalero.KCU import KCU
 from tamalero.ReadoutBoard import ReadoutBoard
 from tamalero.utils import header, make_version_header
-from tamalero.FIFO import FIFO
+from tamalero.FIFO import FIFO, just_read_daq
 from tamalero.DataFrame import DataFrame
 
 from tamalero.SCA import SCA_CONTROL
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--kcu', action='store', default="192.168.0.10", help="Specify the IP address for KCU")
     argParser.add_argument('--read_fifo', action='store', default=2, help='Read 3000 words from link N')
-    argParser.add_argument('--etroc', action='store', default='ETROC1', help='Select ETROC version')
+    argParser.add_argument('--etroc', action='store', default='ETROC2', help='Select ETROC version')
     argParser.add_argument('--lpgbt', action='store', default=0, help='0 - DAQ, 1 - TRIGGER')
     argParser.add_argument('--triggers', action='store', default=10, help='How many L1As?')
     argParser.add_argument('--log_level', default="INFO", type=str,help="Level of information printed by the logger")
@@ -88,32 +88,34 @@ if __name__ == '__main__':
     lpgbt = int(args.lpgbt)
     fifo_link = int(args.read_fifo)
 
-    events_0 = []
-    events_1 = []
-
     # FIXME: this needs to be un-hardcoded again. We are reading from multiple links now.
     links = [
         {'elink': 2, 'lpgbt': 0},  # 6
-        {'elink': 20, 'lpgbt': 1},  # 16
+        #{'elink': 20, 'lpgbt': 1},  # 16
     ]
 
-    #fifo = FIFO(rb_0, elink=fifo_link, ETROC=args.etroc, lpgbt=lpgbt)
-    fifo = FIFO(rb_0, links=links, ETROC=args.etroc)
-    df = DataFrame(args.etroc)
-    fifo.set_trigger(
-        #[0x0]*5 + df.get_trigger_words(),
-        #[0x0]*5 + df.get_trigger_masks(),
-        df.get_trigger_words(),
-        df.get_trigger_masks(),
-    )
+    all_events = { l['elink']:[] for l in links }
+
+    ##fifo = FIFO(rb_0, elink=fifo_link, ETROC=args.etroc, lpgbt=lpgbt)
+    #fifo = FIFO(rb_0, links=links, ETROC=args.etroc)
+    #df = DataFrame(args.etroc)
+    #fifo.set_trigger(
+    #    #[0x0]*5 + df.get_trigger_words(),
+    #    #[0x0]*5 + df.get_trigger_masks(),
+    #    df.get_trigger_words() + [0x0]*5,
+    #    df.get_trigger_masks() + [0x0]*5,
+    #)
     
     for i in range(int(args.triggers)):
         print(i)
-        fifo.reset(l1a=True)
-        test_0 = fifo.giant_dump(block=300, format=False, align=(args.etroc=='ETROC1'), daq=1)
-        test_1 = fifo.giant_dump(block=300, format=False, align=(args.etroc=='ETROC1'), daq=0)
-        events_0 += build_events(test_0, ETROC=args.etroc)
-        events_1 += build_events(test_1, ETROC=args.etroc)
+        #fifo.reset(l1a=True)
+        for link in links:
+            raw_data = just_read_daq(rb_0, link['elink'], link['lpgbt'])
+            #raw_data = fifo.giant_dump(block=300, format=False, align=(args.etroc=='ETROC1'), daq=(link['lpgbt']==0))
+
+            if len(raw_data)>0:
+                if raw_data[0] > 0:
+                    all_events[link['elink']] += build_events(raw_data, ETROC=args.etroc)
 
     hits = np.zeros((16,16))
     nhits = Hist1D(bins=np.linspace(-0.5,20.5,22))
@@ -124,7 +126,8 @@ if __name__ == '__main__':
     weird_evnt=[]
     data_indices = []
 
-    for events in [events_0, events_1]:
+    for link in all_events:
+        events = all_events[link]
         # FIXME: the number of hits plot is off if we don't properly merge events.
         # TODO: implement a proper event merger
         for idx, event in enumerate(events):
