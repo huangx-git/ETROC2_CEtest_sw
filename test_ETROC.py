@@ -1,5 +1,5 @@
 from tamalero.ETROC import ETROC
-from ETROC_Emulator import I2C_write, I2C_read, init_bl
+from ETROC_Emulator import I2C_write, I2C_read, software_ETROC2
 
 import numpy as np
 from scipy.optimize import curve_fit
@@ -79,7 +79,7 @@ def sigmoid_fit_log(x_axis,y_axis):
     x0 = - kx0 / k
     return (k, x0)
 
-def vth_scan():
+def vth_scan(ETROC2):
     N_l1a    = 3200 # how many L1As to send
     vth_min  =  190 # scan range
     vth_max  =  210
@@ -91,10 +91,9 @@ def vth_scan():
     run_results = np.empty([N_steps, N_pix])
 
     for vth in vth_axis:
-        ETROCobj.set_vth(vth)
-        ETROCobj.run(N_l1a);
+        ETROC2.set_vth(vth)
         i = int(round((vth-vth_min)/vth_step))
-        run_results[i] = ETROCobj.run_results()
+        run_results[i] = ETROC2.run(N_l1a)
 
     # transpose so each 1d list is for a pixel & normalize
     run_results = run_results.transpose()/N_l1a
@@ -105,8 +104,8 @@ def vth_scan():
 # run only if no saved data or want to rerun
 if (not os.path.isfile("results/vth_scan.json")) or args.rerun:
     print("No data. Run new vth scan...")
-    init_bl()
-    result_data = vth_scan()
+    ETROC2 = software_ETROC2()
+    result_data = vth_scan(ETROC2)
     if not os.path.isdir('results'):
         os.makedirs('results')
     with open("results/vth_scan.json", "w") as outfile:

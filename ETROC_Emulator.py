@@ -86,6 +86,13 @@ class software_ETROC2():
                 self.add_hit(pix)
 
         return self.get_data()
+    
+    def run(self, N):
+        data = []
+        for i in range(N):
+            self.runL1A()
+            data.append(self.get_data)
+        return data
 
     # return full data package for most recent L1A
     def get_data(self):
