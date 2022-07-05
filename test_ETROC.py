@@ -1,5 +1,6 @@
 from tamalero.ETROC import ETROC
-from ETROC_Emulator import I2C_write, I2C_read, software_ETROC2
+from ETROC_Emulator import software_ETROC2
+from tamalero.DataFrame import DataFrame
 
 import numpy as np
 from scipy.optimize import curve_fit
@@ -8,28 +9,33 @@ from matplotlib import pyplot as plt
 import os
 import json
 
+
 # initiate
-ETROCobj = ETROC(I2C_write, I2C_read)
+ETROC2 = software_ETROC2()
+DF = DataFrame('ETROC2')
 
 # argsparser
 import argparse
-
 argParser = argparse.ArgumentParser(description = "Argument parser")
 argParser.add_argument('--rerun', action='store_true', default=False, help="Rerun Vth scan and overwrite data?")
 argParser.add_argument('--nofitplots', action='store_true', default=False, help="Don't create individual fit plots for all pixels?")
 args = argParser.parse_args()
+
 
 # ==============================
 # === Test simple read/write ===
 # ==============================
 
 print("Test simple read/write...")
-ETROCobj.test_write(0x0, 42)
+ETROC2.I2C_write(0x0, 42)
+
 print("Write 42 to test register")
-testval = ETROCobj.test_read(0x0)
+testval = ETROC2.I2C_read(0x0)
+
 print("Reading test register...%d"%testval)
 if testval == 42: print("Read/write successful\n")
 else: print("Something's wrong\n")
+
 
 # ==============================
 # ======= Test Vth scan ========
@@ -37,22 +43,15 @@ else: print("Something's wrong\n")
 
 print("Testing Vth scan...")
 
-# ===== HELPERS =====
-polyfit = np.polynomial.polynomial.polyfit
+
+# ====== HELPER FUNCTIONS ======
 
 def sigmoid(k,x,x0):
     return 1/(1+np.exp(k*(x-x0)))
 
-# change y = 1 / (1 + e^(-k(x-x0))) to log(1/y - 1) = -k(x-x0)
-def sigmoid_log(ylist):
-    fity = []
-    for y in ylist:
-        if abs(y) <= 0.01:
-            fity.append(np.inf)
-        else:
-            fity.append(np.log(1/y - 1))
-    return np.array(fity)
 
+# take x,y values and perform fit to sigmoid function
+# return steepness(k) and mean(x0)
 def sigmoid_fit(x_axis, y_axis):
     res = curve_fit(
         #sigmoid,
@@ -63,21 +62,14 @@ def sigmoid_fit(x_axis, y_axis):
     )
     return res[0][0], res[0][1]+x_axis[0]
 
-# take x,y values and perform fit to sigmoid function
-# return steepness(k) and mean(x0)
-def sigmoid_fit_log(x_axis,y_axis):
-    y_axis = sigmoid_log(y_axis)
-    x_axis_fit = []
-    y_axis_fit = []
-    for i in range(x_axis.size):
-        # only keep values within linearly shaped range
-        if abs(y_axis[i]) < 3:
-            x_axis_fit.append(x_axis[i])
-            y_axis_fit.append(y_axis[i])
-    results = polyfit(x_axis_fit, y_axis_fit, 1)
-    kx0, k = results[0], results[1]
-    x0 = - kx0 / k
-    return (k, x0)
+
+# parse formatted data into 1D list of # of hits per pixel
+def parse(data):
+    #FIXME
+    for word in data:
+        DF.read(word, quiet=False)
+    return
+
 
 def vth_scan(ETROC2):
     N_l1a    = 3200 # how many L1As to send
@@ -93,24 +85,30 @@ def vth_scan(ETROC2):
     for vth in vth_axis:
         ETROC2.set_vth(vth)
         i = int(round((vth-vth_min)/vth_step))
-        run_results[i] = ETROC2.run(N_l1a)
+        run_results[i] = parse(ETROC2.run(N_l1a))
 
     # transpose so each 1d list is for a pixel & normalize
     run_results = run_results.transpose()/N_l1a
     return [vth_axis.tolist(), run_results.tolist()]
 
-# ===== Vth scan ====
 
-# run only if no saved data or want to rerun
+# ========= Vth SCAN =========
+
+# run can only if no saved data or we want to rerun
 if (not os.path.isfile("results/vth_scan.json")) or args.rerun:
+    
     print("No data. Run new vth scan...")
+    
     ETROC2 = software_ETROC2()
     result_data = vth_scan(ETROC2)
+    
     if not os.path.isdir('results'):
         os.makedirs('results')
+    
     with open("results/vth_scan.json", "w") as outfile:
         json.dump(result_data, outfile)
         print("Data saved to results/vth_scan.json\n")
+
 
 # read data
 with open('results/vth_scan.json', 'r') as openfile:
@@ -123,6 +121,9 @@ vth_min = vth_axis[0]  # vth scan range
 vth_max = vth_axis[-1]
 N_pix   = len(hit_rate) # total # of pixels
 N_pix_w = int(round(np.sqrt(N_pix))) # N_pix in NxN layout
+
+
+# ======= PERFORM FITS =======
 
 # fit to sigmoid and save to NxN layout
 slopes = np.empty([N_pix_w, N_pix_w])
@@ -150,7 +151,10 @@ for r in range(N_pix_w):
         print("+-%2.2f"%widths[r][c], end='  ')
     print("\n")
 
-# fit results
+
+# ======= PLOT RESULTS =======
+
+# fit results per pixel & save
 if not args.nofitplots:
     print('Creating plots and saving in ./results/...')
     print('This may take a while.')
@@ -199,7 +203,7 @@ plt.show()
 plt.close(fig)
 del fig, ax
 
-# 2D histogram of the mean
+# 2D histogram of the width
 fig, ax = plt.subplots()
 plt.title("Width of the sigmoid")
 cax = ax.matshow(

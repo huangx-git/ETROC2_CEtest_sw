@@ -3,138 +3,129 @@
 # ╚═╝╚═╝╚   ╩ ╚╩╝╩ ╩╩╚═╚═╝  ╚═╝ ╩ ╩╚═╚═╝╚═╝╚═╝
 
 import numpy as np
-import yaml
 import os
+from yaml import load, dump
+try:
+    from yaml import CLoader as Loader, CDumper as Dumper
+except ImportError:
+    from yaml import Loader, Dumper
+
 
 maxpixel = 256
-
-
-# data storage
-data_stor = {0x0:   0, # test register
-             0x1: 198, # vth
-             0x2: [] # accumulator nums
-            }
-
-# emulating I2C connections
-def I2C_write(reg, val):
-    data_stor[reg] = val
-    return None
-
-def I2C_read(reg):
-    return data_stor[reg]
-
-if not os.path.isfile("dataformat.yaml"):
-    raise Exception('missing dataformat.yaml; run update_commands.sh to retrieve')
-
-with open('dataformat.yaml', 'r') as stream:
-    dataformat = yaml.safe_load(stream)['ETROC2']
 
 class software_ETROC2():
     def __init__(self, BCID=0):
         print('initiating fake ETROC2...')
-        self.bcid = BCID
-        self.type = 0  #use type regular data
-        self.chipid = 0
-        self.status = 0
-        self.crc = 0
+        
+        with open(os.path.expandvars('$TAMALERO_BASE/configs/dataformat.yaml'), 'r') as f:
+            self.format = load(f, Loader=Loader)['ETROC2']
 
-        self.l1counter  = 0  #cumulative num of L1As requested
-        self.hitcounter = np.zeros(maxpixel) #cumulative counter of hits on each pixel
+        self.data = {
+                'l1counter' : 0,
+                'bcid'      : BCID,
+                'type'      : 0,  # use type regular data
+                'chipid'    : 0,
+                'status'    : 0,
+                'hits'      : 0,
+                'crc'       : 0,
+                }
 
-        self.L1Adata = [] #data from most recent L1A, including TOT,TOA,CAL vals
+        # threshold voltage
+        self.vth = 198
+        
+        # data from most recent L1A (list of formatted words)
+        self.L1Adata = []
 
-        self.nbits = dataformat['nbits']
+        # number of bits in a word
+        self.nbits = self.format['nbits']
 
-        # fake baseline/noise properties per pixel
+        # generate fake baseline/noise properties per pixel
         self.bl_means  = [np.random.normal(198, .8) for x in range(maxpixel)]
         self.bl_stdevs = [np.random.normal(  1, .2) for x in range(maxpixel)]
 
-    def add_hit(self,pix):
-        ea = 0 # temp
-        
-        pix_w = int(round(np.sqrt(maxpixel)))
-        row = pix%pix_w
-        col = int(np.floor(pix/pix_w))
-        
-        toa = np.random.randint(0,500)
-        cal = np.random.randint(0,500)
-        tot = np.random.randint(0,500)
-        
-        df = dataformat['data']['data']
-        self.L1Adata.append(
-                 dataformat['identifiers']['data']['frame']
-                + ((ea  << df['ea']['shift'])&df['ea']['mask'])
-                + ((col << df['col_id']['shift'])&df['col_id']['mask'])
-                + ((row << df['row_id']['shift'])&df['row_id']['mask'])
-                + ((toa << df['toa']['shift'])&df['toa']['mask'])
-                + ((cal << df['cal']['shift'])&df['cal']['mask'])
-                + ((tot << df['tot']['shift'])&df['tot']['mask'])
-                )
+        # emulated "registers"
+        self.data_stor = {0x0: 0  # test register
+                }
 
+
+    # emulating I2C connections
+    def I2C_write(self, reg, val):
+        self.data_stor[reg] = val
+        return None
+
+
+    def I2C_read(self, reg):
+        return self.data_stor[reg]
+
+
+    def set_vth(self, vth):
+        print('Vth set to %d...'%vth)
+        self.vth = vth
+        return
+
+
+    # add hit data to self.L1Adata & increment hit counter
+    def add_hit(self,pix):
+        matrix_w = int(round(np.sqrt(maxpixel))) # pixels in NxN matrix
+        data = {
+                'ea'     : 0,
+                'row_id' : pix%matrix_w,
+                'col_id' : int(np.floor(pix/matrix_w)),
+                'toa'    : np.random.randint(0,500),
+                'cal'    : np.random.randint(0,500),
+                'tot'    : np.random.randint(0,500),
+                }
+        
+        word = self.format['identifiers']['data']['frame']
+        for datatype in data:
+            word = ( word +
+                ((data[datatype]<<self.format['data']['data'][datatype]['shift'])
+                &self.format['data']['data'][datatype]['mask']) )
+        self.L1Adata.append(word)
+
+        self.data['hits'] += 1
+
+        return None
+
+
+    # run one L1A
     def runL1A(self):
         self.L1Adata = [] # wipe previous L1A data
-        self.l1counter += 1
-
-        vth = I2C_read(0x1)
+        self.data['l1counter'] += 1
 
         for pix in range(maxpixel):
             # produce random hit
             val = np.random.normal(self.bl_means[pix], self.bl_stdevs[pix]) 
             # if we have a hit
-            if val > vth :
-                self.hitcounter[pix] += 1
+            if val > self.vth :
                 self.add_hit(pix)
-
-        return self.get_data()
+        data = self.get_data()
+        return data
     
+
+    # run N L1As and return all data from them
     def run(self, N):
         data = []
         for i in range(N):
             self.runL1A()
-            data.append(self.get_data)
+            data += self.get_data()
         return data
 
-    # return full data package for most recent L1A
+
+    # return full data package (list of words) for most recent L1A
     def get_data(self):
-        df_h = dataformat['data']['header']
-        df_t = dataformat['data']['trailer']
-        
-        header = (dataformat['identifiers']['header']['frame']
-                + ((self.l1counter << df_h['l1counter']['shift'])&df_h['l1counter']['mask'])
-                + ((self.type << df_h['type']['shift'])&df_h['type']['mask'])
-                + ((self.bcid << df_h['bcid']['shift'])&df_h['bcid']['mask']) )
-        
-        trailer = (dataformat['identifiers']['trailer']['frame']
-                + ((self.chipid << df_t['chipid']['shift'])&df_t['chipid']['mask'])
-                + ((self.status << df_t['status']['shift'])&df_t['status']['mask'])
-                + ((len(self.L1Adata) << df_t['hits']['shift'])&df_t['hits']['mask'])
-                + ((self.crc << df_t['crc']['shift'])&df_t['crc']['mask']) )
+        # form header word
+        header = self.format['identifiers']['header']['frame']
+        for datatype in ['l1counter', 'type', 'bcid']:
+            header = ( header +
+                ((self.data[datatype]<<self.format['data']['header'][datatype]['shift'])
+                &self.format['data']['header'][datatype]['mask']) )
 
-        # assemble
-        data = header
-        for hit in self.L1Adata:
-            data = (data << self.nbits) + hit
-        data = (data << self.nbits) + trailer
-        
-        return data
+        # form trailer word
+        trailer = self.format['identifiers']['trailer']['frame']
+        for datatype in ['chipid', 'status', 'hits', 'crc']:
+            trailer = ( trailer +
+                ((self.data[datatype]<<self.format['data']['trailer'][datatype]['shift'])
+                &self.format['data']['trailer'][datatype]['mask']) )
 
-
-# run simulated hits (simplified version)
-def runpixel(N, pixel):
-    acc_num = 0
-    vth = I2C_read(0x1)
-
-    for i in range(N):
-        # produce random hit
-        val = np.random.normal(bl_means[pixel], bl_stdevs[pixel])
-        if val > vth :
-            acc_num += 1
-
-    return acc_num
-
-def run(N):
-    rundata = [0 for x in range(maxpixel)]
-    for pixel in range(maxpixel):
-        rundata[pixel] = runpixel(N, pixel)
-    I2C_write(0x2, rundata)
-    return rundata
+        return [header] + self.L1Adata + [trailer]
