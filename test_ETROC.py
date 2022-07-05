@@ -46,6 +46,16 @@ print("Testing Vth scan...")
 
 # ====== HELPER FUNCTIONS ======
 
+def toPixNum(row, col, w):
+    return col*w+row
+
+
+def fromPixNum(pix, w):
+    row = pix%w
+    col = int(np.floor(pix/w))
+    return row, col
+
+
 def sigmoid(k,x,x0):
     return 1/(1+np.exp(k*(x-x0)))
 
@@ -64,11 +74,17 @@ def sigmoid_fit(x_axis, y_axis):
 
 
 # parse formatted data into 1D list of # of hits per pixel
-def parse(data):
-    #FIXME
+def parse_data(data, N_pix):
+    results = np.zeros(N_pix)
+    pix_w = int(round(np.sqrt(N_pix)))
+    
     for word in data:
-        DF.read(word, quiet=False)
-    return
+        datatype, res = DF.read(word)
+        if datatype == 'data':
+            pix = toPixNum(res['row_id'], res['col_id'], pix_w)
+            results[pix] += 1
+ 
+    return results
 
 
 def vth_scan(ETROC2):
@@ -85,8 +101,8 @@ def vth_scan(ETROC2):
     for vth in vth_axis:
         ETROC2.set_vth(vth)
         i = int(round((vth-vth_min)/vth_step))
-        run_results[i] = parse(ETROC2.run(N_l1a))
-
+        run_results[i] = parse_data(ETROC2.run(N_l1a), N_pix)
+    
     # transpose so each 1d list is for a pixel & normalize
     run_results = run_results.transpose()/N_l1a
     return [vth_axis.tolist(), run_results.tolist()]
@@ -132,8 +148,7 @@ widths = np.empty([N_pix_w, N_pix_w])
 
 for pix in range(N_pix):
     fitresults = sigmoid_fit(vth_axis, hit_rate[pix])
-    r = pix%N_pix_w
-    c = int(np.floor(pix/N_pix_w))
+    r, c = fromPixNum(pix, N_pix_w)
     slopes[r][c] = fitresults[0]
     means[r][c]  = fitresults[1]
     widths[r][c] = 4/fitresults[0]
@@ -141,7 +156,7 @@ for pix in range(N_pix):
 # print out results nicely
 for r in range(N_pix_w):
     for c in range(N_pix_w):
-        pix = c*16+r
+        pix = toPixNum(r, c, N_pix_w)
         print("{:8s}".format("#"+str(pix)), end='')
     print("")
     for c in range(N_pix_w):

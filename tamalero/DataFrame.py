@@ -13,6 +13,7 @@ class DataFrame:
     def __init__(self, version='ETROC1'):
         with open(os.path.expandvars('$TAMALERO_BASE/configs/dataformat.yaml'), 'r') as f:
             self.format = load(f, Loader=Loader)[version]
+        self.type = 0
 
     def get_bytes(self, word, format):
         bytes = []
@@ -51,8 +52,17 @@ class DataFrame:
                 print ("Found data of type None:", val)
             return None, res
 
-        for d in self.format['data'][data_type]:
+        if data_type == 'data':
+            datatypelist = self.format['types'][self.type]
+        else:
+            datatypelist = self.format['data'][data_type]
+
+        for d in datatypelist:
             res[d] = (val & self.format['data'][data_type][d]['mask']) >> self.format['data'][data_type][d]['shift']
+
+        if data_type == 'header':
+            self.type = res['type']
+
         if not quiet:
             print (f"Found data of type {data_type}:", res)
         #print (res)

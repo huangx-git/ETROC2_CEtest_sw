@@ -77,6 +77,10 @@ ETROC2:
     trailer:  # This is very weak
       frame: 0x0000000000
       mask: 0x8000000000
+  types:
+    0: [ea, col_id, row_id, toa, cal, tot]
+    1: [ea, col_id, row_id, col_id2, row_id2, bcid, counter_a]
+    2: [ea, col_id, row_id, col_id2, row_id2, counter_b]
   data:
     header: # Define the different masks here?
       l1counter:

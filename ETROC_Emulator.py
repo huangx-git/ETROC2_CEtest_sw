@@ -59,7 +59,7 @@ class software_ETROC2():
 
 
     def set_vth(self, vth):
-        print('Vth set to %d...'%vth)
+        print('Vth set to %f...'%vth)
         self.vth = vth
         return
 
@@ -90,6 +90,7 @@ class software_ETROC2():
 
     # run one L1A
     def runL1A(self):
+        self.data['hits'] = 0
         self.L1Adata = [] # wipe previous L1A data
         self.data['l1counter'] += 1
 
@@ -99,6 +100,7 @@ class software_ETROC2():
             # if we have a hit
             if val > self.vth :
                 self.add_hit(pix)
+        
         data = self.get_data()
         return data
     
@@ -127,5 +129,4 @@ class software_ETROC2():
             trailer = ( trailer +
                 ((self.data[datatype]<<self.format['data']['trailer'][datatype]['shift'])
                 &self.format['data']['trailer'][datatype]['mask']) )
-
         return [header] + self.L1Adata + [trailer]
