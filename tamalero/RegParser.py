@@ -16,10 +16,10 @@ class Node:
 
     def __init__(self, top_node_name):
         self.top_node_name = top_node_name
-        self.children = []
+        self.children = {}
 
     def addChild(self, child):
-        self.children.append(child)
+        self.children[child.name] = child
 
     def getVhdlName(self):
         return self.name.replace(self.top_node_name + '.', '').replace('.', '_')
@@ -37,7 +37,7 @@ class Node:
 class RegParser(object):
 
     def __init__(self):
-        self.nodes = []
+        self.nodes = {}
 
         self.parse_xml()
 
@@ -52,16 +52,18 @@ class RegParser(object):
         self.make_tree(root, '', 0x0, self.nodes, None, self.vars, False)
 
     def make_tree(self, node, base_name, base_address, nodes, parent_node, vars, is_generated):
-        if ((is_generated is None or is_generated is False)
-            and node.get('generate') is not None
-                and node.get('generate') == 'true'):
+        if ((is_generated is None or is_generated is False) and
+            node.get('generate') is not None and
+            node.get('generate') == 'true'):
 
             generate_size = self.parse_int(node.get('generate_size'))
             generate_step = self.parse_int(node.get('generate_address_step'))
             generate_var = node.get('generate_idx_var')
+
             for i in range(0, generate_size):
                 vars[generate_var] = i
                 self.make_tree(node, base_name, base_address + generate_step * i, nodes, parent_node, vars, True)
+
             return
 
         new_node = Node(self.top_node_name)
@@ -82,7 +84,7 @@ class RegParser(object):
         new_node.is_module = node.get('fw_is_module') is not None and node.get('fw_is_module') == 'true'
         if node.get('mode') is not None:
             new_node.mode = node.get('mode')
-        nodes.append(new_node)
+        nodes[name] = new_node
         if parent_node is not None:
             parent_node.addChild(new_node)
             new_node.parent = parent_node
@@ -91,42 +93,50 @@ class RegParser(object):
             self.make_tree(child, name, address, self.nodes, new_node, vars, False)
 
     def dump(self, nMax=99999):
-        for i, node in enumerate(self.nodes[:nMax]):
+        for i, nodename in enumerate(list(self.nodes.keys())[:nMax]):
             if i > 0:
-                print(node.name)
+                print(self.nodes[nodename].name)
 
-    def get_all_children(self, node, kids=[]):
-        if node.children == []:
-            kids.append(node)
+    def get_all_children(self, node, kids={}):
+        if node.children == {}:
+            kids[node.name]=node
             return kids
         else:
             for child in node.children:
                 get_all_children(child, kids)
 
     def get_node(self, nodeName):
-        thisnode = next(
-            (node for node in self.nodes if node.name == nodeName), None
-        )
-        if thisnode is None:
-            print(nodeName)
+        thisnode = self.nodes[nodeName]
         return thisnode
 
-    def get_node_by_id(self, number):
-        return self.nodes[number]
-
     def get_node_from_address(self, nodeAddress):
-        return next((node for node in self.nodes if node.real_address == nodeAddress), None)
+        for key in self.nodes:
+            if self.nodes[key].real_address == nodeAddress:
+                return self.nodes[key]
 
     def get_nodes_containing(self, nodeString):
-        nodelist = [node for node in self.nodes if nodeString in node.name]
+
+        nodelist = []
+
+        for key in self.nodes:
+            node = self.nodes[key]
+            if (nodeString in node.name):
+                nodelist.append(node)
+
         if len(nodelist):
             return nodelist
         else:
             return None
 
     def get_regs_containing(self, nodeString):
-        nodelist = [node for node in self.nodes if
-                    nodeString in node.name and node.permission is not None and 'r' in node.permission]
+
+        nodelist = []
+
+        for key in self.nodes:
+            node = self.nodes[key]
+            if (nodeString in node.name and node.permission is not None and 'r' in node.permission):
+                nodelist.append(node)
+
         if len(nodelist):
             return nodelist
         else:
@@ -211,7 +221,14 @@ class RegParser(object):
 def main():
 
     lpgbt = RegParser()
-    lpgbt.dump()
+    # lpgbt.dump()
+
+    for i in range(1000):
+        lpgbt.get_node("LPGBT.RO.FEC.DLDPFECCORRECTIONCOUNT_H")
+
+    lpgbt.get_node_from_address(0)
+    lpgbt.get_nodes_containing("LPGBT")
+    lpgbt.get_regs_containing("LPGBT")
 
 
 if __name__ == '__main__':

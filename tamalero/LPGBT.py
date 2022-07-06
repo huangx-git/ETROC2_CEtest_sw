@@ -19,7 +19,7 @@ class LPGBT(RegParser):
         Initialize lpGBT for a certain readout board number (rb).
         The trigger lpGBT is accessed through I2C of the master (= DAQ lpGBT).
         '''
-        self.nodes = []
+        self.nodes = {}
         self.rb = rb
         self.trigger = trigger
         if self.trigger:
