@@ -26,7 +26,8 @@ args = argParser.parse_args()
 # === Test simple read/write ===
 # ==============================
 
-print("Test simple read/write...")
+print("<--- Test simple read/write --->")
+
 ETROC2.write(0x0, 42)
 
 print("Write 42 to test register")
@@ -41,10 +42,16 @@ else: print("Something's wrong\n")
 # ======= Test Vth scan ========
 # ==============================
 
-print("Testing Vth scan...")
+print("<--- Testing Vth scan --->")
 
 
 # ====== HELPER FUNCTIONS ======
+
+# run N L1A's and return packaged ETROC2 dataformat
+def run(N):
+    # currently uses the software ETROC to produce fake data
+    return ETROC2.fakeETROC.run(N)
+
 
 def toPixNum(row, col, w):
     return col*w+row
@@ -73,7 +80,7 @@ def sigmoid_fit(x_axis, y_axis):
     return res[0][0], res[0][1]+x_axis[0]
 
 
-# parse formatted data into 1D list of # of hits per pixel
+# parse ETROC dataformat into 1D list of # of hits per pixel
 def parse_data(data, N_pix):
     results = np.zeros(N_pix)
     pix_w = int(round(np.sqrt(N_pix)))
@@ -101,7 +108,7 @@ def vth_scan(ETROC2):
     for vth in vth_axis:
         ETROC2.set_vth(vth)
         i = int(round((vth-vth_min)/vth_step))
-        run_results[i] = parse_data(ETROC2.fakeETROC.run(N_l1a), N_pix)
+        run_results[i] = parse_data(run(N_l1a), N_pix)
     
     # transpose so each 1d list is for a pixel & normalize
     run_results = run_results.transpose()/N_l1a

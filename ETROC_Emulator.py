@@ -15,7 +15,7 @@ maxpixel = 256
 
 class software_ETROC2():
     def __init__(self, BCID=0):
-        print('initiating fake ETROC2...')
+        print('Initiating fake ETROC2...\n')
         
         with open(os.path.expandvars('$TAMALERO_BASE/configs/dataformat.yaml'), 'r') as f:
             self.format = load(f, Loader=Loader)['ETROC2']
