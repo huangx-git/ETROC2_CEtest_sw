@@ -29,9 +29,6 @@ class software_ETROC2():
                 'hits'      : 0,
                 'crc'       : 0,
                 }
-
-        # threshold voltage
-        self.vth = 198
         
         # data from most recent L1A (list of formatted words)
         self.L1Adata = []
@@ -44,7 +41,8 @@ class software_ETROC2():
         self.bl_stdevs = [np.random.normal(  1, .2) for x in range(maxpixel)]
 
         # emulated "registers"
-        self.data_stor = {0x0: 0  # test register
+        self.data_stor = {0x0: 0,  # test register
+                          0x1: 198 # vth
                 }
 
 
@@ -56,12 +54,6 @@ class software_ETROC2():
 
     def I2C_read(self, reg):
         return self.data_stor[reg]
-
-
-    def set_vth(self, vth):
-        print('Vth set to %f...'%vth)
-        self.vth = vth
-        return
 
 
     # add hit data to self.L1Adata & increment hit counter
@@ -98,7 +90,7 @@ class software_ETROC2():
             # produce random hit
             val = np.random.normal(self.bl_means[pix], self.bl_stdevs[pix]) 
             # if we have a hit
-            if val > self.vth :
+            if val > self.data_stor[0x1] :
                 self.add_hit(pix)
         
         data = self.get_data()

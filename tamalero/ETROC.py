@@ -2,20 +2,26 @@
 For ETROC control
 """
 
-import ETROC_Emulator as etroc_em
+from ETROC_Emulator import software_ETROC2
 
 class ETROC():
 
-    def __init__(self, write, read):
-        self.write = write
-        self.read  = read
+    def __init__(self, write=None, read=None, usefake=False):
+        self.usefake = usefake
+        if usefake:
+            self.fakeETROC = software_ETROC2()
+        elif write == None or read == None:
+            raise Exception("Pass in write&read functions for ETROC!")
 
-    def test_write(self, reg, val):
-        self.write(reg, val)
+    def write(self, reg, val):
+        if self.usefake:
+            self.fakeETROC.I2C_write(reg, val)
         return None
 
-    def test_read(self, reg):
-        return self.read(reg)
+    def read(self, reg):
+        if self.usefake:
+            return self.fakeETROC.I2C_read(reg)
+        return None
 
 
     def select_CL(self, C):
@@ -48,12 +54,7 @@ class ETROC():
     # =====================
 
     def set_vth(self, vth):
-        self.test_write(0x1, vth)
+        self.write(0x1, vth)
         print("Vth set to %f."%vth)
         return
 
-    def run(self, N):
-        etroc_em.run(N)
-
-    def run_results(self):
-        return self.test_read(0x2)

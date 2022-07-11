@@ -11,7 +11,7 @@ import json
 
 
 # initiate
-ETROC2 = software_ETROC2()
+ETROC2 = ETROC(usefake=True)
 DF = DataFrame('ETROC2')
 
 # argsparser
@@ -27,10 +27,10 @@ args = argParser.parse_args()
 # ==============================
 
 print("Test simple read/write...")
-ETROC2.I2C_write(0x0, 42)
+ETROC2.write(0x0, 42)
 
 print("Write 42 to test register")
-testval = ETROC2.I2C_read(0x0)
+testval = ETROC2.read(0x0)
 
 print("Reading test register...%d"%testval)
 if testval == 42: print("Read/write successful\n")
@@ -101,7 +101,7 @@ def vth_scan(ETROC2):
     for vth in vth_axis:
         ETROC2.set_vth(vth)
         i = int(round((vth-vth_min)/vth_step))
-        run_results[i] = parse_data(ETROC2.run(N_l1a), N_pix)
+        run_results[i] = parse_data(ETROC2.fakeETROC.run(N_l1a), N_pix)
     
     # transpose so each 1d list is for a pixel & normalize
     run_results = run_results.transpose()/N_l1a
@@ -115,7 +115,6 @@ if (not os.path.isfile("results/vth_scan.json")) or args.rerun:
     
     print("No data. Run new vth scan...")
     
-    ETROC2 = software_ETROC2()
     result_data = vth_scan(ETROC2)
     
     if not os.path.isdir('results'):
