@@ -1,5 +1,7 @@
 '''
-Documentation: https://edms.cern.ch/ui/file/1719330/1/VLplus_quadLDD_spec_v1.2_prototypes.pdf
+=== Documentation ===
+Prototype:  https://edms.cern.ch/ui/file/1719330/1/VLplus_quadLDD_spec_v1.2_prototypes.pdf
+Production: https://edms.cern.ch/ui/file/1719330/1/VLplus_quadLDD_spec_v1.3.pdf
 '''
 
 from tamalero.colors import conditional
@@ -34,6 +36,11 @@ class VTRX:
             print (f"Disabling VTRx+ channel {ch}")
             self.disable(channel=ch)
 
+        if self.rd_adr(0x15) == 1:
+            self.ver = "production"
+        else:
+            self.ver = "prototype"
+        print('VTRx+ Version is: '+self.ver)
 
     def reset(self, hard=False, toggle_channels=[]):
         if hard:
