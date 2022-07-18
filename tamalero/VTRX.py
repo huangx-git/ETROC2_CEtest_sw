@@ -21,13 +21,13 @@ global_status_bits = {
     4: "Global Pre-emphasis Enable",
 }
 
-channel_status_bits = {
-    0: "Channel Enable",
-    1: "Limiting Amplifier Enable",
-    2: "Biasing Circuit Enable",
-    3: "Modulation Circuit Enable",
-    4: "Rising Edge Pre-emphasis",
-    5: "Falling Edge Pre-emphasis",
+ch_status_names = {
+    'CHxEN'   : "Channel Enable",
+    'CHxLAEN' : "Limiting Amplifier Enable",
+    'CHxBEN'  : "Biasing Circuit Enable",
+    'CHxMODEN': "Modulation Circuit Enable",
+    'CHxEMPR' : "Rising Edge Pre-emphasis",
+    'CHxEMPF' : "Falling Edge Pre-emphasis",
 }
 
 class VTRX:
@@ -119,15 +119,15 @@ class VTRX:
         print("\n## VTRx+ Channel status:")
 
         if self.ver == "prototype":
-            ctrl_reg = {i: self.rd_adr(0x04 + 4*(i)) for i in range(4) }
-            header = [""] + ["Channel %s"%i for i in range(4) ]
-            print("{:40}{:12}{:12}{:12}{:12}".format(*header))
-            for b in channel_status_bits.keys():
-                #line = [channel_status_bits[b]] + [ conditional((ctrl_reg[i] & 2**b)>0) for i in range(4) ]
-                line = [channel_status_bits[b]] + [ ((ctrl_reg[i] & 2**b)>0) for i in range(4) ]
-                print("{:40}{:^12}{:^12}{:^12}{:^12}".format(*line))
+            statuses = ['CHxEN','CHxLAEN','CHxBEN','CHxMODEN','CHxEMPR','CHxEMPF']
         elif self.ver == "production":
-            print("to be fixed")
+            statuses = ['CHxEN','CHxMODEN','CHxEMPR','CHxEMPF']
+
+        header = [""] + ["Channel %s"%ch for ch in range(4) ]
+        print("{:40}{:12}{:12}{:12}{:12}".format(*header))
+        for s in statuses:
+            line = [ch_status_names[s]] + [ self.rd_reg_ch(s,ch) for ch in range(4) ]
+            print("{:40}{:^12}{:^12}{:^12}{:^12}".format(*line))
 
     def enable(self, ch=0):
         if self.ver == 'prototype' and ch == 0:
