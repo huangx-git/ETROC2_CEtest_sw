@@ -41,8 +41,11 @@ class VTRX:
         for ch in disable_channels:
             print (f"Disabling VTRx+ channel {ch}")
             self.disable(channel=ch)
-        print(self.rd_adr(0x1))
-        
+
+        # if kcu is dummy kcu;
+        if self.master.kcu.hw == None:
+            return
+
         if self.rd_adr(0x15)>>4 == 1:
             self.ver = "production"
         else:
