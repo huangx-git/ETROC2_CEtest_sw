@@ -14,7 +14,7 @@ from tamalero.lpgbt_constants import LpgbtConstants
 
 class LPGBT(RegParser):
 
-    def __init__(self, rb=0, trigger=False, flavor='small', master=None):
+    def __init__(self, rb=0, trigger=False, flavor='small', master=None, kcu=None):
         '''
         Initialize lpGBT for a certain readout board number (rb).
         The trigger lpGBT is accessed through I2C of the master (= DAQ lpGBT).
@@ -27,6 +27,8 @@ class LPGBT(RegParser):
             self.master = master
         self.LPGBT_CONST = LpgbtConstants()
         self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping.yaml'), 'adc')
+        if kcu != None:
+            self.kcu = kcu
 
     def link_status(self):
         if self.trigger:

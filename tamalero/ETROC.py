@@ -48,11 +48,6 @@ class ETROC():
     def bias_selection(I):
         return
 
-
-    # =====================
-    # == For vth s curve ==
-    # =====================
-
     def set_vth(self, vth):
         self.write(0x1, vth)
         print("Vth set to %f."%vth)

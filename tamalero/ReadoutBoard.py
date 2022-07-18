@@ -8,7 +8,7 @@ from time import sleep
 
 class ReadoutBoard:
 
-    def __init__(self, rb=0, trigger=True, flavor='small'):
+    def __init__(self, rb=0, trigger=True, flavor='small', kcu=None):
         '''
         create a readout board.
         trigger: if true, also configure a trigger lpGBT
@@ -18,7 +18,10 @@ class ReadoutBoard:
 
         self.trigger = trigger
 
-        self.DAQ_LPGBT = LPGBT(rb=rb, flavor=flavor)
+        if kcu != None:
+            self.kcu = kcu
+
+        self.DAQ_LPGBT = LPGBT(rb=rb, flavor=flavor, kcu=kcu)
         self.DAQ_LPGBT.parse_xml(os.path.expandvars('$TAMALERO_BASE/address_table/lpgbt.xml'))
 
         self.VTRX = VTRX(self.DAQ_LPGBT)

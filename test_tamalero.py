@@ -55,7 +55,7 @@ if __name__ == '__main__':
               ipb_path="ipbusudp-2.0://%s:50001"%args.kcu,
               adr_table=f"address_table/v{fw_version}/etl_test_fw.xml")
 
-    rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=(not args.force_no_trigger)))
+    rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=(not args.force_no_trigger), kcu=kcu))
 
     kcu.firmware_version()
 
@@ -108,18 +108,18 @@ if __name__ == '__main__':
     res['trigger'] = 'yes' if rb_0.trigger else 'no'
     make_version_header(res)
 
-    for ch in [2,3]:
-        print (f"Disabling VTRx+ channel {ch}")
-        rb_0.VTRX.disable(channel=ch)
+   # for ch in [2,3]:
+   #     print (f"Disabling VTRx+ channel {ch}")
+   #     rb_0.VTRX.disable(channel=ch)
 
-    rb_0.reset_FEC_error_count()
-    while not rb_0.DAQ_LPGBT.link_status():
-        print ("DAQ link is not stable. Resetting.")
-        rb_0.reset_link(trigger=False)
-    if rb_0.trigger:
-        while not rb_0.TRIG_LPGBT.link_status():
-            print ("Trigger link is not stable. Resetting.")
-            rb_0.reset_link(trigger=True)
+   # rb_0.reset_FEC_error_count()
+   # while not rb_0.DAQ_LPGBT.link_status():
+   #     print ("DAQ link is not stable. Resetting.")
+   #     rb_0.reset_link(trigger=False)
+   # if rb_0.trigger:
+   #     while not rb_0.TRIG_LPGBT.link_status():
+   #         print ("Trigger link is not stable. Resetting.")
+   #         rb_0.reset_link(trigger=True)
 
     rb_0.status()
 
