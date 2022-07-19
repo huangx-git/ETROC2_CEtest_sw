@@ -6,6 +6,7 @@ Production: https://edms.cern.ch/ui/file/1719330/1/VLplus_quadLDD_spec_v1.3.pdf
 
 from tamalero.colors import conditional
 import os
+import time
 from yaml import load, dump
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -46,6 +47,19 @@ class VTRX:
         if self.master.kcu.hw == None:
             return
 
+        try:
+            if self.rd_adr(0x15)>>4 == 1:
+                self.ver = "production"
+            else:
+                self.ver = "prototype"
+            print('VTRx+ Version is: '+self.ver)
+
+            with open(os.path.expandvars('$TAMALERO_BASE/address_table/VTRX.yaml'), 'r') as f:
+                self.regs = load(f, Loader=Loader)[self.ver]
+        except TypeError:
+            print ("lpGBT init not yet done, will load VTRX address table later.")
+
+    def get_version(self):
         if self.rd_adr(0x15)>>4 == 1:
             self.ver = "production"
         else:
@@ -65,6 +79,9 @@ class VTRX:
         self.master.set_gpio(10,1)
 
         for ch in toggle_channels:
+            self.disable(ch=ch)
+            self.enable(ch=ch)
+            time.sleep(0.1)
             self.disable(ch=ch)
             self.enable(ch=ch)
 
@@ -98,7 +115,7 @@ class VTRX:
         adr   = self.regs[reg]['adr'][ch]
         shift = self.regs[reg]['shift'][ch]
         mask  = self.regs[reg]['mask'][ch]
-        ctrl_reg = rd_adr(adr)
+        ctrl_reg = self.rd_adr(adr)
         new_reg  = ((val<<shift)&mask)|(ctrl_reg&(~mask))
         self.wr_adr(adr, new_reg, ignore_response=ignore_response)
 
@@ -143,7 +160,7 @@ class VTRX:
             self.wr_reg_ch('CHxEN', ch, 1)
 
     def disable(self, ch=0):
-        ignore_response = True if channel == 0 else False
+        ignore_response = True if ch == 0 else False
         if self.ver == 'prototype' and ch == 0:
             ctrl_reg = self.regs['CHxEN']['default']
             adr      = self.regs['CHxEN']['adr'][ch]
@@ -151,6 +168,9 @@ class VTRX:
             self.wr_adr(adr, ctrl_reg&(0xff^(1<<shift)), ignore_response=ignore_response)
         else:
             self.wr_reg_ch('CHxEN', ch, 0)
+
+    def get_channel_enable(self, ch=0):
+        return self.rd_reg_ch('CHxEN', ch)
 
     def preemph_enable(self):
         if self.ver == "prototype":
