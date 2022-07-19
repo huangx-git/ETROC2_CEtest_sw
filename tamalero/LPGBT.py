@@ -30,15 +30,21 @@ class LPGBT(RegParser):
         if kcu != None:
             self.kcu = kcu
 
-    def link_status(self):
+    def link_status(self, verbose=False):
         if self.trigger:
             print ("Checking trigger link status")
+            if verbose:
+                print ("Uplink ready:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.TRIGGER.UPLINK.READY"%self.rb).value()==1 )
+                print ("FEC count:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT"%self.rb).value())
             return (
                 (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT"%self.rb).value() == 0) &
                 (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.TRIGGER.UPLINK.READY"%self.rb).value() == 1)
             )
         else:
             print ("Checking DAQ link status")
+            if verbose:
+                print ("Uplink ready:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.DAQ.UPLINK.READY"%self.rb).value()==1 )
+                print ("FEC count:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.DAQ.UPLINK.FEC_ERR_CNT"%self.rb).value())
             return (
                 (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.DAQ.UPLINK.FEC_ERR_CNT"%self.rb).value() == 0) &
                 (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.DAQ.UPLINK.READY"%self.rb).value() == 1)
@@ -158,10 +164,11 @@ class LPGBT(RegParser):
             i = i + 1
 
     def configure_gpio_outputs(self, outputs=0x2401, defaults=0x0401):
-        self.wr_adr(0x52, outputs >> 8)
-        self.wr_adr(0x53, outputs & 0xFF)
+        # have to first set defaults, then switch to outputs otherwise we reset the VTRx+
         self.wr_adr(0x54, defaults >> 8)
         self.wr_adr(0x55, defaults & 0xFF)
+        self.wr_adr(0x52, outputs >> 8)
+        self.wr_adr(0x53, outputs & 0xFF)
 
     def set_uplink_alignment(self, link, val, quiet=False):
         if self.trigger:
