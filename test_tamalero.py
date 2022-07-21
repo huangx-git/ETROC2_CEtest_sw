@@ -27,6 +27,7 @@ if __name__ == '__main__':
     argParser.add_argument('--kcu', action='store', default="192.168.0.10", help="Specify the IP address for KCU")
     argParser.add_argument('--force_no_trigger', action='store_true', help="Never initialize the trigger lpGBT.")
     argParser.add_argument('--read_fifo', action='store', default=-1, help='Read 3000 words from link N')
+    argParser.add_argument('--alignment_scan', action='store_true', default=False, help='Run alignment scan?')
     argParser.add_argument('--load_alignment', action='store', default=None, help='Load predefined alignment, skips the scan.')
     argParser.add_argument('--etroc', action='store', default="ETROC1", help='Load predefined alignment, skips the scan.')
     argParser.add_argument('--eyescan', action='store_true', default=False, help="Run eyescan?")
@@ -98,12 +99,13 @@ if __name__ == '__main__':
         rb_0.get_trigger()
 
     if args.power_up or args.reconfigure:
-        if args.load_alignment is not None:
-            from tamalero.utils import load_alignment_from_file
-            alignment = load_alignment_from_file(args.load_alignment)
-        else:
-            alignment = None
-        rb_0.configure(alignment=alignment, data_mode=data_mode, etroc=args.etroc)  # this is very slow, especially for the trigger lpGBT.
+        if args.alignment_scan:
+            if args.load_alignment is not None:
+                from tamalero.utils import load_alignment_from_file
+                alignment = load_alignment_from_file(args.load_alignment)
+            else:
+                alignment = None
+            rb_0.configure(alignment=alignment, data_mode=data_mode, etroc=args.etroc)  # this is very slow, especially for the trigger lpGBT.
         if rb_0.trigger:
             time.sleep(1.0)
             rb_0.DAQ_LPGBT.reset_trigger_mgts()
