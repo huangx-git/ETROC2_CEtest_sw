@@ -40,10 +40,36 @@ if __name__ == '__main__':
         power_up         = args.power_up,
         reconfigure      = args.reconfigure,
         force_no_trigger = args.force_no_trigger,
-        adcs             = args.adcs,
         etroc_ver        = args.etroc,
         alignment        = args.alignment,
         )
+
+    if args.adcs or args.power_up:
+        print("\n\nReading GBT-SCA ADC values:")
+        rb_0.SCA.read_adcs()
+
+        print("\n\nReading DAQ lpGBT ADC values:")
+        rb_0.DAQ_LPGBT.read_adcs()
+
+        from tamalero.utils import get_temp
+
+        # Low level reading of temperatures
+        # Read ADC channel 7 on DAQ lpGBT
+        adc_7 = rb_0.DAQ_LPGBT.read_adc(7)/(2**10-1)
+
+        # Read ADC channel 29 on GBT-SCA
+        adc_in29 = rb_0.SCA.read_adc(29)/(2**12-1)
+
+        # Check what the lpGBT DAC is set to
+        v_ref = rb_0.DAQ_LPGBT.read_dac()
+        print ("\nV_ref is set to: %.3f V"%v_ref)
+
+        if v_ref>0:
+            print ("\nTemperature on RB RT1 is: %.3f C"%get_temp(adc_7, v_ref, 10000, 25, 10000, 3900))
+            print ("Temperature on RB RT2 is: %.3f C"%get_temp(adc_in29, v_ref, 10000, 25, 10000, 3900))
+
+        # High level reading of temperatures
+        temp = rb_0.read_temp(verbose=1)
 
     if args.i2c_temp:
 
