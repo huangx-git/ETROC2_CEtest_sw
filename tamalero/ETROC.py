@@ -6,12 +6,15 @@ from ETROC_Emulator import software_ETROC2
 
 class ETROC():
 
-    def __init__(self, write=None, read=None, usefake=False):
+    def __init__(self, write=None, read=None, usefake=True):
         self.usefake = usefake
         if usefake:
             self.fakeETROC = software_ETROC2()
         elif write == None or read == None:
-            raise Exception("Pass in write&read functions for ETROC!")
+            raise Exception("Pass in write&read functions for ETROC class!")
+
+        with open(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC2.yaml'), 'r') as f:
+            self.regs = load(f, Loader=Loader)
 
     def write(self, reg, val):
         if self.usefake:
