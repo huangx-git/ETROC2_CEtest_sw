@@ -1,0 +1,185 @@
+CLSel:
+  regadr: 'PixR<Rn>C<Cn>Cfg0'
+  shift : 0
+  mask  : 0x03
+  default: 0x0
+IBSel:
+  regadr: 'PixR<Rn>C<Cn>Cfg0'
+  shift : 2
+  mask  : 0x1C
+  default: 0x7
+RfSel:
+  regadr: 'PixR<Rn>C<Cn>Cfg0'
+  shift : 5
+  mask  : 0x60
+  default: 0x2
+HysSel:
+  regadr: 'PixR<Rn>C<Cn>Cfg2'
+  shift : 0
+  mask  : 0x0F
+  default: 0xf
+PD_DACDiscri:
+  regadr: 'PixR<Rn>C<Cn>Cfg2'
+  shift : 4
+  mask  : 0x10
+  default: 0x0
+QSel:
+  regadr: 'PixR<Rn>C<Cn>Cfg1'
+  shift : 0
+  mask  : 0x1F
+  default: 0x6
+QInjEn:
+  regadr: 'PixR<Rn>C<Cn>Cfg1'
+  shift : 5
+  mask  : 0x20
+  default: 0x0
+autoReset_TDC:
+  regadr: 'PixR<Rn>C<Cn>Cfg6'
+  shift : 5
+  mask  : 0x20
+  default: 0x0
+enable_TDC:
+  regadr: 'PixR<Rn>C<Cn>Cfg6'
+  shift : 7
+  mask  : 0x80
+  default: 0x1
+level_TDC:
+  regadr: 'PixR<Rn>C<Cn>Cfg6'
+  shift : 1
+  mask  : 0x0E
+  default: 0x1
+resetn_TDC:
+  regadr: 'PixR<Rn>C<Cn>Cfg6'
+  shift : 6
+  mask  : 0x40
+  default: 0x1
+testMode_TDC:
+  regadr: 'PixR<Rn>C<Cn>Cfg6'
+  shift : 4
+  mask  : 0x10
+  default: 0x0
+Bypass_ THCal:
+  regadr: 'PixR<Rn>C<Cn>Cfg3'
+  shift : 2
+  mask  : 0x04
+  default: 0x1
+DAC:
+  regadr: ['PixR<Rn>C<Cn>Cfg5', 'PixR<Rn>C<Cn>Cfg4']
+  shift : [0, 0]
+  mask  : [0x03, 0xFF]
+  default: 0x0
+TH_offset:
+  regadr: 'PixR<Rn>C<Cn>Cfg5'
+  shift : 2
+  mask  : 0xFC
+  default: 0xa
+RSTn_THCal:
+  regadr: 'PixR<Rn>C<Cn>Cfg3'
+  shift : 0
+  mask  : 0x01
+  default: 0x1
+ScanStart_THCal:
+  regadr: 'PixR<Rn>C<Cn>Cfg3'
+  shift : 4
+  mask  : 0x10
+  default: 0x0
+BufEn_THCal:
+  regadr: 'PixR<Rn>C<Cn>Cfg3'
+  shift : 1
+  mask  : 0x02
+  default: 0x0
+CLKEn_THCal:
+  regadr: 'PixR<Rn>C<Cn>Cfg3'
+  shift : 3
+  mask  : 0x08
+  default: 0x0
+workMode:
+  regadr: 'PixR<Rn>C<Cn>Cfg7'
+  shift : 3
+  mask  : 0x18
+  default: 0x0
+L1Adelay:
+  regadr: ['PixR<Rn>C<Cn>Cfg9', 'PixR<Rn>C<Cn>Cfg8']
+  shift : [0, 7]
+  mask  : [0xFF, 0x80]
+  default: 0x0
+disDataReadout:
+  regadr: 'PixR<Rn>C<Cn>Cfg7'
+  shift : 1
+  mask  : 0x02
+  default: 0x0
+disTrigPath:
+  regadr: 'PixR<Rn>C<Cn>Cfg7'
+  shift : 2
+  mask  : 0x04
+  default: 0x0
+upperTOATrig:
+  regadr: ['PixR<Rn>C<Cn>Cfg22', 'PixR<Rn>C<Cn>Cfg21']
+  shift : [0, 0]
+  mask  : [0x03, 0xFF]
+  default: 0x200
+lowerTOATrig:
+  regadr: ['PixR<Rn>C<Cn>Cfg20', 'PixR<Rn>C<Cn>Cfg19']
+  shift : [0, 6]
+  mask  : [0xFF, 0xC0]
+  default: 0x20
+upperTOTTrig:
+  regadr: ['PixR<Rn>C<Cn>Cfg24', 'PixR<Rn>C<Cn>Cfg23']
+  shift : [0, 2]
+  mask  : [0x07, 0xFC]
+  default: 0x100
+lowerTOTTrig:
+  regadr: ['PixR<Rn>C<Cn>Cfg23', 'PixR<Rn>C<Cn>Cfg22']
+  shift : [0, 2]
+  mask  : [0x03, 0xFC]
+  default: 0x10
+upperCalTrig:
+  regadr: ['PixR<Rn>C<Cn>Cfg19', 'PixR<Rn>C<Cn>Cfg18']
+  shift : [0, 4]
+  mask  : [0x3F, 0xF0]
+  default: 0x200
+lowerCalTrig:
+  regadr: ['PixR<Rn>C<Cn>Cfg18', 'PixR<Rn>C<Cn>Cfg17']
+  shift : [0, 2]
+  mask  : [0x0F, 0xFC]
+  default: 0x10
+upperTOA:
+  regadr: ['PixR<Rn>C<Cn>Cfg14', 'PixR<Rn>C<Cn>Cfg13']
+  shift : [0, 6]
+  mask  : [0xFF, 0xC0]
+  default: 0x200
+lowerTOA:
+  regadr: ['PixR<Rn>C<Cn>Cfg13', 'PixR<Rn>C<Cn>Cfg12']
+  shift : [0, 4]
+  mask  : [0x3F, 0xF0]
+  default: 0x20
+upperTOT:
+  regadr: ['PixR<Rn>C<Cn>Cfg17', 'PixR<Rn>C<Cn>Cfg16']
+  shift : [0, 1]
+  mask  : [0x03, 0xFE]
+  default: 0x100
+lowerTOT:
+  regadr: ['PixR<Rn>C<Cn>Cfg16', 'PixR<Rn>C<Cn>Cfg15']
+  shift : [0, 0]
+  mask  : [0x01, 0xFF]
+  default: 0x10
+upperCal:
+  regadr: ['PixR<Rn>C<Cn>Cfg12', 'PixR<Rn>C<Cn>Cfg11']
+  shift : [0, 2]
+  mask  : [0x0F, 0xFC]
+  default: 0x200
+lowerCal:
+  regadr: ['PixR<Rn>C<Cn>Cfg11', 'PixR<Rn>C<Cn>Cfg10']
+  shift : [0, 0]
+  mask  : [0x03, 0xFF]
+  default: 0x10
+addrOffset:
+  regadr: 'PixR<Rn>C<Cn>Cfg7'
+  shift : 0
+  mask  : 0x01
+  default: 0x1
+selfTestOccupancy:
+  regadr: 'PixR<Rn>C<Cn>Cfg8'
+  shift : 0
+  mask  : 0x7F
+  default: 0x1
