@@ -16,10 +16,16 @@ maxpixel = 256
 class software_ETROC2():
     def __init__(self, BCID=0):
         print('Initiating fake ETROC2...\n')
-        
+       
+        # load ETROC2 dataformat
         with open(os.path.expandvars('$TAMALERO_BASE/configs/dataformat.yaml'), 'r') as f:
             self.format = load(f, Loader=Loader)['ETROC2']
 
+        # load emulated "registers"
+        with open(os.path.expandvars('$TAMALERO_BASE/address_table/swETROC2.yaml'), 'r') as f:
+            self.regs = load(f, Loader=Loader)
+
+        # storing data for running L1As
         self.data = {
                 'l1counter' : 0,
                 'bcid'      : BCID,
@@ -40,25 +46,22 @@ class software_ETROC2():
         self.bl_means  = [np.random.normal(198, .8) for x in range(maxpixel)]
         self.bl_stdevs = [np.random.normal(  1, .2) for x in range(maxpixel)]
 
-        # emulated "registers"
-        self.data_stor = {0x0: 0,  # test register
-                          0x1: 198 # vth
-                }
-
 
     # emulating I2C connections
     def I2C_write(self, reg, val):
-        self.data_stor[reg] = val
+        self.regs[reg] = val
         return None
 
 
     def I2C_read(self, reg):
-        return self.data_stor[reg]
+        return self.regs[reg]
 
 
     # add hit data to self.L1Adata & increment hit counter
     def add_hit(self,pix):
         matrix_w = int(round(np.sqrt(maxpixel))) # pixels in NxN matrix
+        
+        # generate random data
         data = {
                 'ea'     : 0,
                 'row_id' : pix%matrix_w,
@@ -67,7 +70,7 @@ class software_ETROC2():
                 'cal'    : np.random.randint(0,500),
                 'tot'    : np.random.randint(0,500),
                 }
-        
+        # format data 
         word = self.format['identifiers']['data']['frame']
         for datatype in data:
             word = ( word +
@@ -75,6 +78,7 @@ class software_ETROC2():
                 &self.format['data']['data'][datatype]['mask']) )
         self.L1Adata.append(word)
 
+        # inc Nhits
         self.data['hits'] += 1
 
         return None
@@ -121,4 +125,5 @@ class software_ETROC2():
             trailer = ( trailer +
                 ((self.data[datatype]<<self.format['data']['trailer'][datatype]['shift'])
                 &self.format['data']['trailer'][datatype]['mask']) )
+        
         return [header] + self.L1Adata + [trailer]
