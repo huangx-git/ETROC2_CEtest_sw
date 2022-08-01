@@ -22,7 +22,7 @@ class software_ETROC2():
             self.format = load(f, Loader=Loader)['ETROC2']
 
         # load emulated "registers"
-        with open(os.path.expandvars('$TAMALERO_BASE/address_table/swETROC.yaml'), 'r') as f:
+        with open(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC2_inpixel.yaml'), 'r') as f:
             self.regs = load(f, Loader=Loader)
 
         # storing data for running L1As

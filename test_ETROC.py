@@ -57,8 +57,9 @@ print("Test passed.\n")
 print("Testing read/write with register names...")
 with open(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC2.yaml'), 'r') as f:
     regnames = load(f, Loader=Loader)
-for pix in range(256):
-    for regname in list(regnames.keys()):
+for regname in list(regnames.keys()):
+    print(regname)
+    for pix in range(256):
         ETROC2.wr_reg(regname, pix, 1)
         readval = ETROC2.rd_reg(regname, pix)
         if not(readval == 1):

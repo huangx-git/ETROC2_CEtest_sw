@@ -44,7 +44,7 @@ class ETROC():
             # get the lengths of parts that we care about in each adr
             lens = [bin(mask[i]).count("1") for i in range(len(adr))]
             # split val into two parts
-            vals = [val>>lens[1], val&(1<<(lens[0]-1))]
+            vals = [val>>lens[1], val&(2**lens[0]-1)]
             for i in range(len(adr)):
                 orig_val = self.rd_adr(adr[i])
                 new_val = ((vals[i]<<shift[i])&mask[i]) | (orig_val&(~mask[i]))
@@ -62,6 +62,7 @@ class ETROC():
         if type(adr) is list:
             lens = [bin(mask[i]).count("1") for i in range(len(adr))]
             vals = [(self.rd_adr(adr[i])&mask[i]) >> shift[i] for i in range(len(adr))]
+            print(vals)
             return (vals[0] << lens[1]) | vals[1]
         else:
             return (self.rd_adr(adr)&mask) >> shift
