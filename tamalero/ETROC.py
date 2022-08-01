@@ -62,7 +62,6 @@ class ETROC():
         if type(adr) is list:
             lens = [bin(mask[i]).count("1") for i in range(len(adr))]
             vals = [(self.rd_adr(adr[i])&mask[i]) >> shift[i] for i in range(len(adr))]
-            print(vals)
             return (vals[0] << lens[1]) | vals[1]
         else:
             return (self.rd_adr(adr)&mask) >> shift

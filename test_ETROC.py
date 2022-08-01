@@ -22,55 +22,55 @@ DF = DataFrame('ETROC2')
 # argsparser
 import argparse
 argParser = argparse.ArgumentParser(description = "Argument parser")
+argParser.add_argument('--test_readwrite', action='store_true', default=False, help="Test simple read/write functionality?")
+argParser.add_argument('--vth', action='store_true', default=False, help="Parse Vth scan plots?")
 argParser.add_argument('--rerun', action='store_true', default=False, help="Rerun Vth scan and overwrite data?")
-argParser.add_argument('--fitplots', action='store_true', default=False, help="Create individual fit plots for all pixels?")
+argParser.add_argument('--fitplots', action='store_true', default=False, help="Create individual vth fit plots for all pixels?")
 args = argParser.parse_args()
 
 
 # ==============================
 # === Test simple read/write ===
 # ==============================
-
-print("<--- Test simple read/write --->")
-print("Testing read/write to addresses...")
-for r in range(16):
-    for c in range(16):
-        for n in range(32):
-            regadr = 'PixR%dC%dCfg%d'%(r,c,n)
-            ETROC2.wr_adr(regadr, 1)
-            readval = ETROC2.rd_adr(regadr)
-            if not(readval == 1):
-                raise Exception('Test failed for %s, value read was %d.'%(regname,readval))
-print("Test passed.\n")
-
-print("Testing read/write for shared pixels...")
-for n in range(32):
-    regadr = 'PixR%dC%dCfg%d'%(1,1,n)
-    ETROC2.wr_adr(regadr, 1)
+if args.test_readwrite:
+    print("<--- Test simple read/write --->")
+    print("Testing read/write to addresses...")
     for r in range(16):
         for c in range(16):
-            readval = ETROC2.rd_adr(regadr)
+            for n in range(32):
+                regadr = 'PixR%dC%dCfg%d'%(r,c,n)
+                ETROC2.wr_adr(regadr, 1)
+                readval = ETROC2.rd_adr(regadr)
+                if not(readval == 1):
+                    raise Exception('Test failed for %s, value read was %d.'%(regname,readval))
+    print("Test passed.\n")
+    
+    print("Testing read/write for shared pixels...")
+    for n in range(32):
+        regadr = 'PixR%dC%dCfg%d'%(1,1,n)
+        ETROC2.wr_adr(regadr, 1)
+        for r in range(16):
+            for c in range(16):
+                readval = ETROC2.rd_adr(regadr)
+                if not(readval == 1):
+                    raise Exception('Test failed for %s, value read was %d.'%(regname,readval))
+    print("Test passed.\n")
+    
+    print("Testing read/write with register names...")
+    with open(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC2.yaml'), 'r') as f:
+        regnames = load(f, Loader=Loader)
+    for regname in list(regnames.keys()):
+        for pix in range(256):
+            ETROC2.wr_reg(regname, pix, 1)
+            readval = ETROC2.rd_reg(regname, pix)
             if not(readval == 1):
                 raise Exception('Test failed for %s, value read was %d.'%(regname,readval))
-print("Test passed.\n")
+    print("Test passed.\n")
 
-print("Testing read/write with register names...")
-with open(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC2.yaml'), 'r') as f:
-    regnames = load(f, Loader=Loader)
-for regname in list(regnames.keys()):
-    print(regname)
-    for pix in range(256):
-        ETROC2.wr_reg(regname, pix, 1)
-        readval = ETROC2.rd_reg(regname, pix)
-        if not(readval == 1):
-            raise Exception('Test failed for %s, value read was %d.'%(regname,readval))
-print("Test passed.\n")
 
 # ==============================
 # ======= Test Vth scan ========
 # ==============================
-
-print("<--- Testing Vth scan --->")
 
 
 # ====== HELPER FUNCTIONS ======
@@ -144,128 +144,130 @@ def vth_scan(ETROC2):
 
 
 # ========= Vth SCAN =========
-
-# run can only if no saved data or we want to rerun
-if (not os.path.isfile("results/vth_scan.json")) or args.rerun:
+if args.vth:
+    print("<--- Testing Vth scan --->")
     
-    print("No data. Run new vth scan...")
+    # run can only if no saved data or we want to rerun
+    if (not os.path.isfile("results/vth_scan.json")) or args.rerun:
+        
+        print("No data. Run new vth scan...")
+        
+        result_data = vth_scan(ETROC2)
+        
+        if not os.path.isdir('results'):
+            os.makedirs('results')
+        
+        with open("results/vth_scan.json", "w") as outfile:
+            json.dump(result_data, outfile)
+            print("Data saved to results/vth_scan.json\n")
+
+
+    # read and parse vth scan data
+    with open('results/vth_scan.json', 'r') as openfile:
+        vth_scan_data = json.load(openfile)
     
-    result_data = vth_scan(ETROC2)
+    vth_axis = np.array(vth_scan_data[0])
+    hit_rate = np.array(vth_scan_data[1])
     
-    if not os.path.isdir('results'):
-        os.makedirs('results')
+    vth_min = vth_axis[0]  # vth scan range
+    vth_max = vth_axis[-1]
+    N_pix   = len(hit_rate) # total # of pixels
+    N_pix_w = int(round(np.sqrt(N_pix))) # N_pix in NxN layout
+
+
+    # ======= PERFORM FITS =======
     
-    with open("results/vth_scan.json", "w") as outfile:
-        json.dump(result_data, outfile)
-        print("Data saved to results/vth_scan.json\n")
+    # fit to sigmoid and save to NxN layout
+    slopes = np.empty([N_pix_w, N_pix_w])
+    means  = np.empty([N_pix_w, N_pix_w])
+    widths = np.empty([N_pix_w, N_pix_w])
+    
+    for pix in range(N_pix):
+        fitresults = sigmoid_fit(vth_axis, hit_rate[pix])
+        r, c = fromPixNum(pix, N_pix_w)
+        slopes[r][c] = fitresults[0]
+        means[r][c]  = fitresults[1]
+        widths[r][c] = 4/fitresults[0]
+    
+    # print out results nicely
+    for r in range(N_pix_w):
+        for c in range(N_pix_w):
+            pix = toPixNum(r, c, N_pix_w)
+            print("{:8s}".format("#"+str(pix)), end='')
+        print("")
+        for c in range(N_pix_w):
+            print("%4.2f"%means[r][c], end='  ')
+        print("")
+        for c in range(N_pix_w):
+            print("+-%2.2f"%widths[r][c], end='  ')
+        print("\n")
 
 
-# read data
-with open('results/vth_scan.json', 'r') as openfile:
-    vth_scan_data = json.load(openfile)
-
-vth_axis = np.array(vth_scan_data[0])
-hit_rate = np.array(vth_scan_data[1])
-
-vth_min = vth_axis[0]  # vth scan range
-vth_max = vth_axis[-1]
-N_pix   = len(hit_rate) # total # of pixels
-N_pix_w = int(round(np.sqrt(N_pix))) # N_pix in NxN layout
-
-
-# ======= PERFORM FITS =======
-
-# fit to sigmoid and save to NxN layout
-slopes = np.empty([N_pix_w, N_pix_w])
-means  = np.empty([N_pix_w, N_pix_w])
-widths = np.empty([N_pix_w, N_pix_w])
-
-for pix in range(N_pix):
-    fitresults = sigmoid_fit(vth_axis, hit_rate[pix])
-    r, c = fromPixNum(pix, N_pix_w)
-    slopes[r][c] = fitresults[0]
-    means[r][c]  = fitresults[1]
-    widths[r][c] = 4/fitresults[0]
-
-# print out results nicely
-for r in range(N_pix_w):
-    for c in range(N_pix_w):
-        pix = toPixNum(r, c, N_pix_w)
-        print("{:8s}".format("#"+str(pix)), end='')
-    print("")
-    for c in range(N_pix_w):
-        print("%4.2f"%means[r][c], end='  ')
-    print("")
-    for c in range(N_pix_w):
-        print("+-%2.2f"%widths[r][c], end='  ')
-    print("\n")
-
-
-# ======= PLOT RESULTS =======
-
-# fit results per pixel & save
-if args.fitplots:
-    print('Creating plots and saving in ./results/...')
-    print('This may take a while.')
-    for expix in range(256):
-        exr   = expix%N_pix_w
-        exc   = int(np.floor(expix/N_pix_w))
-
-        fig, ax = plt.subplots()
-
-        plt.title("S curve fit example (pixel #%d)"%expix)
-        plt.xlabel("Vth")
-        plt.ylabel("hit rate")
-
-        plt.plot(vth_axis, hit_rate[expix], '.-')
-        fit_func = sigmoid(slopes[exr][exc], vth_axis, means[exr][exc])
-        plt.plot(vth_axis, fit_func)
-        plt.axvline(x=means[exr][exc], color='r', linestyle='--')
-        plt.axvspan(means[exr][exc]-widths[exr][exc], means[exr][exc]+widths[exr][exc],
-                    color='r', alpha=0.1)
-
-        plt.xlim(vth_min, vth_max)
-        plt.grid(True)
-        plt.legend(["data","fit","baseline"])
-
-        fig.savefig(f'results/pixel_{expix}.png')
-        plt.close(fig)
-        del fig, ax
-
-# 2D histogram of the mean
-fig, ax = plt.subplots()
-plt.title("Mean values of baseline voltage")
-cax = ax.matshow(means)
-
-fig.colorbar(cax)
-ax.set_xticks(np.arange(N_pix_w))
-ax.set_yticks(np.arange(N_pix_w))
-
-for i in range(N_pix_w):
-    for j in range(N_pix_w):
-        text = ax.text(j, i, "%.2f\n+/-%.2f"%(means[i,j],widths[i,j]),
-                ha="center", va="center", color="w", fontsize="xx-small")
-
-fig.savefig(f'results/sigmoid_mean_2D.png')
-plt.show()
-
-plt.close(fig)
-del fig, ax
-
-# 2D histogram of the width
-fig, ax = plt.subplots()
-plt.title("Width of the sigmoid")
-cax = ax.matshow(
-    widths,
-    cmap='RdYlGn_r',
-    vmin=0, vmax=5,
-)
-
-fig.colorbar(cax)
-ax.set_xticks(np.arange(N_pix_w))
-ax.set_yticks(np.arange(N_pix_w))
-
-#cax.set_zlim(0, 10)
-
-fig.savefig(f'results/sigmoid_width_2D.png')
-plt.show()
+    # ======= PLOT RESULTS =======
+    
+    # fit results per pixel & save
+    if args.fitplots:
+        print('Creating plots and saving in ./results/...')
+        print('This may take a while.')
+        for expix in range(256):
+            exr   = expix%N_pix_w
+            exc   = int(np.floor(expix/N_pix_w))
+    
+            fig, ax = plt.subplots()
+    
+            plt.title("S curve fit example (pixel #%d)"%expix)
+            plt.xlabel("Vth")
+            plt.ylabel("hit rate")
+    
+            plt.plot(vth_axis, hit_rate[expix], '.-')
+            fit_func = sigmoid(slopes[exr][exc], vth_axis, means[exr][exc])
+            plt.plot(vth_axis, fit_func)
+            plt.axvline(x=means[exr][exc], color='r', linestyle='--')
+            plt.axvspan(means[exr][exc]-widths[exr][exc], means[exr][exc]+widths[exr][exc],
+                        color='r', alpha=0.1)
+    
+            plt.xlim(vth_min, vth_max)
+            plt.grid(True)
+            plt.legend(["data","fit","baseline"])
+    
+            fig.savefig(f'results/pixel_{expix}.png')
+            plt.close(fig)
+            del fig, ax
+    
+    # 2D histogram of the mean
+    fig, ax = plt.subplots()
+    plt.title("Mean values of baseline voltage")
+    cax = ax.matshow(means)
+    
+    fig.colorbar(cax)
+    ax.set_xticks(np.arange(N_pix_w))
+    ax.set_yticks(np.arange(N_pix_w))
+    
+    for i in range(N_pix_w):
+        for j in range(N_pix_w):
+            text = ax.text(j, i, "%.2f\n+/-%.2f"%(means[i,j],widths[i,j]),
+                    ha="center", va="center", color="w", fontsize="xx-small")
+    
+    fig.savefig(f'results/sigmoid_mean_2D.png')
+    plt.show()
+    
+    plt.close(fig)
+    del fig, ax
+    
+    # 2D histogram of the width
+    fig, ax = plt.subplots()
+    plt.title("Width of the sigmoid")
+    cax = ax.matshow(
+        widths,
+        cmap='RdYlGn_r',
+        vmin=0, vmax=5,
+    )
+    
+    fig.colorbar(cax)
+    ax.set_xticks(np.arange(N_pix_w))
+    ax.set_yticks(np.arange(N_pix_w))
+    
+    #cax.set_zlim(0, 10)
+    
+    fig.savefig(f'results/sigmoid_width_2D.png')
+    plt.show()
