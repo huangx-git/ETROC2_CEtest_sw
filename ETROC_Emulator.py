@@ -51,8 +51,16 @@ class software_ETROC2():
     # emulating I2C connections
     def I2C_write(self, reg, val):
         self.regs[reg] = val
-        return None
 
+        # update regs for other pixels if data is shared amongst pixels
+        regcfg = reg.split('Cfg')[1]
+        if (regcfg in [0, 1, 2]):
+            for r in range(16):
+                for c in range(16):
+                    newreg = 'PixR%dC%dCfg%d'%(r,c,regcfg)
+                    self.regs[newreg] = val
+
+        return None
 
     def I2C_read(self, reg):
         return self.regs[reg]

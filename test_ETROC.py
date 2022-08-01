@@ -8,6 +8,11 @@ from matplotlib import pyplot as plt
 
 import os
 import json
+from yaml import load, dump
+try:
+    from yaml import CLoader as Loader, CDumper as Dumper
+except ImportError:
+    from yaml import Loader, Dumper
 
 
 # initiate
@@ -27,7 +32,7 @@ args = argParser.parse_args()
 # ==============================
 
 print("<--- Test simple read/write --->")
-print("Testing . . .")
+print("Testing read/write to addresses...")
 for r in range(16):
     for c in range(16):
         for n in range(32):
@@ -35,9 +40,30 @@ for r in range(16):
             ETROC2.wr_adr(regadr, 1)
             readval = ETROC2.rd_adr(regadr)
             if not(readval == 1):
-                raise Exception('Read/write test failed!')
-print("Read/write test passed.\n")
+                raise Exception('Test failed for %s, value read was %d.'%(regname,readval))
+print("Test passed.\n")
 
+print("Testing read/write for shared pixels...")
+for n in range(32):
+    regadr = 'PixR%dC%dCfg%d'%(1,1,n)
+    ETROC2.wr_adr(regadr, 1)
+    for r in range(16):
+        for c in range(16):
+            readval = ETROC2.rd_adr(regadr)
+            if not(readval == 1):
+                raise Exception('Test failed for %s, value read was %d.'%(regname,readval))
+print("Test passed.\n")
+
+print("Testing read/write with register names...")
+with open(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC2.yaml'), 'r') as f:
+    regnames = load(f, Loader=Loader)
+for pix in range(256):
+    for regname in list(regnames.keys()):
+        ETROC2.wr_reg(regname, pix, 1)
+        readval = ETROC2.rd_reg(regname, pix)
+        if not(readval == 1):
+            raise Exception('Test failed for %s, value read was %d.'%(regname,readval))
+print("Test passed.\n")
 
 # ==============================
 # ======= Test Vth scan ========
