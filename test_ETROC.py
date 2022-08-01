@@ -18,7 +18,7 @@ DF = DataFrame('ETROC2')
 import argparse
 argParser = argparse.ArgumentParser(description = "Argument parser")
 argParser.add_argument('--rerun', action='store_true', default=False, help="Rerun Vth scan and overwrite data?")
-argParser.add_argument('--nofitplots', action='store_true', default=False, help="Don't create individual fit plots for all pixels?")
+argParser.add_argument('--fitplots', action='store_true', default=False, help="Create individual fit plots for all pixels?")
 args = argParser.parse_args()
 
 
@@ -26,16 +26,17 @@ args = argParser.parse_args()
 # === Test simple read/write ===
 # ==============================
 
-#print("<--- Test simple read/write --->")
-
-#ETROC2.write(0x0, 42)
-
-#print("Write 42 to test register")
-#testval = ETROC2.read(0x0)
-
-#print("Reading test register...%d"%testval)
-#if testval == 42: print("Read/write successful\n")
-#else: print("Something's wrong\n")
+print("<--- Test simple read/write --->")
+print("Testing . . .")
+for r in range(16):
+    for c in range(16):
+        for n in range(32):
+            regadr = 'PixR%dC%dCfg%d'%(r,c,n)
+            ETROC2.wr_adr(regadr, 1)
+            readval = ETROC2.rd_adr(regadr)
+            if not(readval == 1):
+                raise Exception('Read/write test failed!')
+print("Read/write test passed.\n")
 
 
 # ==============================
@@ -176,7 +177,7 @@ for r in range(N_pix_w):
 # ======= PLOT RESULTS =======
 
 # fit results per pixel & save
-if not args.nofitplots:
+if args.fitplots:
     print('Creating plots and saving in ./results/...')
     print('This may take a while.')
     for expix in range(256):
