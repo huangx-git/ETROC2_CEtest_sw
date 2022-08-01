@@ -19,7 +19,7 @@ def rangetomask(start, end):
 def pix2rc(pix):
   return pix%16, int(np.floor(pix/16))
 
-with open('etroc2_regs.csv', newline='') as csvfile:
+with open('etroc2_regs.csv', newline='', encoding='utf-8-sig') as csvfile:
   f = csv.reader(csvfile, delimiter=',')
   dumpdata = {}
   for row in f:
@@ -78,12 +78,12 @@ with open(r'ETROC2.yaml', 'w') as file:
 
 
 dumpregs = {}
-with open('etroc2_inpixel.csv', newline='') as csvfile:
+with open('etroc2_inpixel.csv', newline='', encoding='utf-8-sig') as csvfile:
   f = csv.reader(csvfile, delimiter=',')
   for row in f:
     for pix in range(256):
       r, c = pix2rc(pix)
       regname = re.split('/',row[0])[0].replace('<Rn>', str(r)).replace('<Cn>', str(c))
-      dumpregs[regname] = row[1]
+      dumpregs[regname] = hexint(int(row[1], 16))
 with open(r'ETROC2_inpixel.yaml', 'w') as file:
     documents = yaml.dump(dumpregs, file)

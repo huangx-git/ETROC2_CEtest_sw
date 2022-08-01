@@ -38,11 +38,20 @@ class ETROC():
         adr = self.regs[reg]['regadr'][pix]
         mask = self.regs[reg]['mask']
         shift = self.regs[reg]['shift']
-
-        # for some registers, data is stored in two adrs
+        
+        # check for data overflow
         if type(adr) is list:
             # get the lengths of parts that we care about in each adr
             lens = [bin(mask[i]).count("1") for i in range(len(adr))]
+            masklength = sum(lens)
+        else:
+            masklength = bin(mask).count("1")
+        vallength = len(bin(val)) - 2
+        if vallength > masklength:
+            print('Overflow warning! Trying to store %s in %d-bit long register %s'%(bin(val), masklength, reg))
+
+        # for some registers, data is stored in two adrs
+        if type(adr) is list:
             # split val into two parts
             vals = [val>>lens[1], val&(2**lens[0]-1)]
             for i in range(len(adr)):
