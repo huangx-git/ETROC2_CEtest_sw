@@ -26,16 +26,16 @@ args = argParser.parse_args()
 # === Test simple read/write ===
 # ==============================
 
-print("<--- Test simple read/write --->")
+#print("<--- Test simple read/write --->")
 
-ETROC2.write(0x0, 42)
+#ETROC2.write(0x0, 42)
 
-print("Write 42 to test register")
-testval = ETROC2.read(0x0)
+#print("Write 42 to test register")
+#testval = ETROC2.read(0x0)
 
-print("Reading test register...%d"%testval)
-if testval == 42: print("Read/write successful\n")
-else: print("Something's wrong\n")
+#print("Reading test register...%d"%testval)
+#if testval == 42: print("Read/write successful\n")
+#else: print("Something's wrong\n")
 
 
 # ==============================

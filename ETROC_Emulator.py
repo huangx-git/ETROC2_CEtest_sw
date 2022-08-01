@@ -22,7 +22,7 @@ class software_ETROC2():
             self.format = load(f, Loader=Loader)['ETROC2']
 
         # load emulated "registers"
-        with open(os.path.expandvars('$TAMALERO_BASE/address_table/swETROC2.yaml'), 'r') as f:
+        with open(os.path.expandvars('$TAMALERO_BASE/address_table/swETROC.yaml'), 'r') as f:
             self.regs = load(f, Loader=Loader)
 
         # storing data for running L1As
@@ -34,6 +34,7 @@ class software_ETROC2():
                 'status'    : 0,
                 'hits'      : 0,
                 'crc'       : 0,
+                'vth'       : 198,
                 }
         
         # data from most recent L1A (list of formatted words)
@@ -94,7 +95,7 @@ class software_ETROC2():
             # produce random hit
             val = np.random.normal(self.bl_means[pix], self.bl_stdevs[pix]) 
             # if we have a hit
-            if val > self.data_stor[0x1] :
+            if val > self.data['vth'] :
                 self.add_hit(pix)
         
         data = self.get_data()
