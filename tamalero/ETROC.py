@@ -196,19 +196,53 @@ class ETROC():
     def apply_THCal(self, pix):
         self.wr_reg('Bypass_THCal', pix, 0)
 
+    def set_Vth_pix(self, pix, vth):
+        self.wr_reg('DAC', pix, vth)
+
+    def set_Vth_pix_mV(self, pix, vth):
+        if self.usefake:
+            self.fakeETROC.data['vth'] = vth
+            print("Vth set to %f."%vth)
+        else:
+            v = vth # FIXME: convert from mV to bit representation
+            self.wr_reg('DAC', pix, vth)
+
+    def get_Vth_pix(self, pix):
+        self.rd_reg('DAC', pix)
+
+    def get_Vth_pix_mV(self, pix):
+        vth = self.rd_reg('DAC', pix)
+        # FIXME: convert from bit to mV representation
+        return vth
+
     def set_Vth(self, vth):
+        for pix in range(256):
+            set_vth_pix(self, pix, vth)
+
+    def set_Vth_mV(self, vth):
         if self.usefake:
             self.fakeETROC.data['vth'] = vth
             print("Vth set to %f."%vth)
         else:
             for pix in range(256):
-                set_vth_pix(self, pix, vth)
+                set_vth_pix_mV(self, pix, vth)
 
-    def set_Vth_pix(self, pix, vth):
-        self.wr_reg('DAC', pix, vth)
+    # return vth value if vth for all pixels are same;
+    # return None if they are not all the same
+    def get_Vth(self):
+        vth = self.rd_reg('DAC', 0)
+        for pix in range(1, 256):
+            vth2 = self.rd_reg('DAC', pix)
+            if not(vth == vth2):
+                return None
+        return vth
 
-    def get_Vth_pix(self, pix):
-        self.wr_reg('DAC', pix)
+    def get_Vth_mV(self):
+        vth = self.get_Vth
+        if vth == None:
+            return None
+        else:
+            return vth # FIXME: convert from bit to mV representation
 
     def set_THoffset(self, pix, V):
         self.wr_reg('TH_offset', pix, V)
