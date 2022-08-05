@@ -157,8 +157,16 @@ class ETROC():
     def apply_THCal(self, pix):
         self.wr_reg('Bypass_THCal', pix, 0)
 
-    def DAC(self, pix):
-        return # FIXME: not sure what this does
+    def set_vth(self, vth):
+        if self.usefake:
+            self.fakeETROC.data['vth'] = vth
+            print("Vth set to %f."%vth)
+        else:
+            for pix in range(256):
+                set_vth_pix(self, pix, vth)
+
+    def set_vth_pix(self, pix, vth):
+        self.wr_reg('DAC', pix, vth)
 
     def set_THoffset(self, pix, V):
         self.wr_reg('TH_offset', pix, V)
@@ -252,8 +260,3 @@ class ETROC():
 
     def get_pixelID(self, pix):
         return self.rd_reg('PixelID', pix)
-
-
-    def set_vth(self, vth):
-        self.fakeETROC.data['vth'] = vth
-        print("Vth set to %f."%vth)
