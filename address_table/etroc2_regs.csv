@@ -35,3 +35,10 @@ upperCal,"PixR<Rn>C<Cn>Cfg12[3:0],PixR<Rn>C<Cn>Cfg11[7:2]",10b1000000000
 lowerCal,"PixR<Rn>C<Cn>Cfg11[1:0],PixR<Rn>C<Cn>Cfg10[7:0]",10b0000010000
 addrOffset,PixR<Rn>C<Cn>Cfg7[0],1b1
 selfTestOccupancy,PixR<Rn>C<Cn>Cfg8[6:0],7b0000001
+ACC[15:0],"PixR<Rn>C<Cn>Sta6[7:0],PixR<Rn>C<Cn>Sta5[7:0]",16b0000000000000000
+ScanDone,PixR<Rn>C<Cn>Sta1[0],1b1
+BL[9:0],"PixR<Rn>C<Cn>Sta3[1:0], PixR<Rn>C<Cn>Sta2[7:0]",10b0000000000	
+NW[3:0],PixR<Rn>C<Cn>Sta1[4:1],4b0000
+TH[9:0],"PixR<Rn>C<Cn>Sta4[7:0], PixR<Rn>C<Cn>Sta3[7:6]",10b0000000000
+THState[2:0],PixR<Rn>C<Cn>Sta1[7:5],3b000
+PixelID,PixR<Rn>C<Cn>Sta0[7:0],8b00000000

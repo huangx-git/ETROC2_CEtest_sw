@@ -43,6 +43,12 @@ if args.test_readwrite:
                 readval = ETROC2.rd_adr(regadr)
                 if not(readval == 1):
                     raise Exception('Test failed for %s, value read was %d.'%(regname,readval))
+            for n in range(8):
+                regadr = 'PixR%dC%dSta%d'%(r,c,n)
+                ETROC2.wr_adr(regadr, 1)
+                readval = ETROC2.rd_adr(regadr)
+                if not(readval == 1):
+                    raise Exception('Test failed for %s, value read was %d.'%(regname,readval))
     print("Test passed.\n")
     
     print("Testing read/write for shared pixels...")

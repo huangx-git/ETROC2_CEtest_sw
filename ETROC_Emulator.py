@@ -53,8 +53,8 @@ class software_ETROC2():
         self.regs[reg] = val
 
         # update regs for other pixels if data is shared amongst pixels
-        regcfg = reg.split('Cfg')[1]
-        if (regcfg in [0, 1, 2]):
+        regcfg = reg.split('Cfg')
+        if (len(regcfg) > 1) and (regcfg[1] in [0, 1, 2]):
             for r in range(16):
                 for c in range(16):
                     newreg = 'PixR%dC%dCfg%d'%(r,c,regcfg)

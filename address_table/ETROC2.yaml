@@ -1,3 +1,1557 @@
+ACC:
+  default: 0x0
+  mask:
+  - 0xff
+  - 0xff
+  regadr:
+    0:
+    - PixR0C0Sta6
+    - PixR0C0Sta5
+    1:
+    - PixR1C0Sta6
+    - PixR1C0Sta5
+    2:
+    - PixR2C0Sta6
+    - PixR2C0Sta5
+    3:
+    - PixR3C0Sta6
+    - PixR3C0Sta5
+    4:
+    - PixR4C0Sta6
+    - PixR4C0Sta5
+    5:
+    - PixR5C0Sta6
+    - PixR5C0Sta5
+    6:
+    - PixR6C0Sta6
+    - PixR6C0Sta5
+    7:
+    - PixR7C0Sta6
+    - PixR7C0Sta5
+    8:
+    - PixR8C0Sta6
+    - PixR8C0Sta5
+    9:
+    - PixR9C0Sta6
+    - PixR9C0Sta5
+    10:
+    - PixR10C0Sta6
+    - PixR10C0Sta5
+    11:
+    - PixR11C0Sta6
+    - PixR11C0Sta5
+    12:
+    - PixR12C0Sta6
+    - PixR12C0Sta5
+    13:
+    - PixR13C0Sta6
+    - PixR13C0Sta5
+    14:
+    - PixR14C0Sta6
+    - PixR14C0Sta5
+    15:
+    - PixR15C0Sta6
+    - PixR15C0Sta5
+    16:
+    - PixR0C1Sta6
+    - PixR0C1Sta5
+    17:
+    - PixR1C1Sta6
+    - PixR1C1Sta5
+    18:
+    - PixR2C1Sta6
+    - PixR2C1Sta5
+    19:
+    - PixR3C1Sta6
+    - PixR3C1Sta5
+    20:
+    - PixR4C1Sta6
+    - PixR4C1Sta5
+    21:
+    - PixR5C1Sta6
+    - PixR5C1Sta5
+    22:
+    - PixR6C1Sta6
+    - PixR6C1Sta5
+    23:
+    - PixR7C1Sta6
+    - PixR7C1Sta5
+    24:
+    - PixR8C1Sta6
+    - PixR8C1Sta5
+    25:
+    - PixR9C1Sta6
+    - PixR9C1Sta5
+    26:
+    - PixR10C1Sta6
+    - PixR10C1Sta5
+    27:
+    - PixR11C1Sta6
+    - PixR11C1Sta5
+    28:
+    - PixR12C1Sta6
+    - PixR12C1Sta5
+    29:
+    - PixR13C1Sta6
+    - PixR13C1Sta5
+    30:
+    - PixR14C1Sta6
+    - PixR14C1Sta5
+    31:
+    - PixR15C1Sta6
+    - PixR15C1Sta5
+    32:
+    - PixR0C2Sta6
+    - PixR0C2Sta5
+    33:
+    - PixR1C2Sta6
+    - PixR1C2Sta5
+    34:
+    - PixR2C2Sta6
+    - PixR2C2Sta5
+    35:
+    - PixR3C2Sta6
+    - PixR3C2Sta5
+    36:
+    - PixR4C2Sta6
+    - PixR4C2Sta5
+    37:
+    - PixR5C2Sta6
+    - PixR5C2Sta5
+    38:
+    - PixR6C2Sta6
+    - PixR6C2Sta5
+    39:
+    - PixR7C2Sta6
+    - PixR7C2Sta5
+    40:
+    - PixR8C2Sta6
+    - PixR8C2Sta5
+    41:
+    - PixR9C2Sta6
+    - PixR9C2Sta5
+    42:
+    - PixR10C2Sta6
+    - PixR10C2Sta5
+    43:
+    - PixR11C2Sta6
+    - PixR11C2Sta5
+    44:
+    - PixR12C2Sta6
+    - PixR12C2Sta5
+    45:
+    - PixR13C2Sta6
+    - PixR13C2Sta5
+    46:
+    - PixR14C2Sta6
+    - PixR14C2Sta5
+    47:
+    - PixR15C2Sta6
+    - PixR15C2Sta5
+    48:
+    - PixR0C3Sta6
+    - PixR0C3Sta5
+    49:
+    - PixR1C3Sta6
+    - PixR1C3Sta5
+    50:
+    - PixR2C3Sta6
+    - PixR2C3Sta5
+    51:
+    - PixR3C3Sta6
+    - PixR3C3Sta5
+    52:
+    - PixR4C3Sta6
+    - PixR4C3Sta5
+    53:
+    - PixR5C3Sta6
+    - PixR5C3Sta5
+    54:
+    - PixR6C3Sta6
+    - PixR6C3Sta5
+    55:
+    - PixR7C3Sta6
+    - PixR7C3Sta5
+    56:
+    - PixR8C3Sta6
+    - PixR8C3Sta5
+    57:
+    - PixR9C3Sta6
+    - PixR9C3Sta5
+    58:
+    - PixR10C3Sta6
+    - PixR10C3Sta5
+    59:
+    - PixR11C3Sta6
+    - PixR11C3Sta5
+    60:
+    - PixR12C3Sta6
+    - PixR12C3Sta5
+    61:
+    - PixR13C3Sta6
+    - PixR13C3Sta5
+    62:
+    - PixR14C3Sta6
+    - PixR14C3Sta5
+    63:
+    - PixR15C3Sta6
+    - PixR15C3Sta5
+    64:
+    - PixR0C4Sta6
+    - PixR0C4Sta5
+    65:
+    - PixR1C4Sta6
+    - PixR1C4Sta5
+    66:
+    - PixR2C4Sta6
+    - PixR2C4Sta5
+    67:
+    - PixR3C4Sta6
+    - PixR3C4Sta5
+    68:
+    - PixR4C4Sta6
+    - PixR4C4Sta5
+    69:
+    - PixR5C4Sta6
+    - PixR5C4Sta5
+    70:
+    - PixR6C4Sta6
+    - PixR6C4Sta5
+    71:
+    - PixR7C4Sta6
+    - PixR7C4Sta5
+    72:
+    - PixR8C4Sta6
+    - PixR8C4Sta5
+    73:
+    - PixR9C4Sta6
+    - PixR9C4Sta5
+    74:
+    - PixR10C4Sta6
+    - PixR10C4Sta5
+    75:
+    - PixR11C4Sta6
+    - PixR11C4Sta5
+    76:
+    - PixR12C4Sta6
+    - PixR12C4Sta5
+    77:
+    - PixR13C4Sta6
+    - PixR13C4Sta5
+    78:
+    - PixR14C4Sta6
+    - PixR14C4Sta5
+    79:
+    - PixR15C4Sta6
+    - PixR15C4Sta5
+    80:
+    - PixR0C5Sta6
+    - PixR0C5Sta5
+    81:
+    - PixR1C5Sta6
+    - PixR1C5Sta5
+    82:
+    - PixR2C5Sta6
+    - PixR2C5Sta5
+    83:
+    - PixR3C5Sta6
+    - PixR3C5Sta5
+    84:
+    - PixR4C5Sta6
+    - PixR4C5Sta5
+    85:
+    - PixR5C5Sta6
+    - PixR5C5Sta5
+    86:
+    - PixR6C5Sta6
+    - PixR6C5Sta5
+    87:
+    - PixR7C5Sta6
+    - PixR7C5Sta5
+    88:
+    - PixR8C5Sta6
+    - PixR8C5Sta5
+    89:
+    - PixR9C5Sta6
+    - PixR9C5Sta5
+    90:
+    - PixR10C5Sta6
+    - PixR10C5Sta5
+    91:
+    - PixR11C5Sta6
+    - PixR11C5Sta5
+    92:
+    - PixR12C5Sta6
+    - PixR12C5Sta5
+    93:
+    - PixR13C5Sta6
+    - PixR13C5Sta5
+    94:
+    - PixR14C5Sta6
+    - PixR14C5Sta5
+    95:
+    - PixR15C5Sta6
+    - PixR15C5Sta5
+    96:
+    - PixR0C6Sta6
+    - PixR0C6Sta5
+    97:
+    - PixR1C6Sta6
+    - PixR1C6Sta5
+    98:
+    - PixR2C6Sta6
+    - PixR2C6Sta5
+    99:
+    - PixR3C6Sta6
+    - PixR3C6Sta5
+    100:
+    - PixR4C6Sta6
+    - PixR4C6Sta5
+    101:
+    - PixR5C6Sta6
+    - PixR5C6Sta5
+    102:
+    - PixR6C6Sta6
+    - PixR6C6Sta5
+    103:
+    - PixR7C6Sta6
+    - PixR7C6Sta5
+    104:
+    - PixR8C6Sta6
+    - PixR8C6Sta5
+    105:
+    - PixR9C6Sta6
+    - PixR9C6Sta5
+    106:
+    - PixR10C6Sta6
+    - PixR10C6Sta5
+    107:
+    - PixR11C6Sta6
+    - PixR11C6Sta5
+    108:
+    - PixR12C6Sta6
+    - PixR12C6Sta5
+    109:
+    - PixR13C6Sta6
+    - PixR13C6Sta5
+    110:
+    - PixR14C6Sta6
+    - PixR14C6Sta5
+    111:
+    - PixR15C6Sta6
+    - PixR15C6Sta5
+    112:
+    - PixR0C7Sta6
+    - PixR0C7Sta5
+    113:
+    - PixR1C7Sta6
+    - PixR1C7Sta5
+    114:
+    - PixR2C7Sta6
+    - PixR2C7Sta5
+    115:
+    - PixR3C7Sta6
+    - PixR3C7Sta5
+    116:
+    - PixR4C7Sta6
+    - PixR4C7Sta5
+    117:
+    - PixR5C7Sta6
+    - PixR5C7Sta5
+    118:
+    - PixR6C7Sta6
+    - PixR6C7Sta5
+    119:
+    - PixR7C7Sta6
+    - PixR7C7Sta5
+    120:
+    - PixR8C7Sta6
+    - PixR8C7Sta5
+    121:
+    - PixR9C7Sta6
+    - PixR9C7Sta5
+    122:
+    - PixR10C7Sta6
+    - PixR10C7Sta5
+    123:
+    - PixR11C7Sta6
+    - PixR11C7Sta5
+    124:
+    - PixR12C7Sta6
+    - PixR12C7Sta5
+    125:
+    - PixR13C7Sta6
+    - PixR13C7Sta5
+    126:
+    - PixR14C7Sta6
+    - PixR14C7Sta5
+    127:
+    - PixR15C7Sta6
+    - PixR15C7Sta5
+    128:
+    - PixR0C8Sta6
+    - PixR0C8Sta5
+    129:
+    - PixR1C8Sta6
+    - PixR1C8Sta5
+    130:
+    - PixR2C8Sta6
+    - PixR2C8Sta5
+    131:
+    - PixR3C8Sta6
+    - PixR3C8Sta5
+    132:
+    - PixR4C8Sta6
+    - PixR4C8Sta5
+    133:
+    - PixR5C8Sta6
+    - PixR5C8Sta5
+    134:
+    - PixR6C8Sta6
+    - PixR6C8Sta5
+    135:
+    - PixR7C8Sta6
+    - PixR7C8Sta5
+    136:
+    - PixR8C8Sta6
+    - PixR8C8Sta5
+    137:
+    - PixR9C8Sta6
+    - PixR9C8Sta5
+    138:
+    - PixR10C8Sta6
+    - PixR10C8Sta5
+    139:
+    - PixR11C8Sta6
+    - PixR11C8Sta5
+    140:
+    - PixR12C8Sta6
+    - PixR12C8Sta5
+    141:
+    - PixR13C8Sta6
+    - PixR13C8Sta5
+    142:
+    - PixR14C8Sta6
+    - PixR14C8Sta5
+    143:
+    - PixR15C8Sta6
+    - PixR15C8Sta5
+    144:
+    - PixR0C9Sta6
+    - PixR0C9Sta5
+    145:
+    - PixR1C9Sta6
+    - PixR1C9Sta5
+    146:
+    - PixR2C9Sta6
+    - PixR2C9Sta5
+    147:
+    - PixR3C9Sta6
+    - PixR3C9Sta5
+    148:
+    - PixR4C9Sta6
+    - PixR4C9Sta5
+    149:
+    - PixR5C9Sta6
+    - PixR5C9Sta5
+    150:
+    - PixR6C9Sta6
+    - PixR6C9Sta5
+    151:
+    - PixR7C9Sta6
+    - PixR7C9Sta5
+    152:
+    - PixR8C9Sta6
+    - PixR8C9Sta5
+    153:
+    - PixR9C9Sta6
+    - PixR9C9Sta5
+    154:
+    - PixR10C9Sta6
+    - PixR10C9Sta5
+    155:
+    - PixR11C9Sta6
+    - PixR11C9Sta5
+    156:
+    - PixR12C9Sta6
+    - PixR12C9Sta5
+    157:
+    - PixR13C9Sta6
+    - PixR13C9Sta5
+    158:
+    - PixR14C9Sta6
+    - PixR14C9Sta5
+    159:
+    - PixR15C9Sta6
+    - PixR15C9Sta5
+    160:
+    - PixR0C10Sta6
+    - PixR0C10Sta5
+    161:
+    - PixR1C10Sta6
+    - PixR1C10Sta5
+    162:
+    - PixR2C10Sta6
+    - PixR2C10Sta5
+    163:
+    - PixR3C10Sta6
+    - PixR3C10Sta5
+    164:
+    - PixR4C10Sta6
+    - PixR4C10Sta5
+    165:
+    - PixR5C10Sta6
+    - PixR5C10Sta5
+    166:
+    - PixR6C10Sta6
+    - PixR6C10Sta5
+    167:
+    - PixR7C10Sta6
+    - PixR7C10Sta5
+    168:
+    - PixR8C10Sta6
+    - PixR8C10Sta5
+    169:
+    - PixR9C10Sta6
+    - PixR9C10Sta5
+    170:
+    - PixR10C10Sta6
+    - PixR10C10Sta5
+    171:
+    - PixR11C10Sta6
+    - PixR11C10Sta5
+    172:
+    - PixR12C10Sta6
+    - PixR12C10Sta5
+    173:
+    - PixR13C10Sta6
+    - PixR13C10Sta5
+    174:
+    - PixR14C10Sta6
+    - PixR14C10Sta5
+    175:
+    - PixR15C10Sta6
+    - PixR15C10Sta5
+    176:
+    - PixR0C11Sta6
+    - PixR0C11Sta5
+    177:
+    - PixR1C11Sta6
+    - PixR1C11Sta5
+    178:
+    - PixR2C11Sta6
+    - PixR2C11Sta5
+    179:
+    - PixR3C11Sta6
+    - PixR3C11Sta5
+    180:
+    - PixR4C11Sta6
+    - PixR4C11Sta5
+    181:
+    - PixR5C11Sta6
+    - PixR5C11Sta5
+    182:
+    - PixR6C11Sta6
+    - PixR6C11Sta5
+    183:
+    - PixR7C11Sta6
+    - PixR7C11Sta5
+    184:
+    - PixR8C11Sta6
+    - PixR8C11Sta5
+    185:
+    - PixR9C11Sta6
+    - PixR9C11Sta5
+    186:
+    - PixR10C11Sta6
+    - PixR10C11Sta5
+    187:
+    - PixR11C11Sta6
+    - PixR11C11Sta5
+    188:
+    - PixR12C11Sta6
+    - PixR12C11Sta5
+    189:
+    - PixR13C11Sta6
+    - PixR13C11Sta5
+    190:
+    - PixR14C11Sta6
+    - PixR14C11Sta5
+    191:
+    - PixR15C11Sta6
+    - PixR15C11Sta5
+    192:
+    - PixR0C12Sta6
+    - PixR0C12Sta5
+    193:
+    - PixR1C12Sta6
+    - PixR1C12Sta5
+    194:
+    - PixR2C12Sta6
+    - PixR2C12Sta5
+    195:
+    - PixR3C12Sta6
+    - PixR3C12Sta5
+    196:
+    - PixR4C12Sta6
+    - PixR4C12Sta5
+    197:
+    - PixR5C12Sta6
+    - PixR5C12Sta5
+    198:
+    - PixR6C12Sta6
+    - PixR6C12Sta5
+    199:
+    - PixR7C12Sta6
+    - PixR7C12Sta5
+    200:
+    - PixR8C12Sta6
+    - PixR8C12Sta5
+    201:
+    - PixR9C12Sta6
+    - PixR9C12Sta5
+    202:
+    - PixR10C12Sta6
+    - PixR10C12Sta5
+    203:
+    - PixR11C12Sta6
+    - PixR11C12Sta5
+    204:
+    - PixR12C12Sta6
+    - PixR12C12Sta5
+    205:
+    - PixR13C12Sta6
+    - PixR13C12Sta5
+    206:
+    - PixR14C12Sta6
+    - PixR14C12Sta5
+    207:
+    - PixR15C12Sta6
+    - PixR15C12Sta5
+    208:
+    - PixR0C13Sta6
+    - PixR0C13Sta5
+    209:
+    - PixR1C13Sta6
+    - PixR1C13Sta5
+    210:
+    - PixR2C13Sta6
+    - PixR2C13Sta5
+    211:
+    - PixR3C13Sta6
+    - PixR3C13Sta5
+    212:
+    - PixR4C13Sta6
+    - PixR4C13Sta5
+    213:
+    - PixR5C13Sta6
+    - PixR5C13Sta5
+    214:
+    - PixR6C13Sta6
+    - PixR6C13Sta5
+    215:
+    - PixR7C13Sta6
+    - PixR7C13Sta5
+    216:
+    - PixR8C13Sta6
+    - PixR8C13Sta5
+    217:
+    - PixR9C13Sta6
+    - PixR9C13Sta5
+    218:
+    - PixR10C13Sta6
+    - PixR10C13Sta5
+    219:
+    - PixR11C13Sta6
+    - PixR11C13Sta5
+    220:
+    - PixR12C13Sta6
+    - PixR12C13Sta5
+    221:
+    - PixR13C13Sta6
+    - PixR13C13Sta5
+    222:
+    - PixR14C13Sta6
+    - PixR14C13Sta5
+    223:
+    - PixR15C13Sta6
+    - PixR15C13Sta5
+    224:
+    - PixR0C14Sta6
+    - PixR0C14Sta5
+    225:
+    - PixR1C14Sta6
+    - PixR1C14Sta5
+    226:
+    - PixR2C14Sta6
+    - PixR2C14Sta5
+    227:
+    - PixR3C14Sta6
+    - PixR3C14Sta5
+    228:
+    - PixR4C14Sta6
+    - PixR4C14Sta5
+    229:
+    - PixR5C14Sta6
+    - PixR5C14Sta5
+    230:
+    - PixR6C14Sta6
+    - PixR6C14Sta5
+    231:
+    - PixR7C14Sta6
+    - PixR7C14Sta5
+    232:
+    - PixR8C14Sta6
+    - PixR8C14Sta5
+    233:
+    - PixR9C14Sta6
+    - PixR9C14Sta5
+    234:
+    - PixR10C14Sta6
+    - PixR10C14Sta5
+    235:
+    - PixR11C14Sta6
+    - PixR11C14Sta5
+    236:
+    - PixR12C14Sta6
+    - PixR12C14Sta5
+    237:
+    - PixR13C14Sta6
+    - PixR13C14Sta5
+    238:
+    - PixR14C14Sta6
+    - PixR14C14Sta5
+    239:
+    - PixR15C14Sta6
+    - PixR15C14Sta5
+    240:
+    - PixR0C15Sta6
+    - PixR0C15Sta5
+    241:
+    - PixR1C15Sta6
+    - PixR1C15Sta5
+    242:
+    - PixR2C15Sta6
+    - PixR2C15Sta5
+    243:
+    - PixR3C15Sta6
+    - PixR3C15Sta5
+    244:
+    - PixR4C15Sta6
+    - PixR4C15Sta5
+    245:
+    - PixR5C15Sta6
+    - PixR5C15Sta5
+    246:
+    - PixR6C15Sta6
+    - PixR6C15Sta5
+    247:
+    - PixR7C15Sta6
+    - PixR7C15Sta5
+    248:
+    - PixR8C15Sta6
+    - PixR8C15Sta5
+    249:
+    - PixR9C15Sta6
+    - PixR9C15Sta5
+    250:
+    - PixR10C15Sta6
+    - PixR10C15Sta5
+    251:
+    - PixR11C15Sta6
+    - PixR11C15Sta5
+    252:
+    - PixR12C15Sta6
+    - PixR12C15Sta5
+    253:
+    - PixR13C15Sta6
+    - PixR13C15Sta5
+    254:
+    - PixR14C15Sta6
+    - PixR14C15Sta5
+    255:
+    - PixR15C15Sta6
+    - PixR15C15Sta5
+  shift:
+  - 0
+  - 0
+BL:
+  default: 0x0
+  mask:
+  - 0x3
+  - 0xff
+  regadr:
+    0:
+    - PixR0C0Sta3
+    - PixR0C0Sta2
+    1:
+    - PixR1C0Sta3
+    - PixR1C0Sta2
+    2:
+    - PixR2C0Sta3
+    - PixR2C0Sta2
+    3:
+    - PixR3C0Sta3
+    - PixR3C0Sta2
+    4:
+    - PixR4C0Sta3
+    - PixR4C0Sta2
+    5:
+    - PixR5C0Sta3
+    - PixR5C0Sta2
+    6:
+    - PixR6C0Sta3
+    - PixR6C0Sta2
+    7:
+    - PixR7C0Sta3
+    - PixR7C0Sta2
+    8:
+    - PixR8C0Sta3
+    - PixR8C0Sta2
+    9:
+    - PixR9C0Sta3
+    - PixR9C0Sta2
+    10:
+    - PixR10C0Sta3
+    - PixR10C0Sta2
+    11:
+    - PixR11C0Sta3
+    - PixR11C0Sta2
+    12:
+    - PixR12C0Sta3
+    - PixR12C0Sta2
+    13:
+    - PixR13C0Sta3
+    - PixR13C0Sta2
+    14:
+    - PixR14C0Sta3
+    - PixR14C0Sta2
+    15:
+    - PixR15C0Sta3
+    - PixR15C0Sta2
+    16:
+    - PixR0C1Sta3
+    - PixR0C1Sta2
+    17:
+    - PixR1C1Sta3
+    - PixR1C1Sta2
+    18:
+    - PixR2C1Sta3
+    - PixR2C1Sta2
+    19:
+    - PixR3C1Sta3
+    - PixR3C1Sta2
+    20:
+    - PixR4C1Sta3
+    - PixR4C1Sta2
+    21:
+    - PixR5C1Sta3
+    - PixR5C1Sta2
+    22:
+    - PixR6C1Sta3
+    - PixR6C1Sta2
+    23:
+    - PixR7C1Sta3
+    - PixR7C1Sta2
+    24:
+    - PixR8C1Sta3
+    - PixR8C1Sta2
+    25:
+    - PixR9C1Sta3
+    - PixR9C1Sta2
+    26:
+    - PixR10C1Sta3
+    - PixR10C1Sta2
+    27:
+    - PixR11C1Sta3
+    - PixR11C1Sta2
+    28:
+    - PixR12C1Sta3
+    - PixR12C1Sta2
+    29:
+    - PixR13C1Sta3
+    - PixR13C1Sta2
+    30:
+    - PixR14C1Sta3
+    - PixR14C1Sta2
+    31:
+    - PixR15C1Sta3
+    - PixR15C1Sta2
+    32:
+    - PixR0C2Sta3
+    - PixR0C2Sta2
+    33:
+    - PixR1C2Sta3
+    - PixR1C2Sta2
+    34:
+    - PixR2C2Sta3
+    - PixR2C2Sta2
+    35:
+    - PixR3C2Sta3
+    - PixR3C2Sta2
+    36:
+    - PixR4C2Sta3
+    - PixR4C2Sta2
+    37:
+    - PixR5C2Sta3
+    - PixR5C2Sta2
+    38:
+    - PixR6C2Sta3
+    - PixR6C2Sta2
+    39:
+    - PixR7C2Sta3
+    - PixR7C2Sta2
+    40:
+    - PixR8C2Sta3
+    - PixR8C2Sta2
+    41:
+    - PixR9C2Sta3
+    - PixR9C2Sta2
+    42:
+    - PixR10C2Sta3
+    - PixR10C2Sta2
+    43:
+    - PixR11C2Sta3
+    - PixR11C2Sta2
+    44:
+    - PixR12C2Sta3
+    - PixR12C2Sta2
+    45:
+    - PixR13C2Sta3
+    - PixR13C2Sta2
+    46:
+    - PixR14C2Sta3
+    - PixR14C2Sta2
+    47:
+    - PixR15C2Sta3
+    - PixR15C2Sta2
+    48:
+    - PixR0C3Sta3
+    - PixR0C3Sta2
+    49:
+    - PixR1C3Sta3
+    - PixR1C3Sta2
+    50:
+    - PixR2C3Sta3
+    - PixR2C3Sta2
+    51:
+    - PixR3C3Sta3
+    - PixR3C3Sta2
+    52:
+    - PixR4C3Sta3
+    - PixR4C3Sta2
+    53:
+    - PixR5C3Sta3
+    - PixR5C3Sta2
+    54:
+    - PixR6C3Sta3
+    - PixR6C3Sta2
+    55:
+    - PixR7C3Sta3
+    - PixR7C3Sta2
+    56:
+    - PixR8C3Sta3
+    - PixR8C3Sta2
+    57:
+    - PixR9C3Sta3
+    - PixR9C3Sta2
+    58:
+    - PixR10C3Sta3
+    - PixR10C3Sta2
+    59:
+    - PixR11C3Sta3
+    - PixR11C3Sta2
+    60:
+    - PixR12C3Sta3
+    - PixR12C3Sta2
+    61:
+    - PixR13C3Sta3
+    - PixR13C3Sta2
+    62:
+    - PixR14C3Sta3
+    - PixR14C3Sta2
+    63:
+    - PixR15C3Sta3
+    - PixR15C3Sta2
+    64:
+    - PixR0C4Sta3
+    - PixR0C4Sta2
+    65:
+    - PixR1C4Sta3
+    - PixR1C4Sta2
+    66:
+    - PixR2C4Sta3
+    - PixR2C4Sta2
+    67:
+    - PixR3C4Sta3
+    - PixR3C4Sta2
+    68:
+    - PixR4C4Sta3
+    - PixR4C4Sta2
+    69:
+    - PixR5C4Sta3
+    - PixR5C4Sta2
+    70:
+    - PixR6C4Sta3
+    - PixR6C4Sta2
+    71:
+    - PixR7C4Sta3
+    - PixR7C4Sta2
+    72:
+    - PixR8C4Sta3
+    - PixR8C4Sta2
+    73:
+    - PixR9C4Sta3
+    - PixR9C4Sta2
+    74:
+    - PixR10C4Sta3
+    - PixR10C4Sta2
+    75:
+    - PixR11C4Sta3
+    - PixR11C4Sta2
+    76:
+    - PixR12C4Sta3
+    - PixR12C4Sta2
+    77:
+    - PixR13C4Sta3
+    - PixR13C4Sta2
+    78:
+    - PixR14C4Sta3
+    - PixR14C4Sta2
+    79:
+    - PixR15C4Sta3
+    - PixR15C4Sta2
+    80:
+    - PixR0C5Sta3
+    - PixR0C5Sta2
+    81:
+    - PixR1C5Sta3
+    - PixR1C5Sta2
+    82:
+    - PixR2C5Sta3
+    - PixR2C5Sta2
+    83:
+    - PixR3C5Sta3
+    - PixR3C5Sta2
+    84:
+    - PixR4C5Sta3
+    - PixR4C5Sta2
+    85:
+    - PixR5C5Sta3
+    - PixR5C5Sta2
+    86:
+    - PixR6C5Sta3
+    - PixR6C5Sta2
+    87:
+    - PixR7C5Sta3
+    - PixR7C5Sta2
+    88:
+    - PixR8C5Sta3
+    - PixR8C5Sta2
+    89:
+    - PixR9C5Sta3
+    - PixR9C5Sta2
+    90:
+    - PixR10C5Sta3
+    - PixR10C5Sta2
+    91:
+    - PixR11C5Sta3
+    - PixR11C5Sta2
+    92:
+    - PixR12C5Sta3
+    - PixR12C5Sta2
+    93:
+    - PixR13C5Sta3
+    - PixR13C5Sta2
+    94:
+    - PixR14C5Sta3
+    - PixR14C5Sta2
+    95:
+    - PixR15C5Sta3
+    - PixR15C5Sta2
+    96:
+    - PixR0C6Sta3
+    - PixR0C6Sta2
+    97:
+    - PixR1C6Sta3
+    - PixR1C6Sta2
+    98:
+    - PixR2C6Sta3
+    - PixR2C6Sta2
+    99:
+    - PixR3C6Sta3
+    - PixR3C6Sta2
+    100:
+    - PixR4C6Sta3
+    - PixR4C6Sta2
+    101:
+    - PixR5C6Sta3
+    - PixR5C6Sta2
+    102:
+    - PixR6C6Sta3
+    - PixR6C6Sta2
+    103:
+    - PixR7C6Sta3
+    - PixR7C6Sta2
+    104:
+    - PixR8C6Sta3
+    - PixR8C6Sta2
+    105:
+    - PixR9C6Sta3
+    - PixR9C6Sta2
+    106:
+    - PixR10C6Sta3
+    - PixR10C6Sta2
+    107:
+    - PixR11C6Sta3
+    - PixR11C6Sta2
+    108:
+    - PixR12C6Sta3
+    - PixR12C6Sta2
+    109:
+    - PixR13C6Sta3
+    - PixR13C6Sta2
+    110:
+    - PixR14C6Sta3
+    - PixR14C6Sta2
+    111:
+    - PixR15C6Sta3
+    - PixR15C6Sta2
+    112:
+    - PixR0C7Sta3
+    - PixR0C7Sta2
+    113:
+    - PixR1C7Sta3
+    - PixR1C7Sta2
+    114:
+    - PixR2C7Sta3
+    - PixR2C7Sta2
+    115:
+    - PixR3C7Sta3
+    - PixR3C7Sta2
+    116:
+    - PixR4C7Sta3
+    - PixR4C7Sta2
+    117:
+    - PixR5C7Sta3
+    - PixR5C7Sta2
+    118:
+    - PixR6C7Sta3
+    - PixR6C7Sta2
+    119:
+    - PixR7C7Sta3
+    - PixR7C7Sta2
+    120:
+    - PixR8C7Sta3
+    - PixR8C7Sta2
+    121:
+    - PixR9C7Sta3
+    - PixR9C7Sta2
+    122:
+    - PixR10C7Sta3
+    - PixR10C7Sta2
+    123:
+    - PixR11C7Sta3
+    - PixR11C7Sta2
+    124:
+    - PixR12C7Sta3
+    - PixR12C7Sta2
+    125:
+    - PixR13C7Sta3
+    - PixR13C7Sta2
+    126:
+    - PixR14C7Sta3
+    - PixR14C7Sta2
+    127:
+    - PixR15C7Sta3
+    - PixR15C7Sta2
+    128:
+    - PixR0C8Sta3
+    - PixR0C8Sta2
+    129:
+    - PixR1C8Sta3
+    - PixR1C8Sta2
+    130:
+    - PixR2C8Sta3
+    - PixR2C8Sta2
+    131:
+    - PixR3C8Sta3
+    - PixR3C8Sta2
+    132:
+    - PixR4C8Sta3
+    - PixR4C8Sta2
+    133:
+    - PixR5C8Sta3
+    - PixR5C8Sta2
+    134:
+    - PixR6C8Sta3
+    - PixR6C8Sta2
+    135:
+    - PixR7C8Sta3
+    - PixR7C8Sta2
+    136:
+    - PixR8C8Sta3
+    - PixR8C8Sta2
+    137:
+    - PixR9C8Sta3
+    - PixR9C8Sta2
+    138:
+    - PixR10C8Sta3
+    - PixR10C8Sta2
+    139:
+    - PixR11C8Sta3
+    - PixR11C8Sta2
+    140:
+    - PixR12C8Sta3
+    - PixR12C8Sta2
+    141:
+    - PixR13C8Sta3
+    - PixR13C8Sta2
+    142:
+    - PixR14C8Sta3
+    - PixR14C8Sta2
+    143:
+    - PixR15C8Sta3
+    - PixR15C8Sta2
+    144:
+    - PixR0C9Sta3
+    - PixR0C9Sta2
+    145:
+    - PixR1C9Sta3
+    - PixR1C9Sta2
+    146:
+    - PixR2C9Sta3
+    - PixR2C9Sta2
+    147:
+    - PixR3C9Sta3
+    - PixR3C9Sta2
+    148:
+    - PixR4C9Sta3
+    - PixR4C9Sta2
+    149:
+    - PixR5C9Sta3
+    - PixR5C9Sta2
+    150:
+    - PixR6C9Sta3
+    - PixR6C9Sta2
+    151:
+    - PixR7C9Sta3
+    - PixR7C9Sta2
+    152:
+    - PixR8C9Sta3
+    - PixR8C9Sta2
+    153:
+    - PixR9C9Sta3
+    - PixR9C9Sta2
+    154:
+    - PixR10C9Sta3
+    - PixR10C9Sta2
+    155:
+    - PixR11C9Sta3
+    - PixR11C9Sta2
+    156:
+    - PixR12C9Sta3
+    - PixR12C9Sta2
+    157:
+    - PixR13C9Sta3
+    - PixR13C9Sta2
+    158:
+    - PixR14C9Sta3
+    - PixR14C9Sta2
+    159:
+    - PixR15C9Sta3
+    - PixR15C9Sta2
+    160:
+    - PixR0C10Sta3
+    - PixR0C10Sta2
+    161:
+    - PixR1C10Sta3
+    - PixR1C10Sta2
+    162:
+    - PixR2C10Sta3
+    - PixR2C10Sta2
+    163:
+    - PixR3C10Sta3
+    - PixR3C10Sta2
+    164:
+    - PixR4C10Sta3
+    - PixR4C10Sta2
+    165:
+    - PixR5C10Sta3
+    - PixR5C10Sta2
+    166:
+    - PixR6C10Sta3
+    - PixR6C10Sta2
+    167:
+    - PixR7C10Sta3
+    - PixR7C10Sta2
+    168:
+    - PixR8C10Sta3
+    - PixR8C10Sta2
+    169:
+    - PixR9C10Sta3
+    - PixR9C10Sta2
+    170:
+    - PixR10C10Sta3
+    - PixR10C10Sta2
+    171:
+    - PixR11C10Sta3
+    - PixR11C10Sta2
+    172:
+    - PixR12C10Sta3
+    - PixR12C10Sta2
+    173:
+    - PixR13C10Sta3
+    - PixR13C10Sta2
+    174:
+    - PixR14C10Sta3
+    - PixR14C10Sta2
+    175:
+    - PixR15C10Sta3
+    - PixR15C10Sta2
+    176:
+    - PixR0C11Sta3
+    - PixR0C11Sta2
+    177:
+    - PixR1C11Sta3
+    - PixR1C11Sta2
+    178:
+    - PixR2C11Sta3
+    - PixR2C11Sta2
+    179:
+    - PixR3C11Sta3
+    - PixR3C11Sta2
+    180:
+    - PixR4C11Sta3
+    - PixR4C11Sta2
+    181:
+    - PixR5C11Sta3
+    - PixR5C11Sta2
+    182:
+    - PixR6C11Sta3
+    - PixR6C11Sta2
+    183:
+    - PixR7C11Sta3
+    - PixR7C11Sta2
+    184:
+    - PixR8C11Sta3
+    - PixR8C11Sta2
+    185:
+    - PixR9C11Sta3
+    - PixR9C11Sta2
+    186:
+    - PixR10C11Sta3
+    - PixR10C11Sta2
+    187:
+    - PixR11C11Sta3
+    - PixR11C11Sta2
+    188:
+    - PixR12C11Sta3
+    - PixR12C11Sta2
+    189:
+    - PixR13C11Sta3
+    - PixR13C11Sta2
+    190:
+    - PixR14C11Sta3
+    - PixR14C11Sta2
+    191:
+    - PixR15C11Sta3
+    - PixR15C11Sta2
+    192:
+    - PixR0C12Sta3
+    - PixR0C12Sta2
+    193:
+    - PixR1C12Sta3
+    - PixR1C12Sta2
+    194:
+    - PixR2C12Sta3
+    - PixR2C12Sta2
+    195:
+    - PixR3C12Sta3
+    - PixR3C12Sta2
+    196:
+    - PixR4C12Sta3
+    - PixR4C12Sta2
+    197:
+    - PixR5C12Sta3
+    - PixR5C12Sta2
+    198:
+    - PixR6C12Sta3
+    - PixR6C12Sta2
+    199:
+    - PixR7C12Sta3
+    - PixR7C12Sta2
+    200:
+    - PixR8C12Sta3
+    - PixR8C12Sta2
+    201:
+    - PixR9C12Sta3
+    - PixR9C12Sta2
+    202:
+    - PixR10C12Sta3
+    - PixR10C12Sta2
+    203:
+    - PixR11C12Sta3
+    - PixR11C12Sta2
+    204:
+    - PixR12C12Sta3
+    - PixR12C12Sta2
+    205:
+    - PixR13C12Sta3
+    - PixR13C12Sta2
+    206:
+    - PixR14C12Sta3
+    - PixR14C12Sta2
+    207:
+    - PixR15C12Sta3
+    - PixR15C12Sta2
+    208:
+    - PixR0C13Sta3
+    - PixR0C13Sta2
+    209:
+    - PixR1C13Sta3
+    - PixR1C13Sta2
+    210:
+    - PixR2C13Sta3
+    - PixR2C13Sta2
+    211:
+    - PixR3C13Sta3
+    - PixR3C13Sta2
+    212:
+    - PixR4C13Sta3
+    - PixR4C13Sta2
+    213:
+    - PixR5C13Sta3
+    - PixR5C13Sta2
+    214:
+    - PixR6C13Sta3
+    - PixR6C13Sta2
+    215:
+    - PixR7C13Sta3
+    - PixR7C13Sta2
+    216:
+    - PixR8C13Sta3
+    - PixR8C13Sta2
+    217:
+    - PixR9C13Sta3
+    - PixR9C13Sta2
+    218:
+    - PixR10C13Sta3
+    - PixR10C13Sta2
+    219:
+    - PixR11C13Sta3
+    - PixR11C13Sta2
+    220:
+    - PixR12C13Sta3
+    - PixR12C13Sta2
+    221:
+    - PixR13C13Sta3
+    - PixR13C13Sta2
+    222:
+    - PixR14C13Sta3
+    - PixR14C13Sta2
+    223:
+    - PixR15C13Sta3
+    - PixR15C13Sta2
+    224:
+    - PixR0C14Sta3
+    - PixR0C14Sta2
+    225:
+    - PixR1C14Sta3
+    - PixR1C14Sta2
+    226:
+    - PixR2C14Sta3
+    - PixR2C14Sta2
+    227:
+    - PixR3C14Sta3
+    - PixR3C14Sta2
+    228:
+    - PixR4C14Sta3
+    - PixR4C14Sta2
+    229:
+    - PixR5C14Sta3
+    - PixR5C14Sta2
+    230:
+    - PixR6C14Sta3
+    - PixR6C14Sta2
+    231:
+    - PixR7C14Sta3
+    - PixR7C14Sta2
+    232:
+    - PixR8C14Sta3
+    - PixR8C14Sta2
+    233:
+    - PixR9C14Sta3
+    - PixR9C14Sta2
+    234:
+    - PixR10C14Sta3
+    - PixR10C14Sta2
+    235:
+    - PixR11C14Sta3
+    - PixR11C14Sta2
+    236:
+    - PixR12C14Sta3
+    - PixR12C14Sta2
+    237:
+    - PixR13C14Sta3
+    - PixR13C14Sta2
+    238:
+    - PixR14C14Sta3
+    - PixR14C14Sta2
+    239:
+    - PixR15C14Sta3
+    - PixR15C14Sta2
+    240:
+    - PixR0C15Sta3
+    - PixR0C15Sta2
+    241:
+    - PixR1C15Sta3
+    - PixR1C15Sta2
+    242:
+    - PixR2C15Sta3
+    - PixR2C15Sta2
+    243:
+    - PixR3C15Sta3
+    - PixR3C15Sta2
+    244:
+    - PixR4C15Sta3
+    - PixR4C15Sta2
+    245:
+    - PixR5C15Sta3
+    - PixR5C15Sta2
+    246:
+    - PixR6C15Sta3
+    - PixR6C15Sta2
+    247:
+    - PixR7C15Sta3
+    - PixR7C15Sta2
+    248:
+    - PixR8C15Sta3
+    - PixR8C15Sta2
+    249:
+    - PixR9C15Sta3
+    - PixR9C15Sta2
+    250:
+    - PixR10C15Sta3
+    - PixR10C15Sta2
+    251:
+    - PixR11C15Sta3
+    - PixR11C15Sta2
+    252:
+    - PixR12C15Sta3
+    - PixR12C15Sta2
+    253:
+    - PixR13C15Sta3
+    - PixR13C15Sta2
+    254:
+    - PixR14C15Sta3
+    - PixR14C15Sta2
+    255:
+    - PixR15C15Sta3
+    - PixR15C15Sta2
+  shift:
+  - 0
+  - 0
 BufEn_THCal:
   default: 0x0
   mask: 0x2
@@ -3118,6 +4672,267 @@ L1Adelay:
   shift:
   - 0
   - 7
+NW:
+  default: 0x0
+  mask: 0x1e
+  regadr:
+    0: PixR0C0Sta1
+    1: PixR1C0Sta1
+    2: PixR2C0Sta1
+    3: PixR3C0Sta1
+    4: PixR4C0Sta1
+    5: PixR5C0Sta1
+    6: PixR6C0Sta1
+    7: PixR7C0Sta1
+    8: PixR8C0Sta1
+    9: PixR9C0Sta1
+    10: PixR10C0Sta1
+    11: PixR11C0Sta1
+    12: PixR12C0Sta1
+    13: PixR13C0Sta1
+    14: PixR14C0Sta1
+    15: PixR15C0Sta1
+    16: PixR0C1Sta1
+    17: PixR1C1Sta1
+    18: PixR2C1Sta1
+    19: PixR3C1Sta1
+    20: PixR4C1Sta1
+    21: PixR5C1Sta1
+    22: PixR6C1Sta1
+    23: PixR7C1Sta1
+    24: PixR8C1Sta1
+    25: PixR9C1Sta1
+    26: PixR10C1Sta1
+    27: PixR11C1Sta1
+    28: PixR12C1Sta1
+    29: PixR13C1Sta1
+    30: PixR14C1Sta1
+    31: PixR15C1Sta1
+    32: PixR0C2Sta1
+    33: PixR1C2Sta1
+    34: PixR2C2Sta1
+    35: PixR3C2Sta1
+    36: PixR4C2Sta1
+    37: PixR5C2Sta1
+    38: PixR6C2Sta1
+    39: PixR7C2Sta1
+    40: PixR8C2Sta1
+    41: PixR9C2Sta1
+    42: PixR10C2Sta1
+    43: PixR11C2Sta1
+    44: PixR12C2Sta1
+    45: PixR13C2Sta1
+    46: PixR14C2Sta1
+    47: PixR15C2Sta1
+    48: PixR0C3Sta1
+    49: PixR1C3Sta1
+    50: PixR2C3Sta1
+    51: PixR3C3Sta1
+    52: PixR4C3Sta1
+    53: PixR5C3Sta1
+    54: PixR6C3Sta1
+    55: PixR7C3Sta1
+    56: PixR8C3Sta1
+    57: PixR9C3Sta1
+    58: PixR10C3Sta1
+    59: PixR11C3Sta1
+    60: PixR12C3Sta1
+    61: PixR13C3Sta1
+    62: PixR14C3Sta1
+    63: PixR15C3Sta1
+    64: PixR0C4Sta1
+    65: PixR1C4Sta1
+    66: PixR2C4Sta1
+    67: PixR3C4Sta1
+    68: PixR4C4Sta1
+    69: PixR5C4Sta1
+    70: PixR6C4Sta1
+    71: PixR7C4Sta1
+    72: PixR8C4Sta1
+    73: PixR9C4Sta1
+    74: PixR10C4Sta1
+    75: PixR11C4Sta1
+    76: PixR12C4Sta1
+    77: PixR13C4Sta1
+    78: PixR14C4Sta1
+    79: PixR15C4Sta1
+    80: PixR0C5Sta1
+    81: PixR1C5Sta1
+    82: PixR2C5Sta1
+    83: PixR3C5Sta1
+    84: PixR4C5Sta1
+    85: PixR5C5Sta1
+    86: PixR6C5Sta1
+    87: PixR7C5Sta1
+    88: PixR8C5Sta1
+    89: PixR9C5Sta1
+    90: PixR10C5Sta1
+    91: PixR11C5Sta1
+    92: PixR12C5Sta1
+    93: PixR13C5Sta1
+    94: PixR14C5Sta1
+    95: PixR15C5Sta1
+    96: PixR0C6Sta1
+    97: PixR1C6Sta1
+    98: PixR2C6Sta1
+    99: PixR3C6Sta1
+    100: PixR4C6Sta1
+    101: PixR5C6Sta1
+    102: PixR6C6Sta1
+    103: PixR7C6Sta1
+    104: PixR8C6Sta1
+    105: PixR9C6Sta1
+    106: PixR10C6Sta1
+    107: PixR11C6Sta1
+    108: PixR12C6Sta1
+    109: PixR13C6Sta1
+    110: PixR14C6Sta1
+    111: PixR15C6Sta1
+    112: PixR0C7Sta1
+    113: PixR1C7Sta1
+    114: PixR2C7Sta1
+    115: PixR3C7Sta1
+    116: PixR4C7Sta1
+    117: PixR5C7Sta1
+    118: PixR6C7Sta1
+    119: PixR7C7Sta1
+    120: PixR8C7Sta1
+    121: PixR9C7Sta1
+    122: PixR10C7Sta1
+    123: PixR11C7Sta1
+    124: PixR12C7Sta1
+    125: PixR13C7Sta1
+    126: PixR14C7Sta1
+    127: PixR15C7Sta1
+    128: PixR0C8Sta1
+    129: PixR1C8Sta1
+    130: PixR2C8Sta1
+    131: PixR3C8Sta1
+    132: PixR4C8Sta1
+    133: PixR5C8Sta1
+    134: PixR6C8Sta1
+    135: PixR7C8Sta1
+    136: PixR8C8Sta1
+    137: PixR9C8Sta1
+    138: PixR10C8Sta1
+    139: PixR11C8Sta1
+    140: PixR12C8Sta1
+    141: PixR13C8Sta1
+    142: PixR14C8Sta1
+    143: PixR15C8Sta1
+    144: PixR0C9Sta1
+    145: PixR1C9Sta1
+    146: PixR2C9Sta1
+    147: PixR3C9Sta1
+    148: PixR4C9Sta1
+    149: PixR5C9Sta1
+    150: PixR6C9Sta1
+    151: PixR7C9Sta1
+    152: PixR8C9Sta1
+    153: PixR9C9Sta1
+    154: PixR10C9Sta1
+    155: PixR11C9Sta1
+    156: PixR12C9Sta1
+    157: PixR13C9Sta1
+    158: PixR14C9Sta1
+    159: PixR15C9Sta1
+    160: PixR0C10Sta1
+    161: PixR1C10Sta1
+    162: PixR2C10Sta1
+    163: PixR3C10Sta1
+    164: PixR4C10Sta1
+    165: PixR5C10Sta1
+    166: PixR6C10Sta1
+    167: PixR7C10Sta1
+    168: PixR8C10Sta1
+    169: PixR9C10Sta1
+    170: PixR10C10Sta1
+    171: PixR11C10Sta1
+    172: PixR12C10Sta1
+    173: PixR13C10Sta1
+    174: PixR14C10Sta1
+    175: PixR15C10Sta1
+    176: PixR0C11Sta1
+    177: PixR1C11Sta1
+    178: PixR2C11Sta1
+    179: PixR3C11Sta1
+    180: PixR4C11Sta1
+    181: PixR5C11Sta1
+    182: PixR6C11Sta1
+    183: PixR7C11Sta1
+    184: PixR8C11Sta1
+    185: PixR9C11Sta1
+    186: PixR10C11Sta1
+    187: PixR11C11Sta1
+    188: PixR12C11Sta1
+    189: PixR13C11Sta1
+    190: PixR14C11Sta1
+    191: PixR15C11Sta1
+    192: PixR0C12Sta1
+    193: PixR1C12Sta1
+    194: PixR2C12Sta1
+    195: PixR3C12Sta1
+    196: PixR4C12Sta1
+    197: PixR5C12Sta1
+    198: PixR6C12Sta1
+    199: PixR7C12Sta1
+    200: PixR8C12Sta1
+    201: PixR9C12Sta1
+    202: PixR10C12Sta1
+    203: PixR11C12Sta1
+    204: PixR12C12Sta1
+    205: PixR13C12Sta1
+    206: PixR14C12Sta1
+    207: PixR15C12Sta1
+    208: PixR0C13Sta1
+    209: PixR1C13Sta1
+    210: PixR2C13Sta1
+    211: PixR3C13Sta1
+    212: PixR4C13Sta1
+    213: PixR5C13Sta1
+    214: PixR6C13Sta1
+    215: PixR7C13Sta1
+    216: PixR8C13Sta1
+    217: PixR9C13Sta1
+    218: PixR10C13Sta1
+    219: PixR11C13Sta1
+    220: PixR12C13Sta1
+    221: PixR13C13Sta1
+    222: PixR14C13Sta1
+    223: PixR15C13Sta1
+    224: PixR0C14Sta1
+    225: PixR1C14Sta1
+    226: PixR2C14Sta1
+    227: PixR3C14Sta1
+    228: PixR4C14Sta1
+    229: PixR5C14Sta1
+    230: PixR6C14Sta1
+    231: PixR7C14Sta1
+    232: PixR8C14Sta1
+    233: PixR9C14Sta1
+    234: PixR10C14Sta1
+    235: PixR11C14Sta1
+    236: PixR12C14Sta1
+    237: PixR13C14Sta1
+    238: PixR14C14Sta1
+    239: PixR15C14Sta1
+    240: PixR0C15Sta1
+    241: PixR1C15Sta1
+    242: PixR2C15Sta1
+    243: PixR3C15Sta1
+    244: PixR4C15Sta1
+    245: PixR5C15Sta1
+    246: PixR6C15Sta1
+    247: PixR7C15Sta1
+    248: PixR8C15Sta1
+    249: PixR9C15Sta1
+    250: PixR10C15Sta1
+    251: PixR11C15Sta1
+    252: PixR12C15Sta1
+    253: PixR13C15Sta1
+    254: PixR14C15Sta1
+    255: PixR15C15Sta1
+  shift: 1
 PD_DACDiscri:
   default: 0x0
   mask: 0x10
@@ -3379,6 +5194,267 @@ PD_DACDiscri:
     254: PixR14C15Cfg2
     255: PixR15C15Cfg2
   shift: 4
+PixelID:
+  default: 0x0
+  mask: 0xff
+  regadr:
+    0: PixR0C0Sta0
+    1: PixR1C0Sta0
+    2: PixR2C0Sta0
+    3: PixR3C0Sta0
+    4: PixR4C0Sta0
+    5: PixR5C0Sta0
+    6: PixR6C0Sta0
+    7: PixR7C0Sta0
+    8: PixR8C0Sta0
+    9: PixR9C0Sta0
+    10: PixR10C0Sta0
+    11: PixR11C0Sta0
+    12: PixR12C0Sta0
+    13: PixR13C0Sta0
+    14: PixR14C0Sta0
+    15: PixR15C0Sta0
+    16: PixR0C1Sta0
+    17: PixR1C1Sta0
+    18: PixR2C1Sta0
+    19: PixR3C1Sta0
+    20: PixR4C1Sta0
+    21: PixR5C1Sta0
+    22: PixR6C1Sta0
+    23: PixR7C1Sta0
+    24: PixR8C1Sta0
+    25: PixR9C1Sta0
+    26: PixR10C1Sta0
+    27: PixR11C1Sta0
+    28: PixR12C1Sta0
+    29: PixR13C1Sta0
+    30: PixR14C1Sta0
+    31: PixR15C1Sta0
+    32: PixR0C2Sta0
+    33: PixR1C2Sta0
+    34: PixR2C2Sta0
+    35: PixR3C2Sta0
+    36: PixR4C2Sta0
+    37: PixR5C2Sta0
+    38: PixR6C2Sta0
+    39: PixR7C2Sta0
+    40: PixR8C2Sta0
+    41: PixR9C2Sta0
+    42: PixR10C2Sta0
+    43: PixR11C2Sta0
+    44: PixR12C2Sta0
+    45: PixR13C2Sta0
+    46: PixR14C2Sta0
+    47: PixR15C2Sta0
+    48: PixR0C3Sta0
+    49: PixR1C3Sta0
+    50: PixR2C3Sta0
+    51: PixR3C3Sta0
+    52: PixR4C3Sta0
+    53: PixR5C3Sta0
+    54: PixR6C3Sta0
+    55: PixR7C3Sta0
+    56: PixR8C3Sta0
+    57: PixR9C3Sta0
+    58: PixR10C3Sta0
+    59: PixR11C3Sta0
+    60: PixR12C3Sta0
+    61: PixR13C3Sta0
+    62: PixR14C3Sta0
+    63: PixR15C3Sta0
+    64: PixR0C4Sta0
+    65: PixR1C4Sta0
+    66: PixR2C4Sta0
+    67: PixR3C4Sta0
+    68: PixR4C4Sta0
+    69: PixR5C4Sta0
+    70: PixR6C4Sta0
+    71: PixR7C4Sta0
+    72: PixR8C4Sta0
+    73: PixR9C4Sta0
+    74: PixR10C4Sta0
+    75: PixR11C4Sta0
+    76: PixR12C4Sta0
+    77: PixR13C4Sta0
+    78: PixR14C4Sta0
+    79: PixR15C4Sta0
+    80: PixR0C5Sta0
+    81: PixR1C5Sta0
+    82: PixR2C5Sta0
+    83: PixR3C5Sta0
+    84: PixR4C5Sta0
+    85: PixR5C5Sta0
+    86: PixR6C5Sta0
+    87: PixR7C5Sta0
+    88: PixR8C5Sta0
+    89: PixR9C5Sta0
+    90: PixR10C5Sta0
+    91: PixR11C5Sta0
+    92: PixR12C5Sta0
+    93: PixR13C5Sta0
+    94: PixR14C5Sta0
+    95: PixR15C5Sta0
+    96: PixR0C6Sta0
+    97: PixR1C6Sta0
+    98: PixR2C6Sta0
+    99: PixR3C6Sta0
+    100: PixR4C6Sta0
+    101: PixR5C6Sta0
+    102: PixR6C6Sta0
+    103: PixR7C6Sta0
+    104: PixR8C6Sta0
+    105: PixR9C6Sta0
+    106: PixR10C6Sta0
+    107: PixR11C6Sta0
+    108: PixR12C6Sta0
+    109: PixR13C6Sta0
+    110: PixR14C6Sta0
+    111: PixR15C6Sta0
+    112: PixR0C7Sta0
+    113: PixR1C7Sta0
+    114: PixR2C7Sta0
+    115: PixR3C7Sta0
+    116: PixR4C7Sta0
+    117: PixR5C7Sta0
+    118: PixR6C7Sta0
+    119: PixR7C7Sta0
+    120: PixR8C7Sta0
+    121: PixR9C7Sta0
+    122: PixR10C7Sta0
+    123: PixR11C7Sta0
+    124: PixR12C7Sta0
+    125: PixR13C7Sta0
+    126: PixR14C7Sta0
+    127: PixR15C7Sta0
+    128: PixR0C8Sta0
+    129: PixR1C8Sta0
+    130: PixR2C8Sta0
+    131: PixR3C8Sta0
+    132: PixR4C8Sta0
+    133: PixR5C8Sta0
+    134: PixR6C8Sta0
+    135: PixR7C8Sta0
+    136: PixR8C8Sta0
+    137: PixR9C8Sta0
+    138: PixR10C8Sta0
+    139: PixR11C8Sta0
+    140: PixR12C8Sta0
+    141: PixR13C8Sta0
+    142: PixR14C8Sta0
+    143: PixR15C8Sta0
+    144: PixR0C9Sta0
+    145: PixR1C9Sta0
+    146: PixR2C9Sta0
+    147: PixR3C9Sta0
+    148: PixR4C9Sta0
+    149: PixR5C9Sta0
+    150: PixR6C9Sta0
+    151: PixR7C9Sta0
+    152: PixR8C9Sta0
+    153: PixR9C9Sta0
+    154: PixR10C9Sta0
+    155: PixR11C9Sta0
+    156: PixR12C9Sta0
+    157: PixR13C9Sta0
+    158: PixR14C9Sta0
+    159: PixR15C9Sta0
+    160: PixR0C10Sta0
+    161: PixR1C10Sta0
+    162: PixR2C10Sta0
+    163: PixR3C10Sta0
+    164: PixR4C10Sta0
+    165: PixR5C10Sta0
+    166: PixR6C10Sta0
+    167: PixR7C10Sta0
+    168: PixR8C10Sta0
+    169: PixR9C10Sta0
+    170: PixR10C10Sta0
+    171: PixR11C10Sta0
+    172: PixR12C10Sta0
+    173: PixR13C10Sta0
+    174: PixR14C10Sta0
+    175: PixR15C10Sta0
+    176: PixR0C11Sta0
+    177: PixR1C11Sta0
+    178: PixR2C11Sta0
+    179: PixR3C11Sta0
+    180: PixR4C11Sta0
+    181: PixR5C11Sta0
+    182: PixR6C11Sta0
+    183: PixR7C11Sta0
+    184: PixR8C11Sta0
+    185: PixR9C11Sta0
+    186: PixR10C11Sta0
+    187: PixR11C11Sta0
+    188: PixR12C11Sta0
+    189: PixR13C11Sta0
+    190: PixR14C11Sta0
+    191: PixR15C11Sta0
+    192: PixR0C12Sta0
+    193: PixR1C12Sta0
+    194: PixR2C12Sta0
+    195: PixR3C12Sta0
+    196: PixR4C12Sta0
+    197: PixR5C12Sta0
+    198: PixR6C12Sta0
+    199: PixR7C12Sta0
+    200: PixR8C12Sta0
+    201: PixR9C12Sta0
+    202: PixR10C12Sta0
+    203: PixR11C12Sta0
+    204: PixR12C12Sta0
+    205: PixR13C12Sta0
+    206: PixR14C12Sta0
+    207: PixR15C12Sta0
+    208: PixR0C13Sta0
+    209: PixR1C13Sta0
+    210: PixR2C13Sta0
+    211: PixR3C13Sta0
+    212: PixR4C13Sta0
+    213: PixR5C13Sta0
+    214: PixR6C13Sta0
+    215: PixR7C13Sta0
+    216: PixR8C13Sta0
+    217: PixR9C13Sta0
+    218: PixR10C13Sta0
+    219: PixR11C13Sta0
+    220: PixR12C13Sta0
+    221: PixR13C13Sta0
+    222: PixR14C13Sta0
+    223: PixR15C13Sta0
+    224: PixR0C14Sta0
+    225: PixR1C14Sta0
+    226: PixR2C14Sta0
+    227: PixR3C14Sta0
+    228: PixR4C14Sta0
+    229: PixR5C14Sta0
+    230: PixR6C14Sta0
+    231: PixR7C14Sta0
+    232: PixR8C14Sta0
+    233: PixR9C14Sta0
+    234: PixR10C14Sta0
+    235: PixR11C14Sta0
+    236: PixR12C14Sta0
+    237: PixR13C14Sta0
+    238: PixR14C14Sta0
+    239: PixR15C14Sta0
+    240: PixR0C15Sta0
+    241: PixR1C15Sta0
+    242: PixR2C15Sta0
+    243: PixR3C15Sta0
+    244: PixR4C15Sta0
+    245: PixR5C15Sta0
+    246: PixR6C15Sta0
+    247: PixR7C15Sta0
+    248: PixR8C15Sta0
+    249: PixR9C15Sta0
+    250: PixR10C15Sta0
+    251: PixR11C15Sta0
+    252: PixR12C15Sta0
+    253: PixR13C15Sta0
+    254: PixR14C15Sta0
+    255: PixR15C15Sta0
+  shift: 0
 QInjEn:
   default: 0x0
   mask: 0x20
@@ -4423,6 +6499,267 @@ RfSel:
     254: PixR14C15Cfg0
     255: PixR15C15Cfg0
   shift: 5
+ScanDone:
+  default: 0x1
+  mask: 0x1
+  regadr:
+    0: PixR0C0Sta1
+    1: PixR1C0Sta1
+    2: PixR2C0Sta1
+    3: PixR3C0Sta1
+    4: PixR4C0Sta1
+    5: PixR5C0Sta1
+    6: PixR6C0Sta1
+    7: PixR7C0Sta1
+    8: PixR8C0Sta1
+    9: PixR9C0Sta1
+    10: PixR10C0Sta1
+    11: PixR11C0Sta1
+    12: PixR12C0Sta1
+    13: PixR13C0Sta1
+    14: PixR14C0Sta1
+    15: PixR15C0Sta1
+    16: PixR0C1Sta1
+    17: PixR1C1Sta1
+    18: PixR2C1Sta1
+    19: PixR3C1Sta1
+    20: PixR4C1Sta1
+    21: PixR5C1Sta1
+    22: PixR6C1Sta1
+    23: PixR7C1Sta1
+    24: PixR8C1Sta1
+    25: PixR9C1Sta1
+    26: PixR10C1Sta1
+    27: PixR11C1Sta1
+    28: PixR12C1Sta1
+    29: PixR13C1Sta1
+    30: PixR14C1Sta1
+    31: PixR15C1Sta1
+    32: PixR0C2Sta1
+    33: PixR1C2Sta1
+    34: PixR2C2Sta1
+    35: PixR3C2Sta1
+    36: PixR4C2Sta1
+    37: PixR5C2Sta1
+    38: PixR6C2Sta1
+    39: PixR7C2Sta1
+    40: PixR8C2Sta1
+    41: PixR9C2Sta1
+    42: PixR10C2Sta1
+    43: PixR11C2Sta1
+    44: PixR12C2Sta1
+    45: PixR13C2Sta1
+    46: PixR14C2Sta1
+    47: PixR15C2Sta1
+    48: PixR0C3Sta1
+    49: PixR1C3Sta1
+    50: PixR2C3Sta1
+    51: PixR3C3Sta1
+    52: PixR4C3Sta1
+    53: PixR5C3Sta1
+    54: PixR6C3Sta1
+    55: PixR7C3Sta1
+    56: PixR8C3Sta1
+    57: PixR9C3Sta1
+    58: PixR10C3Sta1
+    59: PixR11C3Sta1
+    60: PixR12C3Sta1
+    61: PixR13C3Sta1
+    62: PixR14C3Sta1
+    63: PixR15C3Sta1
+    64: PixR0C4Sta1
+    65: PixR1C4Sta1
+    66: PixR2C4Sta1
+    67: PixR3C4Sta1
+    68: PixR4C4Sta1
+    69: PixR5C4Sta1
+    70: PixR6C4Sta1
+    71: PixR7C4Sta1
+    72: PixR8C4Sta1
+    73: PixR9C4Sta1
+    74: PixR10C4Sta1
+    75: PixR11C4Sta1
+    76: PixR12C4Sta1
+    77: PixR13C4Sta1
+    78: PixR14C4Sta1
+    79: PixR15C4Sta1
+    80: PixR0C5Sta1
+    81: PixR1C5Sta1
+    82: PixR2C5Sta1
+    83: PixR3C5Sta1
+    84: PixR4C5Sta1
+    85: PixR5C5Sta1
+    86: PixR6C5Sta1
+    87: PixR7C5Sta1
+    88: PixR8C5Sta1
+    89: PixR9C5Sta1
+    90: PixR10C5Sta1
+    91: PixR11C5Sta1
+    92: PixR12C5Sta1
+    93: PixR13C5Sta1
+    94: PixR14C5Sta1
+    95: PixR15C5Sta1
+    96: PixR0C6Sta1
+    97: PixR1C6Sta1
+    98: PixR2C6Sta1
+    99: PixR3C6Sta1
+    100: PixR4C6Sta1
+    101: PixR5C6Sta1
+    102: PixR6C6Sta1
+    103: PixR7C6Sta1
+    104: PixR8C6Sta1
+    105: PixR9C6Sta1
+    106: PixR10C6Sta1
+    107: PixR11C6Sta1
+    108: PixR12C6Sta1
+    109: PixR13C6Sta1
+    110: PixR14C6Sta1
+    111: PixR15C6Sta1
+    112: PixR0C7Sta1
+    113: PixR1C7Sta1
+    114: PixR2C7Sta1
+    115: PixR3C7Sta1
+    116: PixR4C7Sta1
+    117: PixR5C7Sta1
+    118: PixR6C7Sta1
+    119: PixR7C7Sta1
+    120: PixR8C7Sta1
+    121: PixR9C7Sta1
+    122: PixR10C7Sta1
+    123: PixR11C7Sta1
+    124: PixR12C7Sta1
+    125: PixR13C7Sta1
+    126: PixR14C7Sta1
+    127: PixR15C7Sta1
+    128: PixR0C8Sta1
+    129: PixR1C8Sta1
+    130: PixR2C8Sta1
+    131: PixR3C8Sta1
+    132: PixR4C8Sta1
+    133: PixR5C8Sta1
+    134: PixR6C8Sta1
+    135: PixR7C8Sta1
+    136: PixR8C8Sta1
+    137: PixR9C8Sta1
+    138: PixR10C8Sta1
+    139: PixR11C8Sta1
+    140: PixR12C8Sta1
+    141: PixR13C8Sta1
+    142: PixR14C8Sta1
+    143: PixR15C8Sta1
+    144: PixR0C9Sta1
+    145: PixR1C9Sta1
+    146: PixR2C9Sta1
+    147: PixR3C9Sta1
+    148: PixR4C9Sta1
+    149: PixR5C9Sta1
+    150: PixR6C9Sta1
+    151: PixR7C9Sta1
+    152: PixR8C9Sta1
+    153: PixR9C9Sta1
+    154: PixR10C9Sta1
+    155: PixR11C9Sta1
+    156: PixR12C9Sta1
+    157: PixR13C9Sta1
+    158: PixR14C9Sta1
+    159: PixR15C9Sta1
+    160: PixR0C10Sta1
+    161: PixR1C10Sta1
+    162: PixR2C10Sta1
+    163: PixR3C10Sta1
+    164: PixR4C10Sta1
+    165: PixR5C10Sta1
+    166: PixR6C10Sta1
+    167: PixR7C10Sta1
+    168: PixR8C10Sta1
+    169: PixR9C10Sta1
+    170: PixR10C10Sta1
+    171: PixR11C10Sta1
+    172: PixR12C10Sta1
+    173: PixR13C10Sta1
+    174: PixR14C10Sta1
+    175: PixR15C10Sta1
+    176: PixR0C11Sta1
+    177: PixR1C11Sta1
+    178: PixR2C11Sta1
+    179: PixR3C11Sta1
+    180: PixR4C11Sta1
+    181: PixR5C11Sta1
+    182: PixR6C11Sta1
+    183: PixR7C11Sta1
+    184: PixR8C11Sta1
+    185: PixR9C11Sta1
+    186: PixR10C11Sta1
+    187: PixR11C11Sta1
+    188: PixR12C11Sta1
+    189: PixR13C11Sta1
+    190: PixR14C11Sta1
+    191: PixR15C11Sta1
+    192: PixR0C12Sta1
+    193: PixR1C12Sta1
+    194: PixR2C12Sta1
+    195: PixR3C12Sta1
+    196: PixR4C12Sta1
+    197: PixR5C12Sta1
+    198: PixR6C12Sta1
+    199: PixR7C12Sta1
+    200: PixR8C12Sta1
+    201: PixR9C12Sta1
+    202: PixR10C12Sta1
+    203: PixR11C12Sta1
+    204: PixR12C12Sta1
+    205: PixR13C12Sta1
+    206: PixR14C12Sta1
+    207: PixR15C12Sta1
+    208: PixR0C13Sta1
+    209: PixR1C13Sta1
+    210: PixR2C13Sta1
+    211: PixR3C13Sta1
+    212: PixR4C13Sta1
+    213: PixR5C13Sta1
+    214: PixR6C13Sta1
+    215: PixR7C13Sta1
+    216: PixR8C13Sta1
+    217: PixR9C13Sta1
+    218: PixR10C13Sta1
+    219: PixR11C13Sta1
+    220: PixR12C13Sta1
+    221: PixR13C13Sta1
+    222: PixR14C13Sta1
+    223: PixR15C13Sta1
+    224: PixR0C14Sta1
+    225: PixR1C14Sta1
+    226: PixR2C14Sta1
+    227: PixR3C14Sta1
+    228: PixR4C14Sta1
+    229: PixR5C14Sta1
+    230: PixR6C14Sta1
+    231: PixR7C14Sta1
+    232: PixR8C14Sta1
+    233: PixR9C14Sta1
+    234: PixR10C14Sta1
+    235: PixR11C14Sta1
+    236: PixR12C14Sta1
+    237: PixR13C14Sta1
+    238: PixR14C14Sta1
+    239: PixR15C14Sta1
+    240: PixR0C15Sta1
+    241: PixR1C15Sta1
+    242: PixR2C15Sta1
+    243: PixR3C15Sta1
+    244: PixR4C15Sta1
+    245: PixR5C15Sta1
+    246: PixR6C15Sta1
+    247: PixR7C15Sta1
+    248: PixR8C15Sta1
+    249: PixR9C15Sta1
+    250: PixR10C15Sta1
+    251: PixR11C15Sta1
+    252: PixR12C15Sta1
+    253: PixR13C15Sta1
+    254: PixR14C15Sta1
+    255: PixR15C15Sta1
+  shift: 0
 ScanStart_THCal:
   default: 0x0
   mask: 0x10
@@ -4684,6 +7021,1044 @@ ScanStart_THCal:
     254: PixR14C15Cfg3
     255: PixR15C15Cfg3
   shift: 4
+TH:
+  default: 0x0
+  mask:
+  - 0xff
+  - 0xc0
+  regadr:
+    0:
+    - PixR0C0Sta4
+    - PixR0C0Sta3
+    1:
+    - PixR1C0Sta4
+    - PixR1C0Sta3
+    2:
+    - PixR2C0Sta4
+    - PixR2C0Sta3
+    3:
+    - PixR3C0Sta4
+    - PixR3C0Sta3
+    4:
+    - PixR4C0Sta4
+    - PixR4C0Sta3
+    5:
+    - PixR5C0Sta4
+    - PixR5C0Sta3
+    6:
+    - PixR6C0Sta4
+    - PixR6C0Sta3
+    7:
+    - PixR7C0Sta4
+    - PixR7C0Sta3
+    8:
+    - PixR8C0Sta4
+    - PixR8C0Sta3
+    9:
+    - PixR9C0Sta4
+    - PixR9C0Sta3
+    10:
+    - PixR10C0Sta4
+    - PixR10C0Sta3
+    11:
+    - PixR11C0Sta4
+    - PixR11C0Sta3
+    12:
+    - PixR12C0Sta4
+    - PixR12C0Sta3
+    13:
+    - PixR13C0Sta4
+    - PixR13C0Sta3
+    14:
+    - PixR14C0Sta4
+    - PixR14C0Sta3
+    15:
+    - PixR15C0Sta4
+    - PixR15C0Sta3
+    16:
+    - PixR0C1Sta4
+    - PixR0C1Sta3
+    17:
+    - PixR1C1Sta4
+    - PixR1C1Sta3
+    18:
+    - PixR2C1Sta4
+    - PixR2C1Sta3
+    19:
+    - PixR3C1Sta4
+    - PixR3C1Sta3
+    20:
+    - PixR4C1Sta4
+    - PixR4C1Sta3
+    21:
+    - PixR5C1Sta4
+    - PixR5C1Sta3
+    22:
+    - PixR6C1Sta4
+    - PixR6C1Sta3
+    23:
+    - PixR7C1Sta4
+    - PixR7C1Sta3
+    24:
+    - PixR8C1Sta4
+    - PixR8C1Sta3
+    25:
+    - PixR9C1Sta4
+    - PixR9C1Sta3
+    26:
+    - PixR10C1Sta4
+    - PixR10C1Sta3
+    27:
+    - PixR11C1Sta4
+    - PixR11C1Sta3
+    28:
+    - PixR12C1Sta4
+    - PixR12C1Sta3
+    29:
+    - PixR13C1Sta4
+    - PixR13C1Sta3
+    30:
+    - PixR14C1Sta4
+    - PixR14C1Sta3
+    31:
+    - PixR15C1Sta4
+    - PixR15C1Sta3
+    32:
+    - PixR0C2Sta4
+    - PixR0C2Sta3
+    33:
+    - PixR1C2Sta4
+    - PixR1C2Sta3
+    34:
+    - PixR2C2Sta4
+    - PixR2C2Sta3
+    35:
+    - PixR3C2Sta4
+    - PixR3C2Sta3
+    36:
+    - PixR4C2Sta4
+    - PixR4C2Sta3
+    37:
+    - PixR5C2Sta4
+    - PixR5C2Sta3
+    38:
+    - PixR6C2Sta4
+    - PixR6C2Sta3
+    39:
+    - PixR7C2Sta4
+    - PixR7C2Sta3
+    40:
+    - PixR8C2Sta4
+    - PixR8C2Sta3
+    41:
+    - PixR9C2Sta4
+    - PixR9C2Sta3
+    42:
+    - PixR10C2Sta4
+    - PixR10C2Sta3
+    43:
+    - PixR11C2Sta4
+    - PixR11C2Sta3
+    44:
+    - PixR12C2Sta4
+    - PixR12C2Sta3
+    45:
+    - PixR13C2Sta4
+    - PixR13C2Sta3
+    46:
+    - PixR14C2Sta4
+    - PixR14C2Sta3
+    47:
+    - PixR15C2Sta4
+    - PixR15C2Sta3
+    48:
+    - PixR0C3Sta4
+    - PixR0C3Sta3
+    49:
+    - PixR1C3Sta4
+    - PixR1C3Sta3
+    50:
+    - PixR2C3Sta4
+    - PixR2C3Sta3
+    51:
+    - PixR3C3Sta4
+    - PixR3C3Sta3
+    52:
+    - PixR4C3Sta4
+    - PixR4C3Sta3
+    53:
+    - PixR5C3Sta4
+    - PixR5C3Sta3
+    54:
+    - PixR6C3Sta4
+    - PixR6C3Sta3
+    55:
+    - PixR7C3Sta4
+    - PixR7C3Sta3
+    56:
+    - PixR8C3Sta4
+    - PixR8C3Sta3
+    57:
+    - PixR9C3Sta4
+    - PixR9C3Sta3
+    58:
+    - PixR10C3Sta4
+    - PixR10C3Sta3
+    59:
+    - PixR11C3Sta4
+    - PixR11C3Sta3
+    60:
+    - PixR12C3Sta4
+    - PixR12C3Sta3
+    61:
+    - PixR13C3Sta4
+    - PixR13C3Sta3
+    62:
+    - PixR14C3Sta4
+    - PixR14C3Sta3
+    63:
+    - PixR15C3Sta4
+    - PixR15C3Sta3
+    64:
+    - PixR0C4Sta4
+    - PixR0C4Sta3
+    65:
+    - PixR1C4Sta4
+    - PixR1C4Sta3
+    66:
+    - PixR2C4Sta4
+    - PixR2C4Sta3
+    67:
+    - PixR3C4Sta4
+    - PixR3C4Sta3
+    68:
+    - PixR4C4Sta4
+    - PixR4C4Sta3
+    69:
+    - PixR5C4Sta4
+    - PixR5C4Sta3
+    70:
+    - PixR6C4Sta4
+    - PixR6C4Sta3
+    71:
+    - PixR7C4Sta4
+    - PixR7C4Sta3
+    72:
+    - PixR8C4Sta4
+    - PixR8C4Sta3
+    73:
+    - PixR9C4Sta4
+    - PixR9C4Sta3
+    74:
+    - PixR10C4Sta4
+    - PixR10C4Sta3
+    75:
+    - PixR11C4Sta4
+    - PixR11C4Sta3
+    76:
+    - PixR12C4Sta4
+    - PixR12C4Sta3
+    77:
+    - PixR13C4Sta4
+    - PixR13C4Sta3
+    78:
+    - PixR14C4Sta4
+    - PixR14C4Sta3
+    79:
+    - PixR15C4Sta4
+    - PixR15C4Sta3
+    80:
+    - PixR0C5Sta4
+    - PixR0C5Sta3
+    81:
+    - PixR1C5Sta4
+    - PixR1C5Sta3
+    82:
+    - PixR2C5Sta4
+    - PixR2C5Sta3
+    83:
+    - PixR3C5Sta4
+    - PixR3C5Sta3
+    84:
+    - PixR4C5Sta4
+    - PixR4C5Sta3
+    85:
+    - PixR5C5Sta4
+    - PixR5C5Sta3
+    86:
+    - PixR6C5Sta4
+    - PixR6C5Sta3
+    87:
+    - PixR7C5Sta4
+    - PixR7C5Sta3
+    88:
+    - PixR8C5Sta4
+    - PixR8C5Sta3
+    89:
+    - PixR9C5Sta4
+    - PixR9C5Sta3
+    90:
+    - PixR10C5Sta4
+    - PixR10C5Sta3
+    91:
+    - PixR11C5Sta4
+    - PixR11C5Sta3
+    92:
+    - PixR12C5Sta4
+    - PixR12C5Sta3
+    93:
+    - PixR13C5Sta4
+    - PixR13C5Sta3
+    94:
+    - PixR14C5Sta4
+    - PixR14C5Sta3
+    95:
+    - PixR15C5Sta4
+    - PixR15C5Sta3
+    96:
+    - PixR0C6Sta4
+    - PixR0C6Sta3
+    97:
+    - PixR1C6Sta4
+    - PixR1C6Sta3
+    98:
+    - PixR2C6Sta4
+    - PixR2C6Sta3
+    99:
+    - PixR3C6Sta4
+    - PixR3C6Sta3
+    100:
+    - PixR4C6Sta4
+    - PixR4C6Sta3
+    101:
+    - PixR5C6Sta4
+    - PixR5C6Sta3
+    102:
+    - PixR6C6Sta4
+    - PixR6C6Sta3
+    103:
+    - PixR7C6Sta4
+    - PixR7C6Sta3
+    104:
+    - PixR8C6Sta4
+    - PixR8C6Sta3
+    105:
+    - PixR9C6Sta4
+    - PixR9C6Sta3
+    106:
+    - PixR10C6Sta4
+    - PixR10C6Sta3
+    107:
+    - PixR11C6Sta4
+    - PixR11C6Sta3
+    108:
+    - PixR12C6Sta4
+    - PixR12C6Sta3
+    109:
+    - PixR13C6Sta4
+    - PixR13C6Sta3
+    110:
+    - PixR14C6Sta4
+    - PixR14C6Sta3
+    111:
+    - PixR15C6Sta4
+    - PixR15C6Sta3
+    112:
+    - PixR0C7Sta4
+    - PixR0C7Sta3
+    113:
+    - PixR1C7Sta4
+    - PixR1C7Sta3
+    114:
+    - PixR2C7Sta4
+    - PixR2C7Sta3
+    115:
+    - PixR3C7Sta4
+    - PixR3C7Sta3
+    116:
+    - PixR4C7Sta4
+    - PixR4C7Sta3
+    117:
+    - PixR5C7Sta4
+    - PixR5C7Sta3
+    118:
+    - PixR6C7Sta4
+    - PixR6C7Sta3
+    119:
+    - PixR7C7Sta4
+    - PixR7C7Sta3
+    120:
+    - PixR8C7Sta4
+    - PixR8C7Sta3
+    121:
+    - PixR9C7Sta4
+    - PixR9C7Sta3
+    122:
+    - PixR10C7Sta4
+    - PixR10C7Sta3
+    123:
+    - PixR11C7Sta4
+    - PixR11C7Sta3
+    124:
+    - PixR12C7Sta4
+    - PixR12C7Sta3
+    125:
+    - PixR13C7Sta4
+    - PixR13C7Sta3
+    126:
+    - PixR14C7Sta4
+    - PixR14C7Sta3
+    127:
+    - PixR15C7Sta4
+    - PixR15C7Sta3
+    128:
+    - PixR0C8Sta4
+    - PixR0C8Sta3
+    129:
+    - PixR1C8Sta4
+    - PixR1C8Sta3
+    130:
+    - PixR2C8Sta4
+    - PixR2C8Sta3
+    131:
+    - PixR3C8Sta4
+    - PixR3C8Sta3
+    132:
+    - PixR4C8Sta4
+    - PixR4C8Sta3
+    133:
+    - PixR5C8Sta4
+    - PixR5C8Sta3
+    134:
+    - PixR6C8Sta4
+    - PixR6C8Sta3
+    135:
+    - PixR7C8Sta4
+    - PixR7C8Sta3
+    136:
+    - PixR8C8Sta4
+    - PixR8C8Sta3
+    137:
+    - PixR9C8Sta4
+    - PixR9C8Sta3
+    138:
+    - PixR10C8Sta4
+    - PixR10C8Sta3
+    139:
+    - PixR11C8Sta4
+    - PixR11C8Sta3
+    140:
+    - PixR12C8Sta4
+    - PixR12C8Sta3
+    141:
+    - PixR13C8Sta4
+    - PixR13C8Sta3
+    142:
+    - PixR14C8Sta4
+    - PixR14C8Sta3
+    143:
+    - PixR15C8Sta4
+    - PixR15C8Sta3
+    144:
+    - PixR0C9Sta4
+    - PixR0C9Sta3
+    145:
+    - PixR1C9Sta4
+    - PixR1C9Sta3
+    146:
+    - PixR2C9Sta4
+    - PixR2C9Sta3
+    147:
+    - PixR3C9Sta4
+    - PixR3C9Sta3
+    148:
+    - PixR4C9Sta4
+    - PixR4C9Sta3
+    149:
+    - PixR5C9Sta4
+    - PixR5C9Sta3
+    150:
+    - PixR6C9Sta4
+    - PixR6C9Sta3
+    151:
+    - PixR7C9Sta4
+    - PixR7C9Sta3
+    152:
+    - PixR8C9Sta4
+    - PixR8C9Sta3
+    153:
+    - PixR9C9Sta4
+    - PixR9C9Sta3
+    154:
+    - PixR10C9Sta4
+    - PixR10C9Sta3
+    155:
+    - PixR11C9Sta4
+    - PixR11C9Sta3
+    156:
+    - PixR12C9Sta4
+    - PixR12C9Sta3
+    157:
+    - PixR13C9Sta4
+    - PixR13C9Sta3
+    158:
+    - PixR14C9Sta4
+    - PixR14C9Sta3
+    159:
+    - PixR15C9Sta4
+    - PixR15C9Sta3
+    160:
+    - PixR0C10Sta4
+    - PixR0C10Sta3
+    161:
+    - PixR1C10Sta4
+    - PixR1C10Sta3
+    162:
+    - PixR2C10Sta4
+    - PixR2C10Sta3
+    163:
+    - PixR3C10Sta4
+    - PixR3C10Sta3
+    164:
+    - PixR4C10Sta4
+    - PixR4C10Sta3
+    165:
+    - PixR5C10Sta4
+    - PixR5C10Sta3
+    166:
+    - PixR6C10Sta4
+    - PixR6C10Sta3
+    167:
+    - PixR7C10Sta4
+    - PixR7C10Sta3
+    168:
+    - PixR8C10Sta4
+    - PixR8C10Sta3
+    169:
+    - PixR9C10Sta4
+    - PixR9C10Sta3
+    170:
+    - PixR10C10Sta4
+    - PixR10C10Sta3
+    171:
+    - PixR11C10Sta4
+    - PixR11C10Sta3
+    172:
+    - PixR12C10Sta4
+    - PixR12C10Sta3
+    173:
+    - PixR13C10Sta4
+    - PixR13C10Sta3
+    174:
+    - PixR14C10Sta4
+    - PixR14C10Sta3
+    175:
+    - PixR15C10Sta4
+    - PixR15C10Sta3
+    176:
+    - PixR0C11Sta4
+    - PixR0C11Sta3
+    177:
+    - PixR1C11Sta4
+    - PixR1C11Sta3
+    178:
+    - PixR2C11Sta4
+    - PixR2C11Sta3
+    179:
+    - PixR3C11Sta4
+    - PixR3C11Sta3
+    180:
+    - PixR4C11Sta4
+    - PixR4C11Sta3
+    181:
+    - PixR5C11Sta4
+    - PixR5C11Sta3
+    182:
+    - PixR6C11Sta4
+    - PixR6C11Sta3
+    183:
+    - PixR7C11Sta4
+    - PixR7C11Sta3
+    184:
+    - PixR8C11Sta4
+    - PixR8C11Sta3
+    185:
+    - PixR9C11Sta4
+    - PixR9C11Sta3
+    186:
+    - PixR10C11Sta4
+    - PixR10C11Sta3
+    187:
+    - PixR11C11Sta4
+    - PixR11C11Sta3
+    188:
+    - PixR12C11Sta4
+    - PixR12C11Sta3
+    189:
+    - PixR13C11Sta4
+    - PixR13C11Sta3
+    190:
+    - PixR14C11Sta4
+    - PixR14C11Sta3
+    191:
+    - PixR15C11Sta4
+    - PixR15C11Sta3
+    192:
+    - PixR0C12Sta4
+    - PixR0C12Sta3
+    193:
+    - PixR1C12Sta4
+    - PixR1C12Sta3
+    194:
+    - PixR2C12Sta4
+    - PixR2C12Sta3
+    195:
+    - PixR3C12Sta4
+    - PixR3C12Sta3
+    196:
+    - PixR4C12Sta4
+    - PixR4C12Sta3
+    197:
+    - PixR5C12Sta4
+    - PixR5C12Sta3
+    198:
+    - PixR6C12Sta4
+    - PixR6C12Sta3
+    199:
+    - PixR7C12Sta4
+    - PixR7C12Sta3
+    200:
+    - PixR8C12Sta4
+    - PixR8C12Sta3
+    201:
+    - PixR9C12Sta4
+    - PixR9C12Sta3
+    202:
+    - PixR10C12Sta4
+    - PixR10C12Sta3
+    203:
+    - PixR11C12Sta4
+    - PixR11C12Sta3
+    204:
+    - PixR12C12Sta4
+    - PixR12C12Sta3
+    205:
+    - PixR13C12Sta4
+    - PixR13C12Sta3
+    206:
+    - PixR14C12Sta4
+    - PixR14C12Sta3
+    207:
+    - PixR15C12Sta4
+    - PixR15C12Sta3
+    208:
+    - PixR0C13Sta4
+    - PixR0C13Sta3
+    209:
+    - PixR1C13Sta4
+    - PixR1C13Sta3
+    210:
+    - PixR2C13Sta4
+    - PixR2C13Sta3
+    211:
+    - PixR3C13Sta4
+    - PixR3C13Sta3
+    212:
+    - PixR4C13Sta4
+    - PixR4C13Sta3
+    213:
+    - PixR5C13Sta4
+    - PixR5C13Sta3
+    214:
+    - PixR6C13Sta4
+    - PixR6C13Sta3
+    215:
+    - PixR7C13Sta4
+    - PixR7C13Sta3
+    216:
+    - PixR8C13Sta4
+    - PixR8C13Sta3
+    217:
+    - PixR9C13Sta4
+    - PixR9C13Sta3
+    218:
+    - PixR10C13Sta4
+    - PixR10C13Sta3
+    219:
+    - PixR11C13Sta4
+    - PixR11C13Sta3
+    220:
+    - PixR12C13Sta4
+    - PixR12C13Sta3
+    221:
+    - PixR13C13Sta4
+    - PixR13C13Sta3
+    222:
+    - PixR14C13Sta4
+    - PixR14C13Sta3
+    223:
+    - PixR15C13Sta4
+    - PixR15C13Sta3
+    224:
+    - PixR0C14Sta4
+    - PixR0C14Sta3
+    225:
+    - PixR1C14Sta4
+    - PixR1C14Sta3
+    226:
+    - PixR2C14Sta4
+    - PixR2C14Sta3
+    227:
+    - PixR3C14Sta4
+    - PixR3C14Sta3
+    228:
+    - PixR4C14Sta4
+    - PixR4C14Sta3
+    229:
+    - PixR5C14Sta4
+    - PixR5C14Sta3
+    230:
+    - PixR6C14Sta4
+    - PixR6C14Sta3
+    231:
+    - PixR7C14Sta4
+    - PixR7C14Sta3
+    232:
+    - PixR8C14Sta4
+    - PixR8C14Sta3
+    233:
+    - PixR9C14Sta4
+    - PixR9C14Sta3
+    234:
+    - PixR10C14Sta4
+    - PixR10C14Sta3
+    235:
+    - PixR11C14Sta4
+    - PixR11C14Sta3
+    236:
+    - PixR12C14Sta4
+    - PixR12C14Sta3
+    237:
+    - PixR13C14Sta4
+    - PixR13C14Sta3
+    238:
+    - PixR14C14Sta4
+    - PixR14C14Sta3
+    239:
+    - PixR15C14Sta4
+    - PixR15C14Sta3
+    240:
+    - PixR0C15Sta4
+    - PixR0C15Sta3
+    241:
+    - PixR1C15Sta4
+    - PixR1C15Sta3
+    242:
+    - PixR2C15Sta4
+    - PixR2C15Sta3
+    243:
+    - PixR3C15Sta4
+    - PixR3C15Sta3
+    244:
+    - PixR4C15Sta4
+    - PixR4C15Sta3
+    245:
+    - PixR5C15Sta4
+    - PixR5C15Sta3
+    246:
+    - PixR6C15Sta4
+    - PixR6C15Sta3
+    247:
+    - PixR7C15Sta4
+    - PixR7C15Sta3
+    248:
+    - PixR8C15Sta4
+    - PixR8C15Sta3
+    249:
+    - PixR9C15Sta4
+    - PixR9C15Sta3
+    250:
+    - PixR10C15Sta4
+    - PixR10C15Sta3
+    251:
+    - PixR11C15Sta4
+    - PixR11C15Sta3
+    252:
+    - PixR12C15Sta4
+    - PixR12C15Sta3
+    253:
+    - PixR13C15Sta4
+    - PixR13C15Sta3
+    254:
+    - PixR14C15Sta4
+    - PixR14C15Sta3
+    255:
+    - PixR15C15Sta4
+    - PixR15C15Sta3
+  shift:
+  - 0
+  - 6
+THState:
+  default: 0x0
+  mask: 0xe0
+  regadr:
+    0: PixR0C0Sta1
+    1: PixR1C0Sta1
+    2: PixR2C0Sta1
+    3: PixR3C0Sta1
+    4: PixR4C0Sta1
+    5: PixR5C0Sta1
+    6: PixR6C0Sta1
+    7: PixR7C0Sta1
+    8: PixR8C0Sta1
+    9: PixR9C0Sta1
+    10: PixR10C0Sta1
+    11: PixR11C0Sta1
+    12: PixR12C0Sta1
+    13: PixR13C0Sta1
+    14: PixR14C0Sta1
+    15: PixR15C0Sta1
+    16: PixR0C1Sta1
+    17: PixR1C1Sta1
+    18: PixR2C1Sta1
+    19: PixR3C1Sta1
+    20: PixR4C1Sta1
+    21: PixR5C1Sta1
+    22: PixR6C1Sta1
+    23: PixR7C1Sta1
+    24: PixR8C1Sta1
+    25: PixR9C1Sta1
+    26: PixR10C1Sta1
+    27: PixR11C1Sta1
+    28: PixR12C1Sta1
+    29: PixR13C1Sta1
+    30: PixR14C1Sta1
+    31: PixR15C1Sta1
+    32: PixR0C2Sta1
+    33: PixR1C2Sta1
+    34: PixR2C2Sta1
+    35: PixR3C2Sta1
+    36: PixR4C2Sta1
+    37: PixR5C2Sta1
+    38: PixR6C2Sta1
+    39: PixR7C2Sta1
+    40: PixR8C2Sta1
+    41: PixR9C2Sta1
+    42: PixR10C2Sta1
+    43: PixR11C2Sta1
+    44: PixR12C2Sta1
+    45: PixR13C2Sta1
+    46: PixR14C2Sta1
+    47: PixR15C2Sta1
+    48: PixR0C3Sta1
+    49: PixR1C3Sta1
+    50: PixR2C3Sta1
+    51: PixR3C3Sta1
+    52: PixR4C3Sta1
+    53: PixR5C3Sta1
+    54: PixR6C3Sta1
+    55: PixR7C3Sta1
+    56: PixR8C3Sta1
+    57: PixR9C3Sta1
+    58: PixR10C3Sta1
+    59: PixR11C3Sta1
+    60: PixR12C3Sta1
+    61: PixR13C3Sta1
+    62: PixR14C3Sta1
+    63: PixR15C3Sta1
+    64: PixR0C4Sta1
+    65: PixR1C4Sta1
+    66: PixR2C4Sta1
+    67: PixR3C4Sta1
+    68: PixR4C4Sta1
+    69: PixR5C4Sta1
+    70: PixR6C4Sta1
+    71: PixR7C4Sta1
+    72: PixR8C4Sta1
+    73: PixR9C4Sta1
+    74: PixR10C4Sta1
+    75: PixR11C4Sta1
+    76: PixR12C4Sta1
+    77: PixR13C4Sta1
+    78: PixR14C4Sta1
+    79: PixR15C4Sta1
+    80: PixR0C5Sta1
+    81: PixR1C5Sta1
+    82: PixR2C5Sta1
+    83: PixR3C5Sta1
+    84: PixR4C5Sta1
+    85: PixR5C5Sta1
+    86: PixR6C5Sta1
+    87: PixR7C5Sta1
+    88: PixR8C5Sta1
+    89: PixR9C5Sta1
+    90: PixR10C5Sta1
+    91: PixR11C5Sta1
+    92: PixR12C5Sta1
+    93: PixR13C5Sta1
+    94: PixR14C5Sta1
+    95: PixR15C5Sta1
+    96: PixR0C6Sta1
+    97: PixR1C6Sta1
+    98: PixR2C6Sta1
+    99: PixR3C6Sta1
+    100: PixR4C6Sta1
+    101: PixR5C6Sta1
+    102: PixR6C6Sta1
+    103: PixR7C6Sta1
+    104: PixR8C6Sta1
+    105: PixR9C6Sta1
+    106: PixR10C6Sta1
+    107: PixR11C6Sta1
+    108: PixR12C6Sta1
+    109: PixR13C6Sta1
+    110: PixR14C6Sta1
+    111: PixR15C6Sta1
+    112: PixR0C7Sta1
+    113: PixR1C7Sta1
+    114: PixR2C7Sta1
+    115: PixR3C7Sta1
+    116: PixR4C7Sta1
+    117: PixR5C7Sta1
+    118: PixR6C7Sta1
+    119: PixR7C7Sta1
+    120: PixR8C7Sta1
+    121: PixR9C7Sta1
+    122: PixR10C7Sta1
+    123: PixR11C7Sta1
+    124: PixR12C7Sta1
+    125: PixR13C7Sta1
+    126: PixR14C7Sta1
+    127: PixR15C7Sta1
+    128: PixR0C8Sta1
+    129: PixR1C8Sta1
+    130: PixR2C8Sta1
+    131: PixR3C8Sta1
+    132: PixR4C8Sta1
+    133: PixR5C8Sta1
+    134: PixR6C8Sta1
+    135: PixR7C8Sta1
+    136: PixR8C8Sta1
+    137: PixR9C8Sta1
+    138: PixR10C8Sta1
+    139: PixR11C8Sta1
+    140: PixR12C8Sta1
+    141: PixR13C8Sta1
+    142: PixR14C8Sta1
+    143: PixR15C8Sta1
+    144: PixR0C9Sta1
+    145: PixR1C9Sta1
+    146: PixR2C9Sta1
+    147: PixR3C9Sta1
+    148: PixR4C9Sta1
+    149: PixR5C9Sta1
+    150: PixR6C9Sta1
+    151: PixR7C9Sta1
+    152: PixR8C9Sta1
+    153: PixR9C9Sta1
+    154: PixR10C9Sta1
+    155: PixR11C9Sta1
+    156: PixR12C9Sta1
+    157: PixR13C9Sta1
+    158: PixR14C9Sta1
+    159: PixR15C9Sta1
+    160: PixR0C10Sta1
+    161: PixR1C10Sta1
+    162: PixR2C10Sta1
+    163: PixR3C10Sta1
+    164: PixR4C10Sta1
+    165: PixR5C10Sta1
+    166: PixR6C10Sta1
+    167: PixR7C10Sta1
+    168: PixR8C10Sta1
+    169: PixR9C10Sta1
+    170: PixR10C10Sta1
+    171: PixR11C10Sta1
+    172: PixR12C10Sta1
+    173: PixR13C10Sta1
+    174: PixR14C10Sta1
+    175: PixR15C10Sta1
+    176: PixR0C11Sta1
+    177: PixR1C11Sta1
+    178: PixR2C11Sta1
+    179: PixR3C11Sta1
+    180: PixR4C11Sta1
+    181: PixR5C11Sta1
+    182: PixR6C11Sta1
+    183: PixR7C11Sta1
+    184: PixR8C11Sta1
+    185: PixR9C11Sta1
+    186: PixR10C11Sta1
+    187: PixR11C11Sta1
+    188: PixR12C11Sta1
+    189: PixR13C11Sta1
+    190: PixR14C11Sta1
+    191: PixR15C11Sta1
+    192: PixR0C12Sta1
+    193: PixR1C12Sta1
+    194: PixR2C12Sta1
+    195: PixR3C12Sta1
+    196: PixR4C12Sta1
+    197: PixR5C12Sta1
+    198: PixR6C12Sta1
+    199: PixR7C12Sta1
+    200: PixR8C12Sta1
+    201: PixR9C12Sta1
+    202: PixR10C12Sta1
+    203: PixR11C12Sta1
+    204: PixR12C12Sta1
+    205: PixR13C12Sta1
+    206: PixR14C12Sta1
+    207: PixR15C12Sta1
+    208: PixR0C13Sta1
+    209: PixR1C13Sta1
+    210: PixR2C13Sta1
+    211: PixR3C13Sta1
+    212: PixR4C13Sta1
+    213: PixR5C13Sta1
+    214: PixR6C13Sta1
+    215: PixR7C13Sta1
+    216: PixR8C13Sta1
+    217: PixR9C13Sta1
+    218: PixR10C13Sta1
+    219: PixR11C13Sta1
+    220: PixR12C13Sta1
+    221: PixR13C13Sta1
+    222: PixR14C13Sta1
+    223: PixR15C13Sta1
+    224: PixR0C14Sta1
+    225: PixR1C14Sta1
+    226: PixR2C14Sta1
+    227: PixR3C14Sta1
+    228: PixR4C14Sta1
+    229: PixR5C14Sta1
+    230: PixR6C14Sta1
+    231: PixR7C14Sta1
+    232: PixR8C14Sta1
+    233: PixR9C14Sta1
+    234: PixR10C14Sta1
+    235: PixR11C14Sta1
+    236: PixR12C14Sta1
+    237: PixR13C14Sta1
+    238: PixR14C14Sta1
+    239: PixR15C14Sta1
+    240: PixR0C15Sta1
+    241: PixR1C15Sta1
+    242: PixR2C15Sta1
+    243: PixR3C15Sta1
+    244: PixR4C15Sta1
+    245: PixR5C15Sta1
+    246: PixR6C15Sta1
+    247: PixR7C15Sta1
+    248: PixR8C15Sta1
+    249: PixR9C15Sta1
+    250: PixR10C15Sta1
+    251: PixR11C15Sta1
+    252: PixR12C15Sta1
+    253: PixR13C15Sta1
+    254: PixR14C15Sta1
+    255: PixR15C15Sta1
+  shift: 5
 TH_offset:
   default: 0xa
   mask: 0xfc

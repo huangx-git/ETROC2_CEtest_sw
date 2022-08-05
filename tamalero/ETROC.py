@@ -228,6 +228,30 @@ class ETROC():
     def set_selftest_occupancy(self, pix, occ):
         self.wr_reg('selfTestOccupancy', pix, occ)
 
+    def get_ACC(self, pix):
+        return self.rd_reg('ACC', pix)
+
+    def is_scandone(self, pix):
+        result = self.rd_reg('ScanDone', pix)
+        if result == 1:
+            return True
+        else:
+            return False
+
+    def get_baseline(self, pix):
+        return self.rd_reg('BL', pix)
+
+    def get_noisewidth(self, pix):
+        return self.rd_reg('NW', pix)
+
+    def get_threshold(self, pix):
+        return self.rd_reg('TH', pix)
+
+    def get_THstate(self, pix):
+        return self.rd_reg('THstate', pix)
+
+    def get_pixelID(self, pix):
+        return self.rd_reg('PixelID', pix)
 
 
     def set_vth(self, vth):
