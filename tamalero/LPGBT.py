@@ -77,9 +77,14 @@ class LPGBT(RegParser):
         else:
             lpgbt = self
 
-        lpgbt.I2C_write(reg=0x118, val=6, master=2, slave_addr=0x70)
+        id = "LPGBT.RW.TESTING.ULECDATASOURCE"
+        node = self.get_node(id)
+        self.write_reg(self.master.I2C_write, self.master.I2C_read, node, value=6)
         sleep (0.1)
-        lpgbt.I2C_write(reg=0x118, val=0, master=2, slave_addr=0x70)
+        self.write_reg(self.master.I2C_write, self.master.I2C_read, node, value=0)
+        #lpgbt.I2C_write(reg=0x118, val=6, master=2, slave_addr=0x70)
+        #sleep (0.1)
+        #lpgbt.I2C_write(reg=0x118, val=0, master=2, slave_addr=0x70)
 
         self.reset_trigger_mgts()
 
@@ -92,9 +97,10 @@ class LPGBT(RegParser):
             if (not self.kcu.read_node(
                     "READOUT_BOARD_%d.LPGBT.DAQ.UPLINK.READY" % self.rb)):
                 print("  > Performing LpGBT Magic...")
-                self.wr_adr(0x118, 6)
+                id = "LPGBT.RW.TESTING.ULECDATASOURCE"
+                self.wr_reg(id, 6)
                 sleep(0.1)
-                self.wr_adr(0x118, 0)
+                self.wr_reg(id, 0)
                 print("  > Magic Done")
         else:
             # servant lpgbt base configuration
@@ -165,10 +171,10 @@ class LPGBT(RegParser):
 
     def configure_gpio_outputs(self, outputs=0x2401, defaults=0x0401):
         # have to first set defaults, then switch to outputs otherwise we reset the VTRx+
-        self.wr_adr(0x54, defaults >> 8)
-        self.wr_adr(0x55, defaults & 0xFF)
-        self.wr_adr(0x52, outputs >> 8)
-        self.wr_adr(0x53, outputs & 0xFF)
+        self.wr_reg('LPGBT.RWF.PIO.PIOOUTH', defaults >> 8)
+        self.wr_reg('LPGBT.RWF.PIO.PIOOutL', defaults & 0xFF)
+        self.wr_reg('LPGBT.RWF.PIO.PIODIRH', outputs >> 8)
+        self.wr_reg('LPGBT.RWF.PIO.PIODirL', outputs & 0xFF)
 
     def set_uplink_alignment(self, link, val, quiet=False):
         if self.trigger:
@@ -375,7 +381,7 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.CALIBRATION.VREFENABLE", 0x0)
 
     def initialize(self):
-        self.wr_adr(0x36, 0x80)  # "LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT"
+        self.wr_reg("LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT", 0x80)
 
         # turn on clock outputs
         print ("Configuring clocks now.")
@@ -387,8 +393,9 @@ class LPGBT(RegParser):
     def loopback(self, nloops=100):
         for i in range(nloops):
             wr = random.randint(0, 255)
-            self.wr_adr(1, wr)
-            rd = self.rd_adr(1)
+            id = "LPGBT.RWF.CHIPID.CHIPID1"
+            self.wr_reg(id, wr)
+            rd = self.rd_reg(id)
             if wr != rd:
                 print("ERR: %d wr=0x%08X rd=0x%08X" % (i, wr, rd))
                 return
@@ -396,8 +403,8 @@ class LPGBT(RegParser):
                 print("%i reads done..." % i)
 
     def gpio_init(self, outputs=0x2401):
-        self.wr_adr(0x52, outputs >> 8)
-        self.wr_adr(0x53, outputs & 0xFF)
+        self.wr_reg("LPGBT.RWF.PIO.PIODIRH", outputs >> 8)
+        self.wr_reg("LPGBT.RWF.PIO.PIODIRL", outputs & 0xFF)
 
         self.set_gpio(0,1) # GBT_RESET_B
         self.set_gpio(10,1) # VTRX RESET_B
@@ -520,20 +527,13 @@ class LPGBT(RegParser):
         else:
             print("Setting invalid in set_uplink_group_data_source")
             return
-    
-        self.wr_reg("LPGBT.RW.TESTING.ULG0DATASOURCE", setting)
-        self.wr_reg("LPGBT.RW.TESTING.ULG1DATASOURCE", setting)
-        self.wr_reg("LPGBT.RW.TESTING.ULG2DATASOURCE", setting)
-        self.wr_reg("LPGBT.RW.TESTING.ULG3DATASOURCE", setting)
-        self.wr_reg("LPGBT.RW.TESTING.ULG4DATASOURCE", setting)
-        self.wr_reg("LPGBT.RW.TESTING.ULG5DATASOURCE", setting)
-        self.wr_reg("LPGBT.RW.TESTING.ULG6DATASOURCE", setting)
+        
+        for i in range(7):
+            self.wr_reg("LPGBT.RW.TESTING.ULG%dDATASOURCE"%i, setting)
     
         if (setting == 4 or setting == 5):
-            self.wr_reg("LPGBT.RW.TESTING.DPDATAPATTERN0", 0xff & (pattern >> 0))
-            self.wr_reg("LPGBT.RW.TESTING.DPDATAPATTERN1", 0xff & (pattern >> 8))
-            self.wr_reg("LPGBT.RW.TESTING.DPDATAPATTERN2", 0xff & (pattern >> 16))
-            self.wr_reg("LPGBT.RW.TESTING.DPDATAPATTERN3", 0xff & (pattern >> 24))
+            for i in range(4):
+                self.wr_reg("LPGBT.RW.TESTING.DPDATAPATTERN%d"%i, 0xff&(pattern >> (i*8)))
 
     def set_downlink_data_src(self, source):
         id = "READOUT_BOARD_%d.LPGBT.DAQ.DOWNLINK.DL_SRC" % self.rb
@@ -746,10 +746,10 @@ class LPGBT(RegParser):
         board_id = {}
         flavors = {0: '3 module', 1: '6 module', 2: '7 module'}
 
-        user_id =   self.rd_adr(0x007).value() << 24 |\
-                    self.rd_adr(0x006).value() << 16 |\
-                    self.rd_adr(0x005).value() << 8 |\
-                    self.rd_adr(0x004).value()
+        user_id =   self.rd_reg("LPGBT.RWF.CHIPID.USERID3").value() << 24 |\
+                    self.rd_reg("LPGBT.RWF.CHIPID.USERID2").value() << 16 |\
+                    self.rd_reg("LPGBT.RWF.CHIPID.USERID1").value() << 8 |\
+                    self.rd_reg("LPGBT.RWF.CHIPID.USERID0").value()
         board_id['rb_ver_major']    = user_id >> 29
         board_id['rb_ver_minor']    = user_id >> 25 & (2**4-1)
         board_id['lpgbt_ver']       = user_id >> 23 & (2**2-1)
@@ -854,10 +854,10 @@ class LPGBT(RegParser):
             sys.stdout.write("\n")
 
     def get_chip_serial(self):
-        return self.rd_adr(0x003).value() << 24 |\
-               self.rd_adr(0x002).value() << 16 |\
-               self.rd_adr(0x001).value() << 8 |\
-               self.rd_adr(0x000).value()
+        return self.rd_reg("LPGBT.RWF.CHIPID.CHIPID3").value() << 24 |\
+               self.rd_reg("LPGBT.RWF.CHIPID.CHIPID2").value() << 16 |\
+               self.rd_reg("LPGBT.RWF.CHIPID.CHIPID1").value() << 8 |\
+               self.rd_reg("LPGBT.RWF.CHIPID.CHIPID0").value()
 
     def get_power_up_state_machine(self, quiet=True):
         
