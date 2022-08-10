@@ -59,7 +59,10 @@ def checkKCU(kcu, data):
         print("No communications with KCU105... quitting")
         sys.exit(0)
 
-# initialize RB
+# =========================
+# ===== initialize RB =====
+# =========================
+
 def rb_init(
         kcu_adr          = "192.168.0.10",
         power_up         = False,

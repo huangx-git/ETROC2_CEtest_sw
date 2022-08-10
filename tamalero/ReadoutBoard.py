@@ -22,7 +22,8 @@ class ReadoutBoard:
             self.kcu = kcu
 
         self.DAQ_LPGBT = LPGBT(rb=rb, flavor=flavor, kcu=kcu)
-        self.DAQ_LPGBT.parse_xml(os.path.expandvars('$TAMALERO_BASE/address_table/lpgbt.xml'))
+        self.DAQ_LPGBT.get_version()
+        self.DAQ_LPGBT.parse_xml(self.DAQ_LPGBT.ver)
 
         self.VTRX = VTRX(self.DAQ_LPGBT)
         # This is not yet recommended:
@@ -46,8 +47,9 @@ class ReadoutBoard:
 
         if self.trigger:
             self.TRIG_LPGBT = LPGBT(rb=self.rb, flavor=self.flavor, trigger=True, master=self.DAQ_LPGBT)
-            self.TRIG_LPGBT.parse_xml(os.path.expandvars('$TAMALERO_BASE/address_table/lpgbt.xml'))
             self.TRIG_LPGBT.connect_KCU(self.kcu)
+            self.TRIG_LPGBT.get_version()
+            self.TRIG_LPGBT.parse_xml(self.TRIG_LPGBT.ver)
             print ("Connected trigger lpGBT to KCU.")
 
 

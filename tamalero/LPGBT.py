@@ -30,6 +30,12 @@ class LPGBT(RegParser):
         if kcu != None:
             self.kcu = kcu
 
+        try:
+            self.ver = self.rd_adr(0x005).value() >> 7
+        except AttributeError:
+            print ("cannot load lpgbt version; load after connecting to kcu.")
+
+
     def link_status(self, verbose=False):
         if self.trigger:
             print ("Checking trigger link status")
@@ -49,6 +55,9 @@ class LPGBT(RegParser):
                 (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.DAQ.UPLINK.FEC_ERR_CNT"%self.rb).value() == 0) &
                 (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.DAQ.UPLINK.READY"%self.rb).value() == 1)
             )
+    
+    def get_version(self):
+        self.ver = self.rd_adr(0x005).value() >> 7
 
     def reset_tx_mgt_by_mask(self, mask):
         id = "MGT.MGT_TX_RESET"
@@ -746,10 +755,10 @@ class LPGBT(RegParser):
         board_id = {}
         flavors = {0: '3 module', 1: '6 module', 2: '7 module'}
 
-        user_id =   self.rd_reg("LPGBT.RWF.CHIPID.USERID3").value() << 24 |\
-                    self.rd_reg("LPGBT.RWF.CHIPID.USERID2").value() << 16 |\
-                    self.rd_reg("LPGBT.RWF.CHIPID.USERID1").value() << 8 |\
-                    self.rd_reg("LPGBT.RWF.CHIPID.USERID0").value()
+        user_id =   self.rd_reg("LPGBT.RWF.CHIPID.USERID3") << 24 |\
+                    self.rd_reg("LPGBT.RWF.CHIPID.USERID2") << 16 |\
+                    self.rd_reg("LPGBT.RWF.CHIPID.USERID1") << 8 |\
+                    self.rd_reg("LPGBT.RWF.CHIPID.USERID0")
         board_id['rb_ver_major']    = user_id >> 29
         board_id['rb_ver_minor']    = user_id >> 25 & (2**4-1)
         board_id['lpgbt_ver']       = user_id >> 23 & (2**2-1)
@@ -854,10 +863,10 @@ class LPGBT(RegParser):
             sys.stdout.write("\n")
 
     def get_chip_serial(self):
-        return self.rd_reg("LPGBT.RWF.CHIPID.CHIPID3").value() << 24 |\
-               self.rd_reg("LPGBT.RWF.CHIPID.CHIPID2").value() << 16 |\
-               self.rd_reg("LPGBT.RWF.CHIPID.CHIPID1").value() << 8 |\
-               self.rd_reg("LPGBT.RWF.CHIPID.CHIPID0").value()
+        return self.rd_reg("LPGBT.RWF.CHIPID.CHIPID3") << 24 |\
+               self.rd_reg("LPGBT.RWF.CHIPID.CHIPID2") << 16 |\
+               self.rd_reg("LPGBT.RWF.CHIPID.CHIPID1") << 8 |\
+               self.rd_reg("LPGBT.RWF.CHIPID.CHIPID0")
 
     def get_power_up_state_machine(self, quiet=True):
         
@@ -903,5 +912,6 @@ class LPGBT(RegParser):
 if __name__ == '__main__':
 
     lpgbt = LPGBT()
-    lpgbt.parse_xml('../address_table/lpgbt.xml', top_node_name="LPGBT")
+    lpgbt.get_version()
+    lpgbt.parse_xml(self.ver)
     lpgbt.dump(nMax=10)

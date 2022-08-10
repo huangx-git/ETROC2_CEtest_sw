@@ -1,4 +1,5 @@
 import xml.etree.ElementTree as xml
+import os
 
 
 class Node:
@@ -42,11 +43,17 @@ class RegParser(object):
         self.parse_xml()
 
     # Functions related to parsing registers.xml
-    def parse_xml(self, address_table='../address_table/lpgbt.xml', top_node_name="LPGBT"):
-        self.address_table = address_table
+    def parse_xml(self, ver=0, address_table='default', top_node_name="LPGBT"):
         self.top_node_name = top_node_name
-        print('Parsing', address_table, '...')
-        self.tree = xml.parse(address_table)
+        if address_table == 'default':
+            if ver == 0:
+                self.address_table = os.path.expandvars('$TAMALERO_BASE/address_table/lpgbt_v0.xml')
+            if ver == 1:
+                self.address_table = os.path.expandvars('$TAMALERO_BASE/address_table/lpgbt_v1.xml')
+        else:
+            self.address_table = address_table
+        print('Parsing', self.address_table, '...')
+        self.tree = xml.parse(self.address_table)
         root = self.tree.getroot()[0]
         self.vars = {}
         self.make_tree(root, '', 0x0, self.nodes, None, self.vars, False)
