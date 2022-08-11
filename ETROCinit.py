@@ -15,13 +15,19 @@ import os
 
 def powerUpDAQ(rb_0):
     rb_0.DAQ_LPGBT.power_up_init()
-    if (rb_0.DAQ_LPGBT.rd_adr(0x1c5) != 0xa5):
+    if rb_0.DAQ_LPGBT.ver == 0:
+        rom = "LPGBT.RO.ROMREG"
+        testval = 0xA5
+    else:
+        rom = "LPGBT.RO.ROM.ROMREG"
+        testval = 0xA6
+    if (rb_0.DAQ_LPGBT.rd_reg(rom) != testval):
        print ("No communication with DAQ LPGBT... trying to reset DAQ MGTs")
        rb_0.DAQ_LPGBT.reset_daq_mgts()
        rb_0.DAQ_LPGBT.power_up_init()
        time.sleep(0.01)
-       #print(hex(rb_0.DAQ_LPGBT.rd_adr(0x1c5)))
-       if (rb_0.DAQ_LPGBT.rd_adr(0x1c5) != 0xa5):
+       #print(hex(rb_0.DAQ_LPGBT.rd_reg(rom)))
+       if (rb_0.DAQ_LPGBT.rd_reg(rom) != testval):
            print ("Still no communication with DAQ LPGBT. Quitting.")
            sys.exit(0)
     #rb_0.TRIG_LPGBT.power_up_init()

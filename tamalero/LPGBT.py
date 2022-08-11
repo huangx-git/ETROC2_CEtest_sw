@@ -181,9 +181,9 @@ class LPGBT(RegParser):
     def configure_gpio_outputs(self, outputs=0x2401, defaults=0x0401):
         # have to first set defaults, then switch to outputs otherwise we reset the VTRx+
         self.wr_reg('LPGBT.RWF.PIO.PIOOUTH', defaults >> 8)
-        self.wr_reg('LPGBT.RWF.PIO.PIOOutL', defaults & 0xFF)
+        self.wr_reg('LPGBT.RWF.PIO.PIOOUTL', defaults & 0xFF)
         self.wr_reg('LPGBT.RWF.PIO.PIODIRH', outputs >> 8)
-        self.wr_reg('LPGBT.RWF.PIO.PIODirL', outputs & 0xFF)
+        self.wr_reg('LPGBT.RWF.PIO.PIODIRL', outputs & 0xFF)
 
     def set_uplink_alignment(self, link, val, quiet=False):
         if self.trigger:
