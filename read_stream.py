@@ -83,7 +83,7 @@ if __name__ == '__main__':
               ipb_path="ipbusudp-2.0://%s:50001"%args.kcu,
               adr_table=f"address_table/v{fw_version}/etl_test_fw.xml")
 
-    rb_0 = kcu.connect_readout_board(ReadoutBoard(0))
+    rb_0 = kcu.connect_readout_board(ReadoutBoard(0, kcu=kcu))
 
     lpgbt = int(args.lpgbt)
     fifo_link = int(args.read_fifo)
