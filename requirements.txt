@@ -1,5 +1,7 @@
 PyYAML==5.3.1
 requests==2.22.0 
 numpy==1.17.4
+yahist==1.14.0
+mplhep==0.3.26
 cactuscore-uhal-python38==2.8.0               
 cactuscore-uhal-python38-gui==2.8.0 
