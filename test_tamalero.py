@@ -101,7 +101,7 @@ if __name__ == '__main__':
         if args.alignment:
             if type(args.alignment) == str:
                 from tamalero.utils import load_alignment_from_file
-                alignment = load_alignment_from_file(args.load_alignment)
+                alignment = load_alignment_from_file(args.alignment)
             else:
                 alignment = None
             rb_0.configure(alignment=alignment, data_mode=data_mode, etroc=args.etroc)
