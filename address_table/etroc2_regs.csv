@@ -1,0 +1,44 @@
+CLSel[1:0],PixR<Rn>C<Cn>Cfg0[1:0],2b00
+IBSel[2:0],PixR<Rn>C<Cn>Cfg0 [4:2],3b111
+RfSel[1:0],PixR<Rn>C<Cn>Cfg0 [6:5],2b10
+HysSel[3:0],PixR<Rn>C<Cn>Cfg2 [3:0],4b1111
+PD_DACDiscri,PixR<Rn>C<Cn>Cfg2 [4],1b0
+QSel<4:0>,PixR<Rn>C<Cn>Cfg1 [4:0],5b00110
+QInjEn,PixR<Rn>C<Cn>Cfg1 [5],1b0
+autoReset_TDC,PixR<Rn>C<Cn>Cfg6[5],1b0
+enable_TDC,PixR<Rn>C<Cn>Cfg6[7],1b1
+level_TDC[2:0],PixR<Rn>C<Cn>Cfg6[3:1],3b001
+resetn_TDC,PixR<Rn>C<Cn>Cfg6[6],1b1
+testMode_TDC,PixR<Rn>C<Cn>Cfg6[4],1b0
+Bypass_ THCal,PixR<Rn>C<Cn>Cfg3[2],1b1
+DAC[9:0],"PixR<Rn>C<Cn>Cfg5[1:0], PixR<Rn>C<Cn>Cfg4[7:0]",10b0000000000
+TH_offset[5:0],PixR<Rn>C<Cn>Cfg5[7:2],6b001010
+RSTn_THCal,PixR<Rn>C<Cn>Cfg3[0],1b1
+ScanStart_THCal,PixR<Rn>C<Cn>Cfg3[4],1b0
+BufEn_THCal,PixR<Rn>C<Cn>Cfg3[1],1b0
+CLKEn_THCal,PixR<Rn>C<Cn>Cfg3[3],1b0
+workMode[1:0],PixR<Rn>C<Cn>Cfg7[4:3],2b00
+L1Adelay[8:0],"PixR<Rn>C<Cn>Cfg9[7:0], PixR<Rn>C<Cn>Cfg8[7]",9b000000000
+disDataReadout,PixR<Rn>C<Cn>Cfg7[1],1b0
+disTrigPath,PixR<Rn>C<Cn>Cfg7[2],1b0
+upperTOATrig,"PixR<Rn>C<Cn>Cfg22[1:0], PixR<Rn>C<Cn>Cfg21[7:0]",10b1000000000
+lowerTOATrig,"PixR<Rn>C<Cn>Cfg20[7:0], PixR<Rn>C<Cn>Cfg19[7:6]",10b0000100000
+upperTOTTrig,"PixR<Rn>C<Cn>Cfg24[2:0], PixR<Rn>C<Cn>Cfg23[7:2]",9b100000000
+lowerTOTTrig,"PixR<Rn>C<Cn>Cfg23[1:0], PixR<Rn>C<Cn>Cfg22[7:2]",9b000010000
+upperCalTrig,"PixR<Rn>C<Cn>Cfg19[5:0], PixR<Rn>C<Cn>Cfg18[7:4]",10b1000000000
+lowerCalTrig,"PixR<Rn>C<Cn>Cfg18[3:0], PixR<Rn>C<Cn>Cfg17[7:2]",10b0000010000
+upperTOA,"PixR<Rn>C<Cn>Cfg14[7:0], PixR<Rn>C<Cn>Cfg13[7:6]",10b1000000000
+lowerTOA,"PixR<Rn>C<Cn>Cfg13[5:0], PixR<Rn>C<Cn>Cfg12[7:4]",10b0000100000
+upperTOT,"PixR<Rn>C<Cn>Cfg17[1:0], PixR<Rn>C<Cn>Cfg16[7:1],",9b100000000
+lowerTOT,"PixR<Rn>C<Cn>Cfg16[0], PixR<Rn>C<Cn>Cfg15[7:0]",9b000010000
+upperCal,"PixR<Rn>C<Cn>Cfg12[3:0],PixR<Rn>C<Cn>Cfg11[7:2]",10b1000000000
+lowerCal,"PixR<Rn>C<Cn>Cfg11[1:0],PixR<Rn>C<Cn>Cfg10[7:0]",10b0000010000
+addrOffset,PixR<Rn>C<Cn>Cfg7[0],1b1
+selfTestOccupancy,PixR<Rn>C<Cn>Cfg8[6:0],7b0000001
+ACC[15:0],"PixR<Rn>C<Cn>Sta6[7:0],PixR<Rn>C<Cn>Sta5[7:0]",16b0000000000000000
+ScanDone,PixR<Rn>C<Cn>Sta1[0],1b1
+BL[9:0],"PixR<Rn>C<Cn>Sta3[1:0], PixR<Rn>C<Cn>Sta2[7:0]",10b0000000000	
+NW[3:0],PixR<Rn>C<Cn>Sta1[4:1],4b0000
+TH[9:0],"PixR<Rn>C<Cn>Sta4[7:0], PixR<Rn>C<Cn>Sta3[7:6]",10b0000000000
+THState[2:0],PixR<Rn>C<Cn>Sta1[7:5],3b000
+PixelID,PixR<Rn>C<Cn>Sta0[7:0],8b00000000
