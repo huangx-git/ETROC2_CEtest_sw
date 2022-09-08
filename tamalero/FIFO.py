@@ -36,14 +36,15 @@ def just_read_daq(rb, link, lpgbt, fixed_pattern=False, trigger_rate=0):
     '''
     import numpy as np
     fifo = FIFO(rb, links=[{'elink':link, 'lpgbt':lpgbt}], ETROC='ETROC2')
-    if fixed_pattern:
+    if fixed_pattern and rb.kcu.firmware_version['minor'] >= 2 and rb.kcu.firmware_version['patch'] >= 3 :
         fifo.use_fixed_pattern()
     if trigger_rate>0:
         rate = fifo.set_trigger_rate(trigger_rate*100)
         print (f"Trigger rate is currently {rate} Hz")
     fifo.reset(l1a=True)
     res = fifo.dump_daq(block=3000)
-    fifo.use_etroc_data()
+    if rb.kcu.firmware_version['minor'] >= 2 and rb.kcu.firmware_version['patch'] >= 3:
+        fifo.use_etroc_data()
 
     empty_frame_mask = np.array(res[0::2]) > (2**8)  # masking empty fifo entries
     len_cut = min(len(res[0::2]), len(res[1::2]))  # ensuring equal length of arrays downstream
