@@ -18,7 +18,7 @@ def just_read(rb, link, daq=True):
     '''
     fifo = FIFO(rb, links=[{'elink':link, 'lpgbt':0 if daq else 1}], ETROC='ETROC2')
     # just keep the default trigger words
-    fifo.set_trigger([0x0, 0x0, 0x0, 0x0, 0x0], [0x0, 0x0, 0x0, 0x0, 0x0])
+    fifo.set_trigger([0x0]*10, [0x0]*10)
     #fifo.reset()
     #fifo.reset(l1a=True)
     res = fifo.dump(block=255, format=True, daq=daq)
@@ -42,7 +42,7 @@ def just_read_daq(rb, link, lpgbt, fixed_pattern=False, trigger_rate=0):
         rate = fifo.set_trigger_rate(trigger_rate*100)
         print (f"Trigger rate is currently {rate} Hz")
     fifo.reset(l1a=True)
-    res = fifo.dump_daq(block=255)
+    res = fifo.dump_daq(block=3000)
     fifo.use_etroc_data()
 
     empty_frame_mask = np.array(res[0::2]) > (2**8)  # masking empty fifo entries
