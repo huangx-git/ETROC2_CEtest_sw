@@ -58,7 +58,7 @@ class KCU:
         reg = self.hw.getNode(id)
         self.action_reg(reg)
 
-    def firmware_version(self, quiet=False):
+    def firmware_version(self, quiet=False, string=True):
 
         nodes = ("FW_INFO.HOG_INFO.GLOBAL_DATE",
                  "FW_INFO.HOG_INFO.GLOBAL_TIME",
@@ -70,7 +70,10 @@ class KCU:
                 self.print_reg(self.hw.getNode(node))
 
         res = self.read_node("FW_INFO.HOG_INFO.GLOBAL_VER")
-        return "%s.%s.%s"%(res >> 24, (res >> 16) & 0xFF, res & 0xFFFF)
+        if string:
+            return "%s.%s.%s"%(res >> 24, (res >> 16) & 0xFF, res & 0xFFFF)
+        else:
+            return {"major": res >> 24, "minor": (res >> 16) & 0xFF, "patch": res & 0xFFFF}
 
     def get_serial(self):
         # placeholder
