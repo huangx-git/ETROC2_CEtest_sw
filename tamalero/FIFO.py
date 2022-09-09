@@ -48,7 +48,10 @@ def just_read_daq(rb, link, lpgbt, fixed_pattern=False, trigger_rate=0):
 
     empty_frame_mask = np.array(res[0::2]) > (2**8)  # masking empty fifo entries
     len_cut = min(len(res[0::2]), len(res[1::2]))  # ensuring equal length of arrays downstream
-    return list (np.array(res[0::2])[:len_cut][empty_frame_mask[:len_cut]] | (np.array(res[1::2]) << 32)[:len_cut][empty_frame_mask[:len_cut]])
+    if len(res) > 0:
+        return list (np.array(res[0::2])[:len_cut][empty_frame_mask[:len_cut]] | (np.array(res[1::2]) << 32)[:len_cut][empty_frame_mask[:len_cut]])
+    else:
+        return []
 
 def get_event(data_frame, data_words):
     for word in data_words:
