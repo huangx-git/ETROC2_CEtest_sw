@@ -99,12 +99,15 @@ if __name__ == '__main__':
 
     if args.power_up or args.reconfigure:
         if args.alignment:
-            if type(args.alignment) == str:
+            if isinstance(args.alignment, str):
+                print ("Loading uplink alignemnt from file:", args.alignment)
                 from tamalero.utils import load_alignment_from_file
                 alignment = load_alignment_from_file(args.alignment)
             else:
                 alignment = None
-            rb_0.configure(alignment=alignment, data_mode=data_mode, etroc=args.etroc)
+        else:
+            alignment = False
+        rb_0.configure(alignment=alignment, data_mode=data_mode, etroc=args.etroc)
             # this is very slow, especially for the trigger lpGBT.
         if rb_0.trigger:
             time.sleep(1.0)

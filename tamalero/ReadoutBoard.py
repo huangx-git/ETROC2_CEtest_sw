@@ -267,10 +267,16 @@ class ReadoutBoard:
         #self.TRIG_LPGBT.configure_eptx()
         #self.TRIG_LPGBT.configure_eprx()
 
-        if alignment is not None:
+        # the logic here is as follows:
+        # dict -> load the provided alignment
+        # none -> rerun alignment scan
+        # anything else (e.g. False) -> don't touch the uplink alignment
+        if isinstance(alignment, dict):
             self.load_uplink_alignment(alignment)
-        else:
+        elif alignment is None:
             _ = self.find_uplink_alignment(data_mode=data_mode, etroc=etroc)
+        else:
+            pass
 
         # SCA init
         self.sca_hard_reset()
