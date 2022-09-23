@@ -292,14 +292,24 @@ class ReadoutBoard:
 
     def reset_link(self, trigger=False):
         '''
-        Highly experimental
+        Resets the links entirely, different procedure is necessary for production / prototype version of VTRX
         '''
         if trigger:
-            self.VTRX.reset(toggle_channels=[1])
+            if self.VTRX.ver == 'production':
+                self.VTRX.reset()
+            elif self.VTRX.ver == 'prototype':
+                self.VTRX.reset(toggle_channels=[1])
+            else:
+                print ("Don't know how to reset VTRX version", self.VTRX.ver)
             self.DAQ_LPGBT.reset_trigger_mgts()
             self.TRIG_LPGBT.power_up_init(verbose=False)
         else:
-            self.VTRX.reset(toggle_channels=[0])
+            if self.VTRX.ver == 'production':
+                self.VTRX.reset()
+            elif self.VTRX.ver == 'prototype':
+                self.VTRX.reset(toggle_channels=[0])
+            else:
+                print ("Don't know how to reset VTRX version", self.VTRX.ver)
             self.DAQ_LPGBT.reset_daq_mgts()
             self.DAQ_LPGBT.power_up_init()
 
