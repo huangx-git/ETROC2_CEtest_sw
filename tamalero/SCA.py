@@ -201,8 +201,8 @@ class SCA:
         if transid != self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_TRANSID" % self.rb):
             print("SCA Read Error :: Transaction ID Does Not Match")
             print("SCA Read Error :: Resetting RX/TX")
-            rb_0.kcu.write_node("READOUT_BOARD_%d.SC.RX_RESET" % self.rb, 0x01)
-            rb_0.kcu.write_node("READOUT_BOARD_%d.SC.TX_RESET" % self.rb, 0x01)
+            self.kcu.write_node("READOUT_BOARD_%d.SC.RX_RESET" % self.rb, 0x01)
+            self.kcu.write_node("READOUT_BOARD_%d.SC.TX_RESET" % self.rb, 0x01)
 
         else:
             self.err_count = 0
