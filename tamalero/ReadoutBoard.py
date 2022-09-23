@@ -315,6 +315,26 @@ class ReadoutBoard:
 
         self.reset_FEC_error_count(quiet=True)
 
+    def reset_problematic_links(self, max_retries=10, allow_bad_links=False):
+        '''
+        First check DAQ link, then trigger link.
+        '''
+        for link in ['DAQ', 'Trigger'] if self.trigger else ['DAQ']:
+            for i in range(max_retries):
+                if link == 'DAQ':
+                    good_link = self.DAQ_LPGBT.link_status()
+                else:
+                    good_link = self.TRIG_LPGBT.link_status()
+                if good_link:
+                    print (f"No FEC errors detected on {link} link")
+                    break
+                else:
+                    self.reset_link(trigger = (link=='Trigger'))
+                if i+2 > max_retries:
+                    if allow_bad_links:
+                        print (f"{link} link does not have a stable connection. Ignoring.")
+                    else:
+                        raise RuntimeError(f"{link} link does not have a stable connection after {max_retries} retries")
 
     def read_temp(self, verbose=0):
         # high level function to read all the temperature sensors

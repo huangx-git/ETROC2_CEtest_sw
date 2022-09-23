@@ -123,17 +123,14 @@ if __name__ == '__main__':
    # for ch in [2,3]:
    #     print (f"Disabling VTRx+ channel {ch}")
    #     rb_0.VTRX.disable(channel=ch)
+   #
 
-    rb_0.reset_FEC_error_count()
-    time.sleep(0.05)
-    while not rb_0.DAQ_LPGBT.link_status():
-        print ("DAQ link is not stable. Resetting.")
-        rb_0.reset_link(trigger=False)
-    if rb_0.trigger:
-        while not rb_0.TRIG_LPGBT.link_status(verbose=True):
-            print ("Trigger link is not stable. Resetting.")
-            rb_0.reset_link(trigger=True)
+    rb_0.reset_problematic_links(
+        max_retries = 10,
+        allow_bad_links = False,
+    )
 
+    print ()
     rb_0.status()
 
     _ = rb_0.VTRX.status()
