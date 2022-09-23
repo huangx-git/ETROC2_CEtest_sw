@@ -27,8 +27,12 @@ def get_temp(v_out, v_ref, r_ref, t_1, r_1, b, celcius=True):
     """
 
     delta_t = 273.15 if celcius else 0
-    r_t = r_ref / (v_ref/v_out - 1)
-    t_2 = b/((b/(t_1+delta_t)) - math.log(r_1) + math.log(r_t))
+    try:
+        r_t = r_ref / (v_ref/v_out - 1)
+        t_2 = b/((b/(t_1+delta_t)) - math.log(r_1) + math.log(r_t))
+    except ZeroDivisionError:
+        print ("Temperature calculation failed!")
+        return -999
     return t_2-delta_t
 
 
