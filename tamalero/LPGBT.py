@@ -342,6 +342,7 @@ class LPGBT(RegParser):
 
         done = 0
         while (done==0):
+            #print ("Waiting")
             done = self.rd_reg("LPGBT.RO.ADC.ADCDONE")
     
         val = self.rd_reg("LPGBT.RO.ADC.ADCVALUEL")
@@ -601,7 +602,7 @@ class LPGBT(RegParser):
         this function is following https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#example-2-multi-byte-write
         '''
 
-        if ignore_response:
+        if ignore_response and False:
             self.kcu.toggle_dispatch()
 
         i2cm     = 2
