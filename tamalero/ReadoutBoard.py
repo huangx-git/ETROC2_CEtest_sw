@@ -257,6 +257,9 @@ class ReadoutBoard:
         self.DAQ_LPGBT.configure_eptx()
         self.DAQ_LPGBT.configure_eprx()
 
+        # configure the VTRX
+        self.VTRX.configure(trigger=self.trigger)
+
         ## Trigger
         #for i in range(28):
         #    self.TRIG_LPGBT.set_uplink_alignment(5, i) # 4 for trigger loopback
@@ -296,7 +299,7 @@ class ReadoutBoard:
         '''
         if trigger:
             if self.VTRX.ver == 'production':
-                self.VTRX.reset()
+                self.VTRX.reset(toggle_channels=[1])
             elif self.VTRX.ver == 'prototype':
                 self.VTRX.reset(toggle_channels=[1])
             else:
