@@ -304,6 +304,7 @@ class ReadoutBoard:
                 self.VTRX.reset(toggle_channels=[1])
             else:
                 print ("Don't know how to reset VTRX version", self.VTRX.ver)
+            self.VTRX.configure(trigger=trigger)
             self.DAQ_LPGBT.reset_trigger_mgts()
             self.TRIG_LPGBT.power_up_init(verbose=False)
         else:
@@ -313,6 +314,7 @@ class ReadoutBoard:
                 self.VTRX.reset(toggle_channels=[0])
             else:
                 print ("Don't know how to reset VTRX version", self.VTRX.ver)
+            self.VTRX.configure(trigger=trigger)
             self.DAQ_LPGBT.reset_daq_mgts()
             self.DAQ_LPGBT.power_up_init()
 
