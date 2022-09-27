@@ -125,13 +125,14 @@ if __name__ == '__main__':
    #     rb_0.VTRX.disable(channel=ch)
    #
 
-    rb_0.reset_problematic_links(
-        max_retries = 10,
-        allow_bad_links = False,
-    )
+    if args.power_up or args.reconfigure:
+        rb_0.reset_problematic_links(
+           max_retries = 10,
+           allow_bad_links = False,
+        )
 
-    print ()
-    rb_0.status()
+        print ()
+        rb_0.status()
 
     _ = rb_0.VTRX.status()
 
