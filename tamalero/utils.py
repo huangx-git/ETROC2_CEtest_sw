@@ -114,15 +114,21 @@ def download_address_table(version):
     import requests
     import zipfile
     import shutil
+    import json
     fname = 'address_tables.zip'
     url = f'https://gitlab.cern.ch/cms-etl-electronics/module_test_fw/-/archive/v{version}/module_test_fw-v{version}.zip?path=address_tables'
     r = requests.get(url)
     open(fname , 'wb').write(r.content)
 
+    # get the hash
+    r = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/releases/v{version}")
+    short_id = json.loads(r.content)["commit"]["short_id"][:-1]  # strip last character
+
     #os.makedirs(f"../address_table/v{version}/")
     with zipfile.ZipFile(fname,"r") as zip_ref:
         zip_ref.extractall("./")
-    shutil.move(f"module_test_fw-v{version}-address_tables/address_tables/", f"address_table/v{version}/")
+    #shutil.move(f"module_test_fw-v{version}-address_tables/address_tables/", f"address_table/v{version}/")
+    shutil.move(f"module_test_fw-v{version}-address_tables/address_tables/", f"address_table/{short_id}/")
     os.remove('address_tables.zip')
 
 if __name__ == '__main__':

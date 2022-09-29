@@ -26,6 +26,7 @@ if __name__ == '__main__':
     argParser.add_argument('--reset_pattern_checker', action='store', choices=[None, 'prbs', 'upcnt'], default=None, help="Reset pattern checker?")
     argParser.add_argument('--kcu', action='store', default="192.168.0.10", help="Specify the IP address for KCU")
     argParser.add_argument('--force_no_trigger', action='store_true', help="Never initialize the trigger lpGBT.")
+    argParser.add_argument('--allow_bad_links', action='store_true', help="Select to allow bad link initialization.")
     argParser.add_argument('--read_fifo', action='store', default=-1, help='Read 3000 words from link N')
     argParser.add_argument('--alignment', action='store', nargs='?', default=False, const=True, help='Load/scan alignment? If load, pass in file path')
     argParser.add_argument('--etroc', action='store', default="ETROC2", help='Specify ETROC version.')
@@ -44,16 +45,19 @@ if __name__ == '__main__':
                   #ipb_path="chtcp-2.0://localhost:10203?target=%s:50001"%args.kcu,
                   ipb_path="ipbusudp-2.0://%s:50001"%args.kcu,
                   adr_table="address_table/generic/etl_test_fw.xml")
-    fw_version = kcu_tmp.firmware_version(quiet=True)
+    fw_version  = kcu_tmp.firmware_version(quiet=True)
+    fw_sha      = kcu_tmp.firmware_sha()
 
-    if not os.path.isdir(f"address_table/v{fw_version}"):
+    if not os.path.isdir(f"address_table/{fw_sha}"):
         print ("Downloading latest firmware version address table.")
+        if fw_version == "0.0.0":
+            raise RuntimeError("Can't download address table for firmware version 0.0.0")
         download_address_table(fw_version)
 
     kcu = KCU(name="my_device",
               #ipb_path="chtcp-2.0://localhost:10203?target=%s:50001"%args.kcu,
               ipb_path="ipbusudp-2.0://%s:50001"%args.kcu,
-              adr_table=f"address_table/v{fw_version}/etl_test_fw.xml")
+              adr_table=f"address_table/{fw_sha}/etl_test_fw.xml")
 
     rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=(not args.force_no_trigger), kcu=kcu))
 
@@ -128,7 +132,7 @@ if __name__ == '__main__':
     if args.power_up or args.reconfigure:
         rb_0.reset_problematic_links(
            max_retries = 10,
-           allow_bad_links = False,
+            allow_bad_links = args.allow_bad_links,
         )
 
         print ()
