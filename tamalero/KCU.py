@@ -75,6 +75,10 @@ class KCU:
         else:
             return {"major": res >> 24, "minor": (res >> 16) & 0xFF, "patch": res & 0xFFFF}
 
+    def firmware_sha(self):
+        res = self.read_node("FW_INFO.HOG_INFO.GLOBAL_SHA")
+        return hex(res).strip('0x0')
+
     def get_serial(self):
         # placeholder
         return "000000"
