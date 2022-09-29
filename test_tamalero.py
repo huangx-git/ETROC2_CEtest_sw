@@ -1,6 +1,6 @@
 from tamalero.KCU import KCU
 from tamalero.ReadoutBoard import ReadoutBoard
-from tamalero.utils import header, make_version_header, download_address_table
+from tamalero.utils import header, make_version_header, get_kcu
 from tamalero.FIFO import FIFO
 from tamalero.DataFrame import DataFrame
 
@@ -40,28 +40,10 @@ if __name__ == '__main__':
 
     print ("Using KCU at address: %s"%args.kcu)
 
-    # Get the current firmware version number
-    kcu_tmp = KCU(name="tmp_kcu",
-                  #ipb_path="chtcp-2.0://localhost:10203?target=%s:50001"%args.kcu,
-                  ipb_path="ipbusudp-2.0://%s:50001"%args.kcu,
-                  adr_table="address_table/generic/etl_test_fw.xml")
-    fw_version  = kcu_tmp.firmware_version(quiet=True)
-    xml_sha     = kcu_tmp.xml_sha()
-
-    if not os.path.isdir(f"address_table/{xml_sha}"):
-        print ("Downloading latest firmware version address table.")
-        download_address_table(xml_sha)
-
-    kcu = KCU(name="my_device",
-              #ipb_path="chtcp-2.0://localhost:10203?target=%s:50001"%args.kcu,
-              ipb_path="ipbusudp-2.0://%s:50001"%args.kcu,
-              adr_table=f"address_table/{xml_sha}/etl_test_fw.xml")
+    kcu = get_kcu(args.kcu)
 
     rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=(not args.force_no_trigger), kcu=kcu))
 
-    rb_0.kcu.firmware_version = kcu.firmware_version(string=False)
-
-    kcu.write_node("READOUT_BOARD_%s.LPGBT.FEC_ERR_RESET" % 0, 0x1)
     kcu.status()
 
     data = 0xabcd1234
@@ -120,12 +102,6 @@ if __name__ == '__main__':
     res = rb_0.DAQ_LPGBT.get_board_id()
     res['trigger'] = 'yes' if rb_0.trigger else 'no'
     make_version_header(res)
-
-
-   # for ch in [2,3]:
-   #     print (f"Disabling VTRx+ channel {ch}")
-   #     rb_0.VTRX.disable(channel=ch)
-   #
 
     if args.power_up or args.reconfigure:
         rb_0.reset_problematic_links(
