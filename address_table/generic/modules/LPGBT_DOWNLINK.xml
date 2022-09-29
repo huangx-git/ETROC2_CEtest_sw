@@ -6,7 +6,7 @@
   <node id="ALIGN_1"        address="0x2" mask="0x00000070" permission="rw" description="Downlink bitslip alignment for Group 1"/>
   <node id="ALIGN_2"        address="0x2" mask="0x00000700" permission="rw" description="Downlink bitslip alignment for Group 2"/>
   <node id="ALIGN_3"        address="0x2" mask="0x00007000" permission="rw" description="Downlink bitslip alignment for Group 3"/>
-  <node id="DL_SRC"         address="0x3" mask="0x00000007" permission="rw" description="0=etroc, 1=upcnt, 2=prbs, 3=fast command"/>
+  <node id="DL_SRC"         address="0x3" mask="0x0000000f" permission="rw" description="0=etroc, 1=upcnt, 2=prbs, 3=sw fast command"/>
   <node id="FAST_CMD_IDLE"  address="0x4" mask="0x0000ff00" permission="rw" description="Data to send on fast_cmd" parameters="default=0xF0"/>
   <node id="FAST_CMD_DATA"  address="0x4" mask="0x00ff0000" permission="rw" description="Data to send on fast_cmd"/>
   <node id="FAST_CMD_PULSE" address="0x5" mask="0x00000001" permission="w"  description="Write 1 to pulse fast_cmd"/>

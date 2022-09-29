@@ -14,6 +14,8 @@
     <node id="TX_REGISTER_ADDR"     address="0x5" mask="0x0000ffff" permission="rw" description="Address of the first register to be accessed"/>
     <node id="TX_NUM_BYTES_TO_READ" address="0x6" mask="0x0000ffff" permission="rw" parameters="default=0x01" description="Number of words/bytes to be read (only for read transactions)"/>
 
+    <node id="FRAME_FORMAT" address="0x6" mask="0x10000000" permission="rw" parameters="default=0x0" description="IC Frame format: 0 = lpGBT v0; 1 = lpGBT v1"/>
+
     <!-- IC FIFO -->
     <node id="TX_DATA_TO_GBTX"   address="0x7"  mask="0x000000ff" permission="rw" description="Data to be written into the internal FIFO"/>
     <node id="RX_DATA_FROM_GBTX" address="0x8"  mask="0x000000ff" permission="r"  description="Data from the LPGBT"/>
