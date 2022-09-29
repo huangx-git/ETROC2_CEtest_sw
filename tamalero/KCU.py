@@ -79,6 +79,10 @@ class KCU:
         res = self.read_node("FW_INFO.HOG_INFO.GLOBAL_SHA")
         return hex(res).strip('0x0')
 
+    def xml_sha(self):
+        res = self.read_node("FW_INFO.HOG_INFO.XML_SHA")
+        return hex(res).strip('0x0')
+
     def get_serial(self):
         # placeholder
         return "000000"

@@ -110,26 +110,23 @@ def chunk(in_list, n):
     return [in_list[i * n:(i + 1) * n] for i in range((len(in_list) + n - 1) // n )] 
 
 def download_address_table(version):
-    # https://gitlab.cern.ch/cms-etl-electronics/module_test_fw/-/archive/v1.0.7/module_test_fw-v1.0.7.zip?path=address_tables/modules
+    import os
     import requests
-    import zipfile
-    import shutil
     import json
-    fname = 'address_tables.zip'
-    url = f'https://gitlab.cern.ch/cms-etl-electronics/module_test_fw/-/archive/v{version}/module_test_fw-v{version}.zip?path=address_tables'
-    r = requests.get(url)
-    open(fname , 'wb').write(r.content)
+    import urllib.parse
 
-    # get the hash
-    r = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/releases/v{version}")
-    short_id = json.loads(r.content)["commit"]["short_id"][:-1]  # strip last character
-
-    #os.makedirs(f"../address_table/v{version}/")
-    with zipfile.ZipFile(fname,"r") as zip_ref:
-        zip_ref.extractall("./")
-    #shutil.move(f"module_test_fw-v{version}-address_tables/address_tables/", f"address_table/v{version}/")
-    shutil.move(f"module_test_fw-v{version}-address_tables/address_tables/", f"address_table/{short_id}/")
-    os.remove('address_tables.zip')
+    r = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/tree?ref={version}&&path=address_tables&&recursive=True")
+    tree = json.loads(r.content)
+    os.makedirs(f"address_table/{version}")
+    for f in tree:
+        if f['type'] == 'tree':
+            os.makedirs(f"address_table/{version}/{f['name']}")
+        elif f['type'] == 'blob':
+            # needs URL encode: https://www.w3schools.com/tags/ref_urlencode.ASP
+            path = urllib.parse.quote_plus(f['path']).replace('.', '%2E')  # python thinks . is fine, so we replace it manually
+            res = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/files/{path}/raw?ref={version}")
+            local_path = f['path'].replace('address_tables/', '')
+            open(f"address_table/{version}/{local_path}", 'wb').write(res.content)
 
 if __name__ == '__main__':
     print ("Temperature example:")

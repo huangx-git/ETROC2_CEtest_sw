@@ -46,18 +46,16 @@ if __name__ == '__main__':
                   ipb_path="ipbusudp-2.0://%s:50001"%args.kcu,
                   adr_table="address_table/generic/etl_test_fw.xml")
     fw_version  = kcu_tmp.firmware_version(quiet=True)
-    fw_sha      = kcu_tmp.firmware_sha()
+    xml_sha     = kcu_tmp.xml_sha()
 
-    if not os.path.isdir(f"address_table/{fw_sha}"):
+    if not os.path.isdir(f"address_table/{xml_sha}"):
         print ("Downloading latest firmware version address table.")
-        if fw_version == "0.0.0":
-            raise RuntimeError("Can't download address table for firmware version 0.0.0")
-        download_address_table(fw_version)
+        download_address_table(xml_sha)
 
     kcu = KCU(name="my_device",
               #ipb_path="chtcp-2.0://localhost:10203?target=%s:50001"%args.kcu,
               ipb_path="ipbusudp-2.0://%s:50001"%args.kcu,
-              adr_table=f"address_table/{fw_sha}/etl_test_fw.xml")
+              adr_table=f"address_table/{xml_sha}/etl_test_fw.xml")
 
     rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=(not args.force_no_trigger), kcu=kcu))
 
