@@ -1,6 +1,6 @@
 from tamalero.KCU import KCU
 from tamalero.ReadoutBoard import ReadoutBoard
-from tamalero.utils import header, make_version_header
+from tamalero.utils import header, make_version_header, get_kcu
 from tamalero.FIFO import FIFO, just_read_daq
 from tamalero.DataFrame import DataFrame
 
@@ -13,6 +13,8 @@ import sys
 import numpy as np
 from yahist import Hist1D, Hist2D
 import logging
+
+from tqdm import tqdm
 
 def build_events(dump, ETROC="ETROC1"):
     df = DataFrame(ETROC)
@@ -37,7 +39,7 @@ def build_events(dump, ETROC="ETROC1"):
         last_type = data_type
 
     if 'data' in events[-1]:
-        if len(events[-1]['data']) > 20:
+        if len(events[-1]['data']) > 16*16:
             print ([ x for x in map(hex, dump) ])
 
     return events
@@ -55,9 +57,9 @@ if __name__ == '__main__':
 
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--kcu', action='store', default="192.168.0.10", help="Specify the IP address for KCU")
-    argParser.add_argument('--read_fifo', action='store', default=2, help='Read 3000 words from link N')
     argParser.add_argument('--etroc', action='store', default='ETROC2', help='Select ETROC version')
     argParser.add_argument('--lpgbt', action='store', default=0, help='0 - DAQ, 1 - TRIGGER')
+    argParser.add_argument('--link', action='store', default=2, help='Select the elink to read')
     argParser.add_argument('--triggers', action='store', default=10, help='How many L1As?')
     argParser.add_argument('--log_level', default="INFO", type=str,help="Level of information printed by the logger")
     args = argParser.parse_args()
@@ -66,49 +68,24 @@ if __name__ == '__main__':
     logger.setLevel(getattr(logging,args.log_level.upper()))
     logger.addHandler(logging.StreamHandler())
 
-    kcu_tmp = KCU(name="tmp_kcu",
-                  #ipb_path="chtcp-2.0://localhost:10203?target=%s:50001"%args.kcu,
-                  ipb_path="ipbusudp-2.0://%s:50001"%args.kcu,
-                  adr_table="address_table/generic/etl_test_fw.xml")
-    fw_version = kcu_tmp.firmware_version(quiet=True)
-
-    if not os.path.isdir(f"address_table/v{fw_version}"):
-        print ("Couldn't find the right address table.")
-        print ("I could download it, but you should probably reconfigure the boards.")
-        print ("Exiting.")
-        exit
-        #download_address_table(fw_version)
-
-    kcu = KCU(name="my_device",
-              ipb_path="ipbusudp-2.0://%s:50001"%args.kcu,
-              adr_table=f"address_table/v{fw_version}/etl_test_fw.xml")
+    kcu = get_kcu(args.kcu)
 
     rb_0 = kcu.connect_readout_board(ReadoutBoard(0, kcu=kcu))
 
     lpgbt = int(args.lpgbt)
-    fifo_link = int(args.read_fifo)
+    link  = int(args.link)
 
-    # FIXME: this needs to be un-hardcoded again. We are reading from multiple links now.
+    print (f"Will read data from lpGBT {lpgbt} on elink {link}")
     links = [
-        {'elink': 2, 'lpgbt': 0},  # 6
-        #{'elink': 20, 'lpgbt': 1},  # 16
+        {'elink': link, 'lpgbt': lpgbt},
     ]
+
+    assert len(links)==1, "Can currently only read from one link at a time"
 
     all_events = { l['elink']:[] for l in links }
 
-    ##fifo = FIFO(rb_0, elink=fifo_link, ETROC=args.etroc, lpgbt=lpgbt)
-    #fifo = FIFO(rb_0, links=links, ETROC=args.etroc)
-    #df = DataFrame(args.etroc)
-    #fifo.set_trigger(
-    #    #[0x0]*5 + df.get_trigger_words(),
-    #    #[0x0]*5 + df.get_trigger_masks(),
-    #    df.get_trigger_words() + [0x0]*5,
-    #    df.get_trigger_masks() + [0x0]*5,
-    #)
-    
-    for i in range(int(args.triggers)):
-        print(i)
-        #fifo.reset(l1a=True)
+    print (f"Sending {args.triggers} L1As. Progress:")
+    for i in tqdm(range(int(args.triggers))):
         for link in links:
             raw_data = just_read_daq(rb_0, link['elink'], link['lpgbt'])
             #raw_data = fifo.giant_dump(block=300, format=False, align=(args.etroc=='ETROC1'), daq=(link['lpgbt']==0))
@@ -181,14 +158,14 @@ if __name__ == '__main__':
     plot_dir = os.path.join(
         "plots",
         args.etroc,
-        "link_{}".format(args.read_fifo),
+        "link_{}".format(link),
         timestamp,
     )
     os.makedirs(plot_dir)
 
     print (f"Plots will be in {plot_dir}")
 
-    logger.info("\n Making plots for {} events with a total of {} hits".format(evnt_cnt,nhits.integral))
+    logger.info("\n Making plots for {} events with a total of {} hits".format(evnt_cnt,sum(sum(hits))))
     import matplotlib.pyplot as plt
     import mplhep as hep
 
