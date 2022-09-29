@@ -61,12 +61,15 @@ if __name__ == '__main__':
     argParser.add_argument('--lpgbt', action='store', default=0, help='0 - DAQ, 1 - TRIGGER')
     argParser.add_argument('--link', action='store', default=2, help='Select the elink to read')
     argParser.add_argument('--triggers', action='store', default=10, help='How many L1As?')
+    argParser.add_argument('--skip_plots', action='store_true', help='Turn off plotting')
     argParser.add_argument('--log_level', default="INFO", type=str,help="Level of information printed by the logger")
     args = argParser.parse_args()
 
     logger = logging.getLogger(__name__)
     logger.setLevel(getattr(logging,args.log_level.upper()))
     logger.addHandler(logging.StreamHandler())
+
+    make_plots = not args.skip_plots
 
     kcu = get_kcu(args.kcu)
 
@@ -85,7 +88,7 @@ if __name__ == '__main__':
     all_events = { l['elink']:[] for l in links }
 
     print (f"Sending {args.triggers} L1As. Progress:")
-    for i in tqdm(range(int(args.triggers))):
+    for i in tqdm(range(int(args.triggers)), colour='green'):
         for link in links:
             raw_data = just_read_daq(rb_0, link['elink'], link['lpgbt'])
             #raw_data = fifo.giant_dump(block=300, format=False, align=(args.etroc=='ETROC1'), daq=(link['lpgbt']==0))
@@ -153,82 +156,83 @@ if __name__ == '__main__':
 
     # LET THE PLOTTING BEGIN!
 
-    import datetime
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    plot_dir = os.path.join(
-        "plots",
-        args.etroc,
-        "link_{}".format(link),
-        timestamp,
-    )
-    os.makedirs(plot_dir)
+    if make_plots:
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        plot_dir = os.path.join(
+            "plots",
+            args.etroc,
+            "link_{}".format(link),
+            timestamp,
+           )
+        os.makedirs(plot_dir)
 
-    print (f"Plots will be in {plot_dir}")
+        print (f"Plots will be in {plot_dir}")
 
-    logger.info("\n Making plots for {} events with a total of {} hits".format(evnt_cnt,sum(sum(hits))))
-    import matplotlib.pyplot as plt
-    import mplhep as hep
+        logger.info("\n Making plots for {} events with a total of {} hits".format(evnt_cnt,sum(sum(hits))))
+        import matplotlib.pyplot as plt
+        import mplhep as hep
 
-    plt.style.use(hep.style.CMS)  # or ATLAS/LHCb
-    
-    fig, ax = plt.subplots(1,1,figsize=(7,7))
-    nhits.plot(show_errors=True, color="blue", label='Number of hits')
-    ax.set_ylabel('Count')
-    ax.set_xlabel('Hits')
-    
-    fig.text(0.0, 0.995, '$\\bf{CMS}$ ETL', fontsize=20,  horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes )
-    
-    name = 'nhits'
-    
-    fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
-    fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
+        plt.style.use(hep.style.CMS)  # or ATLAS/LHCb
 
+        fig, ax = plt.subplots(1,1,figsize=(7,7))
+        nhits.plot(show_errors=True, color="blue", label='Number of hits')
+        ax.set_ylabel('Count')
+        ax.set_xlabel('Hits')
 
-    fig, ax = plt.subplots(1,1,figsize=(7,7))
-    toa.plot(color="blue", histtype="step")
-    ax.set_ylabel('Count')
-    ax.set_xlabel('TOA')
-    
-    fig.text(0.0, 0.995, '$\\bf{CMS}$ ETL', fontsize=20,  horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes )
-    
-    name = 'TOA'
-    
-    fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
-    fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
+        fig.text(0.0, 0.995, '$\\bf{CMS}$ ETL', fontsize=20,  horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes )
+
+        name = 'nhits'
+
+        fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
+        fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
 
 
-    fig, ax = plt.subplots(1,1,figsize=(7,7))
-    tot.plot(color="blue", histtype="step")
-    ax.set_ylabel('Count')
-    ax.set_xlabel('TOT')
-    
-    fig.text(0.0, 0.995, '$\\bf{CMS}$ ETL', fontsize=20,  horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes )
-    
-    name = 'TOT'
-    
-    fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
-    fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
+        fig, ax = plt.subplots(1,1,figsize=(7,7))
+        toa.plot(color="blue", histtype="step")
+        ax.set_ylabel('Count')
+        ax.set_xlabel('TOA')
+
+        fig.text(0.0, 0.995, '$\\bf{CMS}$ ETL', fontsize=20,  horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes )
+
+        name = 'TOA'
+
+        fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
+        fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
 
 
-    fig, ax = plt.subplots(1,1,figsize=(7,7))
-    hit_matrix = Hist2D.from_bincounts(hits, bins=(np.linspace(-0.5,15.5,17), np.linspace(-0.5,15.5,17)))
-    hit_matrix.plot(logz=False, cmap="cividis")
-    ax.set_ylabel('Row')
-    ax.set_xlabel('Column')
-    
-    fig.text(0.0, 0.995, '$\\bf{CMS}$ ETL', fontsize=20,  horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes )
-    
-    name = 'hit_matrix'
-    
-    fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
-    fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
-    
+        fig, ax = plt.subplots(1,1,figsize=(7,7))
+        tot.plot(color="blue", histtype="step")
+        ax.set_ylabel('Count')
+        ax.set_xlabel('TOT')
 
-    #try:
-    #    hex_dump = fifo.giant_dump(3000,255)
-    #except:
-    #    print ("Dispatch failed, trying again.")
-    #    hex_dump = fifo.giant_dump(3000,255)
+        fig.text(0.0, 0.995, '$\\bf{CMS}$ ETL', fontsize=20,  horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes )
 
-    #print (hex_dump)
-    #fifo.dump_to_file(fifo.wipe(hex_dump, trigger_words=[]))  # use 5 columns --> better to read for our data format
+        name = 'TOT'
+
+        fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
+        fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
+
+
+        fig, ax = plt.subplots(1,1,figsize=(7,7))
+        hit_matrix = Hist2D.from_bincounts(hits, bins=(np.linspace(-0.5,15.5,17), np.linspace(-0.5,15.5,17)))
+        hit_matrix.plot(logz=False, cmap="cividis")
+        ax.set_ylabel('Row')
+        ax.set_xlabel('Column')
+
+        fig.text(0.0, 0.995, '$\\bf{CMS}$ ETL', fontsize=20,  horizontalalignment='left', verticalalignment='bottom', transform=ax.transAxes )
+
+        name = 'hit_matrix'
+
+        fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
+        fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
+
+
+        #try:
+        #    hex_dump = fifo.giant_dump(3000,255)
+        #except:
+        #    print ("Dispatch failed, trying again.")
+        #    hex_dump = fifo.giant_dump(3000,255)
+
+        #print (hex_dump)
+        #fifo.dump_to_file(fifo.wipe(hex_dump, trigger_words=[]))  # use 5 columns --> better to read for our data format
