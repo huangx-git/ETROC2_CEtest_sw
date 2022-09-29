@@ -4,6 +4,8 @@ from time import sleep
 from yaml import load, dump
 import os
 
+from tamalero.KCU import KCU
+
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
@@ -127,6 +129,27 @@ def download_address_table(version):
             res = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/files/{path}/raw?ref={version}")
             local_path = f['path'].replace('address_tables/', '')
             open(f"address_table/{version}/{local_path}", 'wb').write(res.content)
+
+def get_kcu(kcu_address):
+    # Get the current firmware version number
+    kcu_tmp = KCU(name="tmp_kcu",
+                  #ipb_path="chtcp-2.0://localhost:10203?target=%s:50001"%args.kcu,
+                  ipb_path="ipbusudp-2.0://%s:50001"%kcu_address,
+                  adr_table="address_table/generic/etl_test_fw.xml")
+    xml_sha     = kcu_tmp.get_xml_sha()
+
+    if not os.path.isdir(f"address_table/{xml_sha}"):
+        print ("Downloading latest firmware version address table.")
+        download_address_table(xml_sha)
+
+    kcu = KCU(name="my_device",
+              #ipb_path="chtcp-2.0://localhost:10203?target=%s:50001"%args.kcu,
+              ipb_path="ipbusudp-2.0://%s:50001"%kcu_address,
+              adr_table=f"address_table/{xml_sha}/etl_test_fw.xml")
+
+    kcu.get_firmware_version(string=False)
+
+    return kcu
 
 if __name__ == '__main__':
     print ("Temperature example:")
