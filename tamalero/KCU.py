@@ -13,16 +13,17 @@ class KCU:
                  dummy=False):
 
         uhal.disableLogging()
+        self.auto_dispatch = True  # default -> True
 
         if not dummy:
             try:
                 self.hw = uhal.getDevice("my_device", ipb_path, "file://" + adr_table)
             except:
                 raise Exception("uhal can't get device at"+adr_table)
+            self.firmware_version = self.get_firmware_version(string=False, quiet=True)
         else:
             self.hw = None
         self.readout_boards = []
-        self.auto_dispatch = True  # default -> True
 
     def toggle_dispatch(self):
         self.auto_dispatch = False
@@ -58,7 +59,7 @@ class KCU:
         reg = self.hw.getNode(id)
         self.action_reg(reg)
 
-    def firmware_version(self, quiet=False, string=True):
+    def get_firmware_version(self, quiet=False, string=True):
 
         nodes = ("FW_INFO.HOG_INFO.GLOBAL_DATE",
                  "FW_INFO.HOG_INFO.GLOBAL_TIME",
@@ -75,11 +76,11 @@ class KCU:
         else:
             return {"major": res >> 24, "minor": (res >> 16) & 0xFF, "patch": res & 0xFFFF}
 
-    def firmware_sha(self):
+    def get_firmware_sha(self):
         res = self.read_node("FW_INFO.HOG_INFO.GLOBAL_SHA")
         return hex(res).strip('0x0')
 
-    def xml_sha(self):
+    def get_xml_sha(self):
         res = self.read_node("FW_INFO.HOG_INFO.XML_SHA")
         return hex(res).strip('0x0')
 
