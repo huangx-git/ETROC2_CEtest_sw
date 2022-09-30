@@ -16,10 +16,16 @@ maxpixel = 256
 class software_ETROC2():
     def __init__(self, BCID=0):
         print('Initiating fake ETROC2...\n')
-        
+       
+        # load ETROC2 dataformat
         with open(os.path.expandvars('$TAMALERO_BASE/configs/dataformat.yaml'), 'r') as f:
             self.format = load(f, Loader=Loader)['ETROC2']
 
+        # load emulated "registers"
+        with open(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC2_inpixel.yaml'), 'r') as f:
+            self.regs = load(f, Loader=Loader)
+
+        # storing data for running L1As
         self.data = {
                 'l1counter' : 0,
                 'bcid'      : BCID,
@@ -28,6 +34,7 @@ class software_ETROC2():
                 'status'    : 0,
                 'hits'      : 0,
                 'crc'       : 0,
+                'vth'       : 198,
                 }
         
         # data from most recent L1A (list of formatted words)
@@ -40,25 +47,30 @@ class software_ETROC2():
         self.bl_means  = [np.random.normal(198, .8) for x in range(maxpixel)]
         self.bl_stdevs = [np.random.normal(  1, .2) for x in range(maxpixel)]
 
-        # emulated "registers"
-        self.data_stor = {0x0: 0,  # test register
-                          0x1: 198 # vth
-                }
-
 
     # emulating I2C connections
     def I2C_write(self, reg, val):
-        self.data_stor[reg] = val
+        self.regs[reg] = val
+
+        # update regs for other pixels if data is shared amongst pixels
+        regcfg = reg.split('Cfg')
+        if (len(regcfg) > 1) and (regcfg[1] in [0, 1, 2]):
+            for r in range(16):
+                for c in range(16):
+                    newreg = 'PixR%dC%dCfg%d'%(r,c,regcfg)
+                    self.regs[newreg] = val
+
         return None
 
-
     def I2C_read(self, reg):
-        return self.data_stor[reg]
+        return self.regs[reg]
 
 
     # add hit data to self.L1Adata & increment hit counter
     def add_hit(self,pix):
         matrix_w = int(round(np.sqrt(maxpixel))) # pixels in NxN matrix
+        
+        # generate random data
         data = {
                 'ea'     : 0,
                 'row_id' : pix%matrix_w,
@@ -67,7 +79,7 @@ class software_ETROC2():
                 'cal'    : np.random.randint(0,500),
                 'tot'    : np.random.randint(0,500),
                 }
-        
+        # format data 
         word = self.format['identifiers']['data']['frame']
         for datatype in data:
             word = ( word +
@@ -75,6 +87,7 @@ class software_ETROC2():
                 &self.format['data']['data'][datatype]['mask']) )
         self.L1Adata.append(word)
 
+        # inc Nhits
         self.data['hits'] += 1
 
         return None
@@ -90,7 +103,7 @@ class software_ETROC2():
             # produce random hit
             val = np.random.normal(self.bl_means[pix], self.bl_stdevs[pix]) 
             # if we have a hit
-            if val > self.data_stor[0x1] :
+            if val > self.data['vth'] :
                 self.add_hit(pix)
         
         data = self.get_data()
@@ -121,4 +134,5 @@ class software_ETROC2():
             trailer = ( trailer +
                 ((self.data[datatype]<<self.format['data']['trailer'][datatype]['shift'])
                 &self.format['data']['trailer'][datatype]['mask']) )
+        
         return [header] + self.L1Adata + [trailer]

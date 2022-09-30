@@ -6,6 +6,8 @@
             <node id="GLOBAL_TIME" address="0x1"  permission="r" mask="0xFFFFFFFF"/>
             <node id="GLOBAL_VER"  address="0x2"  permission="r" mask="0xFFFFFFFF"/>
             <node id="GLOBAL_SHA"  address="0x3"  permission="r" mask="0xFFFFFFFF"/>
+            <node id="REPO_SHA"    address="0x4"  permission="r" mask="0xFFFFFFFF" description="This is the number you want to use, the rest are confusing and useless"/>
+            <node id="XML_SHA"     address="0x22"  permission="r" mask="0xFFFFFFFF" description="Last commit in which the XML address table was modified"/>
       </node>
 
       <node id="UPTIME_MSBS" address="0x5"  permission="r" mask="0xFFFFFFFF"/>
@@ -39,4 +41,7 @@
       <node id="RXCLK7_FREQ" address="0x1F"  permission="r" mask="0xFFFFFFFF"/>
       <node id="RXCLK8_FREQ" address="0x20"  permission="r" mask="0xFFFFFFFF"/>
       <node id="RXCLK9_FREQ" address="0x21"  permission="r" mask="0xFFFFFFFF"/>
+
+      <node id="DNA"     address="0x23"  permission="r" mask="0xFFFFFFFF" description="Device DNA [31:0]"/>
+
 </node>

@@ -4,6 +4,8 @@ from time import sleep
 from yaml import load, dump
 import os
 
+from tamalero.KCU import KCU
+
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
@@ -27,8 +29,12 @@ def get_temp(v_out, v_ref, r_ref, t_1, r_1, b, celcius=True):
     """
 
     delta_t = 273.15 if celcius else 0
-    r_t = r_ref / (v_ref/v_out - 1)
-    t_2 = b/((b/(t_1+delta_t)) - math.log(r_1) + math.log(r_t))
+    try:
+        r_t = r_ref / (v_ref/v_out - 1)
+        t_2 = b/((b/(t_1+delta_t)) - math.log(r_1) + math.log(r_t))
+    except ZeroDivisionError:
+        print ("Temperature calculation failed!")
+        return -999
     return t_2-delta_t
 
 
@@ -106,20 +112,44 @@ def chunk(in_list, n):
     return [in_list[i * n:(i + 1) * n] for i in range((len(in_list) + n - 1) // n )] 
 
 def download_address_table(version):
-    # https://gitlab.cern.ch/cms-etl-electronics/module_test_fw/-/archive/v1.0.7/module_test_fw-v1.0.7.zip?path=address_tables/modules
+    import os
     import requests
-    import zipfile
-    import shutil
-    fname = 'address_tables.zip'
-    url = f'https://gitlab.cern.ch/cms-etl-electronics/module_test_fw/-/archive/v{version}/module_test_fw-v{version}.zip?path=address_tables'
-    r = requests.get(url)
-    open(fname , 'wb').write(r.content)
+    import json
+    import urllib.parse
 
-    #os.makedirs(f"../address_table/v{version}/")
-    with zipfile.ZipFile(fname,"r") as zip_ref:
-        zip_ref.extractall("./")
-    shutil.move(f"module_test_fw-v{version}-address_tables/address_tables/", f"address_table/v{version}/")
-    os.remove('address_tables.zip')
+    r = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/tree?ref={version}&&path=address_tables&&recursive=True")
+    tree = json.loads(r.content)
+    os.makedirs(f"address_table/{version}")
+    for f in tree:
+        if f['type'] == 'tree':
+            os.makedirs(f"address_table/{version}/{f['name']}")
+        elif f['type'] == 'blob':
+            # needs URL encode: https://www.w3schools.com/tags/ref_urlencode.ASP
+            path = urllib.parse.quote_plus(f['path']).replace('.', '%2E')  # python thinks . is fine, so we replace it manually
+            res = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/files/{path}/raw?ref={version}")
+            local_path = f['path'].replace('address_tables/', '')
+            open(f"address_table/{version}/{local_path}", 'wb').write(res.content)
+
+def get_kcu(kcu_address):
+    # Get the current firmware version number
+    kcu_tmp = KCU(name="tmp_kcu",
+                  #ipb_path="chtcp-2.0://localhost:10203?target=%s:50001"%args.kcu,
+                  ipb_path="ipbusudp-2.0://%s:50001"%kcu_address,
+                  adr_table="address_table/generic/etl_test_fw.xml")
+    xml_sha     = kcu_tmp.get_xml_sha()
+
+    if not os.path.isdir(f"address_table/{xml_sha}"):
+        print ("Downloading latest firmware version address table.")
+        download_address_table(xml_sha)
+
+    kcu = KCU(name="my_device",
+              #ipb_path="chtcp-2.0://localhost:10203?target=%s:50001"%args.kcu,
+              ipb_path="ipbusudp-2.0://%s:50001"%kcu_address,
+              adr_table=f"address_table/{xml_sha}/etl_test_fw.xml")
+
+    kcu.get_firmware_version(string=False)
+
+    return kcu
 
 if __name__ == '__main__':
     print ("Temperature example:")

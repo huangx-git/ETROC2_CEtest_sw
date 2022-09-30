@@ -15,8 +15,11 @@
 
   <node id="MGT"   module="file://modules/MGT.xml"           address="0xA000"/>
 
-  <node id="DAQ_0"  module="file://modules/DAQ.xml"       address="0x100000" />
-  <node id="DAQ_1"  module="file://modules/DAQ.xml"       address="0x110000" />
+  <node id="DAQ_0"    module="file://modules/DAQ.xml"       address="0x100000" />
+  <node id="DAQ_1"    module="file://modules/DAQ.xml"       address="0x110000" />
+
+  <node id="DAQ_RB0"  module="file://modules/DAQ.xml"       address="0x120000" />
+
   <!-- <node id="DAQ_1"  module="file://modules/DAQ.xml"       address="0x110000" /> -->
   <!-- <node id="DAQ_2"  module="file://modules/DAQ.xml"       address="0x120000" /> -->
   <!-- <node id="DAQ_3"  module="file://modules/DAQ.xml"       address="0x130000" /> -->

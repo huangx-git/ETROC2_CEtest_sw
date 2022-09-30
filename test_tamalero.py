@@ -1,6 +1,6 @@
 from tamalero.KCU import KCU
 from tamalero.ReadoutBoard import ReadoutBoard
-from tamalero.utils import header, make_version_header, download_address_table
+from tamalero.utils import header, make_version_header, get_kcu
 from tamalero.FIFO import FIFO
 from tamalero.DataFrame import DataFrame
 
@@ -28,21 +28,95 @@ if __name__ == '__main__':
     argParser.add_argument('--reset_pattern_checker', action='store', choices=[None, 'prbs', 'upcnt'], default=None, help="Reset pattern checker?")
     argParser.add_argument('--kcu', action='store', default="192.168.0.10", help="Specify the IP address for KCU")
     argParser.add_argument('--force_no_trigger', action='store_true', help="Never initialize the trigger lpGBT.")
+    argParser.add_argument('--allow_bad_links', action='store_true', help="Select to allow bad link initialization.")
     argParser.add_argument('--read_fifo', action='store', default=-1, help='Read 3000 words from link N')
     argParser.add_argument('--alignment', action='store', nargs='?', default=False, const=True, help='Load/scan alignment? If load, pass in file path')
-    argParser.add_argument('--etroc', action='store', default="ETROC1", help='Specify ETROC version.')
+    argParser.add_argument('--etroc', action='store', default="ETROC2", help='Specify ETROC version.')
     argParser.add_argument('--eyescan', action='store_true', default=False, help="Run eyescan?")
     args = argParser.parse_args()
 
-    # initialize
-    rb_0 = rb_init(
-        kcu_adr          = args.kcu,
-        power_up         = args.power_up,
-        reconfigure      = args.reconfigure,
-        force_no_trigger = args.force_no_trigger,
-        etroc_ver        = args.etroc,
-        alignment        = args.alignment,
+    header()
+
+    data_mode = False
+    if args.etroc in ['ETROC1', 'ETROC2']: data_mode = True
+
+    print ("Using KCU at address: %s"%args.kcu)
+
+    kcu = get_kcu(args.kcu)
+
+    rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=(not args.force_no_trigger), kcu=kcu))
+
+    kcu.status()
+
+    data = 0xabcd1234
+    kcu.write_node("LOOPBACK.LOOPBACK", data)
+    if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
+        print("No communications with KCU105... quitting")
+        sys.exit(0)
+
+    if args.power_up:
+        print ("Power up init sequence for: DAQ")
+        rb_0.DAQ_LPGBT.power_up_init()
+        if (rb_0.DAQ_LPGBT.rd_adr(0x1c5) != 0xa5):
+            print ("No communication with DAQ LPGBT... trying to reset DAQ MGTs")
+            rb_0.DAQ_LPGBT.reset_daq_mgts()
+            rb_0.DAQ_LPGBT.power_up_init()
+            time.sleep(0.01)
+            #print(hex(rb_0.DAQ_LPGBT.rd_adr(0x1c5)))
+            if (rb_0.DAQ_LPGBT.rd_adr(0x1c5) != 0xa5):
+                print ("Still no communication with DAQ LPGBT. Quitting.")
+                sys.exit(0)
+        #rb_0.TRIG_LPGBT.power_up_init()
+        rb_0.VTRX.get_version()
+        print ("VTRX status at power up:")
+        _ = rb_0.VTRX.status()
+        rb_0.get_trigger()
+        if rb_0.trigger:
+            print ("Enabling VTRX channel for trigger lpGBT")
+            rb_0.VTRX.enable(ch=1)
+            time.sleep(1)
+            print ("Power up init sequence for: Trigger")
+            rb_0.TRIG_LPGBT.power_up_init()
+        #rb_0.DAQ_LPGBT.power_up_init_trigger()
+        #
+
+    if not hasattr(rb_0, "TRIG_LPGBT"):
+        rb_0.get_trigger()
+
+    if args.power_up or args.reconfigure:
+        if args.alignment:
+            if isinstance(args.alignment, str):
+                print ("Loading uplink alignemnt from file:", args.alignment)
+                from tamalero.utils import load_alignment_from_file
+                alignment = load_alignment_from_file(args.alignment)
+            else:
+                alignment = None
+        else:
+            alignment = False
+        rb_0.configure(alignment=alignment, data_mode=data_mode, etroc=args.etroc)
+            # this is very slow, especially for the trigger lpGBT.
+        if rb_0.trigger:
+            time.sleep(1.0)
+            rb_0.DAQ_LPGBT.reset_trigger_mgts()
+            kcu.write_node("READOUT_BOARD_%s.LPGBT.FEC_ERR_RESET" % 0, 0x1)
+        time.sleep(1.0)
+
+    res = rb_0.DAQ_LPGBT.get_board_id()
+    res['trigger'] = 'yes' if rb_0.trigger else 'no'
+    make_version_header(res)
+
+    if args.power_up or args.reconfigure:
+        rb_0.reset_problematic_links(
+           max_retries = 10,
+            allow_bad_links = args.allow_bad_links,
         )
+
+        print ()
+        rb_0.status()
+
+    _ = rb_0.VTRX.status()
+
+    rb_0.DAQ_LPGBT.set_dac(1.0)  # set the DAC / Vref to 1.0V.
 
     if args.adcs or args.power_up:
         print("\n\nReading GBT-SCA ADC values:")

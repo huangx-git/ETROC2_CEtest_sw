@@ -29,6 +29,12 @@ class LPGBT(RegParser):
         self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping.yaml'), 'adc')
         if kcu != None:
             self.kcu = kcu
+        try:
+            self.callibrate_adc()
+        except:
+            print("Need to callibrate ADC in the future. Use default values for now.")
+            self.cal_gain = 1.85
+            self.cal_offset = 512
 
         try:
             self.ver = self.rd_adr(0x005).value() >> 7
@@ -351,6 +357,7 @@ class LPGBT(RegParser):
 
         done = 0
         while (done==0):
+            #print ("Waiting")
             done = self.rd_reg("LPGBT.RO.ADC.ADCDONE")
     
         val = self.rd_reg("LPGBT.RO.ADC.ADCVALUEL")
@@ -361,6 +368,42 @@ class LPGBT(RegParser):
     
         return val
 
+    def callibrate_adc(self, recallibrate=False):
+        serial_num = self.get_board_id()['lpgbt_serial']
+        cal_file = "lpgbt_cal_%d.json"%serial_num
+        
+        # load from json file if it exists (unless recallibrate)
+        if os.path.isfile(cal_file) and not(recallibrate):
+            with open(cal_file, 'r') as openfile:
+                cal_data = json.load(openfile)
+            gain = cal_data['gain']
+            offset = cal_data['offset']
+            print("Loaded ADC callibration data. Gain: %f / Offset: %d"%(gain, offset))
+        
+        # else, determine callibration constants
+        else:
+            # determine offset; both at Vref/2
+            offset = self.read_adc(0xf)
+            
+            # determine gain; one at Vref/2, one at ground
+            # use internal grounding - ADC12, supply voltage divider off
+            initial_val = self.rd_reg("LPGBT.RW.ADC.VDDMONENA")
+            self.wr_reg("LPGBT.RW.ADC.VDDMONENA", 0x0)
+
+            # ADC = (Vdiff/Vref)*Gain*512 + Offset
+            gain = 2*abs(self.read_adc(0xC)-offset)/512
+            self.wr_reg("LPGBT.RW.ADC.VDDMONENA", initial_val)
+            print("Callibrated ADC. Gain: %f / Offset: %d"%(gain, offset))
+
+            # save to json file
+            cal_data = {'gain': gain, 'offset': offset}
+            with open(cal_file, "w") as outfile:
+                json.dump(cal_data, outfile)
+                print("Callibration data saved to %s"%cal_file)
+
+        self.cal_gain = gain
+        self.cal_offset = offset
+        
     def set_dac(self, v_out):
         if v_out > 1.00:
             print ("Can't set the DAC to a value larger than 1.0 V!")
@@ -568,7 +611,7 @@ class LPGBT(RegParser):
         this function is following https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#example-2-multi-byte-write
         '''
 
-        if ignore_response:
+        if ignore_response and False:
             self.kcu.toggle_dispatch()
 
         i2cm     = 2

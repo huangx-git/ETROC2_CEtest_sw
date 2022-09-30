@@ -41,7 +41,7 @@ class VTRX:
 
         for ch in disable_channels:
             print (f"Disabling VTRx+ channel {ch}")
-            self.disable(channel=ch)
+            self.disable(ch=ch)
 
         # if kcu is dummy kcu;
         if self.master.kcu.hw == None:
@@ -58,6 +58,20 @@ class VTRX:
                 self.regs = load(f, Loader=Loader)[self.ver]
         except TypeError:
             print ("lpGBT init not yet done, will load VTRX address table later.")
+
+    def configure(self, trigger=False):
+        if trigger:
+            if self.ver == "production":
+                self.enable(ch=1)
+            elif self.ver == "prototype":
+                for ch in [2,3]:
+                    self.disable(ch=ch)
+            else:
+                print (f"Don't know how to configure VTRX version {self.ver}")
+        else:
+            if self.ver == "prototype":
+                for ch in [1,2,3]:
+                    self.disable(ch=ch)
 
     def get_version(self):
         if self.rd_adr(0x15)>>4 == 1:

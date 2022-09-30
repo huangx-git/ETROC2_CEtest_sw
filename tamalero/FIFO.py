@@ -18,7 +18,7 @@ def just_read(rb, link, daq=True):
     '''
     fifo = FIFO(rb, links=[{'elink':link, 'lpgbt':0 if daq else 1}], ETROC='ETROC2')
     # just keep the default trigger words
-    fifo.set_trigger([0x0, 0x0, 0x0, 0x0, 0x0], [0x0, 0x0, 0x0, 0x0, 0x0])
+    fifo.set_trigger([0x0]*10, [0x0]*10)
     #fifo.reset()
     #fifo.reset(l1a=True)
     res = fifo.dump(block=255, format=True, daq=daq)
@@ -36,18 +36,39 @@ def just_read_daq(rb, link, lpgbt, fixed_pattern=False, trigger_rate=0):
     '''
     import numpy as np
     fifo = FIFO(rb, links=[{'elink':link, 'lpgbt':lpgbt}], ETROC='ETROC2')
-    if fixed_pattern:
+    if fixed_pattern and rb.kcu.firmware_version['minor'] >= 2 and rb.kcu.firmware_version['patch'] >= 3 :
         fifo.use_fixed_pattern()
     if trigger_rate>0:
         rate = fifo.set_trigger_rate(trigger_rate*100)
         print (f"Trigger rate is currently {rate} Hz")
     fifo.reset(l1a=True)
-    res = fifo.dump_daq(block=255)
-    fifo.use_etroc_data()
+    res = fifo.dump_daq(block=3000)
+    if rb.kcu.firmware_version['minor'] >= 2 and rb.kcu.firmware_version['patch'] >= 3:
+        fifo.use_etroc_data()
 
     empty_frame_mask = np.array(res[0::2]) > (2**8)  # masking empty fifo entries
     len_cut = min(len(res[0::2]), len(res[1::2]))  # ensuring equal length of arrays downstream
-    return list (np.array(res[0::2])[:len_cut][empty_frame_mask[:len_cut]] | (np.array(res[1::2]) << 32)[:len_cut][empty_frame_mask[:len_cut]])
+    if len(res) > 0:
+        return list (np.array(res[0::2])[:len_cut][empty_frame_mask[:len_cut]] | (np.array(res[1::2]) << 32)[:len_cut][empty_frame_mask[:len_cut]])
+    else:
+        return []
+
+def manual_link_scan(lpgbt=0, zero_supress=True):
+    rb_0.kcu.write_node("READOUT_BOARD_0.BITSLIP_AUTO_EN", 0x0)
+
+    if not zero_supress:
+        rb_0.kcu.write_node("READOUT_BOARD_0.ZERO_SUPRESS", 0x0)
+
+    for i in range(24):
+        print (f'\n\nLink {i}')
+        for j in range(40):
+            rb_0.kcu.write_node("READOUT_BOARD_0.ETROC_BITSLIP", 1<<i)
+            just_read_daq(rb_0, i, 0)
+            print (just_read_daq(rb_0, i, 0))
+
+    # Back to defaults (zero supression on for all links)
+    rb_0.kcu.write_node("READOUT_BOARD_0.ZERO_SUPRESS", 2**28-1)
+    rb_0.kcu.write_node("READOUT_BOARD_0.BITSLIP_AUTO_EN", 0x1)
 
 def get_event(data_frame, data_words):
     for word in data_words:

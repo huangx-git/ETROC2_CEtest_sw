@@ -51,6 +51,7 @@ class ReadoutBoard:
             self.TRIG_LPGBT.get_version()
             self.TRIG_LPGBT.parse_xml(self.TRIG_LPGBT.ver)
             print ("Connected trigger lpGBT to KCU.")
+            self.TRIG_LPGBT.callibrate_adc()
 
 
     def connect_KCU(self, kcu):
@@ -258,6 +259,9 @@ class ReadoutBoard:
         self.DAQ_LPGBT.configure_eptx()
         self.DAQ_LPGBT.configure_eprx()
 
+        # configure the VTRX
+        self.VTRX.configure(trigger=self.trigger)
+
         ## Trigger
         #for i in range(28):
         #    self.TRIG_LPGBT.set_uplink_alignment(5, i) # 4 for trigger loopback
@@ -268,10 +272,16 @@ class ReadoutBoard:
         #self.TRIG_LPGBT.configure_eptx()
         #self.TRIG_LPGBT.configure_eprx()
 
-        if alignment is not None:
+        # the logic here is as follows:
+        # dict -> load the provided alignment
+        # none -> rerun alignment scan
+        # anything else (e.g. False) -> don't touch the uplink alignment
+        if isinstance(alignment, dict):
             self.load_uplink_alignment(alignment)
-        else:
+        elif alignment is None:
             _ = self.find_uplink_alignment(data_mode=data_mode, etroc=etroc)
+        else:
+            pass
 
         # SCA init
         self.sca_hard_reset()
@@ -287,19 +297,51 @@ class ReadoutBoard:
 
     def reset_link(self, trigger=False):
         '''
-        Highly experimental
+        Resets the links entirely, different procedure is necessary for production / prototype version of VTRX
         '''
         if trigger:
-            self.VTRX.reset(toggle_channels=[1])
+            if self.VTRX.ver == 'production':
+                self.VTRX.reset(toggle_channels=[1])
+            elif self.VTRX.ver == 'prototype':
+                self.VTRX.reset(toggle_channels=[1])
+            else:
+                print ("Don't know how to reset VTRX version", self.VTRX.ver)
+            self.VTRX.configure(trigger=trigger)
             self.DAQ_LPGBT.reset_trigger_mgts()
             self.TRIG_LPGBT.power_up_init(verbose=False)
         else:
-            self.VTRX.reset(toggle_channels=[0])
+            if self.VTRX.ver == 'production':
+                self.VTRX.reset()
+            elif self.VTRX.ver == 'prototype':
+                self.VTRX.reset(toggle_channels=[0])
+            else:
+                print ("Don't know how to reset VTRX version", self.VTRX.ver)
+            self.VTRX.configure(trigger=trigger)
             self.DAQ_LPGBT.reset_daq_mgts()
             self.DAQ_LPGBT.power_up_init()
 
         self.reset_FEC_error_count(quiet=True)
 
+    def reset_problematic_links(self, max_retries=10, allow_bad_links=False):
+        '''
+        First check DAQ link, then trigger link.
+        '''
+        for link in ['DAQ', 'Trigger'] if self.trigger else ['DAQ']:
+            for i in range(max_retries):
+                if link == 'DAQ':
+                    good_link = self.DAQ_LPGBT.link_status()
+                else:
+                    good_link = self.TRIG_LPGBT.link_status()
+                if good_link:
+                    print (f"No FEC errors detected on {link} link")
+                    break
+                else:
+                    self.reset_link(trigger = (link=='Trigger'))
+                if i+2 > max_retries:
+                    if allow_bad_links:
+                        print (f"{link} link does not have a stable connection. Ignoring.")
+                    else:
+                        raise RuntimeError(f"{link} link does not have a stable connection after {max_retries} retries")
 
     def read_temp(self, verbose=0):
         # high level function to read all the temperature sensors
