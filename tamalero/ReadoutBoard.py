@@ -22,7 +22,9 @@ class ReadoutBoard:
             self.kcu = kcu
 
         self.DAQ_LPGBT = LPGBT(rb=rb, flavor=flavor, kcu=kcu)
-        self.DAQ_LPGBT.get_version()
+        if kcu != None and self.kcu.hw != None:
+            # if kcu is not dummy
+            self.DAQ_LPGBT.get_version()
         self.DAQ_LPGBT.parse_xml(self.DAQ_LPGBT.ver)
 
         self.VTRX = VTRX(self.DAQ_LPGBT)

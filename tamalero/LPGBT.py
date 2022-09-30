@@ -27,6 +27,7 @@ class LPGBT(RegParser):
             self.master = master
         self.LPGBT_CONST = LpgbtConstants()
         self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping.yaml'), 'adc')
+
         if kcu != None:
             self.kcu = kcu
         try:
@@ -36,11 +37,15 @@ class LPGBT(RegParser):
             self.cal_gain = 1.85
             self.cal_offset = 512
 
-        try:
-            self.ver = self.rd_adr(0x005).value() >> 7
-        except AttributeError:
-            print ("cannot load lpgbt version; load after connecting to kcu.")
-
+        # check if kcu is dummy
+        if kcu != None and self.kcu.hw != None:
+            try:
+                self.ver = self.rd_adr(0x005).value() >> 7
+            except AttributeError:
+                print ("cannot load lpgbt version; load after connecting to kcu.")
+        else:
+            # if dummy, just parse v0 for now
+            self.ver = 0
 
     def link_status(self, verbose=False):
         if self.trigger:
