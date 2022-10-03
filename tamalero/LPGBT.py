@@ -31,22 +31,34 @@ class LPGBT(RegParser):
         if kcu != None:
             self.kcu = kcu
 
+        self.configure()
+
+    def configure(self):
+        if not hasattr(self, 'kcu'):
+            raise Exception("Connect to KCU first.")
+            return
+
+        if not self.kcu.dummy:
+            # Check LPGBT Version
+            try:
+                self.kcu.write_node("READOUT_BOARD_%d.SC.FRAME_FORMAT" % self.rb, 0)
+                self.parse_xml(ver=0)
+                self.get_version()
+                # if not version 0, this will throw an error.
+            except:
+                self.kcu.write_node("READOUT_BOARD_%d.SC.FRAME_FORMAT" % self.rb, 1)
+                self.parse_xml(ver=1)
+                self.get_version()
+        else:
+            self.ver = 0
+
+        # Callibrate ADC
         try:
             self.callibrate_adc()
         except:
             print("Need to callibrate ADC in the future. Use default values for now.")
             self.cal_gain = 1.85
             self.cal_offset = 512
-
-        # check if kcu is dummy
-        if kcu != None and self.kcu.hw != None:
-            try:
-                self.ver = self.rd_adr(0x005).value() >> 7
-            except AttributeError:
-                print ("cannot load lpgbt version; load after connecting to kcu.")
-        else:
-            # if dummy, just parse v0 for now
-            self.ver = 0
 
     def link_status(self, verbose=False):
         if self.trigger:
@@ -69,7 +81,8 @@ class LPGBT(RegParser):
             )
     
     def get_version(self):
-        self.ver = self.rd_adr(0x005).value() >> 7
+        self.ver = self.rd_reg("LPGBT.RWF.CHIPID.USERID1") >> 7
+        #self.ver = self.rd_adr(0x005).value() >> 7
 
     def reset_tx_mgt_by_mask(self, mask):
         id = "MGT.MGT_TX_RESET"

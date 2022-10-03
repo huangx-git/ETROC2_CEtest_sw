@@ -18,22 +18,17 @@ class ReadoutBoard:
 
         self.trigger = trigger
         self.DAQ_LPGBT = LPGBT(rb=rb, flavor=flavor, kcu=kcu)
-        self.DAQ_LPGBT.parse_xml(self.DAQ_LPGBT.ver)
         self.VTRX = VTRX(self.DAQ_LPGBT)
         # This is not yet recommended:
         #for adr in [0x06, 0x0A, 0x0E, 0x12]:
         #    self.VTRX.wr_adr(adr, 0x20)
-
         self.SCA = SCA(rb=rb, flavor=flavor)
 
         if kcu != None:
             self.kcu = kcu
             self.kcu.readout_boards.append(self)
-            self.DAQ_LPGBT.connect_KCU(kcu)
+            #self.DAQ_LPGBT.configure()
             self.SCA.connect_KCU(kcu)
-
-        if not self.kcu.dummy:
-            self.DAQ_LPGBT.get_version()
 
     def get_trigger(self):
         # Self-check if a trigger lpGBT is present, if trigger is not explicitely set to False
@@ -51,8 +46,7 @@ class ReadoutBoard:
         if self.trigger:
             self.TRIG_LPGBT = LPGBT(rb=self.rb, flavor=self.flavor, trigger=True, master=self.DAQ_LPGBT)
             self.TRIG_LPGBT.connect_KCU(self.kcu)
-            self.TRIG_LPGBT.get_version()
-            self.TRIG_LPGBT.parse_xml(self.TRIG_LPGBT.ver)
+            self.TRIG_LPGBT.configure()
             print ("Connected trigger lpGBT to KCU.")
             self.TRIG_LPGBT.callibrate_adc()
 
