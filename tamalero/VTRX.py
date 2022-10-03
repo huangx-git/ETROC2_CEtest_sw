@@ -43,8 +43,7 @@ class VTRX:
             print (f"Disabling VTRx+ channel {ch}")
             self.disable(ch=ch)
 
-        # if kcu is dummy kcu;
-        if self.master.kcu.hw == None:
+        if self.master.kcu.dummy:
             return
 
         try:

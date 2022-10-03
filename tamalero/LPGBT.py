@@ -30,6 +30,7 @@ class LPGBT(RegParser):
 
         if kcu != None:
             self.kcu = kcu
+
         try:
             self.callibrate_adc()
         except:

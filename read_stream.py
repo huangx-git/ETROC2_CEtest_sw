@@ -73,7 +73,7 @@ if __name__ == '__main__':
 
     kcu = get_kcu(args.kcu)
 
-    rb_0 = kcu.connect_readout_board(ReadoutBoard(0, kcu=kcu))
+    rb_0 = ReadoutBoard(0, kcu=kcu)
 
     lpgbt = int(args.lpgbt)
     link  = int(args.link)

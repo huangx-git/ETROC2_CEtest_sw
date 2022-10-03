@@ -37,14 +37,13 @@ if __name__ == '__main__':
 
     header()
 
-    data_mode = False
-    if args.etroc in ['ETROC1', 'ETROC2']: data_mode = True
+    data_mode = args.etroc in ['ETROC1', 'ETROC2']
 
     print ("Using KCU at address: %s"%args.kcu)
 
     kcu = get_kcu(args.kcu)
 
-    rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=(not args.force_no_trigger), kcu=kcu))
+    rb_0 = ReadoutBoard(0, trigger=(not args.force_no_trigger), kcu=kcu)
 
     kcu.status()
 

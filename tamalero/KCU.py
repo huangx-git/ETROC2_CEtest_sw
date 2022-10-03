@@ -15,7 +15,9 @@ class KCU:
         uhal.disableLogging()
         self.auto_dispatch = True  # default -> True
 
-        if not dummy:
+        self.dummy = dummy
+
+        if not self.dummy:
             try:
                 self.hw = uhal.getDevice("my_device", ipb_path, "file://" + adr_table)
             except:
@@ -132,13 +134,6 @@ class KCU:
             return "rw"
         if perm == uhal.NodePermission.WRITE:
             return "w"
-
-    def connect_readout_board(self, rb, dummy=False):
-        self.readout_boards.append(rb)
-
-        if not dummy:
-            rb.connect_KCU(self)  # not sure if this is actually useful
-        return rb
 
     def check_clock_frequencies(self):
         clocks = (('FW_INFO.CLK125_FREQ', 125000000),
