@@ -7,6 +7,7 @@ Production: https://edms.cern.ch/ui/file/1719330/1/VLplus_quadLDD_spec_v1.3.pdf
 from tamalero.colors import conditional
 import os
 import time
+from tamalero.utils import get_temp
 from yaml import load, dump
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -217,3 +218,14 @@ class VTRX:
 
     def set_emphasis_amplitude(self, channel=0, amplitude=0x0):
         self.wr_reg_ch('CHxEMP', ch, amplitude)
+
+    def get_temp(self):
+        adc_val = self.master.read_adc(0, convert=True)
+        return get_temp(
+            adc_val,
+            v_ref = 1,  # should be 1V
+            r_ref = 10,  # voltage divider resisitor has 10kOhm
+            t_1 = 25,  # reference temperature of NTC
+            r_1 = 10 if self.ver == 'prototype' else 1,  # resistance of NTC at reference temperature
+            b = 3380,  # b value (proto/production dependent?)
+        )
