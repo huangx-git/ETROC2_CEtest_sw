@@ -112,6 +112,7 @@ if __name__ == '__main__':
         print ()
         rb_0.status()
 
+    rb_0.VTRX.get_version()
     _ = rb_0.VTRX.status()
 
     rb_0.DAQ_LPGBT.set_dac(1.0)  # set the DAC / Vref to 1.0V.
