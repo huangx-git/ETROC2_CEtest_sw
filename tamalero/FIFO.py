@@ -24,7 +24,7 @@ def just_read(rb, link, daq=True):
     res = fifo.dump(block=255, format=True, daq=daq)
     return res
 
-def just_read_daq(rb, link, lpgbt, fixed_pattern=False, trigger_rate=0):
+def just_read_daq(rb, link, lpgbt, fixed_pattern=False, trigger_rate=0, send_l1a=True, l1a_count=1):
     '''
     very simple function that just reads whatever comes out of a link, no matter the pattern
     this is tested with v1.2.2 @ BU test stand, DAQ elink 2 and trigger elink 20.
@@ -39,11 +39,19 @@ def just_read_daq(rb, link, lpgbt, fixed_pattern=False, trigger_rate=0):
     if fixed_pattern and rb.kcu.firmware_version['minor'] >= 2 and rb.kcu.firmware_version['patch'] >= 3 :
         fifo.use_fixed_pattern()
     if trigger_rate>0:
+        rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.DL_SRC"%rb.rb, 0x0)
         rate = fifo.set_trigger_rate(trigger_rate*100)
         print (f"Trigger rate is currently {rate} Hz")
-    fifo.reset(l1a=True)
+    else:
+        rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.DL_SRC"%rb.rb, 0x3)
+    fifo.reset(l1a=send_l1a)
+    #time.sleep(5)  # might be useful if the L1A generator works
+    if l1a_count>1:
+        fifo.send_l1a(count=l1a_count-1)
     res = fifo.dump_daq(block=3000)
+    #fifo.reset(l1a=False)
     if rb.kcu.firmware_version['minor'] >= 2 and rb.kcu.firmware_version['patch'] >= 3:
+        #print ("Setting to ETROC data")
         fifo.use_etroc_data()
 
     empty_frame_mask = np.array(res[0::2]) > (2**8)  # masking empty fifo entries
@@ -132,6 +140,12 @@ class FIFO:
         for i, (word, mask) in enumerate(list(zip(words, masks))):
             self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_TRIG%i"%(self.rb.rb, i), word)
             self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_TRIG%i_MASK"%(self.rb.rb, i), mask)
+
+    def send_l1a(self, count=1):
+        self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_DATA"%self.rb.rb, self.fast_commands['L1A'])
+        for i in range(count):
+            self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_PULSE"%self.rb.rb, 0x01)
+
 
     def reset(self, l1a=False):
         # needs to be reset twice, dunno
