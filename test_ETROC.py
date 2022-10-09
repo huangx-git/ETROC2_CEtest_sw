@@ -16,7 +16,7 @@ except ImportError:
 
 
 # initiate
-ETROC2 = ETROC(usefake=True)
+ETROC2 = ETROC(usefake=True) # currently using Software ETROC2 (fake)
 DF = DataFrame('ETROC2')
 
 # argsparser
@@ -129,18 +129,18 @@ def parse_data(data, N_pix):
 
 
 def vth_scan(ETROC2):
-    N_l1a    = 3200 # how many L1As to send
-    vth_min  =  190 # scan range
-    vth_max  =  210
-    vth_step =  .25 # step size
+    N_l1a    =  3200 # how many L1As to send
+    vth_min  =   190 # scan range
+    vth_max  =   210
+    vth_step =   .25 # step size
     N_steps  = int((vth_max-vth_min)/vth_step)+1 # number of steps
-    N_pix    =  256 # total number of pixels
+    N_pix    = 16*16 # total number of pixels
     
     vth_axis    = np.linspace(vth_min, vth_max, N_steps)
     run_results = np.empty([N_steps, N_pix])
 
     for vth in vth_axis:
-        ETROC2.set_vth(vth)
+        ETROC2.set_Vth_mV(vth)
         i = int(round((vth-vth_min)/vth_step))
         run_results[i] = parse_data(run(N_l1a), N_pix)
     
@@ -153,16 +153,17 @@ def vth_scan(ETROC2):
 if args.vth:
     print("<--- Testing Vth scan --->")
     
-    # run can only if no saved data or we want to rerun
+    # run only if no saved data or we want to rerun
     if (not os.path.isfile("results/vth_scan.json")) or args.rerun:
-        
+
+        # scan
         print("No data. Run new vth scan...")
-        
         result_data = vth_scan(ETROC2)
         
+        #save
         if not os.path.isdir('results'):
-            os.makedirs('results')
-        
+            os.makedirs('results') 
+
         with open("results/vth_scan.json", "w") as outfile:
             json.dump(result_data, outfile)
             print("Data saved to results/vth_scan.json\n")

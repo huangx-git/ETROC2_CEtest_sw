@@ -348,7 +348,7 @@ class LPGBT(RegParser):
             "in voltage: {0:.4f}".format(input_voltage).ljust(22) + "comment: '{0}'".format(comment)
             print(out_string)
 
-    def read_adc(self, channel):
+    def read_adc(self, channel, convert=False):
         # ADCInPSelect[3:0]  |  Input
         # ------------------ |----------------------------------------
         # 4'd0               |  ADC0 (external pin)
@@ -384,7 +384,12 @@ class LPGBT(RegParser):
     
         self.wr_reg("LPGBT.RW.ADC.ADCCONVERT", 0x0)
         self.wr_reg("LPGBT.RW.ADC.ADCENABLE", 0x1)
-    
+        if convert:
+            for k in self.adc_mapping.keys():
+                if int(self.adc_mapping[k]['pin']) == channel:
+                    conversion = self.adc_mapping[k]['conv']
+                    break
+            val = val / (2**10 - 1) * conversion
         return val
 
     def callibrate_adc(self, recallibrate=False):
