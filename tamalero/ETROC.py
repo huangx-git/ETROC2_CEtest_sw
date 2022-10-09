@@ -217,7 +217,7 @@ class ETROC():
 
     def set_Vth(self, vth):
         for pix in range(256):
-            set_vth_pix(self, pix, vth)
+            set_Vth_pix(self, pix, vth)
 
     def set_Vth_mV(self, vth):
         if self.usefake:
@@ -225,7 +225,7 @@ class ETROC():
             print("Vth set to %f."%vth)
         else:
             for pix in range(256):
-                set_vth_pix_mV(self, pix, vth)
+                set_Vth_pix_mV(self, pix, vth)
 
     # return vth value if vth for all pixels are same;
     # return None if they are not all the same
