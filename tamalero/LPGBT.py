@@ -44,11 +44,13 @@ class LPGBT(RegParser):
                 self.kcu.write_node("READOUT_BOARD_%d.SC.FRAME_FORMAT" % self.rb, 0)
                 self.parse_xml(ver=0)
                 self.get_version()
+                assert(self.ver == 0)
                 # if not version 0, this will throw an error.
             except:
                 self.kcu.write_node("READOUT_BOARD_%d.SC.FRAME_FORMAT" % self.rb, 1)
                 self.parse_xml(ver=1)
                 self.get_version()
+                assert(self.ver == 1)
         else:
             self.ver = 0
 
@@ -81,8 +83,9 @@ class LPGBT(RegParser):
             )
     
     def get_version(self):
-        self.ver = self.rd_reg("LPGBT.RWF.CHIPID.USERID1") >> 7
-        #self.ver = self.rd_adr(0x005).value() >> 7
+        self.ver = self.get_board_id()['lpgbt_ver']
+        #self.ver = self.rd_reg("LPGBT.RWF.CHIPID.USERID1") & 1
+        #self.ver = self.rd_adr(0x005).value() & 1
 
     def reset_tx_mgt_by_mask(self, mask):
         id = "MGT.MGT_TX_RESET"
