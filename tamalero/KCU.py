@@ -103,6 +103,19 @@ class KCU:
 
         self.check_clock_frequencies()
 
+        locked = self.read_node(f"READOUT_BOARD_0.ETROC_LOCKED").value()
+        locked_slave = self.read_node(f"READOUT_BOARD_0.ETROC_LOCKED_SLAVE").value()
+
+        for l in range(28):
+            if (locked << l) & 1:
+                print(f'Master elink {l} is locked.')
+        for l in range(28):
+            if (locked_slave << l) & 1:
+                print(f'Slave elink {l} is locked.')
+
+        if locked | locked_slave == 0:
+            print('All elinks are unlocked.')
+
 
     def print_reg(self, reg, threshold=1, maxval=0xFFFFFFFF, use_color=False, invert=False):
         from tamalero.colors import green, red, dummy
