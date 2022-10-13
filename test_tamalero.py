@@ -6,8 +6,6 @@ from tamalero.DataFrame import DataFrame
 
 from tamalero.SCA import SCA_CONTROL
 
-from ETROCinit import rb_init
-
 import time
 import random
 import sys
