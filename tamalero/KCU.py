@@ -2,6 +2,7 @@
 Control board class (KCU105). Depends on uhal.
 """
 import uhal
+from tamalero.colors import red, green
 
 
 class KCU:
@@ -108,13 +109,13 @@ class KCU:
 
         for l in range(28):
             if (locked << l) & 1:
-                print(f'Master elink {l} is locked.')
+                print(green(f'Master elink {l} is locked.'))
         for l in range(28):
             if (locked_slave << l) & 1:
-                print(f'Slave elink {l} is locked.')
+                print(green(f'Slave elink {l} is locked.'))
 
         if locked | locked_slave == 0:
-            print('All elinks are unlocked.')
+            print(red('Warning: No elink is locked.'))
 
 
     def print_reg(self, reg, threshold=1, maxval=0xFFFFFFFF, use_color=False, invert=False):
