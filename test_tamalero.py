@@ -31,6 +31,7 @@ if __name__ == '__main__':
     argParser.add_argument('--alignment', action='store', nargs='?', default=False, const=True, help='Load/scan alignment? If load, pass in file path')
     argParser.add_argument('--etroc', action='store', default="ETROC2", help='Specify ETROC version.')
     argParser.add_argument('--eyescan', action='store_true', default=False, help="Run eyescan?")
+    argParser.add_argument('--recal_lpgbt', action='store_true', default=False, help="Recallibrate ADC in LPGBT? (instead of using saved values)")
     args = argParser.parse_args()
 
     header()
@@ -42,6 +43,8 @@ if __name__ == '__main__':
     kcu = get_kcu(args.kcu)
 
     rb_0 = ReadoutBoard(0, trigger=(not args.force_no_trigger), kcu=kcu)
+    if args.recal_lpgbt:
+        rb_0.DAQ_LPGBT.callibrate_adc(recallibrate=True)
 
     kcu.status()
 
