@@ -39,7 +39,6 @@ if __name__ == '__main__':
     data_mode = False
     if args.etroc in ['ETROC1', 'ETROC2']: data_mode = True
 
-    check_repo_status()
 
     print ("Using KCU at address: %s"%args.kcu)
 
@@ -50,6 +49,7 @@ if __name__ == '__main__':
         rb_0.DAQ_LPGBT.callibrate_adc(recallibrate=True)
 
     kcu.status()
+    check_repo_status(kcu_version=kcu.get_firmware_version(quiet=True))
 
     data = 0xabcd1234
     kcu.write_node("LOOPBACK.LOOPBACK", data)

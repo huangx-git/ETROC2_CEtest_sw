@@ -130,7 +130,7 @@ def download_address_table(version):
             local_path = f['path'].replace('address_tables/', '')
             open(f"address_table/{version}/{local_path}", 'wb').write(res.content)
 
-def check_repo_status():
+def check_repo_status(kcu_version=None):
     import requests
     import json
     import os
@@ -146,11 +146,21 @@ def check_repo_status():
     working_tree_dir = os.path.expandvars("$TAMALERO_BASE")
     repo = Repo(working_tree_dir)
     hashes = [ c.hexsha for c in repo.iter_commits(max_count=50) ]
-    if last_commit_sha in hashes:
+    tags = [ t.name.strip('v') for t in repo.tags ]
+
+    #
+    commit_based = (last_commit_sha in hashes)
+    tag_based = kcu_version in tags if kcu_version is not None else True
+
+    if commit_based and tag_based:
         print (green("Your tamalero repository is up-to-date with master"))
     else:
-        print (red("\n\n!!! WARNING: You are working on an outdated or out-of-sync version of tamalero!!!"))
-        print (red("!!! WARNING: Please pull a more recent version from gitlab.\n\n"))
+        print (red("\n! WARNING: You are potentially working on an outdated or out-of-sync version of tamalero !"))
+        if not tag_based:
+            print (red(f"You are using KCU firmware version {kcu_version}, but the corresponding tag has not been found in your local tamalero repo."))
+            print (red(f"You can ignore this warning for firmware versions BEFORE 1.3.5\n"))
+        else:
+            print (red("Please pull a more recent version from gitlab.\n"))
 
 def get_kcu(kcu_address):
     # Get the current firmware version number
