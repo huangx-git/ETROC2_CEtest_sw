@@ -1,6 +1,6 @@
 from tamalero.KCU import KCU
 from tamalero.ReadoutBoard import ReadoutBoard
-from tamalero.utils import header, make_version_header, get_kcu
+from tamalero.utils import header, make_version_header, get_kcu, check_repo_status
 from tamalero.FIFO import FIFO
 from tamalero.DataFrame import DataFrame
 
@@ -38,6 +38,8 @@ if __name__ == '__main__':
 
     data_mode = False
     if args.etroc in ['ETROC1', 'ETROC2']: data_mode = True
+
+    check_repo_status()
 
     print ("Using KCU at address: %s"%args.kcu)
 

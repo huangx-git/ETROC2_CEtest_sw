@@ -130,6 +130,28 @@ def download_address_table(version):
             local_path = f['path'].replace('address_tables/', '')
             open(f"address_table/{version}/{local_path}", 'wb').write(res.content)
 
+def check_repo_status():
+    import requests
+    import json
+    import os
+    from git import Repo
+    from tamalero.colors import red, green
+
+    # get remote repo log
+    r = requests.get(f"https://gitlab.cern.ch/api/v4/projects/110883/repository/commits")
+    log = json.loads(r.content)
+    last_commit_sha = log[0]['id']
+
+    # get local log
+    working_tree_dir = os.path.expandvars("$TAMALERO_BASE")
+    repo = Repo(working_tree_dir)
+    hashes = [ c.hexsha for c in repo.iter_commits(max_count=50) ]
+    if last_commit_sha in hashes:
+        print (green("Your tamalero repository is up-to-date with master"))
+    else:
+        print (red("\n\n!!! WARNING: You are working on an outdated or out-of-sync version of tamalero!!!"))
+        print (red("!!! WARNING: Please pull a more recent version from gitlab.\n\n"))
+
 def get_kcu(kcu_address):
     # Get the current firmware version number
     kcu_tmp = KCU(name="tmp_kcu",
