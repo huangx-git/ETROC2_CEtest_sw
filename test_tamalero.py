@@ -1,6 +1,6 @@
 from tamalero.KCU import KCU
 from tamalero.ReadoutBoard import ReadoutBoard
-from tamalero.utils import header, make_version_header, get_kcu
+from tamalero.utils import header, make_version_header, get_kcu, check_repo_status
 from tamalero.FIFO import FIFO
 from tamalero.DataFrame import DataFrame
 
@@ -38,6 +38,7 @@ if __name__ == '__main__':
 
     data_mode = args.etroc in ['ETROC1', 'ETROC2']
 
+
     print ("Using KCU at address: %s"%args.kcu)
 
     kcu = get_kcu(args.kcu)
@@ -47,6 +48,7 @@ if __name__ == '__main__':
         rb_0.DAQ_LPGBT.callibrate_adc(recallibrate=True)
 
     kcu.status()
+    check_repo_status(kcu_version=kcu.get_firmware_version(quiet=True))
 
     data = 0xabcd1234
     kcu.write_node("LOOPBACK.LOOPBACK", data)

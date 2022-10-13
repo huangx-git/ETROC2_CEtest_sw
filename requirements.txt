@@ -5,4 +5,5 @@ yahist==1.14.0
 mplhep==0.3.26
 tqdm==4.64.1
 cactuscore-uhal-python38==2.8.0               
-cactuscore-uhal-python38-gui==2.8.0 
+cactuscore-uhal-python38-gui==2.8.0
+gitpython==3.1.29
