@@ -108,10 +108,10 @@ class KCU:
         locked_slave = self.read_node(f"READOUT_BOARD_0.ETROC_LOCKED_SLAVE").value()
 
         for l in range(28):
-            if (locked << l) & 1:
+            if (locked >> l) & 1:
                 print(green(f'Master elink {l} is locked.'))
         for l in range(28):
-            if (locked_slave << l) & 1:
+            if (locked_slave >> l) & 1:
                 print(green(f'Slave elink {l} is locked.'))
 
         if locked | locked_slave == 0:
