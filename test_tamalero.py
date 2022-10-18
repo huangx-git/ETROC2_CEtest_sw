@@ -3,6 +3,7 @@ from tamalero.ReadoutBoard import ReadoutBoard
 from tamalero.utils import header, make_version_header, get_kcu, check_repo_status
 from tamalero.FIFO import FIFO
 from tamalero.DataFrame import DataFrame
+from tamalero.Module import Module
 
 from tamalero.SCA import SCA_CONTROL
 
@@ -121,6 +122,17 @@ if __name__ == '__main__':
     _ = rb_0.VTRX.status()
 
     rb_0.DAQ_LPGBT.set_dac(1.0)  # set the DAC / Vref to 1.0V.
+
+    modules = []
+    for i in range(res['n_module']):
+        modules.append(Module(rb_0, i+1))
+
+    print ()
+    print ("Querying module status")
+    for m in modules:
+        m.configure()
+        m.show_status()
+
 
     if args.adcs or args.power_up:
         print("\n\nReading GBT-SCA ADC values:")
