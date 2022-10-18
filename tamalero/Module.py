@@ -8,6 +8,7 @@ class Module:
         # don't like that this also needs a RB
         # think about a better solution
         self.config = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/module_mapping.yaml'))[f'm{i}']
+        self.regs = load_yaml(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC_HW_emulator.yaml'))
         self.i = i
         #self.config = read_mapping()
 
@@ -17,11 +18,10 @@ class Module:
         self.connected = self.I2C_read(reg=0x13) or self.I2C_read(reg=0x13) is 0
 
     def configure(self):
-        # FIXME So Young please use the config yaml for the emulator to configure it in the future
         if self.connected:
-            self.I2C_write(reg=0x13, val=0)
-            self.I2C_write(reg=0x14, val=0)
-            self.I2C_write(reg=0x15, val=2)
+            self.wr_reg('singlePort', 0)
+            self.wr_reg('mergeTrigData', 0)
+            self.wr_reg('disSCR', 1)
 
     def I2C_write(self, reg=0x0, val=0x0):
         self.I2C_master.I2C_write(
@@ -37,6 +37,23 @@ class Module:
             master=self.config['i2c']['channel'],
             slave_addr=0x72  # NOTE this will need to change in the future
         )
+
+    def wr_reg(self, reg, val):
+        adr   = self.regs[reg]['adr']
+        shift = self.regs[reg]['shift']
+        mask  = self.regs[reg]['mask']
+
+        orig_val = self.I2C_read(adr)
+        new_val = ((val<<shift)&mask) | (orig_val&(~mask))
+
+        self.I2C_write(adr, new_val)
+
+    def rd_reg(self, reg):
+        adr = self.regs[reg]['adr']
+        mask = self.regs[reg]['mask']
+        shift = self.regs[reg]['shift']
+
+        return (self.I2C_read(adr)&mask) >> shift
 
     def get_elink_status(self):
         locked = self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.ETROC_LOCKED").value()
