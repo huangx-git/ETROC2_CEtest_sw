@@ -97,7 +97,12 @@ class SCA_I2C:
     I2C_M_7B_R = 0xDE # multi-byte read
     I2C_M_7B_W = 0xDA # multi-byte write
     I2C_W_DATA0 = 0x40 # write to data register 0
+    I2C_W_DATA1 = 0x50 # write to data register 1
+    I2C_W_DATA2 = 0x60 # write to data register 2
+    I2C_W_DATA3 = 0x70 # write to data register 3
     I2C_R_DATA0 = 0x41 # read from data register 0
+    I2C_R_DATA1 = 0x51 # read from data register 1
+    I2C_R_DATA2 = 0x61 # read from data register 2
     I2C_R_DATA3 = 0x71 # read from data register 3
     I2C_RW_DATA_OFFSET = 16 # offset to access data register 1, 2, 3
 
@@ -128,7 +133,7 @@ class SCA:
         channel = (reg >> 8) & 0xFF
         return self.rw_cmd(cmd, channel, data, adr, transid)
 
-    def rw_cmd(self, cmd, channel, data, adr=0x0, transid=0x00):
+    def rw_cmd(self, cmd, channel, data, adr=0x0, transid=0x00, time_out=0.3):
         """
         adr = chip address (0x0 by default)
         """
@@ -198,15 +203,16 @@ class SCA:
         else:
             self.err_count = 0
 
-        if transid != self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_TRANSID" % self.rb):
-            print("SCA Read Error :: Transaction ID Does Not Match")
-            print("SCA Read Error :: Resetting RX/TX")
-            self.kcu.write_node("READOUT_BOARD_%d.SC.RX_RESET" % self.rb, 0x01)
-            self.kcu.write_node("READOUT_BOARD_%d.SC.TX_RESET" % self.rb, 0x01)
+        # NOTE I2C transaction can be slow, so try reading the transid several times before it times out
+        start_time = time.time()
+        while not transid == self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_TRANSID" % self.rb):
+            if time.time() - start_time > time_out:
+                print("SCA Read Error :: Transaction ID Does Not Match")
+                print("SCA Read Error :: Resetting RX/TX")
+                self.kcu.write_node("READOUT_BOARD_%d.SC.RX_RESET" % self.rb, 0x01)
+                self.kcu.write_node("READOUT_BOARD_%d.SC.TX_RESET" % self.rb, 0x01)
+                raise TimeoutError("SCA Error :: Transaction timed out.")
 
-        else:
-            self.err_count = 0
-    
         return self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_DATA" % self.rb)  # 32 bit read data
     
         self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_RECEIVED" % self.rb)  # flag pulse
@@ -350,30 +356,26 @@ class SCA:
         # this only works for channel 0-4 right now, enough for the tests. Needs to be fixed!
         return getattr(SCA_CRB, "ENI2C%s"%channel)
 
-    def I2C_write(self, I2C_channel, data, slave_adr):
-        ##TODO: change data input type to be not a list of bytes (?)
-        #1) write byte to DATA register
-        if type(data == int):
-            data_bytes = [data]
-        elif type(data == list):
-            data_bytes = data
+    def I2C_write(self, reg=0x0, val=0x0, master=3, slave_addr=0x48, adr_nbytes=2):
+        # wrapper function to have similar interface as lpGBT I2C_write
+        # enable corresponding channel. only one enabled at a time
+        self.configure_control_registers(en_i2c=(1<<master))
+        adr_bytes = [ ((reg >> (8*i)) & 0xff) for i in range(adr_nbytes) ]
+        if isinstance(val, int):
+            data_bytes = [val]
+        elif isinstance(val, list):
+            data_bytes = val
         else:
             raise("data must be an int or list of ints")
-        nbytes = len(data_bytes)
-        cmd_codes = [0x40, 0x50, 0x60, 0x70] #[DATA0, DATA1, DATA2, DATA3] 
-        data_field = 0x0
-        for byte in range(nbytes):
-            page = byte // 4
-            num_on_page = byte % 4
-            data_field = data_field | (data_bytes[byte] << (8* (3 - num_on_page)))
-            if num_on_page == 3 or byte == nbytes:
-                self.rw_cmd(cmd_codes[page], I2C_channel, data_field)
-                data_field = 0x0
-        #2) write NBYTES to control register
-        self.rw_cmd(0x30, I2C_channel, nbytes) #I2C_W_CTRL = 0x30
-        #3) I2C_M_10B_W command(0xE2) with data field = servant address
-        self.rw_cmd(0xE2, I2C_channel, servant_adr)
-        
+        self.I2C_write_multi(adr_bytes + data_bytes, channel=master, servant=slave_addr)
+
+    def I2C_read(self, reg=0x0, master=3, slave_addr=0x48, nbytes=1, adr_nbytes=2):
+        # wrapper function to have similar interface as lpGBT I2C_read
+        if nbytes > 1:
+            return self.I2C_read_multi(channel=master, servant=slave_addr, reg=reg, nbytes=nbytes)
+        else:
+            return self.I2C_read_single_byte(channel=master, servant=slave_addr, reg=reg)
+
     def I2C_read_single_byte(self, channel=3, servant=0x48, reg=0x00):
         # enable corresponding channel. only one enabled at a time
         self.configure_control_registers(en_i2c=(1<<channel))
@@ -388,8 +390,8 @@ class SCA:
         if success:
             return (res >> 16) & 255
         else:
-            print ("Read not successful")
-            return 0
+            #print ("Read not successful")
+            return False
 
     def I2C_write_single_byte(self, channel, servant, data):
         #enable channel
@@ -400,10 +402,10 @@ class SCA:
         status = res >> 24
         success = status & 4
         if success:
-            #print("single write successful")
-            return
+            return True
         else:
-            print("write not successful: status = {}".format(status))
+            #print("write not successful: status = {}".format(status))
+            return False
 
     def I2C_write_ctrl(self, channel, data):
         #enable channel
@@ -442,9 +444,10 @@ class SCA:
         #read data register
         #we are counting backwards because we need to call I2C_R_DATA3 to get data bytes 0, 1, 2, 3, and so on.
         #[I2C_R_DATA3, I2C_R_DATA2, I2C_R_DATA1, I2C_R_DATA0]
-        data_registers = [SCA_I2C.I2C_R_DATA3 - SCA_I2C.I2C_RW_DATA_OFFSET * n for n in range((nbytes//4) + 1)] 
-        out_bytes = [] 
-        for page in range(((nbytes//4) + 1)):  
+        data_registers = [SCA_I2C.I2C_R_DATA3 - SCA_I2C.I2C_RW_DATA_OFFSET * n for n in range(((nbytes-1)//4) + 1)]
+        out_bytes = []
+
+        for page in range((((nbytes-1)//4) + 1)):
             page_value = self.rw_cmd(data_registers[page], self.get_I2C_channel(channel), 0x0).value() #execute I2C_R_DATA[3,2,1,0]
             for byte in range(4):
                 if (byte + 4*page) < nbytes:
@@ -463,26 +466,27 @@ class SCA:
         #configure NBYTES in the control register
         self.I2C_write_ctrl(channel, nbytes<<2)
         #begin writing to the data registers [I2C_W_DATA0, I2C_W_DATA1, I2C_W_DATA2, I2C_W_DATA3]
-        data_registers = [SCA_I2C.I2C_W_DATA0 + SCA_I2C.I2C_RW_DATA_OFFSET * n for n in range((nbytes//4) + 1)]
-        for page in range((nbytes//4) + 1):
+        data_registers = [SCA_I2C.I2C_W_DATA0 + SCA_I2C.I2C_RW_DATA_OFFSET * n for n in range(((nbytes-1)//4) + 1)]
+        for page in range(((nbytes-1)//4) + 1):
             cmd_val = 0x0
             for byte in range(4):
                 if (byte + (4 * page)) < nbytes:
                     write_byte = data[byte + (4*page)] << (8 * (3 - byte))
                     cmd_val = cmd_val + write_byte #append the data byte to the correct position in the command value
-            #execute #I2C_W_DATA[0,1,2,3] to fill data registers
             self.rw_cmd(data_registers[page], self.get_I2C_channel(channel), cmd_val)
+
         #once data registers are filled, execute I2C_M_7B_W
         start_time = time.time()
-        cmd_res = self.rw_cmd(SCA_I2C.I2C_M_7B_W, self.get_I2C_channel(channel), (servant<<24)).value()
+        data_field = (servant<<24)
+        cmd_res = self.rw_cmd(SCA_I2C.I2C_M_7B_W, self.get_I2C_channel(channel), data_field).value()
         status = cmd_res >> 24
         success = status & 4
         while not success:
-            cmd_res = self.rw_cmd(SCA_I2C.I2C_M_7B_W, self.get_I2C_channel(channel), (servant<<24)).value()
+            cmd_res = self.rw_cmd(SCA_I2C.I2C_M_7B_W, self.get_I2C_channel(channel), data_field).value()
             status = cmd_res >> 24
             success = status & 4
-            if time.time() - start_time > 0.1:
-                raise TimeoutError("I2C_M_7B_R not successful, status = {}".format(status))
+            if time.time() - start_time > 0.3:
+                raise TimeoutError("I2C_M_7B_W not successful, status = {}".format(status))
 
 
     def I2C_status(self, channel=3, verbose=1):
