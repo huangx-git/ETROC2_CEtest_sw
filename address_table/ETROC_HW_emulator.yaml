@@ -1,0 +1,33 @@
+# I2C Register Map for ETROC Hardware Emulator
+# https://indico.cern.ch/event/1209882/contributions/5088087/attachments/2524762/4342089/ETROCemulator%20slides20221005.pdf - slide 22
+
+singlePort:
+    adr    : 0x13
+    mask   : 0x08
+    shift  : 3
+    default: 0x0
+mergeTrigData:
+    adr    : 0x14
+    mask   : 0x10
+    shift  : 4
+    default: 0x0
+disSCR:
+    adr    : 0x15
+    mask   : 0x02
+    shift  : 1
+    default: 0x1
+triggerGranularity:
+    adr    : 0x16
+    mask   : 0x07
+    shift  : 0
+    default: 0x0
+TrigBitInStream_Right:
+    adr    : 0x17
+    mask   : 0x20
+    shift  : 5
+    default: 0x0
+TrigBitInStream_Left:
+    adr    : 0x17
+    mask   : 0x02
+    shift  : 1
+    default: 0x0
