@@ -790,6 +790,7 @@ class LPGBT(RegParser):
         '''
 
         board_id = {}
+        n_module = {0:3, 1:6, 2:7}
         flavors = {0: '3 module', 1: '6 module', 2: '7 module'}
 
         user_id =   self.rd_adr(0x007).value() << 24 |\
@@ -800,6 +801,7 @@ class LPGBT(RegParser):
         board_id['rb_ver_minor']    = user_id >> 25 & (2**4-1)
         board_id['lpgbt_ver']       = user_id >> 23 & (2**2-1)
         board_id['rb_flavor']       = flavors[user_id >> 19 & (2**4-1)]
+        board_id['n_module']        = n_module[user_id >> 19 & (2**4-1)]
         board_id['serial_number']   = user_id & (2**16-1)
         board_id['lpgbt_serial']    = self.get_chip_serial()
         
