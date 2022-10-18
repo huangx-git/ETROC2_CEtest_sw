@@ -55,6 +55,11 @@ def load_alignment_from_file(f_in):
         res = load(f, Loader=Loader)
     return res
 
+def load_yaml(f_in):
+    with open(f_in, 'r') as f:
+        res = load(f, Loader=Loader)
+    return res
+
 def prbs_phase_scan(lpgbt, f_out='phase_scan.txt'):
     with open(f_out, "w") as f:
         for phase in range(0x0, 0x1ff, 1):
