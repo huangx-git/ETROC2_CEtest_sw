@@ -75,29 +75,29 @@ class Module:
     def show_status(self):
         self.get_elink_status()
         len_corrector = len(''.join([str(x) for x in self.trig_elinks.keys()]))
-
-        print ('|-|-' + 25*'-' + '-|-|')
-        print ('|O| ' + 25*' ' + ' |O|')
-        print ('| | ' + '{:10}{:<15}'.format("Module:", self.i) + ' | |' )
-        #print ('| | ' + 25*' ' + ' | |')
+        # 
+        print ('┏━┳━' + 25*'━' + '━┳━┓')
+        print ('┃○┃ ' + 25*' ' + ' ┃○┃')
+        print ('┃ ┃ ' + '{:10}{:<15}'.format("Module:", self.i) + ' ┃ ┃' )
+        #print ('┃ ┃ ' + 25*' ' + ' ┃ ┃')
         col = green if self.connected else red
         prefix = '' if self.connected else "Not "
-        print ('| | ' + col('{:25}'.format(prefix+"Connected:")) + ' | |' )
-        print ('| | ' + col(' {:12}{:12}'.format('i2c master:', self.config['i2c']['master'])) + ' | |')
-        print ('| | ' + col(' {:12}{:<12}'.format('channel:', self.config['i2c']['channel'] )) + ' | |')
+        print ('┃ ┃ ' + col('{:25}'.format(prefix+"Connected:")) + ' ┃ ┃' )
+        print ('┃ ┃ ' + col(' {:12}{:12}'.format('i2c master:', self.config['i2c']['master'])) + ' ┃ ┃')
+        print ('┃ ┃ ' + col(' {:12}{:<12}'.format('channel:', self.config['i2c']['channel'] )) + ' ┃ ┃')
 
-        print ('| | ' + '{:25}'.format("DAQ links:") + ' | |' )
+        print ('┃ ┃ ' + '{:25}'.format("DAQ links:") + ' ┃ ┃' )
         stats = [ green(str(l)) if (self.daq_elinks[l]==True) else red(str(l)) for l in self.daq_elinks.keys() ]
-        print ('| | ' + ' {} {} {} {}'.format(*stats) + (25-len_corrector - 4)*' ' + ' | |' )
+        print ('┃ ┃ ' + ' {} {} {} {}'.format(*stats) + (25-len_corrector - 4)*' ' + ' ┃ ┃' )
 
-        print ('| | ' + '{:25}'.format("Trigger links:") + ' | |' )
+        print ('┃ ┃ ' + '{:25}'.format("Trigger links:") + ' ┃ ┃' )
         stats = [ green(str(l)) if (self.trig_elinks[l]==True) else red(str(l)) for l in self.trig_elinks.keys() ]
-        print ('| | ' + ' {} {} {} {}'.format(*stats) + (25-len_corrector - 4)*' ' + ' | |' )
-        #print ('| | ' + 25*' ' + ' | |')
+        print ('┃ ┃ ' + ' {} {} {} {}'.format(*stats) + (25-len_corrector - 4)*' ' + ' ┃ ┃' )
+        #print ('┃ ┃ ' + 25*' ' + ' ┃ ┃')
 
 
-        print ('|O| ' + 25*' ' + ' |O|')
-        print ('|-|-' + 25*'-' + '-|-|')
+        print ('┃○┃ ' + 25*' ' + ' ┃○┃')
+        print ('┗━┻━' + 25*'━' + '━┻━┛')
 
 
     def show_emulator_status(self):
