@@ -75,10 +75,12 @@ class Module:
     def show_status(self):
         self.get_elink_status()
         len_corrector = len(''.join([str(x) for x in self.trig_elinks.keys()]))
-        # 
+
         print ('┏━┳━' + 25*'━' + '━┳━┓')
         print ('┃○┃ ' + 25*' ' + ' ┃○┃')
         print ('┃ ┃ ' + '{:10}{:<15}'.format("Module:", self.i) + ' ┃ ┃' )
+        ver = self.get_emulator_ver()
+        print ('┃ ┃ ' + '{:16}{:9}'.format("Emulator FW ver.",ver) + ' ┃ ┃' )
         #print ('┃ ┃ ' + 25*' ' + ' ┃ ┃')
         col = green if self.connected else red
         prefix = '' if self.connected else "Not "
@@ -103,10 +105,7 @@ class Module:
     def show_emulator_status(self):
         print("┏" + 31*'━' + "┓")
         print("┃{:^31s}┃".format("ETROC Hardware Emulator"))
-        year, month, day = [hex(self.I2C_read(i))[2:] for i in [0x1F,0x1E,0x1D]]
-        if int(year) > 0:
-            version = f"fw ver.{year}-{month}-{day}"
-            print("┃{:^31s}┃".format(version))
+        print("┃{:^31s}┃".format("fw ver."+self.get_emulator_ver()))
         print("┃" + 31*" " + "┃")
 
         for reg in self.regs:
@@ -114,3 +113,7 @@ class Module:
             print("┃ " + col('{:25}{:4}'.format(reg, hex(self.rd_reg(reg)))) + " ┃")
 
         print("┗" + 31*"━" + "┛")
+
+    def get_emulator_ver(self):
+        ver = [hex(self.I2C_read(i))[2:] for i in [0x1F,0x1E,0x1D]]
+        return "-".join(ver)
