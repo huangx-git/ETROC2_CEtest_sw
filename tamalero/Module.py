@@ -101,12 +101,12 @@ class Module:
 
 
     def show_emulator_status(self):
-        print("+" + 31*"-" + "+")
-        print("|{:^31s}|".format("ETROC Hardware Emulator"))
-        print("|" + 31*" " + "|")
+        print("┏" + 31*'━' + "┓")
+        print("┃{:^31s}┃".format("ETROC Hardware Emulator"))
+        print("┃" + 31*" " + "┃")
 
         for reg in self.regs:
             col = green if self.rd_reg(reg) else red
-            print("| " + col('{:25}{:4}'.format(reg, hex(self.rd_reg(reg)))) + " |")
+            print("┃ " + col('{:25}{:4}'.format(reg, hex(self.rd_reg(reg)))) + " ┃")
 
-        print("+" + 31*"-" + "+")
+        print("┗" + 31*"━" + "┛")
