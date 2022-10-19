@@ -103,6 +103,10 @@ class Module:
     def show_emulator_status(self):
         print("┏" + 31*'━' + "┓")
         print("┃{:^31s}┃".format("ETROC Hardware Emulator"))
+        year, month, day = [hex(self.I2C_read(i))[2:] for i in [0x1F,0x1E,0x1D]]
+        if int(year) > 0:
+            version = f"fw ver.{year}-{month}-{day}"
+            print("┃{:^31s}┃".format(version))
         print("┃" + 31*" " + "┃")
 
         for reg in self.regs:
