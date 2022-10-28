@@ -20,7 +20,7 @@ def just_read(rb, link, daq=True):
     # just keep the default trigger words
     fifo.set_trigger([0x0]*10, [0x0]*10)
     #fifo.reset()
-    #fifo.reset(l1a=True)
+    #fifo.reset()
     res = fifo.dump(block=255, format=True, daq=daq)
     return res
 
@@ -44,12 +44,14 @@ def just_read_daq(rb, link, lpgbt, fixed_pattern=False, trigger_rate=0, send_l1a
         print (f"Trigger rate is currently {rate} Hz")
     else:
         rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.DL_SRC"%rb.rb, 0x3)
-    fifo.reset(l1a=send_l1a)
+    fifo.reset()
     #time.sleep(5)  # might be useful if the L1A generator works
-    if l1a_count>1:
-        fifo.send_l1a(count=l1a_count-1)
+
+    if l1a_count>=1:
+        fifo.send_l1a(count=l1a_count)
+
     res = fifo.dump_daq(block=3000)
-    #fifo.reset(l1a=False)
+    #fifo.reset()
     if rb.kcu.firmware_version['minor'] >= 2 and rb.kcu.firmware_version['patch'] >= 3:
         #print ("Setting to ETROC data")
         fifo.use_etroc_data()
@@ -92,30 +94,14 @@ class FIFO:
             #print (f"Setting FIFO {i} to read from elink {link['elink']} and lpGBT {link['lpgbt']}.")  # This is too noisy
             self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_ELINK_SEL%i"%(self.rb.rb, i), link['elink'])
             self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_LPGBT_SEL%i"%(self.rb.rb, i), link['lpgbt'])
-        self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.DL_SRC"%self.rb.rb, 3)
+        self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.DL_SRC"%self.rb.rb, 0)
         #self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.TRIG.DOWNLINK.DL_SRC"%self.rb.rb, 3)  # This does not exist (no trigger downlink)
-
-        for i in range(10):
-            try:
-                self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_TRIG%i"%(self.rb.rb, i), 0x00)
-                self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_TRIG%i_MASK"%(self.rb.rb, i), 0x00)
-            except:
-                # This is dangerous, but will work as long as the right address tables are loaded
-                pass
 
         with open(os.path.expandvars('$TAMALERO_BASE/configs/dataformat.yaml')) as f:
             self.dataformat = load(f, Loader=Loader)[ETROC]
 
         with open(os.path.expandvars('$TAMALERO_BASE/configs/fast_commands.yaml')) as f:
             self.fast_commands = load(f, Loader=Loader)[ETROC]
-
-        self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_IDLE"%self.rb.rb, self.fast_commands['IDLE'])
-        self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_DATA"%self.rb.rb, self.fast_commands['L1A'])
-
-        if ETROC == 'ETROC2':
-            self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_REVERSE_BITS"%self.rb.rb, 0x01)
-        elif ETROC == 'ETROC1':
-            self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_REVERSE_BITS"%self.rb.rb, 0x00)
 
     def turn_on_zero_surpress(self):
         self.rb.kcu.write_node("READOUT_BOARD_%s.ZERO_SUPRESS"%self.rb.rb, 0x1)
@@ -135,31 +121,12 @@ class FIFO:
         rate = self.rb.kcu.read_node("READOUT_BOARD_%s.L1A_RATE_CNT"%self.rb.rb).value()
         return rate
 
-    def set_trigger(self, words, masks):
-        assert len(words)==len(masks), "Number of trigger bytes and masks has to match"
-        for i, (word, mask) in enumerate(list(zip(words, masks))):
-            self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_TRIG%i"%(self.rb.rb, i), word)
-            self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_TRIG%i_MASK"%(self.rb.rb, i), mask)
-
     def send_l1a(self, count=1):
-        self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_DATA"%self.rb.rb, self.fast_commands['L1A'])
         for i in range(count):
-            self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_PULSE"%self.rb.rb, 0x01)
+            self.rb.kcu.write_node("READOUT_BOARD_%s.L1A_PULSE" % self.rb.rb, 1)
 
-
-    def reset(self, l1a=False):
-        # needs to be reset twice, dunno
+    def reset(self):
         self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_RESET"%self.rb.rb, 0x01)
-        self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_RESET"%self.rb.rb, 0x01)
-        #print(self.rb.kcu.read_node("READOUT_BOARD_%s.FIFO_ARMED"%self.rb.rb))
-        #print(self.rb.kcu.read_node("READOUT_BOARD_%s.FIFO_EMPTY"%self.rb.rb))
-        #self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_FORCE_TRIG" % self.rb.rb, 1)
-        if self.ETROC == 'ETROC2' and l1a:
-            self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_DATA"%self.rb.rb, self.fast_commands['L1A'])
-            self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_PULSE"%self.rb.rb, 0x01)  # FIXME confirm this
-        elif self.ETROC == 'ETROC2':
-            self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_IDLE"%self.rb.rb, self.fast_commands['IDLE'])
-            self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_PULSE"%self.rb.rb, 0x01)  # FIXME confirm this
 
     def make_word(self, bytes, reversed=False):
         if len(bytes) == 5 and not reversed:
@@ -186,8 +153,7 @@ class FIFO:
         return []
 
     def dump(self, block=255, format=True, daq=0):
-        # NOTE: format argument is kept for legacy, does not do anything here.
-        #self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_PULSE"%self.rb.rb, 0x01)  # FIXME this is not needed I think
+
         for i in range(10):
             if self.rb.kcu.read_node("READOUT_BOARD_%s.FIFO_EMPTY%i"%(self.rb.rb, daq)).value() < 1: break  # FIXME I'm lazy. This should be done for all (?) FIFOS
         res = self.rb.kcu.hw.getNode("DAQ_%i.FIFO"%daq).readBlock(block)
@@ -199,7 +165,7 @@ class FIFO:
             return []
 
     def dump_daq(self, block=255):
-        # NOTE: format argument is kept for legacy, does not do anything here.
+
         res = self.rb.kcu.hw.getNode("DAQ_RB0.FIFO").readBlock(block)
         try:
             self.rb.kcu.hw.dispatch()
