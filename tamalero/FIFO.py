@@ -36,14 +36,14 @@ def just_read_daq(rb, link, lpgbt, fixed_pattern=False, trigger_rate=0, send_l1a
     '''
     import numpy as np
     fifo = FIFO(rb, links=[{'elink':link, 'lpgbt':lpgbt}], ETROC='ETROC2')
+
     if fixed_pattern and rb.kcu.firmware_version['minor'] >= 2 and rb.kcu.firmware_version['patch'] >= 3 :
         fifo.use_fixed_pattern()
+
     if trigger_rate>0:
-        rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.DL_SRC"%rb.rb, 0x0)
         rate = fifo.set_trigger_rate(trigger_rate*100)
         print (f"Trigger rate is currently {rate} Hz")
-    else:
-        rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.DL_SRC"%rb.rb, 0x3)
+
     fifo.reset()
     #time.sleep(5)  # might be useful if the L1A generator works
 
@@ -51,9 +51,8 @@ def just_read_daq(rb, link, lpgbt, fixed_pattern=False, trigger_rate=0, send_l1a
         fifo.send_l1a(count=l1a_count)
 
     res = fifo.dump_daq(block=3000)
-    #fifo.reset()
+
     if rb.kcu.firmware_version['minor'] >= 2 and rb.kcu.firmware_version['patch'] >= 3:
-        #print ("Setting to ETROC data")
         fifo.use_etroc_data()
 
     empty_frame_mask = np.array(res[0::2]) > (2**8)  # masking empty fifo entries
@@ -94,8 +93,6 @@ class FIFO:
             #print (f"Setting FIFO {i} to read from elink {link['elink']} and lpGBT {link['lpgbt']}.")  # This is too noisy
             self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_ELINK_SEL%i"%(self.rb.rb, i), link['elink'])
             self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_LPGBT_SEL%i"%(self.rb.rb, i), link['lpgbt'])
-        self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.DL_SRC"%self.rb.rb, 0)
-        #self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.TRIG.DOWNLINK.DL_SRC"%self.rb.rb, 3)  # This does not exist (no trigger downlink)
 
         with open(os.path.expandvars('$TAMALERO_BASE/configs/dataformat.yaml')) as f:
             self.dataformat = load(f, Loader=Loader)[ETROC]
