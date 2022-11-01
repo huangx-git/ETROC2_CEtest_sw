@@ -113,17 +113,17 @@ class FIFO:
         self.rb.kcu.write_node("READOUT_BOARD_%s.RX_FIFO_DATA_SRC"%self.rb.rb, 0x0)
 
     def set_trigger_rate(self, rate):
-        self.rb.kcu.write_node("READOUT_BOARD_%s.L1A_RATE"%self.rb.rb, rate)
+        self.rb.kcu.write_node("SYSTEM.L1A_RATE", rate)
         time.sleep(0.5)
-        rate = self.rb.kcu.read_node("READOUT_BOARD_%s.L1A_RATE_CNT"%self.rb.rb).value()
+        rate = self.rb.kcu.read_node("SYSTEM.L1A_RATE_CNT").value()
         return rate
 
     def send_l1a(self, count=1):
         for i in range(count):
-            self.rb.kcu.write_node("READOUT_BOARD_%s.L1A_PULSE" % self.rb.rb, 1)
+            self.rb.kcu.write_node("SYSTEM.L1A_PULSE", 1)
 
     def reset(self):
-        self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_RESET"%self.rb.rb, 0x01)
+        self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_RESET" % self.rb.rb, 0x01)
 
     def make_word(self, bytes, reversed=False):
         if len(bytes) == 5 and not reversed:
