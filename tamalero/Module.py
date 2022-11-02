@@ -115,5 +115,8 @@ class Module:
         print("┗" + 31*"━" + "┛")
 
     def get_emulator_ver(self):
-        ver = [hex(self.I2C_read(i))[2:] for i in [0x1F,0x1E,0x1D]]
-        return "-".join(ver)
+        try:
+            ver = [hex(self.I2C_read(i))[2:] for i in [0x19,0x18,0x17]]
+            return "-".join(ver)
+        except:
+            return "--"
