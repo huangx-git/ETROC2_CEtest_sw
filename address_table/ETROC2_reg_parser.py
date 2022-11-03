@@ -19,13 +19,10 @@ def rangetomask(start, end):
 def pix2rc(pix):
   return pix%16, int(np.floor(pix/16))
 
-with open('etroc2_regs.csv', newline='', encoding='utf-8-sig') as csvfile:
-  f = csv.reader(csvfile, delimiter=',')
-  dumpdata = {}
-  for row in f:
+def parse(row):
     name = re.split('\<|\[', row[0])[0]
     default = hex(int(re.split('b',row[2])[1],2))
-    adr = list(filter(None, re.split('\], |\],| \[|\[|\]|:',row[1]))) 
+    adr = list(filter(None, re.split('\], |\],| \[|\[|\]|:',row[1])))
     if len(adr) == 2 :
       regadr = adr[0]
       shift = adr[1]
@@ -47,9 +44,20 @@ with open('etroc2_regs.csv', newline='', encoding='utf-8-sig') as csvfile:
         regadr = [adr[0], adr[3]]
         shift = [adr[2], adr[4]]
         mask = [rangetomask(adr[2], adr[1]),rangetomask(adr[4], adr[4])]
+    elif len(adr) == 12:
+        regadr = [adr[0], adr[3], adr[6], adr[9]]
+        shift = [adr[2], adr[5], adr[8], adr[11]]
+        mask = [rangetomask(adr[2], adr[1]),rangetomask(adr[5], adr[4]),rangetomask(adr[8], adr[7]),rangetomask(adr[11], adr[10])]
     else:
       print('Something is  wrong!', name)
-   
+
+    return (name, regadr, shift, mask, default)
+
+with open('ETROC2_regs.csv', newline='', encoding='utf-8-sig') as csvfile:
+  f = csv.reader(csvfile, delimiter=',')
+  dumpdata = {}
+  for row in f:
+    name, regadr, shift, mask, default = parse(row)
 
     if isinstance(regadr, list):
       dumpdata[name] = {
@@ -58,9 +66,13 @@ with open('etroc2_regs.csv', newline='', encoding='utf-8-sig') as csvfile:
         'default': hexint(int(default, 16)),
         'regadr': {}
       }
-      for pix in range(256):
-        r, c = pix2rc(pix)
-        dumpdata[name]['regadr'][pix] = [s.replace('<Rn>', str(r)).replace('<Cn>', str(c)) for s in regadr]
+      if '<Rn>' in regadr[0]:
+        for pix in range(256):
+          r, c = pix2rc(pix)
+          dumpdata[name]['regadr'][pix] = [s.replace('<Rn>', str(r)).replace('<Cn>', str(c)) for s in regadr]
+      else:
+        dumpdata[name]['regadr'] = regadr
+
     else:
       dumpdata[name] = {
         'shift': int(shift),
@@ -68,9 +80,12 @@ with open('etroc2_regs.csv', newline='', encoding='utf-8-sig') as csvfile:
         'default': hexint(int(default, 16)),
         'regadr': {}
       }
-      for pix in range(256):
-        r, c = pix2rc(pix)
-        dumpdata[name]['regadr'][pix] = regadr.replace('<Rn>', str(r)).replace('<Cn>', str(c))
+      if '<Rn>' in regadr:
+        for pix in range(256):
+          r, c = pix2rc(pix)
+          dumpdata[name]['regadr'][pix] = regadr.replace('<Rn>', str(r)).replace('<Cn>', str(c))
+      else:
+        dumpdata[name]['regadr'] = regadr
  
 
 with open(r'ETROC2.yaml', 'w') as file:
@@ -78,12 +93,16 @@ with open(r'ETROC2.yaml', 'w') as file:
 
 
 dumpregs = {}
-with open('etroc2_inpixel.csv', newline='', encoding='utf-8-sig') as csvfile:
+with open('ETROC2_def.csv', newline='', encoding='utf-8-sig') as csvfile:
   f = csv.reader(csvfile, delimiter=',')
   for row in f:
-    for pix in range(256):
-      r, c = pix2rc(pix)
-      regname = re.split('/',row[0])[0].replace('<Rn>', str(r)).replace('<Cn>', str(c))
+    if '<Rn>' in row[0]:
+      for pix in range(256):
+        r, c = pix2rc(pix)
+        regname = re.split('/',row[0])[0].replace('<Rn>', str(r)).replace('<Cn>', str(c))
+        dumpregs[regname] = hexint(int(row[1], 16))
+    else:
+      regname = re.split('/',row[0])[0]
       dumpregs[regname] = hexint(int(row[1], 16))
-with open(r'ETROC2_inpixel.yaml', 'w') as file:
+with open(r'ETROC2_def.yaml', 'w') as file:
     documents = yaml.dump(dumpregs, file)
