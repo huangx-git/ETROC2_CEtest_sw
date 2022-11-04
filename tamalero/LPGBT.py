@@ -57,15 +57,15 @@ class LPGBT(RegParser):
             )
 
     def reset_tx_mgt_by_mask(self, mask):
-        id = "MGT.MGT_TX_RESET"
+        id = "SYSTEM.MGT_TX_RESET"
         self.kcu.write_node(id, mask)
 
     def reset_rx_mgt_by_mask(self, mask):
-        id = "MGT.MGT_RX_RESET"
+        id = "SYSTEM.MGT_RX_RESET"
         self.kcu.write_node(id, mask)
 
     def reset_trigger_mgts(self):
-        id = "MGT.MGT_RX_RESET"
+        id = "SYSTEM.MGT_RX_RESET"
         # trigger links on 1,3,5,7,9
         self.kcu.write_node(id, 0x2aa)
         self.kcu.write_node(id, 0x000)
