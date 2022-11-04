@@ -1,0 +1,133 @@
+CLSel[1:0],PixR<Rn>C<Cn>Cfg0[1:0],2b00
+IBSel[2:0],PixR<Rn>C<Cn>Cfg0 [4:2],3b111
+RfSel[1:0],PixR<Rn>C<Cn>Cfg0 [6:5],2b10
+HysSel[3:0],PixR<Rn>C<Cn>Cfg2 [3:0],4b1111
+PD_DACDiscri,PixR<Rn>C<Cn>Cfg2 [4],1b0
+QSel<4:0>,PixR<Rn>C<Cn>Cfg1 [4:0],5b00110
+QInjEn,PixR<Rn>C<Cn>Cfg1 [5],1b0
+autoReset_TDC,PixR<Rn>C<Cn>Cfg6[5],1b0
+enable_TDC,PixR<Rn>C<Cn>Cfg6[7],1b1
+level_TDC[2:0],PixR<Rn>C<Cn>Cfg6[3:1],3b001
+resetn_TDC,PixR<Rn>C<Cn>Cfg6[6],1b1
+testMode_TDC,PixR<Rn>C<Cn>Cfg6[4],1b0
+Bypass_ THCal,PixR<Rn>C<Cn>Cfg3[2],1b1
+DAC[9:0],"PixR<Rn>C<Cn>Cfg5[1:0], PixR<Rn>C<Cn>Cfg4[7:0]",10b0000000000
+TH_offset[5:0],PixR<Rn>C<Cn>Cfg5[7:2],6b001010
+RSTn_THCal,PixR<Rn>C<Cn>Cfg3[0],1b1
+ScanStart_THCal,PixR<Rn>C<Cn>Cfg3[4],1b0
+BufEn_THCal,PixR<Rn>C<Cn>Cfg3[1],1b0
+CLKEn_THCal,PixR<Rn>C<Cn>Cfg3[3],1b0
+workMode[1:0],PixR<Rn>C<Cn>Cfg7[4:3],2b00
+L1Adelay[8:0],"PixR<Rn>C<Cn>Cfg9[7:0], PixR<Rn>C<Cn>Cfg8[7]",9b000000000
+disDataReadout,PixR<Rn>C<Cn>Cfg7[1],1b0
+disTrigPath,PixR<Rn>C<Cn>Cfg7[2],1b0
+upperTOATrig,"PixR<Rn>C<Cn>Cfg22[1:0], PixR<Rn>C<Cn>Cfg21[7:0]",10b1000000000
+lowerTOATrig,"PixR<Rn>C<Cn>Cfg20[7:0], PixR<Rn>C<Cn>Cfg19[7:6]",10b0000100000
+upperTOTTrig,"PixR<Rn>C<Cn>Cfg24[2:0], PixR<Rn>C<Cn>Cfg23[7:2]",9b100000000
+lowerTOTTrig,"PixR<Rn>C<Cn>Cfg23[1:0], PixR<Rn>C<Cn>Cfg22[7:2]",9b000010000
+upperCalTrig,"PixR<Rn>C<Cn>Cfg19[5:0], PixR<Rn>C<Cn>Cfg18[7:4]",10b1000000000
+lowerCalTrig,"PixR<Rn>C<Cn>Cfg18[3:0], PixR<Rn>C<Cn>Cfg17[7:2]",10b0000010000
+upperTOA,"PixR<Rn>C<Cn>Cfg14[7:0], PixR<Rn>C<Cn>Cfg13[7:6]",10b1000000000
+lowerTOA,"PixR<Rn>C<Cn>Cfg13[5:0], PixR<Rn>C<Cn>Cfg12[7:4]",10b0000100000
+upperTOT,"PixR<Rn>C<Cn>Cfg17[1:0], PixR<Rn>C<Cn>Cfg16[7:1],",9b100000000
+lowerTOT,"PixR<Rn>C<Cn>Cfg16[0], PixR<Rn>C<Cn>Cfg15[7:0]",9b000010000
+upperCal,"PixR<Rn>C<Cn>Cfg12[3:0],PixR<Rn>C<Cn>Cfg11[7:2]",10b1000000000
+lowerCal,"PixR<Rn>C<Cn>Cfg11[1:0],PixR<Rn>C<Cn>Cfg10[7:0]",10b0000010000
+addrOffset,PixR<Rn>C<Cn>Cfg7[0],1b1
+selfTestOccupancy,PixR<Rn>C<Cn>Cfg8[6:0],7b0000001
+ACC[15:0],"PixR<Rn>C<Cn>Sta6[7:0],PixR<Rn>C<Cn>Sta5[7:0]",16b0000000000000000
+ScanDone,PixR<Rn>C<Cn>Sta1[0],1b1
+BL[9:0],"PixR<Rn>C<Cn>Sta3[1:0], PixR<Rn>C<Cn>Sta2[7:0]",10b0000000000	
+NW[3:0],PixR<Rn>C<Cn>Sta1[4:1],4b0000
+TH[9:0],"PixR<Rn>C<Cn>Sta4[7:0], PixR<Rn>C<Cn>Sta3[7:6]",10b0000000000
+THState[2:0],PixR<Rn>C<Cn>Sta1[7:5],3b000
+PixelID,PixR<Rn>C<Cn>Sta0[7:0],8b00000000
+readoutClockDelayPixel[4:0],PeriCfg13[4:0],5b00000
+readoutClockWidthPixel[4:0],PeriCfg14[4:0],5b10000
+readoutClockDelayGlobal[4:0],PeriCfg15[4:0],5b00000
+readoutClockWidthGlobal[4:0],PeriCfg16[4:0],5b10000
+serRateRight[1:0],PeriCfg19[5:4],2b01
+serRateLeft[1:0],PeriCfg19[3:2],2b01
+linkResetTestPattern,PeriCfg19[1],1b1
+linkResetFixedPattern[31:0],"PeriCfg29[7:0],PeriCfg28[7:0],PeriCfg27[7:0],PeriCfg26[7:0]",32b10101100110001111000110011000101
+emptySlotBCID[11:0],"PeriCfg12[7:0],PeriCfg11[7:4]",12b000000000111
+triggerGranularity[2:0],PeriCfg20[3:1],3b000
+disScrambler,PeriCfg19[0],1b0
+mergeTriggerData,PeriCfg20[0],1b0
+singlePort,PeriCfg19[6],1b1
+onChipL1AConf[1:0],PeriCfg18[6:5],2b00
+BCIDoffset[11:0],"PeriCfg11[3:0],PeriCfg10[7:0]",12b0
+fcSelfAlignEn,PeriCfg18[2],1b0
+fcClkDelayEn,PeriCfg18[3],1b0
+fcDataDelayEn,PeriCfg18[4],1b0
+chargeInjectionDelay[4:0],PeriCfg17[4:0],5b11000
+RefStrSel[7:0],PeriCfg6[7:0],8b00000011
+PLL_BIASGEN_CONFIG<3:0>,PeriCfg1[3:0],4b1000
+PLL_CONFIG_I_PLL<3:0>,PeriCfg1[7:4],4b1001
+PLL_CONFIG_P_PLL<3:0>,PeriCfg2[3:0],4b1001
+PLL_R_CONFIG<3:0>,PeriCfg2[7:4],4b0010
+PLL_vcoDAC<3:0>,PeriCfg3[3:0],4b1000
+PLL_vcoRailMode,PeriCfg3[4],1b1
+PLL_ENABLEPLL,PeriCfg3[5],1b0
+PLL_FBDiv_skip,PeriCfg0[7],1b0
+PLL_FBDiv_clkTreeDisable,PeriCfg0[6],1b0
+PLLclkgen_disSER,PeriCfg0[3],1b1
+PLLclkgen_disVCO,PeriCfg0[4],1b0
+PLLclkgen_disEOM,PeriCfg0[2],1b1
+PLLclkgen_disCLK,PeriCfg0[0],1b0
+PLLclkgen_disDES,PeriCfg0[1],1b0
+CLKSel,PeriCfg0[5],1b1
+PS_CPCurrent[3:0],PeriCfg4[3:0],4b0001
+PS_CapRst,PeriCfg4[4],1b0
+PS_Enable,PeriCfg4[5],1b1
+PS_ForceDown,PeriCfg4[6],1b0
+PS_PhaseAdj[7:0],PeriCfg5[7:0],8b00000000
+CLK40_EnRx,PeriCfg7[0],1b1
+CLK40_EnTer,PeriCfg7[1],1b1
+CLK40_Equ[1:0],PeriCfg7[3:2],2b00
+CLK40_InvData,PeriCfg7[4],1b0
+CLK40_SetCM,PeriCfg7[5],1b1
+CLK1280_EnRx,PeriCfg8[0],1b1
+CLK1280_EnTer,PeriCfg8[1],1b1
+CLK1280_Equ[1:0],PeriCfg8[3:2],2b00
+CLK1280_InvData,PeriCfg8[4],1b0
+CLK1280_SetCM,PeriCfg8[5],1b1
+FC_EnRx,PeriCfg9[0],1b1
+FC_EnTer,PeriCfg9[1],1b1
+FC_Equ[1:0],PeriCfg9[3:2],2b00
+FC_InvData,PeriCfg9[4],1b0
+FC_SetCM,PeriCfg9[5],1b1
+disPowerSequence,PeriCfg18[0],1b0
+softBoot,PeriCfg18[1],1b0
+EFuse_TCKHP[3:0],PeriCfg20[7:4],4b0100
+EFuse_EnClk,PeriCfg21[0],1b0
+EFuse_Mode[1:0],PeriCfg21[21],2b10
+EFuse_Rstn,PeriCfg21[3],1b0
+EFuse_Start,PeriCfg21[4],1b0
+EFuse_Prog[31:0],"PeriCfg25[7:0],PeriCfg24[7:0],PeriCfg23[7:0]PeriCfg22[7:0]",32b0
+EFuse_Bypass,PeriCfg21[5],1b1
+lfLockThrCounter[3:0],PeriCfg30[3:0],4b1011
+lfReLockThrCounter[3:0],PeriCfg30[7:4],4b1011
+lfUnLockThrCounter[3:0],PeriCfg31[3:0],4b1011
+asyAlignFastcommand,PeriCfg13[5],1b0
+asyLinkReset,PeriCfg13[6],1b0
+asyPLLReset,PeriCfg13[7],1b1
+asyResetChargeInj,PeriCfg14[5],1b1
+asyResetFastcommand,PeriCfg14[6],1b1
+asyResetGlobalReadout,PeriCfg14[7],1b1
+asyResetLockDetect,PeriCfg15[5],1b1
+asyStartCalibration,PeriCfg15[6],1b1
+VRefGen_PD,PeriCfg3[7],1b0
+TS_PD,PeriCfg4[7],1b0
+TDCClockTest,PeriCfg31[4],1b0
+TDCStrobeTest,PeriCfg31[5],1b0
+LTx_AmplSel[2:0],PeriCfg16[7:5],3b100
+RTx_AmplSel[2:0],PeriCfg17[7:5],3b100
+disLTx,PeriCfg18[7],1b0
+disRTx,PeriCfg19[7],1b0
+GRO_TOARST_N,PeriCfg7[7],1b1
+GRO_Start,PeriCfg7[6],1b0
+GRO_TOA_Latch,PeriCfg8[7],1b1
+GRO_TOA_CK,PeriCfg8[6],1b1
+GRO_TOT_CK,PeriCfg9[7],1b1
+GRO_TOTRST_N,PeriCfg9[6],1b1

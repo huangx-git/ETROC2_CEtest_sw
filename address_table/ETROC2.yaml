@@ -775,6 +775,17 @@ ACC:
   shift:
   - 0
   - 0
+BCIDoffset:
+  default: 0x0
+  mask:
+  - 0xf
+  - 0xff
+  regadr:
+  - PeriCfg11
+  - PeriCfg10
+  shift:
+  - 0
+  - 0
 BL:
   default: 0x0
   mask:
@@ -2074,6 +2085,56 @@ Bypass_ THCal:
     254: PixR14C15Cfg3
     255: PixR15C15Cfg3
   shift: 2
+CLK1280_EnRx:
+  default: 0x1
+  mask: 0x1
+  regadr: PeriCfg8
+  shift: 0
+CLK1280_EnTer:
+  default: 0x1
+  mask: 0x2
+  regadr: PeriCfg8
+  shift: 1
+CLK1280_Equ:
+  default: 0x0
+  mask: 0xc
+  regadr: PeriCfg8
+  shift: 2
+CLK1280_InvData:
+  default: 0x0
+  mask: 0x10
+  regadr: PeriCfg8
+  shift: 4
+CLK1280_SetCM:
+  default: 0x1
+  mask: 0x20
+  regadr: PeriCfg8
+  shift: 5
+CLK40_EnRx:
+  default: 0x1
+  mask: 0x1
+  regadr: PeriCfg7
+  shift: 0
+CLK40_EnTer:
+  default: 0x1
+  mask: 0x2
+  regadr: PeriCfg7
+  shift: 1
+CLK40_Equ:
+  default: 0x0
+  mask: 0xc
+  regadr: PeriCfg7
+  shift: 2
+CLK40_InvData:
+  default: 0x0
+  mask: 0x10
+  regadr: PeriCfg7
+  shift: 4
+CLK40_SetCM:
+  default: 0x1
+  mask: 0x20
+  regadr: PeriCfg7
+  shift: 5
 CLKEn_THCal:
   default: 0x0
   mask: 0x8
@@ -2335,6 +2396,11 @@ CLKEn_THCal:
     254: PixR14C15Cfg3
     255: PixR15C15Cfg3
   shift: 3
+CLKSel:
+  default: 0x1
+  mask: 0x20
+  regadr: PeriCfg0
+  shift: 5
 CLSel:
   default: 0x0
   mask: 0x3
@@ -3373,6 +3439,108 @@ DAC:
   shift:
   - 0
   - 0
+EFuse_Bypass:
+  default: 0x1
+  mask: 0x20
+  regadr: PeriCfg21
+  shift: 5
+EFuse_EnClk:
+  default: 0x0
+  mask: 0x1
+  regadr: PeriCfg21
+  shift: 0
+EFuse_Mode:
+  default: 0x2
+  mask: 0x200000
+  regadr: PeriCfg21
+  shift: 21
+EFuse_Prog:
+  default: 0x0
+  mask:
+  - 0xff
+  - 0xff
+  - 0xff
+  - 0xff
+  regadr:
+  - PeriCfg25
+  - PeriCfg24
+  - PeriCfg23
+  - PeriCfg22
+  shift:
+  - 0
+  - 0
+  - 0
+  - 0
+EFuse_Rstn:
+  default: 0x0
+  mask: 0x8
+  regadr: PeriCfg21
+  shift: 3
+EFuse_Start:
+  default: 0x0
+  mask: 0x10
+  regadr: PeriCfg21
+  shift: 4
+EFuse_TCKHP:
+  default: 0x4
+  mask: 0xf0
+  regadr: PeriCfg20
+  shift: 4
+FC_EnRx:
+  default: 0x1
+  mask: 0x1
+  regadr: PeriCfg9
+  shift: 0
+FC_EnTer:
+  default: 0x1
+  mask: 0x2
+  regadr: PeriCfg9
+  shift: 1
+FC_Equ:
+  default: 0x0
+  mask: 0xc
+  regadr: PeriCfg9
+  shift: 2
+FC_InvData:
+  default: 0x0
+  mask: 0x10
+  regadr: PeriCfg9
+  shift: 4
+FC_SetCM:
+  default: 0x1
+  mask: 0x20
+  regadr: PeriCfg9
+  shift: 5
+GRO_Start:
+  default: 0x0
+  mask: 0x40
+  regadr: PeriCfg7
+  shift: 6
+GRO_TOARST_N:
+  default: 0x1
+  mask: 0x80
+  regadr: PeriCfg7
+  shift: 7
+GRO_TOA_CK:
+  default: 0x1
+  mask: 0x40
+  regadr: PeriCfg8
+  shift: 6
+GRO_TOA_Latch:
+  default: 0x1
+  mask: 0x80
+  regadr: PeriCfg8
+  shift: 7
+GRO_TOTRST_N:
+  default: 0x1
+  mask: 0x40
+  regadr: PeriCfg9
+  shift: 6
+GRO_TOT_CK:
+  default: 0x1
+  mask: 0x80
+  regadr: PeriCfg9
+  shift: 7
 HysSel:
   default: 0xf
   mask: 0xf
@@ -4672,6 +4840,11 @@ L1Adelay:
   shift:
   - 0
   - 7
+LTx_AmplSel:
+  default: 0x4
+  mask: 0xe0
+  regadr: PeriCfg16
+  shift: 5
 NW:
   default: 0x0
   mask: 0x1e
@@ -5194,6 +5367,101 @@ PD_DACDiscri:
     254: PixR14C15Cfg2
     255: PixR15C15Cfg2
   shift: 4
+PLL_BIASGEN_CONFIG:
+  default: 0x8
+  mask: 0xf
+  regadr: PeriCfg1
+  shift: 0
+PLL_CONFIG_I_PLL:
+  default: 0x9
+  mask: 0xf0
+  regadr: PeriCfg1
+  shift: 4
+PLL_CONFIG_P_PLL:
+  default: 0x9
+  mask: 0xf
+  regadr: PeriCfg2
+  shift: 0
+PLL_ENABLEPLL:
+  default: 0x0
+  mask: 0x20
+  regadr: PeriCfg3
+  shift: 5
+PLL_FBDiv_clkTreeDisable:
+  default: 0x0
+  mask: 0x40
+  regadr: PeriCfg0
+  shift: 6
+PLL_FBDiv_skip:
+  default: 0x0
+  mask: 0x80
+  regadr: PeriCfg0
+  shift: 7
+PLL_R_CONFIG:
+  default: 0x2
+  mask: 0xf0
+  regadr: PeriCfg2
+  shift: 4
+PLL_vcoDAC:
+  default: 0x8
+  mask: 0xf
+  regadr: PeriCfg3
+  shift: 0
+PLL_vcoRailMode:
+  default: 0x1
+  mask: 0x10
+  regadr: PeriCfg3
+  shift: 4
+PLLclkgen_disCLK:
+  default: 0x0
+  mask: 0x1
+  regadr: PeriCfg0
+  shift: 0
+PLLclkgen_disDES:
+  default: 0x0
+  mask: 0x2
+  regadr: PeriCfg0
+  shift: 1
+PLLclkgen_disEOM:
+  default: 0x1
+  mask: 0x4
+  regadr: PeriCfg0
+  shift: 2
+PLLclkgen_disSER:
+  default: 0x1
+  mask: 0x8
+  regadr: PeriCfg0
+  shift: 3
+PLLclkgen_disVCO:
+  default: 0x0
+  mask: 0x10
+  regadr: PeriCfg0
+  shift: 4
+PS_CPCurrent:
+  default: 0x1
+  mask: 0xf
+  regadr: PeriCfg4
+  shift: 0
+PS_CapRst:
+  default: 0x0
+  mask: 0x10
+  regadr: PeriCfg4
+  shift: 4
+PS_Enable:
+  default: 0x1
+  mask: 0x20
+  regadr: PeriCfg4
+  shift: 5
+PS_ForceDown:
+  default: 0x0
+  mask: 0x40
+  regadr: PeriCfg4
+  shift: 6
+PS_PhaseAdj:
+  default: 0x0
+  mask: 0xff
+  regadr: PeriCfg5
+  shift: 0
 PixelID:
   default: 0x0
   mask: 0xff
@@ -6238,6 +6506,16 @@ RSTn_THCal:
     254: PixR14C15Cfg3
     255: PixR15C15Cfg3
   shift: 0
+RTx_AmplSel:
+  default: 0x4
+  mask: 0xe0
+  regadr: PeriCfg17
+  shift: 5
+RefStrSel:
+  default: 0x3
+  mask: 0xff
+  regadr: PeriCfg6
+  shift: 0
 RfSel:
   default: 0x2
   mask: 0x60
@@ -7021,6 +7299,16 @@ ScanStart_THCal:
     254: PixR14C15Cfg3
     255: PixR15C15Cfg3
   shift: 4
+TDCClockTest:
+  default: 0x0
+  mask: 0x10
+  regadr: PeriCfg31
+  shift: 4
+TDCStrobeTest:
+  default: 0x0
+  mask: 0x20
+  regadr: PeriCfg31
+  shift: 5
 TH:
   default: 0x0
   mask:
@@ -8320,6 +8608,16 @@ TH_offset:
     254: PixR14C15Cfg5
     255: PixR15C15Cfg5
   shift: 2
+TS_PD:
+  default: 0x0
+  mask: 0x80
+  regadr: PeriCfg4
+  shift: 7
+VRefGen_PD:
+  default: 0x0
+  mask: 0x80
+  regadr: PeriCfg3
+  shift: 7
 addrOffset:
   default: 0x1
   mask: 0x1
@@ -8581,6 +8879,46 @@ addrOffset:
     254: PixR14C15Cfg7
     255: PixR15C15Cfg7
   shift: 0
+asyAlignFastcommand:
+  default: 0x0
+  mask: 0x20
+  regadr: PeriCfg13
+  shift: 5
+asyLinkReset:
+  default: 0x0
+  mask: 0x40
+  regadr: PeriCfg13
+  shift: 6
+asyPLLReset:
+  default: 0x1
+  mask: 0x80
+  regadr: PeriCfg13
+  shift: 7
+asyResetChargeInj:
+  default: 0x1
+  mask: 0x20
+  regadr: PeriCfg14
+  shift: 5
+asyResetFastcommand:
+  default: 0x1
+  mask: 0x40
+  regadr: PeriCfg14
+  shift: 6
+asyResetGlobalReadout:
+  default: 0x1
+  mask: 0x80
+  regadr: PeriCfg14
+  shift: 7
+asyResetLockDetect:
+  default: 0x1
+  mask: 0x20
+  regadr: PeriCfg15
+  shift: 5
+asyStartCalibration:
+  default: 0x1
+  mask: 0x40
+  regadr: PeriCfg15
+  shift: 6
 autoReset_TDC:
   default: 0x0
   mask: 0x20
@@ -8842,6 +9180,11 @@ autoReset_TDC:
     254: PixR14C15Cfg6
     255: PixR15C15Cfg6
   shift: 5
+chargeInjectionDelay:
+  default: 0x18
+  mask: 0x1f
+  regadr: PeriCfg17
+  shift: 0
 disDataReadout:
   default: 0x0
   mask: 0x2
@@ -9103,6 +9446,26 @@ disDataReadout:
     254: PixR14C15Cfg7
     255: PixR15C15Cfg7
   shift: 1
+disLTx:
+  default: 0x0
+  mask: 0x80
+  regadr: PeriCfg18
+  shift: 7
+disPowerSequence:
+  default: 0x0
+  mask: 0x1
+  regadr: PeriCfg18
+  shift: 0
+disRTx:
+  default: 0x0
+  mask: 0x80
+  regadr: PeriCfg19
+  shift: 7
+disScrambler:
+  default: 0x0
+  mask: 0x1
+  regadr: PeriCfg19
+  shift: 0
 disTrigPath:
   default: 0x0
   mask: 0x4
@@ -9364,6 +9727,17 @@ disTrigPath:
     254: PixR14C15Cfg7
     255: PixR15C15Cfg7
   shift: 2
+emptySlotBCID:
+  default: 0x7
+  mask:
+  - 0xff
+  - 0xf0
+  regadr:
+  - PeriCfg12
+  - PeriCfg11
+  shift:
+  - 0
+  - 4
 enable_TDC:
   default: 0x1
   mask: 0x80
@@ -9625,6 +9999,21 @@ enable_TDC:
     254: PixR14C15Cfg6
     255: PixR15C15Cfg6
   shift: 7
+fcClkDelayEn:
+  default: 0x0
+  mask: 0x8
+  regadr: PeriCfg18
+  shift: 3
+fcDataDelayEn:
+  default: 0x0
+  mask: 0x10
+  regadr: PeriCfg18
+  shift: 4
+fcSelfAlignEn:
+  default: 0x0
+  mask: 0x4
+  regadr: PeriCfg18
+  shift: 2
 level_TDC:
   default: 0x1
   mask: 0xe
@@ -9885,6 +10274,43 @@ level_TDC:
     253: PixR13C15Cfg6
     254: PixR14C15Cfg6
     255: PixR15C15Cfg6
+  shift: 1
+lfLockThrCounter:
+  default: 0xb
+  mask: 0xf
+  regadr: PeriCfg30
+  shift: 0
+lfReLockThrCounter:
+  default: 0xb
+  mask: 0xf0
+  regadr: PeriCfg30
+  shift: 4
+lfUnLockThrCounter:
+  default: 0xb
+  mask: 0xf
+  regadr: PeriCfg31
+  shift: 0
+linkResetFixedPattern:
+  default: 0xacc78cc5
+  mask:
+  - 0xff
+  - 0xff
+  - 0xff
+  - 0xff
+  regadr:
+  - PeriCfg29
+  - PeriCfg28
+  - PeriCfg27
+  - PeriCfg26
+  shift:
+  - 0
+  - 0
+  - 0
+  - 0
+linkResetTestPattern:
+  default: 0x1
+  mask: 0x2
+  regadr: PeriCfg19
   shift: 1
 lowerCal:
   default: 0x10
@@ -14548,6 +14974,36 @@ lowerTOTTrig:
   shift:
   - 0
   - 2
+mergeTriggerData:
+  default: 0x0
+  mask: 0x1
+  regadr: PeriCfg20
+  shift: 0
+onChipL1AConf:
+  default: 0x0
+  mask: 0x60
+  regadr: PeriCfg18
+  shift: 5
+readoutClockDelayGlobal:
+  default: 0x0
+  mask: 0x1f
+  regadr: PeriCfg15
+  shift: 0
+readoutClockDelayPixel:
+  default: 0x0
+  mask: 0x1f
+  regadr: PeriCfg13
+  shift: 0
+readoutClockWidthGlobal:
+  default: 0x10
+  mask: 0x1f
+  regadr: PeriCfg16
+  shift: 0
+readoutClockWidthPixel:
+  default: 0x10
+  mask: 0x1f
+  regadr: PeriCfg14
+  shift: 0
 resetn_TDC:
   default: 0x1
   mask: 0x40
@@ -15070,6 +15526,26 @@ selfTestOccupancy:
     254: PixR14C15Cfg8
     255: PixR15C15Cfg8
   shift: 0
+serRateLeft:
+  default: 0x1
+  mask: 0xc
+  regadr: PeriCfg19
+  shift: 2
+serRateRight:
+  default: 0x1
+  mask: 0x30
+  regadr: PeriCfg19
+  shift: 4
+singlePort:
+  default: 0x1
+  mask: 0x40
+  regadr: PeriCfg19
+  shift: 6
+softBoot:
+  default: 0x0
+  mask: 0x2
+  regadr: PeriCfg18
+  shift: 1
 testMode_TDC:
   default: 0x0
   mask: 0x10
@@ -15331,6 +15807,11 @@ testMode_TDC:
     254: PixR14C15Cfg6
     255: PixR15C15Cfg6
   shift: 4
+triggerGranularity:
+  default: 0x0
+  mask: 0xe
+  regadr: PeriCfg20
+  shift: 1
 upperCal:
   default: 0x200
   mask:
