@@ -55,6 +55,11 @@ def load_alignment_from_file(f_in):
         res = load(f, Loader=Loader)
     return res
 
+def load_yaml(f_in):
+    with open(f_in, 'r') as f:
+        res = load(f, Loader=Loader)
+    return res
+
 def prbs_phase_scan(lpgbt, f_out='phase_scan.txt'):
     with open(f_out, "w") as f:
         for phase in range(0x0, 0x1ff, 1):
@@ -117,8 +122,25 @@ def download_address_table(version):
     import json
     import urllib.parse
 
+
+    r2 = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/commits?ref=devel")
+    log = json.loads(r2.content)
+    last_commit_sha = log[0]['id'][:7]
+
     r = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/tree?ref={version}&&path=address_tables&&recursive=True")
     tree = json.loads(r.content)
+    if isinstance(tree, list):
+        print ("Successfully got list of address table files from gitlab.")
+    else:
+        version = last_commit_sha
+        if os.path.isdir(f'address_table/{version}/'):
+            # already downloaded.
+            return version
+        r = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/tree?ref=devel&&path=address_tables&&recursive=True")
+        tree = json.loads(r.content)
+        print (f"Local firmware version detected. Will download address table corresponding to commit {version}.")
+
+    
     os.makedirs(f"address_table/{version}")
     for f in tree:
         if f['type'] == 'tree':
@@ -129,6 +151,8 @@ def download_address_table(version):
             res = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/files/{path}/raw?ref={version}")
             local_path = f['path'].replace('address_tables/', '')
             open(f"address_table/{version}/{local_path}", 'wb').write(res.content)
+
+    return version
 
 def check_repo_status(kcu_version=None):
     import requests
@@ -172,7 +196,7 @@ def get_kcu(kcu_address):
 
     if not os.path.isdir(f"address_table/{xml_sha}"):
         print ("Downloading latest firmware version address table.")
-        download_address_table(xml_sha)
+        xml_sha = download_address_table(xml_sha)
 
     kcu = KCU(name="my_device",
               #ipb_path="chtcp-2.0://localhost:10203?target=%s:50001"%args.kcu,

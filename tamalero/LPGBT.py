@@ -88,15 +88,15 @@ class LPGBT(RegParser):
         #self.ver = self.rd_adr(0x005).value() & 1
 
     def reset_tx_mgt_by_mask(self, mask):
-        id = "MGT.MGT_TX_RESET"
+        id = "SYSTEM.MGT_TX_RESET"
         self.kcu.write_node(id, mask)
 
     def reset_rx_mgt_by_mask(self, mask):
-        id = "MGT.MGT_RX_RESET"
+        id = "SYSTEM.MGT_RX_RESET"
         self.kcu.write_node(id, mask)
 
     def reset_trigger_mgts(self):
-        id = "MGT.MGT_RX_RESET"
+        id = "SYSTEM.MGT_RX_RESET"
         # trigger links on 1,3,5,7,9
         self.kcu.write_node(id, 0x2aa)
         self.kcu.write_node(id, 0x000)
@@ -629,6 +629,9 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.PHASE_SHIFTER.PS0DELAY_7TO0", 0xff & phase)
         self.wr_reg("LPGBT.RWF.PHASE_SHIFTER.PS0DELAY_8", msb)
 
+    def I2C_write_single(self, reg=0x0, val=0, master=2, slave_addr=0x70, freq=2):
+        pass
+
     def I2C_write(self, reg=0x0, val=10, master=2, slave_addr=0x70, adr_nbytes=2, freq=2, ignore_response=False):
         '''
         reg: target register
@@ -640,7 +643,7 @@ class LPGBT(RegParser):
         if ignore_response and False:
             self.kcu.toggle_dispatch()
 
-        i2cm     = 2
+        i2cm      = master
         OFFSET_WR = i2cm*(self.LPGBT_CONST.I2CM1CMD - self.LPGBT_CONST.I2CM0CMD) #shift the master by 2 registers (we can change this)
         OFFSET_RD = i2cm*(self.LPGBT_CONST.I2CM1STATUS - self.LPGBT_CONST.I2CM0STATUS)
 
@@ -687,10 +690,6 @@ class LPGBT(RegParser):
             retries = 0
             while (status != self.LPGBT_CONST.I2CM_SR_SUCC_bm):
                 status = self.rd_adr(self.LPGBT_CONST.I2CM0STATUS+OFFSET_RD)
-                #if (status & self.LPGBT_CONST.I2CM_SR_LEVEERR_bm):
-                #    print ("The SDA line is pulled low before initiating a transaction")
-                #if (status & self.LPGBT_CONST.I2CM_SR_NOACK_bm):
-                #    print("The I2C transaction was not acknowledged by the I2C slave")
                 retries += 1
                 if retries > 50:
                     print ("Write not successfull!")
@@ -706,13 +705,6 @@ class LPGBT(RegParser):
         OFFSET_WR = i2cm*(self.LPGBT_CONST.I2CM1CMD - self.LPGBT_CONST.I2CM0CMD) #using the offset trick to switch between masters easily
         OFFSET_RD = i2cm*(self.LPGBT_CONST.I2CM1STATUS - self.LPGBT_CONST.I2CM0STATUS)
     
-        #adr = []
-        #for i in range(adr_nbytes): 
-        #    adr.append((reg >> (8*i)) & 0xff)
-
-        #regl = (int(reg) & 0xFF) >> 0
-        #regh = (int(reg)) >> 8
-
         ################################################################################
         # Write the register address
         ################################################################################
@@ -731,6 +723,16 @@ class LPGBT(RegParser):
         self.wr_adr(self.LPGBT_CONST.I2CM0ADDRESS+OFFSET_WR, slave_addr)
         self.wr_adr(self.LPGBT_CONST.I2CM0CMD+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_MULTI)# execute multi-write
 
+        status = self.rd_adr(self.LPGBT_CONST.I2CM0STATUS+OFFSET_RD)
+        retries = 0
+        while (status != self.LPGBT_CONST.I2CM_SR_SUCC_bm):
+            status = self.rd_adr(self.LPGBT_CONST.I2CM0STATUS+OFFSET_RD)
+            retries += 1
+            if retries > 50:
+                if not quiet:
+                    print ("Write not successfull!")
+                return None
+
         ################################################################################
         # Write the data
         ################################################################################
@@ -747,10 +749,6 @@ class LPGBT(RegParser):
         retries = 0
         while (status != self.LPGBT_CONST.I2CM_SR_SUCC_bm):
             status = self.rd_adr(self.LPGBT_CONST.I2CM0STATUS+OFFSET_RD)
-            #if (status & self.LPGBT_CONST.I2CM_SR_LEVEERR_bm):
-            #    print ("The SDA line is pulled low before initiating a transaction")
-            #if (status & self.LPGBT_CONST.I2CM_SR_NOACK_bm):
-            #    print("The I2C transaction was not acknowledged by the I2C slave")
             retries += 1
             if retries > 50:
                 if not quiet:
@@ -822,6 +820,7 @@ class LPGBT(RegParser):
         '''
 
         board_id = {}
+        n_module = {0:3, 1:6, 2:7}
         flavors = {0: '3 module', 1: '6 module', 2: '7 module'}
 
         user_id =   self.rd_reg("LPGBT.RWF.CHIPID.USERID3") << 24 |\
@@ -832,6 +831,7 @@ class LPGBT(RegParser):
         board_id['rb_ver_minor']    = user_id >> 25 & (2**4-1)
         board_id['lpgbt_ver']       = user_id >> 23 & (2**2-1)
         board_id['rb_flavor']       = flavors[user_id >> 19 & (2**4-1)]
+        board_id['n_module']        = n_module[user_id >> 19 & (2**4-1)]
         board_id['serial_number']   = user_id & (2**16-1)
         board_id['lpgbt_serial']    = self.get_chip_serial()
         
