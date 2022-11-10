@@ -38,8 +38,13 @@ class LPGBT(RegParser):
             raise Exception("Connect to KCU first.")
             return
 
+        if self.trigger:
+            self.ver = self.master.ver
+            self.serial_num = self.master.serial_num
+            return
+
+        # Get LPGBT Version
         if not self.kcu.dummy:
-            # Check LPGBT Version
             try:
                 self.kcu.write_node("READOUT_BOARD_%d.SC.FRAME_FORMAT" % self.rb, 0)
                 self.parse_xml(ver=0)
@@ -53,6 +58,9 @@ class LPGBT(RegParser):
                 assert(self.ver == 1)
         else:
             self.ver = 0
+
+        # Get LPGBT Serial Num
+        self.serial_num = self.get_board_id()['lpgbt_serial']
 
         # Callibrate ADC
         try:
@@ -396,8 +404,7 @@ class LPGBT(RegParser):
         return val
 
     def callibrate_adc(self, recallibrate=False):
-        serial_num = self.get_board_id()['lpgbt_serial']
-        cal_file = "lpgbt_cal_%d.json"%serial_num
+        cal_file = "lpgbt_cal_%d.json"%self.serial_num
         
         # load from json file if it exists (unless recallibrate)
         if os.path.isfile(cal_file) and not(recallibrate):

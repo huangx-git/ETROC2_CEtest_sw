@@ -44,7 +44,7 @@ class ReadoutBoard:
             print ("Trigger lpGBT was found, but will not be added.")
 
         if self.trigger:
-            self.TRIG_LPGBT = LPGBT(rb=self.rb, flavor=self.flavor, trigger=True, master=self.DAQ_LPGBT)
+            self.TRIG_LPGBT = LPGBT(rb=self.rb, flavor=self.flavor, trigger=True, master=self.DAQ_LPGBT, kcu=self.kcu)
             self.TRIG_LPGBT.connect_KCU(self.kcu)
             self.TRIG_LPGBT.configure()
             print ("Connected trigger lpGBT to KCU.")
