@@ -124,7 +124,7 @@ class LPGBT(RegParser):
             lpgbt = self
 
         id = "LPGBT.RW.TESTING.ULECDATASOURCE"
-        node = self.get_node(id)
+        node = lpgbt.get_node(id)
         self.write_reg(self.master.I2C_write, self.master.I2C_read, node, value=6)
         sleep (0.1)
         self.write_reg(self.master.I2C_write, self.master.I2C_read, node, value=0)
