@@ -43,21 +43,22 @@ class LPGBT(RegParser):
             self.serial_num = self.master.serial_num
             return
 
-        # Get LPGBT Version
-        if not self.kcu.dummy:
-            try:
-                self.kcu.write_node("READOUT_BOARD_%d.SC.FRAME_FORMAT" % self.rb, 0)
-                self.parse_xml(ver=0)
-                self.get_version()
-                assert(self.ver == 0)
-                # if not version 0, this will throw an error.
-            except:
-                self.kcu.write_node("READOUT_BOARD_%d.SC.FRAME_FORMAT" % self.rb, 1)
-                self.parse_xml(ver=1)
-                self.get_version()
-                assert(self.ver == 1)
-        else:
+        if self.kcu.dummy:
             self.ver = 0
+            return
+
+        # Get LPGBT Version
+        try:
+            self.kcu.write_node("READOUT_BOARD_%d.SC.FRAME_FORMAT" % self.rb, 0)
+            self.parse_xml(ver=0)
+            self.get_version()
+            assert(self.ver == 0)
+            # if not version 0, this will throw an error.
+        except:
+            self.kcu.write_node("READOUT_BOARD_%d.SC.FRAME_FORMAT" % self.rb, 1)
+            self.parse_xml(ver=1)
+            self.get_version()
+            assert(self.ver == 1)
 
         # Get LPGBT Serial Num
         self.serial_num = self.get_board_id()['lpgbt_serial']
