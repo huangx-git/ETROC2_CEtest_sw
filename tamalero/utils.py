@@ -103,14 +103,14 @@ def header():
 
 def make_version_header(res):
     from tamalero.colors import blue
-    print ("\n\n ### Testing ETL Readout Board: ###")
+    print ("\n ### Testing ETL Readout Board: ###")
     print (blue("- Version: %s.%s"%(res["rb_ver_major"], res["rb_ver_minor"])))
     print (blue("- Flavor: %s"%res["rb_flavor"]))
     print (blue("- Serial number: %s"%res["serial_number"]))
     print (blue("- lpGBT version: %s"%res["lpgbt_ver"]))
     print (blue("- lpGBT serial number: %s"%res['lpgbt_serial']))
     print (blue("- Trigger lpGBT mounted: %s"%res['trigger']))
-    print ("\n")
+    print ("")
 
 
 def chunk(in_list, n):

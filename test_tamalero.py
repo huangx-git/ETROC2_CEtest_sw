@@ -52,7 +52,9 @@ if __name__ == '__main__':
     if args.recal_lpgbt:
         rb_0.DAQ_LPGBT.callibrate_adc(recallibrate=True)
 
-    kcu.status()
+    if (verbose):
+        kcu.status()
+
     check_repo_status(kcu_version=kcu.get_firmware_version(verbose=True))
 
     # write to the loopback node of the KCU105 to check ethernet communication
