@@ -184,13 +184,19 @@ class ReadoutBoard:
                 self.TRIG_LPGBT.set_uplink_invert(i, alignment['trigger']['inversion'][i])
 
     def status(self):
-        print("Readout Board %s LPGBT Link Status:" % self.rb)
-        print("{:<8}{:<8}{:<50}{:<8}".format("Address", "Perm.", "Name", "Value"))
-        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.READY" % self.rb), use_color=True)
-        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.UPLINK.READY" % self.rb), use_color=True)
-        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.UPLINK.FEC_ERR_CNT" % self.rb), use_color=True, invert=True)
-        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.READY" % self.rb), use_color=True)
-        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT" % self.rb), use_color=True, invert=True)
+        nodes = list(map (lambda x : "READOUT_BOARD_%s.LPGBT." % self.rb + x,
+                          ("DAQ.DOWNLINK.READY",
+                      "DAQ.UPLINK.READY",
+                      "DAQ.UPLINK.FEC_ERR_CNT",
+                      "TRIGGER.UPLINK.READY",
+                      "TRIGGER.UPLINK.FEC_ERR_CNT",)))
+        for node in nodes:
+            val = self.kcu.read_node(node)
+            err = 0
+            err |= ("READY" in node and val != 1)
+            err |= ("FEC_ERR_CNT" in node and val != 0)
+            if err:
+                self.kcu.print_reg(self.kcu.hw.getNode(node), use_color=True, invert=True)
 
     def check_data_integrity(self, channel=0, etroc='ETROC1', trigger=False):
         '''
