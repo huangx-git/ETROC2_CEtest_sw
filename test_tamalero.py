@@ -18,6 +18,7 @@ if __name__ == '__main__':
     import argparse
 
     argParser = argparse.ArgumentParser(description = "Argument parser")
+    argParser.add_argument('--verbose', action='store_true', default=False, help="Verbose power up sequence")
     argParser.add_argument('--power_up', action='store_true', default=False, help="Do lpGBT power up init?")
     argParser.add_argument('--reconfigure', action='store_true', default=False, help="Configure the RB electronics: SCA and lpGBT?")
     argParser.add_argument('--adcs', action='store_true', default=False, help="Read ADCs?")
@@ -37,9 +38,11 @@ if __name__ == '__main__':
 
     header()
 
-    data_mode = False
-    if args.etroc in ['ETROC1', 'ETROC2']: data_mode = True
+    verbose = args.verbose
 
+    data_mode = False
+    if args.etroc in ['ETROC1', 'ETROC2']:
+        data_mode = True
 
     print ("Using KCU at address: %s"%args.kcu)
 
@@ -50,13 +53,17 @@ if __name__ == '__main__':
         rb_0.DAQ_LPGBT.callibrate_adc(recallibrate=True)
 
     kcu.status()
-    check_repo_status(kcu_version=kcu.get_firmware_version(quiet=True))
+    check_repo_status(kcu_version=kcu.get_firmware_version(verbose=True))
 
-    data = 0xabcd1234
-    kcu.write_node("LOOPBACK.LOOPBACK", data)
-    if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
-        print("No communications with KCU105... quitting")
-        sys.exit(0)
+    # write to the loopback node of the KCU105 to check ethernet communication
+    try:
+        data = 0xabcd1234
+        kcu.write_node("LOOPBACK.LOOPBACK", data)
+        if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
+            print("No communications with KCU105... quitting")
+            sys.exit(0)
+    except uhal._core.exception:
+        print("uhal UDP error in daq")
 
     if args.power_up:
         print ("Power up init sequence for: DAQ")

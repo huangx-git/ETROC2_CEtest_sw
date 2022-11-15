@@ -21,7 +21,7 @@ class KCU:
                 self.hw = uhal.getDevice("my_device", ipb_path, "file://" + adr_table)
             except:
                 raise Exception("uhal can't get device at"+adr_table)
-            self.firmware_version = self.get_firmware_version(string=False, quiet=True)
+            self.firmware_version = self.get_firmware_version(string=False, verbose=False)
         else:
             self.hw = None
         self.readout_boards = []
@@ -60,18 +60,29 @@ class KCU:
         reg = self.hw.getNode(id)
         self.action_reg(reg)
 
-    def get_firmware_version(self, quiet=False, string=True):
+    def get_firmware_version(self, verbose=False, string=True):
 
         nodes = ("FW_INFO.HOG_INFO.GLOBAL_DATE",
                  "FW_INFO.HOG_INFO.GLOBAL_TIME",
                  "FW_INFO.HOG_INFO.GLOBAL_VER",
                  "FW_INFO.HOG_INFO.GLOBAL_SHA",)
 
-        if not quiet:
-            for node in nodes:
-                self.print_reg(self.hw.getNode(node))
+        (date, time, ver, sha) = (map (lambda x : self.read_node(x).value(), nodes))
 
-        res = self.read_node("FW_INFO.HOG_INFO.GLOBAL_VER")
+        if verbose:
+            print("Firmware version: %04x/%02x/%02x %02x:%02x:%02x v%x.%x.%x sha=%07x" % (
+                date & 0xffff,
+                (date >> 16) & 0xff,
+                (date >> 24) & 0xff,
+                time & 0xff,
+                (time >> 8) & 0xff,
+                (time >> 8) & 0xff,
+                ver & 0xff,
+                (ver >> 8) & 0xff,
+                (ver >> 8) & 0xff,
+                sha))
+
+        res = ver
         if string:
             return "%s.%s.%s"%(res >> 24, (res >> 16) & 0xFF, res & 0xFFFF)
         else:
