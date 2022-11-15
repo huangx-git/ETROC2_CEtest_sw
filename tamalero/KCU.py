@@ -165,7 +165,7 @@ class KCU:
             rb.connect_KCU(self)  # not sure if this is actually useful
         return rb
 
-    def check_clock_frequencies(self):
+    def check_clock_frequencies(self, verbose=False):
         clocks = (('FW_INFO.CLK125_FREQ', 125000000),
                   ('FW_INFO.CLK320_FREQ', 320640000),
                   ('FW_INFO.CLK_40_FREQ',  40080000),
@@ -178,5 +178,14 @@ class KCU:
         # freq = int(rd) / 1000000.0
         # print("%s = %6.2f MHz" % (id, freq))
 
+        errs = 0
+        tolerance = 2000
         for clock in clocks:
-            self.print_reg(self.hw.getNode(clock[0]), use_color=True, threshold=clock[1] - 2000, maxval=clock[1] + 2000)
+            freq = self.read_node(clock[0]).value()
+            expect = clock[1]
+            err = freq > expect + tolerance or freq < expect-tolerance
+            errs = errs + err
+            if (err or verbose):
+                self.print_reg(self.hw.getNode(clock[0]), use_color=True, threshold=clock[1] - tolerance, maxval=clock[1] + tolerance)
+
+        return errs
