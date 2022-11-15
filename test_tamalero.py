@@ -11,6 +11,7 @@ import time
 import random
 import sys
 import os
+import uhal
 
 if __name__ == '__main__':
 
@@ -44,11 +45,34 @@ if __name__ == '__main__':
     if args.etroc in ['ETROC1', 'ETROC2']:
         data_mode = True
 
+    #-------------------------------------------------------------------------------
+    # Try to Connect to the KCU105
+    #-------------------------------------------------------------------------------
+
     print ("Using KCU at address: %s"%args.kcu)
 
-    kcu = get_kcu(args.kcu)
+    kcu = None
+    rb_0 = None
 
-    rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=(not args.force_no_trigger), kcu=kcu))
+    # write to the loopback node of the KCU105 to check ethernet communication
+    trycnt = 0
+    while (True):
+        try:
+            kcu = get_kcu(args.kcu)
+            rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=(not args.force_no_trigger), kcu=kcu))
+            data = 0xabcd1234
+            kcu.write_node("LOOPBACK.LOOPBACK", data)
+            if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
+                print("No communications with KCU105... quitting")
+                sys.exit(0)
+            break
+        except uhal._core.exception:
+            print("uhal UDP error... trying again ")
+            trycnt += 1
+            time.sleep(1)
+            if (trycnt > 10):
+                sys.exit(0)
+
     if args.recal_lpgbt:
         rb_0.DAQ_LPGBT.callibrate_adc(recallibrate=True)
 
@@ -57,15 +81,6 @@ if __name__ == '__main__':
 
     check_repo_status(kcu_version=kcu.get_firmware_version(verbose=True))
 
-    # write to the loopback node of the KCU105 to check ethernet communication
-    try:
-        data = 0xabcd1234
-        kcu.write_node("LOOPBACK.LOOPBACK", data)
-        if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
-            print("No communications with KCU105... quitting")
-            sys.exit(0)
-    except uhal._core.exception:
-        print("uhal UDP error in daq")
 
     if args.power_up:
         print ("Power up init sequence for: DAQ")
