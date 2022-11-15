@@ -158,7 +158,6 @@ class KCU:
         clocks = (('FW_INFO.CLK125_FREQ', 125000000),
                   ('FW_INFO.CLK320_FREQ', 320640000),
                   ('FW_INFO.CLK_40_FREQ',  40080000),
-                  ('FW_INFO.IPBCLK_FREQ',  40080000),
                   ('FW_INFO.REFCLK_FREQ', 320640000),
                   ('FW_INFO.RXCLK0_FREQ', 320640000),
                   ('FW_INFO.RXCLK1_FREQ', 320640000),
