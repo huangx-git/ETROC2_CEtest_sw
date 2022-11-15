@@ -81,37 +81,52 @@ if __name__ == '__main__':
 
     check_repo_status(kcu_version=kcu.get_firmware_version(verbose=True))
 
+    #-------------------------------------------------------------------------------
+    # Power up
+    #-------------------------------------------------------------------------------
 
     if args.power_up:
-        print ("Power up init sequence for: DAQ")
+
+        print("Power up init sequence for: DAQ")
+
         rb_0.DAQ_LPGBT.power_up_init()
-        if (rb_0.DAQ_LPGBT.rd_adr(0x1c5) != 0xa5):
-            print ("No communication with DAQ LPGBT... trying to reset DAQ MGTs")
+
+        def lpgbt_link_is_ok():
+            return rb_0.DAQ_LPGBT.rd_adr(0x1c5) == 0xa5
+
+        # read from the rom address to check basic communication
+        if (not lpgbt_link_is_ok):
+
+            print(" > No communication with DAQ LPGBT... trying to reset DAQ MGTs")
             rb_0.DAQ_LPGBT.reset_daq_mgts()
             rb_0.DAQ_LPGBT.power_up_init()
             time.sleep(0.01)
-            #print(hex(rb_0.DAQ_LPGBT.rd_adr(0x1c5)))
-            if (rb_0.DAQ_LPGBT.rd_adr(0x1c5) != 0xa5):
-                print ("Still no communication with DAQ LPGBT. Quitting.")
+
+            if (not lpgbt_link_is_ok):
+                print("> Still no communication with DAQ LPGBT. Quitting.")
                 sys.exit(0)
-        #rb_0.TRIG_LPGBT.power_up_init()
-        rb_0.VTRX.get_version()
-        print ("VTRX status at power up:")
-        _ = rb_0.VTRX.status()
+
+        if (verbose):
+            print ("VTRX status at power up:")
+            rb_0.VTRX.get_version()
+            _ = rb_0.VTRX.status()
+
         rb_0.get_trigger()
+
         if rb_0.trigger:
-            print ("Enabling VTRX channel for trigger lpGBT")
+            print("Configuring Trigger lpGBT")
+            print (" > Enabling VTRX channel for trigger lpGBT")
             rb_0.VTRX.enable(ch=1)
             time.sleep(1)
-            print ("Power up init sequence for: Trigger")
+            print (" > Power up init sequence for: Trigger")
             rb_0.TRIG_LPGBT.power_up_init()
-        #rb_0.DAQ_LPGBT.power_up_init_trigger()
-        #
+            print("Done Configuring Trigger lpGBT")
 
     if not hasattr(rb_0, "TRIG_LPGBT"):
         rb_0.get_trigger()
 
     if args.power_up or args.reconfigure:
+
         if args.alignment:
             if isinstance(args.alignment, str):
                 print ("Loading uplink alignemnt from file:", args.alignment)
@@ -121,44 +136,48 @@ if __name__ == '__main__':
                 alignment = None
         else:
             alignment = False
+
+        print("Configuring readout board")
         rb_0.configure(alignment=alignment, data_mode=data_mode, etroc=args.etroc)
-            # this is very slow, especially for the trigger lpGBT.
-        if rb_0.trigger:
-            time.sleep(1.0)
-            rb_0.DAQ_LPGBT.reset_trigger_mgts()
-            kcu.write_node("READOUT_BOARD_%s.LPGBT.FEC_ERR_RESET" % 0, 0x1)
-        time.sleep(1.0)
 
     res = rb_0.DAQ_LPGBT.get_board_id()
     res['trigger'] = 'yes' if rb_0.trigger else 'no'
-    make_version_header(res)
+
+    if (verbose):
+        make_version_header(res)
 
     if args.power_up or args.reconfigure:
         rb_0.reset_problematic_links(
-           max_retries = 10,
-            allow_bad_links = args.allow_bad_links,
-        )
+            max_retries=10,
+            allow_bad_links=args.allow_bad_links)
+        if verbose:
+            rb_0.status()
 
-        print ()
-        rb_0.status()
-
-    rb_0.VTRX.get_version()
-    _ = rb_0.VTRX.status()
+    if (verbose):
+        rb_0.VTRX.get_version()
+        _ = rb_0.VTRX.status()
 
     rb_0.DAQ_LPGBT.set_dac(1.0)  # set the DAC / Vref to 1.0V.
+
+    #-------------------------------------------------------------------------------
+    # Module Status
+    #-------------------------------------------------------------------------------
 
     modules = []
     for i in range(res['n_module']):
         modules.append(Module(rb_0, i+1))
 
-    print ()
-    print ("Querying module status")
+    print()
+    print("Querying module status")
     for m in modules:
         m.configure()
         m.show_status()
 
+    #-------------------------------------------------------------------------------
+    # Read ADCs
+    #-------------------------------------------------------------------------------
 
-    if args.adcs or args.power_up:
+    if args.adcs:
         print("\n\nReading GBT-SCA ADC values:")
         rb_0.SCA.read_adcs()
 
@@ -185,11 +204,19 @@ if __name__ == '__main__':
         # High level reading of temperatures
         temp = rb_0.read_temp(verbose=1)
 
+    #-------------------------------------------------------------------------------
+    # I2C Test
+    #-------------------------------------------------------------------------------
+
     if args.i2c_temp:
 
         for i in range(100):
             print ( rb_0.DAQ_LPGBT.read_temp_i2c() )
             time.sleep(1)
+
+    #-------------------------------------------------------------------------------
+    # Read SCA
+    #-------------------------------------------------------------------------------
 
     if args.i2c_sca:
 
@@ -215,6 +242,9 @@ if __name__ == '__main__':
             print ("write/read successful!")
         print("read value = {}".format(rb_0.SCA.I2C_read_multi(channel=3, servant=0x48, nbytes = 2, reg=0x2)))
 
+    #-------------------------------------------------------------------------------
+    # Pattern Checkers
+    #-------------------------------------------------------------------------------
 
     if args.reset_pattern_checker:
         print ("\nResetting the pattern checker.")
@@ -229,8 +259,16 @@ if __name__ == '__main__':
         time.sleep(1)
         rb_0.DAQ_LPGBT.read_pattern_checkers()
 
+    #-------------------------------------------------------------------------------
+    # Eyescan
+    #-------------------------------------------------------------------------------
+
     if args.eyescan:
         rb_0.DAQ_LPGBT.eyescan()
+
+    #-------------------------------------------------------------------------------
+    # Data Readout
+    #-------------------------------------------------------------------------------
 
     if data_mode:
         time.sleep(1)
@@ -244,9 +282,9 @@ if __name__ == '__main__':
                 )
             fifo.reset()
             try:
-                hex_dump = fifo.giant_dump(300,255, align=(args.etroc=="ETROC1"))
+                hex_dump = fifo.giant_dump(300, 255, align=(args.etroc=="ETROC1"))
             except:
-                print ("Dispatch failed, trying again.")
-                hex_dump = fifo.giant_dump(300,255, align=(args.etroc=="ETROC1"))
+                print("Dispatch failed, trying again.")
+                hex_dump = fifo.giant_dump(300, 255, align=(args.etroc=="ETROC1"))
             print (hex_dump)
             fifo.dump_to_file(fifo.wipe(hex_dump, trigger_words=[]))  # use 5 columns --> better to read for our data format
