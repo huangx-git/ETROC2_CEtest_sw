@@ -184,13 +184,19 @@ class ReadoutBoard:
                 self.TRIG_LPGBT.set_uplink_invert(i, alignment['trigger']['inversion'][i])
 
     def status(self):
-        print("Readout Board %s LPGBT Link Status:" % self.rb)
-        print("{:<8}{:<8}{:<50}{:<8}".format("Address", "Perm.", "Name", "Value"))
-        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.READY" % self.rb), use_color=True)
-        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.UPLINK.READY" % self.rb), use_color=True)
-        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.UPLINK.FEC_ERR_CNT" % self.rb), use_color=True, invert=True)
-        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.READY" % self.rb), use_color=True)
-        self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT" % self.rb), use_color=True, invert=True)
+        nodes = list(map (lambda x : "READOUT_BOARD_%s.LPGBT." % self.rb + x,
+                          ("DAQ.DOWNLINK.READY",
+                      "DAQ.UPLINK.READY",
+                      "DAQ.UPLINK.FEC_ERR_CNT",
+                      "TRIGGER.UPLINK.READY",
+                      "TRIGGER.UPLINK.FEC_ERR_CNT",)))
+        for node in nodes:
+            val = self.kcu.read_node(node)
+            err = 0
+            err |= ("READY" in node and val != 1)
+            err |= ("FEC_ERR_CNT" in node and val != 0)
+            if err:
+                self.kcu.print_reg(self.kcu.hw.getNode(node), use_color=True, invert=True)
 
     def check_data_integrity(self, channel=0, etroc='ETROC1', trigger=False):
         '''
@@ -245,16 +251,16 @@ class ReadoutBoard:
             print("Error counts after reset:")
             self.get_FEC_error_count()
 
-    def configure(self, alignment=None, data_mode=False, etroc='ETROC1'):
+    def configure(self, alignment=None, data_mode=False, etroc='ETROC1', verbose=False):
 
         ## DAQ
         #for i in range(28):
         #    self.DAQ_LPGBT.set_uplink_alignment(1, i)  # was 2 for daq loopback. does this behave stochastically?
 
         self.DAQ_LPGBT.configure_gpio_outputs()
-        self.DAQ_LPGBT.initialize()
-        self.DAQ_LPGBT.config_eport_dlls()
-        self.DAQ_LPGBT.configure_eptx()
+        self.DAQ_LPGBT.initialize(verbose=verbose)
+        self.DAQ_LPGBT.config_eport_dlls(verbose=verbose)
+        self.DAQ_LPGBT.configure_eptx(verbose=verbose)
         self.DAQ_LPGBT.configure_eprx()
 
         # configure the VTRX
@@ -320,18 +326,19 @@ class ReadoutBoard:
 
         self.reset_FEC_error_count(quiet=True)
 
-    def reset_problematic_links(self, max_retries=10, allow_bad_links=False):
+    def reset_problematic_links(self, max_retries=10, allow_bad_links=False, verbose=False):
         '''
         First check DAQ link, then trigger link.
         '''
         for link in ['DAQ', 'Trigger'] if self.trigger else ['DAQ']:
             for i in range(max_retries):
                 if link == 'DAQ':
-                    good_link = self.DAQ_LPGBT.link_status()
+                    good_link = self.DAQ_LPGBT.link_status(verbose=False)
                 else:
-                    good_link = self.TRIG_LPGBT.link_status()
+                    good_link = self.TRIG_LPGBT.link_status(verbose=False)
                 if good_link:
-                    print (f"No FEC errors detected on {link} link")
+                    if verbose:
+                        print (f"No FEC errors detected on {link} link")
                     break
                 else:
                     self.reset_link(trigger = (link=='Trigger'))

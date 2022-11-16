@@ -3,5 +3,8 @@
 *.log
 tmp/
 address_table/*
+!address_table/generic
+!address_table/generic/*
+!address_table/generic/modules/*
 __pycache__
 lpgbt_cal_*.json
