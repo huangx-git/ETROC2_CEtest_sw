@@ -53,12 +53,6 @@ if __name__ == '__main__':
 
     print ("Using KCU at address: %s"%args.kcu)
 
-<<<<<<< HEAD
-    kcu = get_kcu(args.kcu, control_hub=args.control_hub, host=args.host)
-    if kcu == 0:
-        print("No communications with KCU105... quitting")
-        sys.exit(0)
-=======
     kcu = None
     rb_0 = None
 
@@ -66,7 +60,7 @@ if __name__ == '__main__':
     trycnt = 0
     while (True):
         try:
-            kcu = get_kcu(args.kcu)
+            kcu = get_kcu(args.kcu, control_hub=args.control_hub, host=args.host)
             rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=(not args.force_no_trigger), kcu=kcu))
             data = 0xabcd1234
             kcu.write_node("LOOPBACK.LOOPBACK", data)
@@ -80,7 +74,6 @@ if __name__ == '__main__':
             time.sleep(1)
             if (trycnt > 10):
                 sys.exit(0)
->>>>>>> 947760fe62601a04c64b6abd50e934fc242aedf6
 
     if args.recal_lpgbt:
         rb_0.DAQ_LPGBT.callibrate_adc(recallibrate=True)
