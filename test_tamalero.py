@@ -33,6 +33,8 @@ if __name__ == '__main__':
     argParser.add_argument('--etroc', action='store', default="ETROC2", help='Specify ETROC version.')
     argParser.add_argument('--eyescan', action='store_true', default=False, help="Run eyescan?")
     argParser.add_argument('--recal_lpgbt', action='store_true', default=False, help="Recallibrate ADC in LPGBT? (instead of using saved values)")
+    argParser.add_argument('--control_hub', action='store_true', default=False, help="Use control hub for communication?")
+    argParser.add_argument('--host', action='store', default='localhost', help="Specify host for control hub")
     args = argParser.parse_args()
 
     header()
@@ -43,7 +45,10 @@ if __name__ == '__main__':
 
     print ("Using KCU at address: %s"%args.kcu)
 
-    kcu = get_kcu(args.kcu)
+    kcu = get_kcu(args.kcu, control_hub=args.control_hub, host=args.host)
+    if kcu == 0:
+        print("No communications with KCU105... quitting")
+        sys.exit(0)
 
     rb_0 = kcu.connect_readout_board(ReadoutBoard(0, trigger=(not args.force_no_trigger), kcu=kcu))
     if args.recal_lpgbt:
