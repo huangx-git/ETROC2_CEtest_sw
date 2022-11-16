@@ -146,7 +146,6 @@ class FIFO:
         for i in range(count):
             self.rb.kcu.write_node("READOUT_BOARD_%s.LPGBT.DAQ.DOWNLINK.FAST_CMD_PULSE"%self.rb.rb, 0x01)
 
-
     def reset(self, l1a=False):
         # needs to be reset twice, dunno
         self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_RESET"%self.rb.rb, 0x01)
