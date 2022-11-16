@@ -8,7 +8,8 @@ class Module:
         # don't like that this also needs a RB
         # think about a better solution
         self.config = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/module_mapping.yaml'))[f'm{i}']
-        self.regs = load_yaml(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC_HW_emulator.yaml'))
+        self.regs = load_yaml(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC2.yaml'))
+        self.regs_em = ['disScrambler', 'singlePort', 'mergeTriggerData', 'triggerGranularity']
         self.i = i
         #self.config = read_mapping()
 
@@ -20,8 +21,8 @@ class Module:
     def configure(self):
         if self.connected:
             self.wr_reg('singlePort', 0)
-            self.wr_reg('mergeTrigData', 0)
-            self.wr_reg('disSCR', 1)
+            self.wr_reg('mergeTriggerData', 0)
+            self.wr_reg('disScrambler', 1)
 
     def I2C_write(self, reg=0x0, val=0x0):
         self.I2C_master.I2C_write(
@@ -39,7 +40,7 @@ class Module:
         )
 
     def wr_reg(self, reg, val):
-        adr   = self.regs[reg]['adr']
+        adr   = int(self.regs[reg]['regadr'].replace('PeriCfg', ''))
         shift = self.regs[reg]['shift']
         mask  = self.regs[reg]['mask']
 
@@ -49,7 +50,7 @@ class Module:
         self.I2C_write(adr, new_val)
 
     def rd_reg(self, reg):
-        adr = self.regs[reg]['adr']
+        adr = int(self.regs[reg]['regadr'].replace('PeriCfg', ''))
         mask = self.regs[reg]['mask']
         shift = self.regs[reg]['shift']
 
@@ -108,12 +109,15 @@ class Module:
         print("┃{:^31s}┃".format("fw ver."+self.get_emulator_ver()))
         print("┃" + 31*" " + "┃")
 
-        for reg in self.regs:
+        for reg in self.regs_em:
             col = green if self.rd_reg(reg) else red
             print("┃ " + col('{:25}{:4}'.format(reg, hex(self.rd_reg(reg)))) + " ┃")
 
         print("┗" + 31*"━" + "┛")
 
     def get_emulator_ver(self):
-        ver = [hex(self.I2C_read(i))[2:] for i in [0x1F,0x1E,0x1D]]
-        return "-".join(ver)
+        try:
+            ver = [hex(self.I2C_read(i))[2:] for i in [0x19,0x18,0x17]]
+            return "-".join(ver)
+        except:
+            return "--"
