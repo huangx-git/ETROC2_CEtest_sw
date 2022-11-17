@@ -60,6 +60,8 @@ class VTRX:
             print ("lpGBT init not yet done, will load VTRX address table later.")
 
     def configure(self, trigger=False):
+        if not hasattr(self, 'ver'):
+            self.get_version()
         if trigger:
             if self.ver == "production":
                 self.enable(ch=1)

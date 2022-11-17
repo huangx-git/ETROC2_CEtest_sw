@@ -357,10 +357,13 @@ class LPGBT(RegParser):
             pin = adc_dict[adc_reg]['pin']
             comment = adc_dict[adc_reg]['comment']
             value = self.read_adc(pin)
-            input_voltage = value / (2**10 - 1) * adc_dict[adc_reg]['conv']
+            value_calibrated = value * self.cal_gain / 1.85 + (512 - self.cal_offset)
+            input_voltage = value_calibrated / (2**10 - 1) * adc_dict[adc_reg]['conv']
+
             out_string = "register: {0}".format(adc_reg).ljust(22)+\
             "pin: {0}".format(pin).ljust(10)+"reading: {0}".format(value).ljust(16)+\
             "in voltage: {0:.4f}".format(input_voltage).ljust(22) + "comment: '{0}'".format(comment)
+
             print(out_string)
 
     def read_adc(self, channel, convert=False):
@@ -399,12 +402,14 @@ class LPGBT(RegParser):
     
         self.wr_reg("LPGBT.RW.ADC.ADCCONVERT", 0x0)
         self.wr_reg("LPGBT.RW.ADC.ADCENABLE", 0x1)
+
         if convert:
             for k in self.adc_mapping.keys():
                 if int(self.adc_mapping[k]['pin']) == channel:
                     conversion = self.adc_mapping[k]['conv']
                     break
-            val = val / (2**10 - 1) * conversion
+            val = val*self.cal_gain/1.85 + (512 - self.cal_offset) # calibrate
+            val = val / (2**10 - 1) * conversion # convert
         return val
 
     def calibrate_adc(self, recalibrate=False):
@@ -422,7 +427,7 @@ class LPGBT(RegParser):
         else:
             # determine offset; both at Vref/2
             offset = self.read_adc(0xf)
-            
+
             # determine gain; one at Vref/2, one at ground
             # use internal grounding - ADC12, supply voltage divider off
             initial_val = self.rd_reg("LPGBT.RW.ADC.VDDMONENA")
