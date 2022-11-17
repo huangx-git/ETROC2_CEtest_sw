@@ -49,7 +49,7 @@ class ReadoutBoard:
             self.TRIG_LPGBT.parse_xml(os.path.expandvars('$TAMALERO_BASE/address_table/lpgbt.xml'))
             self.TRIG_LPGBT.connect_KCU(self.kcu)
             print ("Connected trigger lpGBT to KCU.")
-            self.TRIG_LPGBT.callibrate_adc()
+            self.TRIG_LPGBT.calibrate_adc()
 
 
     def connect_KCU(self, kcu):

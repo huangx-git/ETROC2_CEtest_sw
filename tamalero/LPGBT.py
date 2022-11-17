@@ -30,9 +30,9 @@ class LPGBT(RegParser):
         if kcu != None:
             self.kcu = kcu
         try:
-            self.callibrate_adc()
+            self.calibrate_adc()
         except:
-            print("Need to callibrate ADC in the future. Use default values for now.")
+            print("Need to calibrate ADC in the future. Use default values for now.")
             self.cal_gain = 1.85
             self.cal_offset = 512
 
@@ -361,19 +361,19 @@ class LPGBT(RegParser):
             val = val / (2**10 - 1) * conversion
         return val
 
-    def callibrate_adc(self, recallibrate=False):
+    def calibrate_adc(self, recalibrate=False):
         serial_num = self.get_board_id()['lpgbt_serial']
         cal_file = "lpgbt_cal_%d.json"%serial_num
         
-        # load from json file if it exists (unless recallibrate)
-        if os.path.isfile(cal_file) and not(recallibrate):
+        # load from json file if it exists (unless recalibrate)
+        if os.path.isfile(cal_file) and not(recalibrate):
             with open(cal_file, 'r') as openfile:
                 cal_data = json.load(openfile)
             gain = cal_data['gain']
             offset = cal_data['offset']
-            print("Loaded ADC callibration data. Gain: %f / Offset: %d"%(gain, offset))
+            print("Loaded ADC calibration data. Gain: %f / Offset: %d"%(gain, offset))
         
-        # else, determine callibration constants
+        # else, determine calibration constants
         else:
             # determine offset; both at Vref/2
             offset = self.read_adc(0xf)
@@ -386,13 +386,13 @@ class LPGBT(RegParser):
             # ADC = (Vdiff/Vref)*Gain*512 + Offset
             gain = 2*abs(self.read_adc(0xC)-offset)/512
             self.wr_reg("LPGBT.RW.ADC.VDDMONENA", initial_val)
-            print("Callibrated ADC. Gain: %f / Offset: %d"%(gain, offset))
+            print("Calibrated ADC. Gain: %f / Offset: %d"%(gain, offset))
 
             # save to json file
             cal_data = {'gain': gain, 'offset': offset}
             with open(cal_file, "w") as outfile:
                 json.dump(cal_data, outfile)
-                print("Callibration data saved to %s"%cal_file)
+                print("Calibration data saved to %s"%cal_file)
 
         self.cal_gain = gain
         self.cal_offset = offset
