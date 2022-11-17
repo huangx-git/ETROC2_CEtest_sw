@@ -73,8 +73,8 @@ class LPGBT(RegParser):
 
     def link_status(self, verbose=False):
         if self.trigger:
-            print ("Checking trigger link status")
             if verbose:
+                print ("Checking trigger link status")
                 print ("Uplink ready:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.TRIGGER.UPLINK.READY"%self.rb).value()==1 )
                 print ("FEC count:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT"%self.rb).value())
             return (
@@ -82,8 +82,8 @@ class LPGBT(RegParser):
                 (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.TRIGGER.UPLINK.READY"%self.rb).value() == 1)
             )
         else:
-            print ("Checking DAQ link status")
             if verbose:
+                print ("Checking DAQ link status")
                 print ("Uplink ready:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.DAQ.UPLINK.READY"%self.rb).value()==1 )
                 print ("FEC count:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.DAQ.UPLINK.FEC_ERR_CNT"%self.rb).value())
             return (
@@ -150,7 +150,8 @@ class LPGBT(RegParser):
                 print("  > Magic Done")
         else:
             # servant lpgbt base configuration
-            self.master.program_slave_from_file('configs/config_slave.txt', verbose=verbose)  #FIXME check if we still need this black box after power cycle.
+            #FIXME check if we still need this black box after power cycle.
+            self.master.program_slave_from_file('configs/config_slave.txt')
 
             # toggle the uplink to and from 40MHz clock, for some reason this is
             # needed for the mgt to lock
@@ -259,8 +260,9 @@ class LPGBT(RegParser):
             if 0x1 & (invert_mask >> i):
                 self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dINVERT" % i, 1)
 
-    def config_eport_dlls(self):
-        print("Configuring eport dlls...")
+    def config_eport_dlls(self, verbose=False):
+        if verbose:
+            print("Configuring eport dlls...")
         self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDLLCURRENT", 0x1)
         self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDLLCONFIRMCOUNT", 0x1)
         self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDLLFSMCLKALWAYSON", 0x0)
@@ -268,7 +270,7 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXENABLEREINIT", 0x0)
         self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDATAGATINGENABLE", 0x1)
 
-    def configure_eptx(self):
+    def configure_eptx(self, verbose=False):
 
         for i in range(4):
             # [0x0a7] EPTXDataRate
@@ -289,9 +291,10 @@ class LPGBT(RegParser):
         for i in range(4):
             self.wr_reg("LPGBT.RWF.EPORTTX.EPTX%dMIRRORENABLE" % i, 0x1)
 
-    def configure_eprx(self):
+    def configure_eprx(self, verbose=False):
 
-        print("Configuring elink inputs...")
+        if verbose:
+            print("Configuring elink inputs...")
         # Enable Elink-inputs
 
         # enable inputs
@@ -467,10 +470,12 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACENABLE", 0x0)
         self.wr_reg("LPGBT.RWF.CALIBRATION.VREFENABLE", 0x0)
 
-    def initialize(self):
+    def initialize(self, verbose=False):
         self.wr_reg("LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT", 0x1)
+
         # turn on clock outputs
-        print ("Configuring clocks now.")
+        if (verbose):
+            print ("Configuring clocks now.")
         self.configure_clocks(0x0fffffff, 0x0)
 
         # setup up sca eptx/rx
@@ -776,8 +781,8 @@ class LPGBT(RegParser):
         else:
             return read_values
 
-    def program_slave_from_file (self, filename, master=2, slave_addr=0x70, verbose=True):
-        print("Programming Trigger lpGBT from file.")
+    def program_slave_from_file (self, filename, master=2, slave_addr=0x70, verbose=False):
+        print(" > Programming Trigger lpGBT from file.")
         f = open(filename, "r")
         for line in f:
             adr, data = line.split(" ")

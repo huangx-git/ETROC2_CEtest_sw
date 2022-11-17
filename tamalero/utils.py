@@ -103,14 +103,14 @@ def header():
 
 def make_version_header(res):
     from tamalero.colors import blue
-    print ("\n\n ### Testing ETL Readout Board: ###")
+    print ("\n ### Testing ETL Readout Board: ###")
     print (blue("- Version: %s.%s"%(res["rb_ver_major"], res["rb_ver_minor"])))
     print (blue("- Flavor: %s"%res["rb_flavor"]))
     print (blue("- Serial number: %s"%res["serial_number"]))
     print (blue("- lpGBT version: %s"%res["lpgbt_ver"]))
     print (blue("- lpGBT serial number: %s"%res['lpgbt_serial']))
     print (blue("- Trigger lpGBT mounted: %s"%res['trigger']))
-    print ("\n")
+    print ("")
 
 
 def chunk(in_list, n):
@@ -186,12 +186,24 @@ def check_repo_status(kcu_version=None):
         else:
             print (red("Please pull a more recent version from gitlab.\n"))
 
-def get_kcu(kcu_address):
+def get_kcu(kcu_address, control_hub=True, host='localhost'):
     # Get the current firmware version number
-    kcu_tmp = KCU(name="tmp_kcu",
-                  #ipb_path="chtcp-2.0://localhost:10203?target=%s:50001"%args.kcu,
-                  ipb_path="ipbusudp-2.0://%s:50001"%kcu_address,
-                  adr_table="address_table/generic/etl_test_fw.xml")
+    import uhal
+    if control_hub:
+        ipb_path = f"chtcp-2.0://{host}:10203?target={kcu_address}:50001"
+    else:
+        ipb_path = f"ipbusudp-2.0://{kcu_address}:50001"
+    print (f"IPBus address: {ipb_path}")
+
+    try:
+        kcu_tmp = KCU(name="tmp_kcu",
+                    ipb_path=ipb_path,
+                    adr_table="address_table/generic/etl_test_fw.xml")
+    except uhal.exception:
+        print ("Could not establish connection with KCU. Exiting.")
+        return 0
+
+        #raise
     xml_sha     = kcu_tmp.get_xml_sha()
 
     if not os.path.isdir(f"address_table/{xml_sha}"):
@@ -199,8 +211,7 @@ def get_kcu(kcu_address):
         xml_sha = download_address_table(xml_sha)
 
     kcu = KCU(name="my_device",
-              #ipb_path="chtcp-2.0://localhost:10203?target=%s:50001"%args.kcu,
-              ipb_path="ipbusudp-2.0://%s:50001"%kcu_address,
+              ipb_path=ipb_path,
               adr_table=f"address_table/{xml_sha}/etl_test_fw.xml")
 
     kcu.get_firmware_version(string=False)

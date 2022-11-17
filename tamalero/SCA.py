@@ -341,14 +341,17 @@ class SCA:
     def disable_adc(self):
         self.configure_control_registers(en_adc=0)
 
-    def config_gpios(self): #read and print all adc values
+    def config_gpios(self, verbose=False): #read and print all adc values
         gpio_dict = self.gpio_mapping
+        if verbose:
+            print("Configuring SCA GPIO Pins...")
         for gpio_reg in gpio_dict.keys():
             pin         = gpio_dict[gpio_reg]['pin']
             direction   = int(gpio_dict[gpio_reg]['direction'] == 'out')
             comment     = gpio_dict[gpio_reg]['comment']
             default     = gpio_dict[gpio_reg]['default']
-            print("Setting SCA GPIO pin %s (%s) to %s"%(pin, comment, gpio_dict[gpio_reg]['direction']))
+            if verbose:
+                print("Setting SCA GPIO pin %s (%s) to %s"%(pin, comment, gpio_dict[gpio_reg]['direction']))
             self.set_gpio_direction(pin, direction)
             self.set_gpio(pin, default)
 
