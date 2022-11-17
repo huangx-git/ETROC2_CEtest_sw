@@ -48,7 +48,7 @@ class ReadoutBoard:
             self.TRIG_LPGBT.connect_KCU(self.kcu)
             self.TRIG_LPGBT.configure()
             print ("Connected trigger lpGBT to KCU.")
-            self.TRIG_LPGBT.callibrate_adc()
+            self.TRIG_LPGBT.calibrate_adc()
 
 
     def connect_KCU(self, kcu):

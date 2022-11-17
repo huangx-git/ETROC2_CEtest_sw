@@ -34,7 +34,7 @@ if __name__ == '__main__':
     argParser.add_argument('--alignment', action='store', nargs='?', default=False, const=True, help='Load/scan alignment? If load, pass in file path')
     argParser.add_argument('--etroc', action='store', default="ETROC2", help='Specify ETROC version.')
     argParser.add_argument('--eyescan', action='store_true', default=False, help="Run eyescan?")
-    argParser.add_argument('--recal_lpgbt', action='store_true', default=False, help="Recallibrate ADC in LPGBT? (instead of using saved values)")
+    argParser.add_argument('--recal_lpgbt', action='store_true', default=False, help="Recalibrate ADC in LPGBT? (instead of using saved values)")
     argParser.add_argument('--control_hub', action='store_true', default=False, help="Use control hub for communication?")
     argParser.add_argument('--host', action='store', default='localhost', help="Specify host for control hub")
     args = argParser.parse_args()
@@ -73,7 +73,7 @@ if __name__ == '__main__':
                 sys.exit(0)
 
     if args.recal_lpgbt:
-        rb_0.DAQ_LPGBT.callibrate_adc(recallibrate=True)
+        rb_0.DAQ_LPGBT.calibrate_adc(recalibrate=True)
 
     if (verbose):
         kcu.status()
