@@ -2,6 +2,7 @@ import os
 import random
 from tamalero.utils import read_mapping
 import time
+from tabulate import tabulate
 
 class SCA_CRB:
     # 0 is reserved
@@ -289,15 +290,15 @@ class SCA:
 
     def read_adcs(self): #read and print all adc values
         adc_dict = self.adc_mapping
+        table=[]
         for adc_reg in adc_dict.keys():
             pin = adc_dict[adc_reg]['pin']
             comment = adc_dict[adc_reg]['comment']
             value = self.read_adc(pin)
             input_voltage = value / (2**12 - 1) * adc_dict[adc_reg]['conv']
-            out_string = "register: {0}".format(adc_reg).ljust(22)+\
-            "pin: {0}".format(pin).ljust(10)+"reading: {0}".format(value).ljust(16)+\
-            "in voltage: {0:.4f}".format(input_voltage).ljust(22) + "comment: '{0}'".format(comment)
-            print(out_string)
+            table.append([adc_reg, pin, value, input_voltage, comment])
+
+        print(tabulate(table, headers=["Register","Pin", "Reading", "Voltage", "Comment"],  tablefmt="simple_outline"))
 
     def read_temp(self):
         # not very precise (according to manual), but still useful.

@@ -9,6 +9,7 @@ import tamalero.colors as colors
 from tamalero.utils import read_mapping, chunk
 from time import sleep
 from datetime import datetime
+from tabulate import tabulate
 
 from tamalero.lpgbt_constants import LpgbtConstants
 
@@ -353,18 +354,18 @@ class LPGBT(RegParser):
     def read_adcs(self): #read and print all adc values
         self.init_adc()
         adc_dict = self.adc_mapping
+
+        table = []
+
         for adc_reg in adc_dict.keys():
             pin = adc_dict[adc_reg]['pin']
             comment = adc_dict[adc_reg]['comment']
             value = self.read_adc(pin)
             value_calibrated = value * self.cal_gain / 1.85 + (512 - self.cal_offset)
             input_voltage = value_calibrated / (2**10 - 1) * adc_dict[adc_reg]['conv']
+            table.append([adc_reg, pin, value, input_voltage, comment])
 
-            out_string = "register: {0}".format(adc_reg).ljust(22)+\
-            "pin: {0}".format(pin).ljust(10)+"reading: {0}".format(value).ljust(16)+\
-            "in voltage: {0:.4f}".format(input_voltage).ljust(22) + "comment: '{0}'".format(comment)
-
-            print(out_string)
+        print(tabulate(table, headers=["Register","Pin", "Reading", "Voltage", "Comment"],  tablefmt="simple_outline"))
 
     def read_adc(self, channel, convert=False):
         # ADCInPSelect[3:0]  |  Input
