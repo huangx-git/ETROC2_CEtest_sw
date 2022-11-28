@@ -41,7 +41,7 @@ def just_read_daq(rb, link, lpgbt, fixed_pattern=False, trigger_rate=0, send_l1a
         fifo.use_fixed_pattern()
 
     if trigger_rate>0:
-        rate = fifo.set_trigger_rate(trigger_rate*100)
+        rate = fifo.set_trigger_rate(trigger_rate)
         print (f"Trigger rate is currently {rate} Hz")
 
     fifo.reset()
@@ -113,7 +113,8 @@ class FIFO:
         self.rb.kcu.write_node("READOUT_BOARD_%s.RX_FIFO_DATA_SRC"%self.rb.rb, 0x0)
 
     def set_trigger_rate(self, rate):
-        self.rb.kcu.write_node("SYSTEM.L1A_RATE", rate)
+        # set rate in Hz
+        self.rb.kcu.write_node("SYSTEM.L1A_RATE", rate*100)
         time.sleep(0.5)
         rate = self.rb.kcu.read_node("SYSTEM.L1A_RATE_CNT").value()
         return rate
