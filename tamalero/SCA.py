@@ -2,7 +2,10 @@ import os
 import random
 from tamalero.utils import read_mapping
 import time
-from tabulate import tabulate
+try:
+    from tabulate import tabulate
+except ModuleNotFoundError:
+    print ("Package `tabulate` not found.")
 
 class SCA_CRB:
     # 0 is reserved
