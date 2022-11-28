@@ -9,7 +9,10 @@ import tamalero.colors as colors
 from tamalero.utils import read_mapping, chunk
 from time import sleep
 from datetime import datetime
-from tabulate import tabulate
+try:
+    from tabulate import tabulate
+except ModuleNotFoundError:
+    print ("Package `tabulate` not found.")
 
 from tamalero.lpgbt_constants import LpgbtConstants
 
