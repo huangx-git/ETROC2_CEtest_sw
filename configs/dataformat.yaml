@@ -79,10 +79,28 @@ ETROC2:
       mask: 0x8000000000
   types:
     0: [ea, col_id, row_id, toa, cal, tot]
-    1: [ea, col_id, row_id, col_id2, row_id2, bcid, counter_a]
+    1: [ea, col_id, row_id, col_id2, row_id2, bcid, counter_a, elink, full, any_full, global_full]
     2: [ea, col_id, row_id, col_id2, row_id2, counter_b]
   data:
     header: # Define the different masks here?
+      elink:
+        mask: 0xFF0000000000
+        shift: 40
+      sof:
+        mask: 0x1000000000000
+        shift: 48
+      eof:
+        mask: 0x2000000000000
+        shift: 49
+      full:
+        mask: 0x4000000000000
+        shift: 50
+      any_full:
+        mask: 0x8000000000000
+        shift: 51
+      global_full:
+        mask: 0xF0000000000000
+        shift: 52
       l1counter:
         mask: 0x00003FC000
         shift: 14
@@ -93,6 +111,24 @@ ETROC2:
         mask: 0x0000000FFF
         shift: 0
     data:
+      elink:
+        mask: 0xFF0000000000
+        shift: 40
+      sof:
+        mask: 0x1000000000000
+        shift: 48
+      eof:
+        mask: 0x2000000000000
+        shift: 49
+      full:
+        mask: 0x4000000000000
+        shift: 50
+      any_full:
+        mask: 0x8000000000000
+        shift: 51
+      global_full:
+        mask: 0xF0000000000000
+        shift: 52
       ea:
         mask: 0x6000000000
         shift: 37
@@ -129,6 +165,24 @@ ETROC2:
         mask: 0x000001ff
         shift: 0
     trailer:
+      elink:
+        mask: 0xFF0000000000
+        shift: 40
+      sof:
+        mask: 0x1000000000000
+        shift: 48
+      eof:
+        mask: 0x2000000000000
+        shift: 49
+      full:
+        mask: 0x4000000000000
+        shift: 50
+      any_full:
+        mask: 0x8000000000000
+        shift: 51
+      global_full:
+        mask: 0xF0000000000000
+        shift: 52
       chipid:
         mask: 0x7FFFC00000
         shift: 24

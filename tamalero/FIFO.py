@@ -24,7 +24,7 @@ def just_read(rb, link, daq=True):
     res = fifo.dump(block=255, format=True, daq=daq)
     return res
 
-def just_read_daq(rb, link, lpgbt, fixed_pattern=False, trigger_rate=0, send_l1a=True, l1a_count=1):
+def just_read_daq(rb, link, lpgbt, fixed_pattern=False, trigger_rate=0, send_l1a=True, l1a_count=1, verbose=False):
     '''
     very simple function that just reads whatever comes out of a link, no matter the pattern
     this is tested with v1.2.2 @ BU test stand, DAQ elink 2 and trigger elink 20.
@@ -51,6 +51,9 @@ def just_read_daq(rb, link, lpgbt, fixed_pattern=False, trigger_rate=0, send_l1a
         fifo.send_l1a(count=l1a_count)
 
     res = fifo.dump_daq(block=3000)
+    if verbose:
+        print ("Plain data:")
+        print (res)
 
     if rb.kcu.firmware_version['minor'] >= 2 and rb.kcu.firmware_version['patch'] >= 3:
         fifo.use_etroc_data()
