@@ -1,5 +1,6 @@
 import os
 import time
+import numpy as np
 from tamalero.utils import chunk
 from yaml import load, dump
 
@@ -34,7 +35,6 @@ def just_read_daq(rb, link, lpgbt, fixed_pattern=False, trigger_rate=0, send_l1a
     FIXME: Fix the trailing trailers when the FIFO has no more data.
     trigger_rate is roughly in Hertz
     '''
-    import numpy as np
     fifo = FIFO(rb, links=[{'elink':link, 'lpgbt':lpgbt}], ETROC='ETROC2')
 
     if fixed_pattern and rb.kcu.firmware_version['minor'] >= 2 and rb.kcu.firmware_version['patch'] >= 3 :
@@ -58,6 +58,9 @@ def just_read_daq(rb, link, lpgbt, fixed_pattern=False, trigger_rate=0, send_l1a
     if rb.kcu.firmware_version['minor'] >= 2 and rb.kcu.firmware_version['patch'] >= 3:
         fifo.use_etroc_data()
 
+    return merge_words(res)
+
+def merge_words(res):
     empty_frame_mask = np.array(res[0::2]) > (2**8)  # masking empty fifo entries
     len_cut = min(len(res[0::2]), len(res[1::2]))  # ensuring equal length of arrays downstream
     if len(res) > 0:
