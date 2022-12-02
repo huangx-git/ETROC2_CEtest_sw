@@ -15,16 +15,14 @@ from time import sleep
 IPB_PATH = "ipbusudp-2.0://192.168.0.10:50001"
 ADR_TABLE = "./address_table/generic/etl_test_fw.xml"
 
-def stream_daq(rb=0, loops=1000, superblock=100, block=255):
+def stream_daq(rb=0, l1a_rate=1000, loops=1000, superblock=100, block=255):
 
     uhal.disableLogging()
     hw = uhal.getDevice("kcu105_daq", IPB_PATH, "file://" + ADR_TABLE)
 
-    l1a_rate = 1000000
     rate_setting = l1a_rate / 25E-9 / (0xffffffff) * 10000
 
     # set l1a rate
-    #hw.getNode("SYSTEM.L1A_RATE").write(0x1fffff)
     hw.getNode("SYSTEM.L1A_RATE").write(int(rate_setting))
     hw.dispatch()
 
@@ -36,7 +34,7 @@ def stream_daq(rb=0, loops=1000, superblock=100, block=255):
 
     data = []
 
-    with open("output.dat", mode="wb") as f:
+    with open("output/output.dat", mode="wb") as f:
         for i in range(loops):
             try:
 
@@ -74,4 +72,9 @@ def stream_daq(rb=0, loops=1000, superblock=100, block=255):
         f.write(struct.pack('<{}I'.format(len(data)), *data))
 
 if __name__ == '__main__':
-    stream_daq()
+
+    argParser = argparse.ArgumentParser(description = "Argument parser")
+    argParser.add_argument('--l1a_rate', action='store', default=1000, type=int, help="L1A rate in Hz")
+    args = argParser.parse_args()
+
+    stream_daq(l1a_rate=args.l1a_rate)
