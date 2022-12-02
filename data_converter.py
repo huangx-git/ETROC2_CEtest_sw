@@ -9,7 +9,7 @@ from tamalero.DataFrame import DataFrame
 if __name__ == '__main__':
 
     argParser = argparse.ArgumentParser(description = "Argument parser")
-    argParser.add_argument('--input', action='store', default='output/output.dat', help="Binary file to read from")
+    argParser.add_argument('--input', action='store', default='output/output_example.dat', help="Binary file to read from")
     args = argParser.parse_args()
 
     df = DataFrame('ETROC2')
