@@ -63,6 +63,9 @@ if __name__ == '__main__':
     argParser.add_argument('--triggers', action='store', default=10, help='How many L1As?')
     argParser.add_argument('--skip_plots', action='store_true', help='Turn off plotting')
     argParser.add_argument('--log_level', default="INFO", type=str,help="Level of information printed by the logger")
+    argParser.add_argument('--control_hub', action='store_true', default=False, help="Use control hub for communication?")
+    argParser.add_argument('--host', action='store', default='localhost', help="Specify host for control hub")
+
     args = argParser.parse_args()
 
     logger = logging.getLogger(__name__)
@@ -71,7 +74,7 @@ if __name__ == '__main__':
 
     make_plots = not args.skip_plots
 
-    kcu = get_kcu(args.kcu)
+    kcu = get_kcu(args.kcu, control_hub=args.control_hub, host=args.host)
 
     rb_0 = ReadoutBoard(0, kcu=kcu)
 
