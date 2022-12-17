@@ -132,6 +132,10 @@ def comparison_stats(data):
             continue
         print(f'{str(combo):>8} : {stat[combo]*100/N_l1a:.1f}% ({stat[combo]}/{N_l1a})')
 
+    print('\n=========== >99% ===========')
+    for combo in stat:
+        if stat[combo] > (N_l1a*0.99):
+            print(f'{str(combo):>8} : {stat[combo]*100/N_l1a:.1f}% ({stat[combo]}/{N_l1a})')
     return
 
 if __name__ == '__main__':
