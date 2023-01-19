@@ -123,6 +123,23 @@ ssh -N -f -L localhost:8888:localhost:8888 daniel@strange.bu.edu
 ```
 with your username, using the ports as given by the jupyter server.
 
+## Using docker
+
+Setup the docker container with pre-built ipbus:
+
+``` shell
+docker run -it --name tamalero danbarto/centos-uhal-py3:latest /bin/bash
+```
+
+Inside docker, check out this repository with
+
+``` shell
+git clone https://gitlab.cern.ch/cms-etl-electronics/module_test_sw.git
+```
+
+Setup the paths using `source setup.sh` inside the `module_test_sw` directory and check that ipbus is actually working with `python3 -i -c "import uhal"`.
+
+
 ## Useful block diagrams for connectivity and data flow
 
 [RB v1.6 schematic](http://physics.bu.edu/~wusx/download/ETL_RB/v1.6/ETL_RB_V1.6.PDF)
