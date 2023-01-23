@@ -67,13 +67,13 @@ class LPGBT(RegParser):
         # Get LPGBT Serial Num
         self.serial_num = self.get_board_id()['lpgbt_serial']
 
-        # Callibrate ADC
-        try:
-            self.calibrate_adc()
-        except:
-            print("Need to calibrate ADC in the future. Use default values for now.")
-            self.cal_gain = 1.85
-            self.cal_offset = 512
+        ## Callibrate ADC
+        #try:
+        #    self.calibrate_adc()
+        #except:
+        #    print("Need to calibrate ADC in the future. Use default values for now.")
+        #    self.cal_gain = 1.85
+        #    self.cal_offset = 512
 
     def link_status(self, verbose=False):
         if self.trigger:
@@ -116,7 +116,7 @@ class LPGBT(RegParser):
 
     def reset_daq_mgts(self):
 
-        for id in ["MGT.MGT_RX_RESET", "MGT.MGT_TX_RESET"]:
+        for id in ["SYSTEM.MGT_RX_RESET", "SYSTEM.MGT_TX_RESET"]:
             # daq links on 0,2,4,6,8
             self.kcu.write_node(id, 0x155)
             self.kcu.write_node(id, 0x000)
