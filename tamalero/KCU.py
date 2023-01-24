@@ -72,7 +72,6 @@ class KCU:
         (date, time, ver, sha) = (map (lambda x : self.read_node(x).value(), nodes))
 
         if verbose:
-            print (ver)
             print("Firmware version: %04x/%02x/%02x %02x:%02x:%02x v%x.%x.%x sha=%07x" % (
                 date & 0xffff,
                 (date >> 16) & 0xff,
