@@ -94,14 +94,17 @@ if __name__ == '__main__':
             return rb_0.DAQ_LPGBT.rd_adr(0x1c5) == 0xa5
 
         # read from the rom address to check basic communication
-        if (not lpgbt_link_is_ok):
+
+        if (not lpgbt_link_is_ok()):
 
             print(" > No communication with DAQ LPGBT... trying to reset DAQ MGTs")
             rb_0.DAQ_LPGBT.reset_daq_mgts()
+            # NOTE these sleeps are stricktly necessary!
+            time.sleep(0.1)
             rb_0.DAQ_LPGBT.power_up_init()
             time.sleep(0.01)
 
-            if (not lpgbt_link_is_ok):
+            if (not lpgbt_link_is_ok()):
                 print("> Still no communication with DAQ LPGBT. Quitting.")
                 sys.exit(0)
 
