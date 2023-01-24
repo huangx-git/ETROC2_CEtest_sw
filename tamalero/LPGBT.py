@@ -52,17 +52,21 @@ class LPGBT(RegParser):
             return
 
         # Get LPGBT Version
-        try:
-            self.kcu.write_node("READOUT_BOARD_%d.SC.FRAME_FORMAT" % self.rb, 0)
-            self.parse_xml(ver=0)
-            self.get_version()
-            assert(self.ver == 0)
-            # if not version 0, this will throw an error.
-        except:
-            self.kcu.write_node("READOUT_BOARD_%d.SC.FRAME_FORMAT" % self.rb, 1)
-            self.parse_xml(ver=1)
-            self.get_version()
-            assert(self.ver == 1)
+        print ("Figuring out lpGBT version, brute force method")
+        #try:
+        #    self.get_version()
+        #    print (" > lpGBT v0 detected")
+        #except KeyError:
+        #    print (" > lpGBT v1 detected")
+        #    self.ver = 1
+        self.ver = 0
+
+
+        self.kcu.write_node("READOUT_BOARD_%d.SC.FRAME_FORMAT" % self.rb, self.ver)
+        self.parse_xml(ver=self.ver)
+
+        print (self.ver)
+
 
         # Get LPGBT Serial Num
         self.serial_num = self.get_board_id()['lpgbt_serial']
@@ -74,6 +78,162 @@ class LPGBT(RegParser):
         #    print("Need to calibrate ADC in the future. Use default values for now.")
         #    self.cal_gain = 1.85
         #    self.cal_offset = 512
+
+    def base_configuration(self):
+
+        oh_v = self.ver + 1
+        # [0x020] CLKGConfig0
+        if oh_v == 1:
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGCALIBRATIONENDOFCOUNT", 0xC)
+        elif oh_v == 2:
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGCALIBRATIONENDOFCOUNT", 0xE)
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGBIASGENCONFIG", 0x8)
+
+        # [0x021] CLKGConfig1
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CDRCONTROLOVERRIDEENABLE", 0x0)
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGDISABLEFRAMEALIGNERLOCKCONTROL", 0x0)
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGCDRRES", 0x1)
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGVCODAC", 0x8)
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGVCORAILMODE", 0x1)
+
+        # [0x022] CLKGPllRes
+        if oh_v == 1:
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGPLLRESWHENLOCKED", 0x4)
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGPLLRES", 0x4)
+        elif oh_v == 2:
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGPLLRESWHENLOCKED", 0x2)
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGPLLRES", 0x2)
+
+        #[0x023] CLKGPLLIntCur
+        if oh_v == 1:
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGPLLINTCURWHENLOCKED", 0x5)
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGPLLINTCUR", 0x5)
+        elif oh_v == 2:
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGPLLINTCURWHENLOCKED", 0x9)
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGPLLINTCUR", 0x9)
+
+        #[0x024] CLKGPLLPropCur
+        if oh_v == 1:
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGPLLPROPCURWHENLOCKED", 0x5)
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGPLLPROPCUR", 0x5)
+        elif oh_v == 2:
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGPLLPROPCURWHENLOCKED", 0x9)
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGPLLPROPCUR", 0x9)
+
+        #[0x025] CLKGCDRPropCur
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGCDRPROPCURWHENLOCKED", 0x5)
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGCDRPROPCUR", 0x5)
+
+        #[0x026] CLKGCDRIntCur
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGCDRINTCURWHENLOCKED", 0x5)
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGCDRINTCUR", 0x5)
+
+        #[0x027] CLKGCDRFFPropCur
+        if oh_v == 1:
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGCDRFEEDFORWARDPROPCURWHENLOCKED", 0x5)
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGCDRFEEDFORWARDPROPCUR", 0x5)
+        elif oh_v == 2:
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGCDRFEEDFORWARDPROPCURWHENLOCKED", 0x6)
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGCDRFEEDFORWARDPROPCUR", 0x6)
+
+        #[0x028] CLKGFLLIntCur
+        if oh_v == 1:
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGFLLINTCURWHENLOCKED", 0x0)
+        elif oh_v == 2:
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGFLLINTCURWHENLOCKED", 0x5)
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGFLLINTCUR", 0x5)
+
+        #[0x029] CLKGFFCAP
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CDRCOCONNECTCDR", 0x0)
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGCAPBANKOVERRIDEENABLE", 0x0)
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGFEEDFORWARDCAPWHENLOCKED", 0x3)
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGFEEDFORWARDCAP", 0x3)
+
+        #[0x02a] CLKGCntOverride
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGCOOVERRIDEVC", 0x0)
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CDRCOREFCLKSEL", 0x0)
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CDRCOENABLEPLL", 0x0)
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CDRCOENABLEFD", 0x0)
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CDRCOENABLECDR", 0x0)
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CDRCODISDATACOUNTERREF", 0x0)
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CDRCODISDESVBIASGEN", 0x0)
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CDRCOCONNECTPLL", 0x0)
+
+        #[0x02b] CLKGOverrideCapBank
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGCAPBANKSELECT_7TO0", 0x00)
+
+        #[0x02c] CLKGWaitTime
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGWAITCDRTIME", 0x8)
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGWAITPLLTIME", 0x8)
+
+        #[0x02d] CLKGLFCONFIG0
+        if oh_v == 1:
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGLOCKFILTERLOCKTHRCOUNTER", 0x9)
+        elif oh_v == 2:
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGLOCKFILTERLOCKTHRCOUNTER", 0xF)
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGLOCKFILTERENABLE", 0x1)
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGCAPBANKSELECT_8", 0x0)
+
+        #[0x02e] CLKGLFConfig1
+        if oh_v == 1:
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGLOCKFILTERRELOCKTHRCOUNTER", 0x9)
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGLOCKFILTERUNLOCKTHRCOUNTER", 0x9)
+        elif oh_v == 2:
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGLOCKFILTERRELOCKTHRCOUNTER", 0xF)
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.CLKGLOCKFILTERUNLOCKTHRCOUNTER", 0xF)
+
+        #self.config_eport_dlls(verbose=True)
+
+        #[0x033] PSDllConfig
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.PSDLLCONFIRMCOUNT", 0x1) # 4 40mhz clock cycles to confirm lock
+        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.PSDLLCURRENTSEL", 0x1)
+
+        #[0x039] Set H.S. Uplink Driver current:
+        if oh_v == 1:
+            self.wr_reg("LPGBT.RWF.LINE_DRIVER.LDMODULATIONCURRENT", 0x20)
+        elif oh_v == 2:
+            self.wr_reg("LPGBT.RWF.LINE_DRIVER.LDMODULATIONCURRENT", 0x7F)
+        self.wr_reg("LPGBT.RWF.LINE_DRIVER.LDEMPHASISENABLE", 0x0)  # FIXME this was in
+
+        # [0x03b] REFCLK
+        #self.wr_reg("LPGBT.RWF.LINE_DRIVER.REFCLKACBIAS", 0x1)
+        self.wr_reg("LPGBT.RWF.LINE_DRIVER.REFCLKTERM", 0x1)  # FIXME this was in
+
+        #[0x03E] PGCONFIG
+        if oh_v == 1:
+            self.wr_reg("LPGBT.RWF.POWER_GOOD.PGLEVEL", 0x5)
+        elif oh_v == 2:
+            self.wr_reg("LPGBT.RWF.POWER_GOOD.PGLEVEL", 0x4)
+        self.wr_reg("LPGBT.RWF.POWER_GOOD.PGENABLE", 0x1)
+        self.wr_reg("LPGBT.RWF.POWER_GOOD.PGDELAY", 0xC)
+
+        if oh_v == 1:
+            self.wr_reg("LPGBT.RWF.CALIBRATION.EPRXLOCKTHRESHOLD", 0x5)
+            self.wr_reg("LPGBT.RWF.CALIBRATION.EPRXRELOCKTHRESHOLD", 0x5)
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXUNLOCKTHRESHOLD", 0x5)
+        elif oh_v == 2:
+            self.wr_reg("LPGBT.RWF.EPORTRX.EPRXLOCKTHRESHOLD", 0x5)
+            self.wr_reg("LPGBT.RWF.EPORTRX.EPRXRELOCKTHRESHOLD", 0x5)
+            self.wr_reg("LPGBT.RWF.EPORTRX.EPRXUNLOCKTHRESHOLD", 0x5)
+
+        # Datapath configuration
+        self.wr_reg("LPGBT.RW.DEBUG.DLDPBYPASDEINTERLEVEAR", 0x0)
+        self.wr_reg("LPGBT.RW.DEBUG.DLDPBYPASFECDECODER", 0x0)
+        self.wr_reg("LPGBT.RW.DEBUG.DLDPBYPASSDESCRAMBLER", 0x0)
+        if oh_v == 1:
+            self.wr_reg("LPGBT.RW.DEBUG.DLDPFECERRCNTENA", 0x1)
+        elif oh_v == 2:
+            self.wr_reg("LPGBT.RW.DEBUG.DLDPFECCOUNTERENABLE", 0x1)
+        self.wr_reg("LPGBT.RW.DEBUG.ULDPBYPASSINTERLEAVER", 0x0)
+        self.wr_reg("LPGBT.RW.DEBUG.ULDPBYPASSSCRAMBLER", 0x0)
+        self.wr_reg("LPGBT.RW.DEBUG.ULDPBYPASSFECCODER", 0x0)
+
+        #self.configure_eptx(verbose=True)
+        #self.configure_eprx(verbose=True)
+
+        self.wr_reg("LPGBT.RWF.POWERUP.DLLCONFIGDONE", 0x1)
+        self.wr_reg("LPGBT.RWF.POWERUP.PLLCONFIGDONE", 0x1)
+        #self.wr_adr(0x0fb, 0x6)
 
     def link_status(self, verbose=False):
         if self.trigger:
@@ -121,6 +281,17 @@ class LPGBT(RegParser):
             self.kcu.write_node(id, 0x155)
             self.kcu.write_node(id, 0x000)
 
+    def reset(self):
+        self.wr_reg("LPGBT.RW.RESET.RSTPLLDIGITAL", 1)
+        self.wr_reg("LPGBT.RW.RESET.RSTFUSES",      1)
+        self.wr_reg("LPGBT.RW.RESET.RSTRXLOGIC",    1)
+        self.wr_reg("LPGBT.RW.RESET.RSTTXLOGIC",    1)
+
+        self.wr_reg("LPGBT.RW.RESET.RSTPLLDIGITAL", 0)
+        self.wr_reg("LPGBT.RW.RESET.RSTFUSES",      0)
+        self.wr_reg("LPGBT.RW.RESET.RSTRXLOGIC",    0)
+        self.wr_reg("LPGBT.RW.RESET.RSTTXLOGIC",    0)
+
     def init_trigger_links(self):
         if self.trigger:
             lpgbt = self.master
@@ -161,6 +332,8 @@ class LPGBT(RegParser):
             # needed for the mgt to lock
 
             self.init_trigger_links()
+
+        #self.base_configuration()
 
 
     def connect_KCU(self, kcu):
@@ -267,12 +440,21 @@ class LPGBT(RegParser):
     def config_eport_dlls(self, verbose=False):
         if verbose:
             print("Configuring eport dlls...")
-        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDLLCURRENT", 0x1)
-        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDLLCONFIRMCOUNT", 0x1)
-        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDLLFSMCLKALWAYSON", 0x0)
-        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDLLCOARSELOCKDETECTION", 0x0)
-        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXENABLEREINIT", 0x0)
-        self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDATAGATINGENABLE", 0x1)
+        if self.ver == 0:
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDLLCURRENT", 0x1)
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDLLCONFIRMCOUNT", 0x1)
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDLLFSMCLKALWAYSON", 0x0)
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDLLCOARSELOCKDETECTION", 0x0)
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXENABLEREINIT", 0x0)
+            self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDATAGATINGENABLE", 0x1)
+        elif self.ver == 1:
+            self.wr_reg("LPGBT.RWF.EPORTRX.EPRXDLLCURRENT", 0x1)
+            self.wr_reg("LPGBT.RWF.EPORTRX.EPRXDLLCONFIRMCOUNT", 0x1)
+            self.wr_reg("LPGBT.RWF.EPORTRX.EPRXDLLFSMCLKALWAYSON", 0x0)
+            self.wr_reg("LPGBT.RWF.EPORTRX.EPRXDLLCOARSELOCKDETECTION", 0x0)
+            self.wr_reg("LPGBT.RWF.EPORTRX.EPRXENABLEREINIT", 0x0)
+            self.wr_reg("LPGBT.RWF.EPORTRX.EPRXDATAGATINGDISABLE", 0x0)
+
 
     def configure_eptx(self, verbose=False):
 
