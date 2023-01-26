@@ -15,6 +15,7 @@ class ReadoutBoard:
         '''
         self.rb = rb
         self.flavor = flavor
+        self.ver = 1
 
         self.trigger = trigger
         self.DAQ_LPGBT = LPGBT(rb=rb, flavor=flavor, kcu=kcu)
@@ -27,7 +28,9 @@ class ReadoutBoard:
         if kcu != None:
             self.kcu = kcu
             self.kcu.readout_boards.append(self)
-            #self.DAQ_LPGBT.configure()
+            self.DAQ_LPGBT.configure()
+            if self.DAQ_LPGBT.ver == 1:
+                self.ver = 2
             self.SCA.connect_KCU(kcu)
 
     def get_trigger(self):
@@ -252,17 +255,42 @@ class ReadoutBoard:
             print("Error counts after reset:")
             self.get_FEC_error_count()
 
+    def bad_boy(self, m=1):
+        for x in range(60):
+            self.DAQ_LPGBT.set_gpio(3, 1)
+            sleep(m*(0.000 + 0.0005*x))
+            self.DAQ_LPGBT.set_gpio(3, 0)
+            sleep(m*0.005)
+        self.DAQ_LPGBT.set_gpio(3, 1)
+        sleep(1)
+        for x in range(60):
+            self.DAQ_LPGBT.set_gpio(3, 1)
+            sleep(m*(0.030 - 0.0005*x))
+            self.DAQ_LPGBT.set_gpio(3, 0)
+            sleep(m*0.005)
+        self.DAQ_LPGBT.set_gpio(3, 0)
+        sleep(1)
+
     def configure(self, alignment=None, data_mode=False, etroc='ETROC1', verbose=False):
 
         ## DAQ
         #for i in range(28):
         #    self.DAQ_LPGBT.set_uplink_alignment(1, i)  # was 2 for daq loopback. does this behave stochastically?
 
-        self.DAQ_LPGBT.configure_gpio_outputs()
+        if self.ver == 1:
+            self.DAQ_LPGBT.configure_gpio_outputs()
+        if self.ver == 2:
+            self.DAQ_LPGBT.configure_gpio_outputs(outputs=0x2409, defaults=0x0409)
         self.DAQ_LPGBT.initialize(verbose=verbose)
         self.DAQ_LPGBT.config_eport_dlls(verbose=verbose)
         self.DAQ_LPGBT.configure_eptx(verbose=verbose)
         self.DAQ_LPGBT.configure_eprx()
+
+        if self.ver == 2:
+            print ("Base config of RB v2 successfull, rest not yet implemented. Waiting.")
+
+            while True:
+                self.bad_boy(m=1)
 
         # configure the VTRX
         self.VTRX.configure(trigger=self.trigger)

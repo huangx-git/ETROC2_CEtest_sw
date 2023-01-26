@@ -59,6 +59,7 @@ if __name__ == '__main__':
         try:
             kcu = get_kcu(args.kcu, control_hub=args.control_hub, host=args.host)
             rb_0 = ReadoutBoard(0, trigger=(not args.force_no_trigger), kcu=kcu)
+            #rb_0.DAQ_LPGBT.configure()  # NOTE this can be removed
             data = 0xabcd1234
             kcu.write_node("LOOPBACK.LOOPBACK", data)
             if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
@@ -89,24 +90,6 @@ if __name__ == '__main__':
         print("Power up init sequence for: DAQ")
 
         rb_0.DAQ_LPGBT.power_up_init()
-
-        def lpgbt_link_is_ok():
-            return rb_0.DAQ_LPGBT.rd_adr(0x1c5) == 0xa5
-
-        # read from the rom address to check basic communication
-
-        if (not lpgbt_link_is_ok()):
-
-            print(" > No communication with DAQ LPGBT... trying to reset DAQ MGTs")
-            rb_0.DAQ_LPGBT.reset_daq_mgts()
-            # NOTE these sleeps are stricktly necessary!
-            time.sleep(0.1)
-            rb_0.DAQ_LPGBT.power_up_init()
-            time.sleep(0.01)
-
-            if (not lpgbt_link_is_ok()):
-                print("> Still no communication with DAQ LPGBT. Quitting.")
-                sys.exit(0)
 
         if (verbose):
             print ("VTRX status at power up:")

@@ -205,6 +205,7 @@ def get_kcu(kcu_address, control_hub=True, host='localhost'):
 
         #raise
     xml_sha     = kcu_tmp.get_xml_sha()
+    print (f"Address table hash: {xml_sha}")
 
     if not os.path.isdir(f"address_table/{xml_sha}"):
         print ("Downloading latest firmware version address table.")

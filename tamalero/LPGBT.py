@@ -36,7 +36,7 @@ class LPGBT(RegParser):
         if kcu != None:
             self.kcu = kcu
 
-        #self.configure()
+        self.configure()
 
     def configure(self):
         if not hasattr(self, 'kcu'):
