@@ -36,7 +36,7 @@ class LPGBT(RegParser):
         if kcu != None:
             self.kcu = kcu
 
-        self.configure()
+        #self.configure()
 
     def configure(self):
         if not hasattr(self, 'kcu'):
@@ -55,30 +55,52 @@ class LPGBT(RegParser):
         # Get LPGBT Version
         print ("Figuring out lpGBT version by reading from ROMREG")
 
+        # FIXME what happens for the trigger lpGBT here?
         timeout = 0
-        while True:
-            # https://lpgbt.web.cern.ch/lpgbt/v0/registermap.html#x1c5-rom
-            is_v0 = (self.rd_adr(0x1c5) == 0xa5)
-            # https://lpgbt.web.cern.ch/lpgbt/v1/registermap.html#x1d7-rom
-            is_v1 = (self.rd_adr(0x1d7) == 0xa6)
+        calibrate = False
+        if not hasattr(self, 'ver'):
+            calibrate = True
+            while True:
+                # https://lpgbt.web.cern.ch/lpgbt/v0/registermap.html#x1c5-rom
+                # Writing to addresses directly because readback will still fail here
+                self.kcu.write_node("READOUT_BOARD_%d.SC.FRAME_FORMAT" % self.rb, 0)
+                # toggle the uplink to and from 40MHz clock, for some reason this is
+                # needed for the mgt to lock
+                self.wr_adr(0x118, 0xC0) # https://lpgbt.web.cern.ch/lpgbt/v0/registermap.html#x118-uldatasource0
+                sleep(0.01)
+                self.wr_adr(0x118, 0) # https://lpgbt.web.cern.ch/lpgbt/v0/registermap.html#x118-uldatasource0
+                self.wr_adr(0x036, 0x80)
+                self.wr_adr(0x0ef, 0x6)
+                sleep(0.01)
+                is_v0 = (self.rd_adr(0x1c5) == 0xa5)
 
-            if is_v0 ^ is_v1:
-                break
-            self.reset_daq_mgts()
-            sleep(0.05)
-            timeout += 1
-            if timeout > 50:
-                raise Exception("Could not successfully read from lpGBT and failed to determine lpGBT version")
+                # https://lpgbt.web.cern.ch/lpgbt/v1/registermap.html#x1d7-rom
+                self.kcu.write_node("READOUT_BOARD_%d.SC.FRAME_FORMAT" % self.rb, 1)
+                self.wr_adr(0x128, 0xC0) # https://lpgbt.web.cern.ch/lpgbt/v1/registermap.html#x128-uldatasource0
+                sleep(0.01)
+                self.wr_adr(0x128, 0) # https://lpgbt.web.cern.ch/lpgbt/v1/registermap.html#x128-uldatasource0
+                self.wr_adr(0x036, 0x80)
+                self.wr_adr(0x0fb, 0x6)
+                sleep(0.01)
+                is_v1 = (self.rd_adr(0x1d7) == 0xa6)
 
-        if is_v0 and not is_v1:
-            print (" > lpGBT v0 detected")
-            self.ver = 0
-        elif is_v1 and not is_v0:
-            print (" > lpGBT v1 detected")
-            self.ver = 1
-        else:
-            print (" > unsure about lpGBT version. This case should have been impossible to reach.")
-            raise Exception("Spurious lpGBT version.")
+                if is_v0 ^ is_v1:
+                    break
+                self.reset_daq_mgts()
+                sleep(0.05)
+                timeout += 1
+                if timeout > 50:
+                    raise Exception("Could not successfully read from lpGBT and failed to determine lpGBT version")
+
+            if is_v0 and not is_v1:
+                print (" > lpGBT v0 detected")
+                self.ver = 0
+            elif is_v1 and not is_v0:
+                print (" > lpGBT v1 detected")
+                self.ver = 1
+            else:
+                print (" > unsure about lpGBT version. This case should have been impossible to reach.")
+                raise Exception("Spurious lpGBT version.")
 
         self.base_config = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/lpgbt_config.yaml'))['base'][f'v{self.ver}']
         self.ec_config = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/lpgbt_config.yaml'))['ec'][f'v{self.ver}']
@@ -87,15 +109,16 @@ class LPGBT(RegParser):
         self.parse_xml(ver=self.ver)
 
         # Get LPGBT Serial Num
-        self.serial_num = self.get_board_id()['lpgbt_serial']
+        self.serial_num = 0# self.get_board_id()['lpgbt_serial']
 
         # Callibrate ADC
-        try:
-            self.calibrate_adc()
-        except:
-            print("Need to calibrate ADC in the future. Use default values for now.")
-            self.cal_gain = 1.85
-            self.cal_offset = 512
+        if calibrate:
+            try:
+                self.calibrate_adc()
+            except:
+                print("Need to calibrate ADC in the future. Use default values for now.")
+                self.cal_gain = 1.85
+                self.cal_offset = 512
 
     def read_base_config(self):
         #
@@ -106,10 +129,12 @@ class LPGBT(RegParser):
             print (colored("{:80}{:<10}{:<10}".format(reg, res, self.base_config[reg])))
 
     def base_configuration(self, verbose=False):
-        for reg in self.base_config:
-            self.wr_reg(reg, self.base_config[reg])
-            if verbose:
-                print("{:80}{:<10}".format(reg, self.base_config[reg]))
+
+
+        #for reg in self.base_config:
+        #    self.wr_reg(reg, self.base_config[reg])
+        #    if verbose:
+        #        print("{:80}{:<10}".format(reg, self.base_config[reg]))
 
         #oh_v = self.ver + 1
         ## [0x020] CLKGConfig0
@@ -263,7 +288,9 @@ class LPGBT(RegParser):
 
         #self.wr_reg("LPGBT.RWF.POWERUP.DLLCONFIGDONE", 0x1)
         #self.wr_reg("LPGBT.RWF.POWERUP.PLLCONFIGDONE", 0x1)
-        ##self.wr_adr(0x0fb, 0x6)
+        self.wr_adr(0x036, 0x80)
+        self.wr_adr(0x0fb, 0x6)
+
 
     def link_status(self, verbose=False):
         if self.trigger:
@@ -363,7 +390,7 @@ class LPGBT(RegParser):
 
             self.init_trigger_links()
 
-        self.base_configuration()  # FIXME this is broken for v0!
+        self.base_configuration(verbose=True)
 
 
     def connect_KCU(self, kcu):
@@ -393,9 +420,10 @@ class LPGBT(RegParser):
     def rd_adr(self, adr):
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_REGISTER_ADDR" % self.rb, adr)
         self.kcu.action("READOUT_BOARD_%d.SC.TX_START_READ" % self.rb)
-
         valid = self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_VALID" % self.rb).valid()
         if valid:
+            # this only means that the KCU successfully read data
+            # not necessarily does it mean there's communication with the lpGBT
             return self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_FROM_GBTX" % self.rb)
 
         print("LpGBT read failed!")
