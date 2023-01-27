@@ -40,6 +40,9 @@ class ReadoutBoard:
         if test_read is not None and self.trigger:
             print ("Found trigger lpGBT, will configure it now.")
             self.trigger = True
+            print (" > Enabling VTRX channel for trigger lpGBT")
+            self.VTRX.enable(ch=1)
+            sleep(1)
         elif test_read is None:
             print ("No trigger lpGBT found.")
             self.trigger = False
@@ -48,9 +51,6 @@ class ReadoutBoard:
 
         if self.trigger:
             self.TRIG_LPGBT = LPGBT(rb=self.rb, flavor=self.flavor, trigger=True, master=self.DAQ_LPGBT, kcu=self.kcu)
-            self.TRIG_LPGBT.connect_KCU(self.kcu)
-            self.TRIG_LPGBT.configure()
-            print ("Connected trigger lpGBT to KCU.")
             self.TRIG_LPGBT.calibrate_adc()
 
 
@@ -59,30 +59,20 @@ class ReadoutBoard:
         self.DAQ_LPGBT.connect_KCU(kcu)
         self.SCA.connect_KCU(kcu)
 
-    def sca_setup(self):
+    def sca_setup(self, verbose=False):
         # should this live here? I suppose so...
         for reg in self.DAQ_LPGBT.ec_config:
+            if verbose:
+                print(f"{reg}: {self.DAQ_LPGBT.ec_config[reg]}")
             self.DAQ_LPGBT.wr_reg(reg, self.DAQ_LPGBT.ec_config[reg])
-        #self.DAQ_LPGBT.wr_reg("LPGBT.RWF.EPORTRX.EPRXECTERM", 1)
-        #self.DAQ_LPGBT.wr_reg("LPGBT.RWF.EPORTRX.EPRXECENABLE", 1)
-        #self.DAQ_LPGBT.wr_reg("LPGBT.RWF.EPORTRX.EPRXECACBIAS", 0)
-        #self.DAQ_LPGBT.wr_reg("LPGBT.RWF.EPORTRX.EPRXECINVERT", 1)
-        #self.DAQ_LPGBT.wr_reg("LPGBT.RWF.EPORTRX.EPRXECPHASESELECT", 8)
-        #self.DAQ_LPGBT.wr_reg("LPGBT.RWF.EPORTRX.EPRXECTRACKMODE", 2)
-
-        #self.DAQ_LPGBT.wr_reg("LPGBT.RWF.EPORTTX.EPTXECINVERT", 1)
-        #self.DAQ_LPGBT.wr_reg("LPGBT.RWF.EPORTTX.EPTXECENABLE", 1)
-        #self.DAQ_LPGBT.wr_reg("LPGBT.RWF.EPORTTX.EPTXECDRIVESTRENGTH", 4)
-
-        #self.DAQ_LPGBT.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK28FREQ", 1)  # 1 =  40mhz
-        #self.DAQ_LPGBT.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK28INVERT", 1)
-        #self.DAQ_LPGBT.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK28DRIVESTRENGTH", 4)
 
     def sca_hard_reset(self):
         # should this live here? I suppose so...
         bit = 0
         self.DAQ_LPGBT.set_gpio(bit, 0)
+        sleep(0.1)
         self.DAQ_LPGBT.set_gpio(bit, 1)
+        sleep(0.1)
 
     def find_uplink_alignment(self, scan_time=0.01, default=0, data_mode=False, etroc='ETROC1'):  # default scan time of 0.01 is enough
         # TODO: check the FEC mode and set the number of links appropriately
@@ -273,37 +263,8 @@ class ReadoutBoard:
 
     def configure(self, alignment=None, data_mode=False, etroc='ETROC1', verbose=False):
 
-        ## DAQ
-        #for i in range(28):
-        #    self.DAQ_LPGBT.set_uplink_alignment(1, i)  # was 2 for daq loopback. does this behave stochastically?
-
-        if self.ver == 1:
-            self.DAQ_LPGBT.configure_gpio_outputs()
-        if self.ver == 2:
-            self.DAQ_LPGBT.configure_gpio_outputs(outputs=0x2409, defaults=0x0409)
-        self.DAQ_LPGBT.initialize(verbose=verbose)
-        self.DAQ_LPGBT.config_eport_dlls(verbose=verbose)
-        self.DAQ_LPGBT.configure_eptx(verbose=verbose)
-        self.DAQ_LPGBT.configure_eprx()
-
-        if self.ver == 2:
-            print ("Base config of RB v2 successfull, rest not yet implemented. Waiting.")
-
-            while True:
-                self.bad_boy(m=1)
-
         # configure the VTRX
         self.VTRX.configure(trigger=self.trigger)
-
-        ## Trigger
-        #for i in range(28):
-        #    self.TRIG_LPGBT.set_uplink_alignment(5, i) # 4 for trigger loopback
-
-        #self.TRIG_LPGBT.configure_gpio_outputs()
-        #self.TRIG_LPGBT.initialize()
-        #self.TRIG_LPGBT.config_eport_dlls()
-        #self.TRIG_LPGBT.configure_eptx()
-        #self.TRIG_LPGBT.configure_eprx()
 
         # the logic here is as follows:
         # dict -> load the provided alignment
@@ -317,12 +278,15 @@ class ReadoutBoard:
             pass
 
         # SCA init
+        #self.
         self.sca_hard_reset()
-        self.sca_setup()
+        self.sca_setup(verbose=verbose)
         self.SCA.reset()
         self.SCA.connect()
-        self.SCA.config_gpios()  # this sets the directions etc according to the mapping
-
+        try:
+            self.SCA.config_gpios()  # this sets the directions etc according to the mapping
+        except TimeoutError:
+            print ("SCA config failed. Will continue without SCA.")
         #if self.trigger:
         #    self.DAQ_LPGBT.reset_trigger_mgts() 
 
