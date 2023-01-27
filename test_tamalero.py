@@ -37,6 +37,7 @@ if __name__ == '__main__':
     argParser.add_argument('--recal_lpgbt', action='store_true', default=False, help="Recalibrate ADC in LPGBT? (instead of using saved values)")
     argParser.add_argument('--control_hub', action='store_true', default=False, help="Use control hub for communication?")
     argParser.add_argument('--host', action='store', default='localhost', help="Specify host for control hub")
+    argParser.add_argument('--devel', action='store_true', default=False, help="Don't check repo status (not recommended)")
     args = argParser.parse_args()
 
     header()
@@ -57,7 +58,7 @@ if __name__ == '__main__':
     trycnt = 0
     while (True):
         try:
-            kcu = get_kcu(args.kcu, control_hub=args.control_hub, host=args.host)
+            kcu = get_kcu(args.kcu, control_hub=args.control_hub, host=args.host, verbose=args.verbose)
             rb_0 = ReadoutBoard(0, trigger=(not args.force_no_trigger), kcu=kcu)
             #rb_0.DAQ_LPGBT.configure()  # NOTE this can be removed
             data = 0xabcd1234
@@ -79,7 +80,8 @@ if __name__ == '__main__':
     if (verbose):
         kcu.status()
 
-    check_repo_status(kcu_version=kcu.get_firmware_version(verbose=True))
+    if not args.devel:
+        check_repo_status(kcu_version=kcu.get_firmware_version(verbose=True))
 
     #-------------------------------------------------------------------------------
     # Power up
@@ -91,21 +93,22 @@ if __name__ == '__main__':
 
         rb_0.DAQ_LPGBT.power_up_init()
 
+        rb_0.VTRX.get_version()
         if (verbose):
             print ("VTRX status at power up:")
-            rb_0.VTRX.get_version()
             _ = rb_0.VTRX.status()
+            print (rb_0.VTRX.ver)
 
         rb_0.get_trigger()
 
         if rb_0.trigger:
-            print("Configuring Trigger lpGBT")
-            print (" > Enabling VTRX channel for trigger lpGBT")
-            rb_0.VTRX.enable(ch=1)
-            time.sleep(1)
+            #print("Configuring Trigger lpGBT")
             print (" > Power up init sequence for: Trigger")
             rb_0.TRIG_LPGBT.power_up_init()
             print("Done Configuring Trigger lpGBT")
+    else:
+        rb_0.VTRX.get_version()
+
 
     if not hasattr(rb_0, "TRIG_LPGBT"):
         rb_0.get_trigger()
@@ -122,8 +125,10 @@ if __name__ == '__main__':
         else:
             alignment = False
 
+        #if rb_0.trigger:
+        #    rb_0.TRIG_LPGBT.power_up_init()
         print("Configuring readout board")
-        rb_0.configure(alignment=alignment, data_mode=data_mode, etroc=args.etroc)
+        rb_0.configure(alignment=alignment, data_mode=data_mode, etroc=args.etroc, verbose=args.verbose)
 
     res = rb_0.DAQ_LPGBT.get_board_id()
     res['trigger'] = 'yes' if rb_0.trigger else 'no'
@@ -138,8 +143,8 @@ if __name__ == '__main__':
         if verbose:
             rb_0.status()
 
+    rb_0.VTRX.get_version()
     if (verbose):
-        rb_0.VTRX.get_version()
         _ = rb_0.VTRX.status()
 
     rb_0.DAQ_LPGBT.set_dac(1.0)  # set the DAC / Vref to 1.0V.
