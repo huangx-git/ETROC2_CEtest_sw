@@ -47,18 +47,6 @@ class VTRX:
         if self.master.kcu.dummy:
             return
 
-        try:
-            if self.rd_adr(0x15)>>4 == 1:
-                self.ver = "production"
-            else:
-                self.ver = "prototype"
-            print('VTRx+ Version is: '+self.ver)
-
-            with open(os.path.expandvars('$TAMALERO_BASE/address_table/VTRX.yaml'), 'r') as f:
-                self.regs = load(f, Loader=Loader)[self.ver]
-        except TypeError:
-            print ("lpGBT init not yet done, will load VTRX address table later.")
-
     def configure(self, trigger=False):
         if not hasattr(self, 'ver'):
             self.get_version()
