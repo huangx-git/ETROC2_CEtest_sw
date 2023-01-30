@@ -128,7 +128,7 @@ with your username, using the ports as given by the jupyter server.
 Setup the docker container with pre-built ipbus:
 
 ``` shell
-docker run -it --name tamalero danbarto/centos-uhal-py3:latest /bin/bash
+docker run -it --name tamalero danbarto/ubuntu20.04-uhal-python38-tamalero:latest /bin/bash
 ```
 
 Inside docker, check out this repository with
