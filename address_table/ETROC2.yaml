@@ -781,8 +781,8 @@ BCIDoffset:
   - 0xf
   - 0xff
   regadr:
-  - PeriCfg11
-  - PeriCfg10
+  - 11
+  - 10
   shift:
   - 0
   - 0
@@ -2088,52 +2088,52 @@ Bypass_ THCal:
 CLK1280_EnRx:
   default: 0x1
   mask: 0x1
-  regadr: PeriCfg8
+  regadr: 8
   shift: 0
 CLK1280_EnTer:
   default: 0x1
   mask: 0x2
-  regadr: PeriCfg8
+  regadr: 8
   shift: 1
 CLK1280_Equ:
   default: 0x0
   mask: 0xc
-  regadr: PeriCfg8
+  regadr: 8
   shift: 2
 CLK1280_InvData:
   default: 0x0
   mask: 0x10
-  regadr: PeriCfg8
+  regadr: 8
   shift: 4
 CLK1280_SetCM:
   default: 0x1
   mask: 0x20
-  regadr: PeriCfg8
+  regadr: 8
   shift: 5
 CLK40_EnRx:
   default: 0x1
   mask: 0x1
-  regadr: PeriCfg7
+  regadr: 7
   shift: 0
 CLK40_EnTer:
   default: 0x1
   mask: 0x2
-  regadr: PeriCfg7
+  regadr: 7
   shift: 1
 CLK40_Equ:
   default: 0x0
   mask: 0xc
-  regadr: PeriCfg7
+  regadr: 7
   shift: 2
 CLK40_InvData:
   default: 0x0
   mask: 0x10
-  regadr: PeriCfg7
+  regadr: 7
   shift: 4
 CLK40_SetCM:
   default: 0x1
   mask: 0x20
-  regadr: PeriCfg7
+  regadr: 7
   shift: 5
 CLKEn_THCal:
   default: 0x0
@@ -2399,7 +2399,7 @@ CLKEn_THCal:
 CLKSel:
   default: 0x1
   mask: 0x20
-  regadr: PeriCfg0
+  regadr: 0
   shift: 5
 CLSel:
   default: 0x0
@@ -3442,17 +3442,17 @@ DAC:
 EFuse_Bypass:
   default: 0x1
   mask: 0x20
-  regadr: PeriCfg21
+  regadr: 21
   shift: 5
 EFuse_EnClk:
   default: 0x0
   mask: 0x1
-  regadr: PeriCfg21
+  regadr: 21
   shift: 0
 EFuse_Mode:
   default: 0x2
   mask: 0x200000
-  regadr: PeriCfg21
+  regadr: 21
   shift: 21
 EFuse_Prog:
   default: 0x0
@@ -3462,10 +3462,10 @@ EFuse_Prog:
   - 0xff
   - 0xff
   regadr:
-  - PeriCfg25
-  - PeriCfg24
-  - PeriCfg23
-  - PeriCfg22
+  - 25
+  - 24
+  - 23
+  - 22
   shift:
   - 0
   - 0
@@ -3474,72 +3474,72 @@ EFuse_Prog:
 EFuse_Rstn:
   default: 0x0
   mask: 0x8
-  regadr: PeriCfg21
+  regadr: 21
   shift: 3
 EFuse_Start:
   default: 0x0
   mask: 0x10
-  regadr: PeriCfg21
+  regadr: 21
   shift: 4
 EFuse_TCKHP:
   default: 0x4
   mask: 0xf0
-  regadr: PeriCfg20
+  regadr: 20
   shift: 4
 FC_EnRx:
   default: 0x1
   mask: 0x1
-  regadr: PeriCfg9
+  regadr: 9
   shift: 0
 FC_EnTer:
   default: 0x1
   mask: 0x2
-  regadr: PeriCfg9
+  regadr: 9
   shift: 1
 FC_Equ:
   default: 0x0
   mask: 0xc
-  regadr: PeriCfg9
+  regadr: 9
   shift: 2
 FC_InvData:
   default: 0x0
   mask: 0x10
-  regadr: PeriCfg9
+  regadr: 9
   shift: 4
 FC_SetCM:
   default: 0x1
   mask: 0x20
-  regadr: PeriCfg9
+  regadr: 9
   shift: 5
 GRO_Start:
   default: 0x0
   mask: 0x40
-  regadr: PeriCfg7
+  regadr: 7
   shift: 6
 GRO_TOARST_N:
   default: 0x1
   mask: 0x80
-  regadr: PeriCfg7
+  regadr: 7
   shift: 7
 GRO_TOA_CK:
   default: 0x1
   mask: 0x40
-  regadr: PeriCfg8
+  regadr: 8
   shift: 6
 GRO_TOA_Latch:
   default: 0x1
   mask: 0x80
-  regadr: PeriCfg8
+  regadr: 8
   shift: 7
 GRO_TOTRST_N:
   default: 0x1
   mask: 0x40
-  regadr: PeriCfg9
+  regadr: 9
   shift: 6
 GRO_TOT_CK:
   default: 0x1
   mask: 0x80
-  regadr: PeriCfg9
+  regadr: 9
   shift: 7
 HysSel:
   default: 0xf
@@ -4843,7 +4843,7 @@ L1Adelay:
 LTx_AmplSel:
   default: 0x4
   mask: 0xe0
-  regadr: PeriCfg16
+  regadr: 16
   shift: 5
 NW:
   default: 0x0
@@ -5370,97 +5370,97 @@ PD_DACDiscri:
 PLL_BIASGEN_CONFIG:
   default: 0x8
   mask: 0xf
-  regadr: PeriCfg1
+  regadr: 1
   shift: 0
 PLL_CONFIG_I_PLL:
   default: 0x9
   mask: 0xf0
-  regadr: PeriCfg1
+  regadr: 1
   shift: 4
 PLL_CONFIG_P_PLL:
   default: 0x9
   mask: 0xf
-  regadr: PeriCfg2
+  regadr: 2
   shift: 0
 PLL_ENABLEPLL:
   default: 0x0
   mask: 0x20
-  regadr: PeriCfg3
+  regadr: 3
   shift: 5
 PLL_FBDiv_clkTreeDisable:
   default: 0x0
   mask: 0x40
-  regadr: PeriCfg0
+  regadr: 0
   shift: 6
 PLL_FBDiv_skip:
   default: 0x0
   mask: 0x80
-  regadr: PeriCfg0
+  regadr: 0
   shift: 7
 PLL_R_CONFIG:
   default: 0x2
   mask: 0xf0
-  regadr: PeriCfg2
+  regadr: 2
   shift: 4
 PLL_vcoDAC:
   default: 0x8
   mask: 0xf
-  regadr: PeriCfg3
+  regadr: 3
   shift: 0
 PLL_vcoRailMode:
   default: 0x1
   mask: 0x10
-  regadr: PeriCfg3
+  regadr: 3
   shift: 4
 PLLclkgen_disCLK:
   default: 0x0
   mask: 0x1
-  regadr: PeriCfg0
+  regadr: 0
   shift: 0
 PLLclkgen_disDES:
   default: 0x0
   mask: 0x2
-  regadr: PeriCfg0
+  regadr: 0
   shift: 1
 PLLclkgen_disEOM:
   default: 0x1
   mask: 0x4
-  regadr: PeriCfg0
+  regadr: 0
   shift: 2
 PLLclkgen_disSER:
   default: 0x1
   mask: 0x8
-  regadr: PeriCfg0
+  regadr: 0
   shift: 3
 PLLclkgen_disVCO:
   default: 0x0
   mask: 0x10
-  regadr: PeriCfg0
+  regadr: 0
   shift: 4
 PS_CPCurrent:
   default: 0x1
   mask: 0xf
-  regadr: PeriCfg4
+  regadr: 4
   shift: 0
 PS_CapRst:
   default: 0x0
   mask: 0x10
-  regadr: PeriCfg4
+  regadr: 4
   shift: 4
 PS_Enable:
   default: 0x1
   mask: 0x20
-  regadr: PeriCfg4
+  regadr: 4
   shift: 5
 PS_ForceDown:
   default: 0x0
   mask: 0x40
-  regadr: PeriCfg4
+  regadr: 4
   shift: 6
 PS_PhaseAdj:
   default: 0x0
   mask: 0xff
-  regadr: PeriCfg5
+  regadr: 5
   shift: 0
 PixelID:
   default: 0x0
@@ -6509,12 +6509,12 @@ RSTn_THCal:
 RTx_AmplSel:
   default: 0x4
   mask: 0xe0
-  regadr: PeriCfg17
+  regadr: 17
   shift: 5
 RefStrSel:
   default: 0x3
   mask: 0xff
-  regadr: PeriCfg6
+  regadr: 6
   shift: 0
 RfSel:
   default: 0x2
@@ -7302,12 +7302,12 @@ ScanStart_THCal:
 TDCClockTest:
   default: 0x0
   mask: 0x10
-  regadr: PeriCfg31
+  regadr: 31
   shift: 4
 TDCStrobeTest:
   default: 0x0
   mask: 0x20
-  regadr: PeriCfg31
+  regadr: 31
   shift: 5
 TH:
   default: 0x0
@@ -8611,12 +8611,12 @@ TH_offset:
 TS_PD:
   default: 0x0
   mask: 0x80
-  regadr: PeriCfg4
+  regadr: 4
   shift: 7
 VRefGen_PD:
   default: 0x0
   mask: 0x80
-  regadr: PeriCfg3
+  regadr: 3
   shift: 7
 addrOffset:
   default: 0x1
@@ -8882,42 +8882,42 @@ addrOffset:
 asyAlignFastcommand:
   default: 0x0
   mask: 0x20
-  regadr: PeriCfg13
+  regadr: 13
   shift: 5
 asyLinkReset:
   default: 0x0
   mask: 0x40
-  regadr: PeriCfg13
+  regadr: 13
   shift: 6
 asyPLLReset:
   default: 0x1
   mask: 0x80
-  regadr: PeriCfg13
+  regadr: 13
   shift: 7
 asyResetChargeInj:
   default: 0x1
   mask: 0x20
-  regadr: PeriCfg14
+  regadr: 14
   shift: 5
 asyResetFastcommand:
   default: 0x1
   mask: 0x40
-  regadr: PeriCfg14
+  regadr: 14
   shift: 6
 asyResetGlobalReadout:
   default: 0x1
   mask: 0x80
-  regadr: PeriCfg14
+  regadr: 14
   shift: 7
 asyResetLockDetect:
   default: 0x1
   mask: 0x20
-  regadr: PeriCfg15
+  regadr: 15
   shift: 5
 asyStartCalibration:
   default: 0x1
   mask: 0x40
-  regadr: PeriCfg15
+  regadr: 15
   shift: 6
 autoReset_TDC:
   default: 0x0
@@ -9183,7 +9183,7 @@ autoReset_TDC:
 chargeInjectionDelay:
   default: 0x18
   mask: 0x1f
-  regadr: PeriCfg17
+  regadr: 17
   shift: 0
 disDataReadout:
   default: 0x0
@@ -9449,22 +9449,22 @@ disDataReadout:
 disLTx:
   default: 0x0
   mask: 0x80
-  regadr: PeriCfg18
+  regadr: 18
   shift: 7
 disPowerSequence:
   default: 0x0
   mask: 0x1
-  regadr: PeriCfg18
+  regadr: 18
   shift: 0
 disRTx:
   default: 0x0
   mask: 0x80
-  regadr: PeriCfg19
+  regadr: 19
   shift: 7
 disScrambler:
   default: 0x0
   mask: 0x1
-  regadr: PeriCfg19
+  regadr: 19
   shift: 0
 disTrigPath:
   default: 0x0
@@ -9733,8 +9733,8 @@ emptySlotBCID:
   - 0xff
   - 0xf0
   regadr:
-  - PeriCfg12
-  - PeriCfg11
+  - 12
+  - 11
   shift:
   - 0
   - 4
@@ -10002,17 +10002,17 @@ enable_TDC:
 fcClkDelayEn:
   default: 0x0
   mask: 0x8
-  regadr: PeriCfg18
+  regadr: 18
   shift: 3
 fcDataDelayEn:
   default: 0x0
   mask: 0x10
-  regadr: PeriCfg18
+  regadr: 18
   shift: 4
 fcSelfAlignEn:
   default: 0x0
   mask: 0x4
-  regadr: PeriCfg18
+  regadr: 18
   shift: 2
 level_TDC:
   default: 0x1
@@ -10278,17 +10278,17 @@ level_TDC:
 lfLockThrCounter:
   default: 0xb
   mask: 0xf
-  regadr: PeriCfg30
+  regadr: 30
   shift: 0
 lfReLockThrCounter:
   default: 0xb
   mask: 0xf0
-  regadr: PeriCfg30
+  regadr: 30
   shift: 4
 lfUnLockThrCounter:
   default: 0xb
   mask: 0xf
-  regadr: PeriCfg31
+  regadr: 31
   shift: 0
 linkResetFixedPattern:
   default: 0xacc78cc5
@@ -10298,10 +10298,10 @@ linkResetFixedPattern:
   - 0xff
   - 0xff
   regadr:
-  - PeriCfg29
-  - PeriCfg28
-  - PeriCfg27
-  - PeriCfg26
+  - 29
+  - 28
+  - 27
+  - 26
   shift:
   - 0
   - 0
@@ -10310,7 +10310,7 @@ linkResetFixedPattern:
 linkResetTestPattern:
   default: 0x1
   mask: 0x2
-  regadr: PeriCfg19
+  regadr: 19
   shift: 1
 lowerCal:
   default: 0x10
@@ -14977,32 +14977,32 @@ lowerTOTTrig:
 mergeTriggerData:
   default: 0x0
   mask: 0x1
-  regadr: PeriCfg20
+  regadr: 20
   shift: 0
 onChipL1AConf:
   default: 0x0
   mask: 0x60
-  regadr: PeriCfg18
+  regadr: 18
   shift: 5
 readoutClockDelayGlobal:
   default: 0x0
   mask: 0x1f
-  regadr: PeriCfg15
+  regadr: 15
   shift: 0
 readoutClockDelayPixel:
   default: 0x0
   mask: 0x1f
-  regadr: PeriCfg13
+  regadr: 13
   shift: 0
 readoutClockWidthGlobal:
   default: 0x10
   mask: 0x1f
-  regadr: PeriCfg16
+  regadr: 16
   shift: 0
 readoutClockWidthPixel:
   default: 0x10
   mask: 0x1f
-  regadr: PeriCfg14
+  regadr: 14
   shift: 0
 resetn_TDC:
   default: 0x1
@@ -15529,22 +15529,22 @@ selfTestOccupancy:
 serRateLeft:
   default: 0x1
   mask: 0xc
-  regadr: PeriCfg19
+  regadr: 19
   shift: 2
 serRateRight:
   default: 0x1
   mask: 0x30
-  regadr: PeriCfg19
+  regadr: 19
   shift: 4
 singlePort:
   default: 0x1
   mask: 0x40
-  regadr: PeriCfg19
+  regadr: 19
   shift: 6
 softBoot:
   default: 0x0
   mask: 0x2
-  regadr: PeriCfg18
+  regadr: 18
   shift: 1
 testMode_TDC:
   default: 0x0
@@ -15810,7 +15810,7 @@ testMode_TDC:
 triggerGranularity:
   default: 0x0
   mask: 0xe
-  regadr: PeriCfg20
+  regadr: 20
   shift: 1
 upperCal:
   default: 0x200

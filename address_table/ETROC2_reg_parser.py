@@ -59,6 +59,9 @@ with open('ETROC2_regs.csv', newline='', encoding='utf-8-sig') as csvfile:
   for row in f:
     name, regadr, shift, mask, default = parse(row)
 
+    # now dump the data to a yaml file
+
+    # if register is across many addresses
     if isinstance(regadr, list):
       dumpdata[name] = {
         'shift': [int(s) for s in shift],
@@ -66,13 +69,14 @@ with open('ETROC2_regs.csv', newline='', encoding='utf-8-sig') as csvfile:
         'default': hexint(int(default, 16)),
         'regadr': {}
       }
-      if '<Rn>' in regadr[0]:
+      if '<Rn>' in regadr[0]: # if it's an in-pixel register
         for pix in range(256):
           r, c = pix2rc(pix)
           dumpdata[name]['regadr'][pix] = [s.replace('<Rn>', str(r)).replace('<Cn>', str(c)) for s in regadr]
-      else:
-        dumpdata[name]['regadr'] = regadr
+      else: # if it's a peripheral register, convert regadr to int
+        dumpdata[name]['regadr'] = [int(i) for i in regadr]
 
+    # if register is just one address, it's easier
     else:
       dumpdata[name] = {
         'shift': int(shift),
@@ -85,13 +89,13 @@ with open('ETROC2_regs.csv', newline='', encoding='utf-8-sig') as csvfile:
           r, c = pix2rc(pix)
           dumpdata[name]['regadr'][pix] = regadr.replace('<Rn>', str(r)).replace('<Cn>', str(c))
       else:
-        dumpdata[name]['regadr'] = regadr
+        dumpdata[name]['regadr'] = int(regadr)
  
-
+# dump register data by name
 with open(r'ETROC2.yaml', 'w') as file:
     documents = yaml.dump(dumpdata, file)
 
-
+# dump default values per register address
 dumpregs = {}
 with open('ETROC2_def.csv', newline='', encoding='utf-8-sig') as csvfile:
   f = csv.reader(csvfile, delimiter=',')
@@ -102,7 +106,7 @@ with open('ETROC2_def.csv', newline='', encoding='utf-8-sig') as csvfile:
         regname = re.split('/',row[0])[0].replace('<Rn>', str(r)).replace('<Cn>', str(c))
         dumpregs[regname] = hexint(int(row[1], 16))
     else:
-      regname = re.split('/',row[0])[0]
+      regname = int(re.split('/',row[0])[0])
       dumpregs[regname] = hexint(int(row[1], 16))
 with open(r'ETROC2_def.yaml', 'w') as file:
     documents = yaml.dump(dumpregs, file)

@@ -40,7 +40,7 @@ class Module:
         )
 
     def wr_reg(self, reg, val):
-        adr   = int(self.regs[reg]['regadr'].replace('PeriCfg', ''))
+        adr   = self.regs[reg]['regadr']
         shift = self.regs[reg]['shift']
         mask  = self.regs[reg]['mask']
 
@@ -50,7 +50,7 @@ class Module:
         self.I2C_write(adr, new_val)
 
     def rd_reg(self, reg):
-        adr = int(self.regs[reg]['regadr'].replace('PeriCfg', ''))
+        adr = self.regs[reg]['regadr']
         mask = self.regs[reg]['mask']
         shift = self.regs[reg]['shift']
 
