@@ -1,0 +1,258 @@
+adc:
+    mod_a0:
+        pin: 0x0B
+        conv: 1
+        flavor: small
+        comment: pin 20 in ETROC 0 and 1
+    mod_a1:
+        pin: 0x0C
+        conv: 1
+        flavor: small
+        comment: pin 18 in ETROC 0 and 1
+    mod_a2:
+        pin: 0x0E
+        conv: 1
+        flavor: small
+        comment: pin 16 in ETROC 0 and 1
+    mod_a3:
+        pin: 0x0F
+        conv: 1
+        flavor: small
+        comment: pin 14 in ETROC 0 and 1
+    mod_a4:
+        pin: 0x03
+        conv: 1
+        flavor: small
+        comment: pin 21 in ETROC 2 and 3
+    mod_a5:
+        pin: 0x01
+        conv: 1
+        flavor: small
+        comment: pin 23 in ETROC 2 and 3
+    mod_a6:
+        pin: 0x02
+        conv: 1
+        flavor: small
+        comment: pin 25 in ETROC 2 and 3
+    mod_a7:
+        pin: 0x0
+        conv: 1
+        flavor: small
+        comment: pin 27 in ETROC 2 and 3
+    mod_a8:
+        pin: 0x12
+        conv: 1
+        flavor: small
+        comment: pin 20 in ETROC 4 and 5
+    mod_a9:
+        pin: 0x15
+        conv: 1
+        flavor: small
+        comment: pin 18 in ETROC 4 and 5
+    mod_a10:
+        pin: 0x14
+        conv: 1
+        flavor: small
+        comment: pin 16 in ETROC 4 and 5
+    mod_a11:
+        pin: 0x11
+        conv: 1
+        flavor: small
+        comment: pin 14 in ETROC 4 and 5
+    mod_a12:
+        pin: 0x05
+        conv: 1
+        flavor: small
+        comment: pin 21 in ETROC 6 and 7
+    mod_a13:
+        pin: 0x06
+        conv: 1
+        flavor: small
+        comment: pin 23 in ETROC 6 and 7
+    mod_a14:
+        pin: 0x08
+        conv: 1
+        flavor: small
+        comment: pin 25 in ETROC 6 and 7
+    mod_a15:
+        pin: 0x09
+        conv: 1
+        flavor: small
+        comment: pin 27 in ETROC 6 and 7
+    mod_a16:
+        pin: 0x17
+        conv: 1
+        flavor: small
+        comment: pin 20 in ETROC 8 and 9
+    mod_a17:
+        pin: 0x16
+        conv: 1
+        flavor: small
+        comment: pin 18 in ETROC 8 and 9
+    mod_a18:
+        pin: 0x13
+        conv: 1
+        flavor: small
+        comment: pin 16 in ETROC 8 and 9
+    mod_a19:
+        pin: 0x10
+        conv: 1
+        flavor: small
+        comment: pin 14 in ETROC 8 and 9
+    mod_a20:
+        pin: 0x0D
+        conv: 1
+        flavor: small
+        comment: pin 21 in ETROC 10 and 11
+    mod_a21:
+        pin: 0x0A
+        conv: 1
+        flavor: small
+        comment: pin 23 in ETROC 10 and 11
+    mod_a22:
+        pin: 0x07
+        conv: 1
+        flavor: small
+        comment: pin 25 in ETROC 10 and 11
+    mod_a23:
+        pin: 0x04
+        conv: 1
+        flavor: small
+        comment: pin 27 in ETROC 10 and 11
+    LV_RB:
+        pin: 0x1C
+        conv: 11.
+        flavor: small
+        comment: low voltage
+    VDAC:
+        pin: 0x1D
+        conv: 1.
+        flavor: small
+        comment: temperature sensor 
+            
+gpio:
+    mon_d0:
+        pin: 0x1E
+        conv: 1
+        flavor: small
+        comment: pin 32 in ETROC 0 and 1
+    mon_d1:
+        pin: 0x1F
+        conv: 1
+        flavor: small
+        comment: pin 30 in ETROC 0 and 1
+    mon_d2:
+        pin: 0x1D
+        conv: 1
+        flavor: small
+        comment: pin 28 in ETROC 0 and 1
+    mon_d3:
+        pin: 0x1C
+        conv: 1
+        flavor: small
+        comment: pin 26 in ETROC 0 and 1
+    mon_d4:
+        pin: 0x00
+        conv: 1
+        flavor: small
+        comment: pin 9 in ETROC 2 and 3
+    mon_d5:
+        pin: 0x02
+        conv: 1
+        flavor: small
+        comment: pin 11 in ETROC 2 and 3
+    mon_d6:
+        pin: 0x01
+        conv: 1
+        flavor: small
+        comment: pin 13 in ETROC 2 and 3
+    mon_d7:
+        pin: 0x03
+        conv: 1
+        flavor: small
+        comment: pin 15 in ETROC 2 and 3
+    mon_d8:
+        pin: 0x16
+        conv: 1
+        flavor: small
+        comment: pin 32 in ETROC 4 and 5
+    mon_d9:
+        pin: 0x19
+        conv: 1
+        flavor: small
+        comment: pin 30 in ETROC 4 and 5
+    mon_d10:
+        pin: 0x13
+        conv: 1
+        flavor: small
+        comment: pin 28 in ETROC 4 and 5
+    mon_d11:
+        pin: 0x10
+        conv: 1
+        flavor: small
+        comment: pin 26 in ETROC 4 and 5
+    mon_d12:
+        pin: 0x0A
+        conv: 1
+        flavor: small
+        comment: pin 9 in ETROC 6 and 7
+    mon_d13:
+        pin: 0x04
+        conv: 1
+        flavor: small
+        comment: pin 11 in ETROC 6 and 7
+    mon_d14:
+        pin: 0x07
+        conv: 1
+        flavor: small
+        comment: pin 13 in ETROC 6 and 7
+    mon_d15:
+        pin: 0x0D
+        conv: 1
+        flavor: small
+        comment: pin 15 in ETROC 6 and 7
+    mon_d16:
+        pin: 0x0F
+        conv: 1
+        flavor: small
+        comment: pin 32 in ETROC 8 and 9
+    mon_d17:
+        pin: 0x0E
+        conv: 1
+        flavor: small
+        comment: pin 30 in ETROC 8 and 9
+    mon_d18:
+        pin: 0x0C
+        conv: 1
+        flavor: small
+        comment: pin 28 in ETROC 8 and 9
+    mon_d19:
+        pin: 0x0B
+        conv: 1
+        flavor: small
+        comment: pin 26 in ETROC 8 and 9
+    mon_d20:
+        pin: 0x09
+        conv: 1
+        flavor: small
+        comment: pin 9 in ETROC 10 and 11
+    mon_d21:
+        pin: 0x08
+        conv: 1
+        flavor: small
+        comment: pin 11 in ETROC 10 and 11
+    mon_d22:
+        pin: 0x06
+        conv: 1
+        flavor: small
+        comment: pin 13 in ETROC 10 and 11
+    mon_d23:
+        pin: 0x05
+        conv: 1
+        flavor: small
+        comment: pin 15 in ETROC 10 and 11
+    sca_led:
+        pin: 0x1B
+        conv: 1
+        flavor: small
+        comment: SCA LED indicator
