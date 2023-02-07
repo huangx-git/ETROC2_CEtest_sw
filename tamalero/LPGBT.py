@@ -19,7 +19,7 @@ from tamalero.lpgbt_constants import LpgbtConstants
 
 class LPGBT(RegParser):
 
-    def __init__(self, rb=0, trigger=False, flavor='small', master=None, kcu=None):
+    def __init__(self, rb=0, trigger=False, flavor='small', master=None, kcu=None, rb_ver=1):
         '''
         Initialize lpGBT for a certain readout board number (rb).
         The trigger lpGBT is accessed through I2C of the master (= DAQ lpGBT).
@@ -31,7 +31,8 @@ class LPGBT(RegParser):
             assert isinstance(master, LPGBT), "Trying to initialize a trigger lpGBT but got no lpGBT master."
             self.master = master
         self.LPGBT_CONST = LpgbtConstants()
-        self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping.yaml'), 'adc')
+        self.rb_ver = rb_ver
+        self.set_adc_mapping()
 
         if kcu != None:
             self.kcu = kcu
@@ -141,6 +142,17 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.POWERUP.DLLCONFIGDONE", 0x1)  # NOTE untested change
         self.wr_reg("LPGBT.RWF.POWERUP.PLLCONFIGDONE", 0x1)
 
+    def set_adc_mapping(self):
+        assert self.rb_ver in [1, 2], f"Unrecognized version {self.ver}"
+        if self.rb_ver == 1:
+            self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping.yaml'), 'adc')
+        elif self.rb_ver == 2:
+            self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping_v2.yaml'), 'adc')
+    
+    def update_RBver(self, new_ver):
+        assert new_ver in [1, 2], f"Unrecognized version {self.ver}"
+        self.rb_ver = new_ver
+        self.set_adc_mapping()
 
     def link_status(self, verbose=False):
         if self.trigger:
@@ -578,9 +590,15 @@ class LPGBT(RegParser):
             self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUE_8TO11", hi_bits)
 
     def read_dac(self):
+        ver = self.ver
+        print(f"lpGBT version {ver}")
         v_ref = 1.00
-        lo_bits = self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEL")
-        hi_bits = self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEH")
+        if ver == 0:
+            lo_bits = self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEL")
+            hi_bits = self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEH")
+        elif ver == 1:
+            lo_bits = self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUE_0TO7")
+            hi_bits = self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUE_8TO11")
         value = lo_bits | (hi_bits << 8)
         return value/4096*v_ref
 
