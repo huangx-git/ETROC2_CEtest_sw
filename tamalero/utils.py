@@ -32,9 +32,23 @@ def get_temp(v_out, v_ref, r_ref, t_1, r_1, b, celcius=True):
     delta_t = 273.15 if celcius else 0
     try:
         r_t = r_ref / (v_ref/v_out - 1)
+        # print(r_1, r_t, v_ref, v_out)
         t_2 = b/((b/(t_1+delta_t)) - math.log(r_1) + math.log(r_t))
     except ZeroDivisionError:
         print ("Temperature calculation failed!")
+        return -999
+    except ValueError:
+        print("Negative resistance values not allowed in temperature calculation")
+        r_t = r_ref / (v_ref/v_out - 1)
+        print(f"""
+              \tr_1   (float) -- resistance of NTC at reference temperature: {r_1}\n
+              \tr_ref (float) -- volatge divider resistor:                   {r_ref}\n
+              \tv_out (float) -- voltage measured on the thermistor:         {v_out}\n
+              \tv_ref (float) -- reference voltage:                          {v_ref}\n
+              \tr_t = r_ref / (v_ref/v_out - 1)\n
+              \t    = {r_ref} / ({v_ref}/{v_out}-1)\n
+              \t    = {r_ref/(v_ref/v_out-1)}\n
+              """)
         return -999
     return t_2-delta_t
 
