@@ -4,21 +4,26 @@ import os
 import time
 import struct
 import datetime
+from tamalero.Module import Module
+from threading import Thread
 
 class Beam():
     def __init__(self, rb):
         try:
             self.rb  = rb
             self.kcu = self.rb.kcu
+            self.module = Module(self.rb)
         except:
             print("Unable to connect to KCU.")
         self.ON = 4
         self.OFF = 56
         self.cycles = 0
+        self.start_timer = False
+        self.dashboard = False
 
     def generate_beam(self, l1a_rate, nmin, verbose=False):
         """
-        Simulates Fermilab's test beam (4s ON, 56s OFF), sending L1A signals at l1a_rate MHz [default = 1] for nmin minutes [default = 1]
+        Simulates Fermilab's test beam (4s ON, 56s OFF), sending L1A signals at l1a_rate kHz [default = 1000] for nmin minutes [default = 1]
         """
 
         self.SIM = True
@@ -30,70 +35,75 @@ class Beam():
         self.l1a_rate = l1a_rate
         self.nmin = nmin
 
-        self.trigger_rate = self.l1a_rate * 1000000 / 25E-9 / (0xffffffff) * 10000
+        self.trigger_rate = self.l1a_rate * 1000 / 25E-9 / (0xffffffff) * 10000
 
         ON_TIME = self.ON
         OFF_TIME = self.OFF
 
-        START = time.time()
+        self.START = ""
+        if verbose: verbose_start = time.time()
 
         for minute in range(self.nmin):
 
-            if verbose: print("### Beam ON ###")
+            writer_ON = Thread(target=self.kcu.write_node, args=("SYSTEM.L1A_RATE", int(self.trigger_rate)))
+            sleeper_ON = Thread(target=time.sleep, args=(ON_TIME,))
 
-            self.kcu.write_node("SYSTEM.L1A_RATE", int(self.trigger_rate))
+            while not self.start_timer:
+                if not self.dashboard: break
+                continue
 
-            time.sleep(1)
+            if verbose:
+                print("### Beam ON ###")
+                start_ON = time.time()
+                verbose_start = start_ON
+            if minute == 0: self.START = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 
-            start_ON = time.time()
+            writer_ON.start()
+            sleeper_ON.start()
 
-            time.sleep(ON_TIME)
-            
-            time_diff_ON = time.time() - start_ON
-
-            l1a_rate_cnt_ON = self.kcu.read_node("SYSTEM.L1A_RATE_CNT")
+            writer_ON.join()
+            sleeper_ON.join()
 
             if verbose:
                 print("Shutting off beam...") 
-                print("\tON time  = {:.2f} s".format(time_diff_ON))
-                print("\tL1A rate = {:.2f} MHz".format(l1a_rate_cnt_ON.value()/1000000.0))
+                print("\tON time  = {:.2f} s".format(time.time() - start_ON))
+                print("\tL1A rate = {:.2f} MHz".format(self.kcu.read_node("SYSTEM.L1A_RATE_CNT").value()/1000000.0))
 
                 print("### Beam OFF ###")
+                start_OFF = time.time()
 
-            self.kcu.write_node("SYSTEM.L1A_RATE", 0)
+            writer_OFF = Thread(target=self.kcu.write_node, args=("SYSTEM.L1A_RATE", 0))
+            sleeper_OFF = Thread(target=time.sleep, args=(OFF_TIME,))
 
-            time.sleep(1)
+            writer_OFF.start()
+            sleeper_OFF.start()
 
-            start_OFF = time.time()
-
-            time.sleep(OFF_TIME)
-
-            time_diff_OFF = time.time() - start_OFF
-
-            l1a_rate_cnt_OFF = self.kcu.read_node("SYSTEM.L1A_RATE_CNT")
+            writer_OFF.join()
+            sleeper_OFF.join()
 
             self.cycles += 1
 
             if verbose:
                 print("{} minutes completed".format(minute+1))
-                print("\tOFF time = {:.2f} s".format(time_diff_OFF))
-                print("\tL1A rate = {:.2f} MHz".format(l1a_rate_cnt_OFF.value()/1000000.0))
+                print("\tOFF time = {:.2f} s".format(time.time() - start_OFF))
+                print("\tL1A rate = {:.2f} MHz".format(self.kcu.read_node("SYSTEM.L1A_RATE_CNT").value()/1000000.0))
 
-        total_time = round(time.time() - START)
-        total_time = str(datetime.timedelta(seconds=total_time-2))
-        if verbose: print("Test beam simulation completed; it took {}.".format(total_time))
+        if verbose: 
+            total_time = round(time.time() - verbose_start)
+            total_time = str(datetime.timedelta(seconds=total_time))
+            print("Test beam simulation completed; it took {}.".format(total_time))
+
         self.SIM = False
 
-    def read_beam(self, block=255, verbose=False, zipped=True):
-        if verbose: start = time.time()
-        if zipped:
-            from zipfile import ZipFile
-            zip_time_stamp = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S") 
-            files = []
-            zip_file = f"output/read_beam_{zip_time_stamp}.zip"
+    def read_fifo(self, block=255, verbose=False):
+        from beam_utils import read_etroc
+        while not self.start_timer:
+            if not self.dashboard: break
+            continue
+        self.files = {}
         while self.SIM:
             data = []
-            while self.kcu.read_node("SYSTEM.L1A_RATE_CNT") != 0:
+            while self.kcu.read_node("SYSTEM.L1A_RATE_CNT") != 0 or self.kcu.read_node("READOUT_BOARD_0.RX_FIFO_OCCUPANCY") != 0:
                 try:
                     # Check FIFO occupancy
                     occupancy = self.kcu.read_node("READOUT_BOARD_0.RX_FIFO_OCCUPANCY")
@@ -101,43 +111,42 @@ class Beam():
 
                     # Read data from FIFO
                     if (num_blocks_to_read):
-                        reads = num_blocks_to_read * [self.kcu.hw.getNode("DAQ_RB0").readBlock(block)]
+                        reads = num_blocks_to_read * [self.kcu.hw.getNode("DAQ_RB0").readBlock(block)]  # reads is a list of num_blocks_to_read elements of type uhal._core.ValVector_uint32
                         self.kcu.dispatch()
                         for read in reads:
                             data += read.value()
+                    elif (not num_blocks_to_read) and (occupancy.value() > 0):
+                        reads = self.kcu.hw.getNode("DAQ_RB0").readBlock(occupancy.value())   # reads is a single uhal._core.ValVector_uint32 element, not a list; not iterable
+                        self.kcu.dispatch()
+                        data += reads.value()
+                        
                 except uhal._core.exception:
                     print("uhal UDP error in daq")
 
             if data:
                 time_stamp = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-                with open(f"output/read_beam_{time_stamp}.dat", mode="wb") as f:
+                if not os.path.isdir(f"output/read_beam_{self.START}"): os.system(f"mkdir output/read_beam_{self.START}")
+                filename = f"output/read_beam_{self.START}/read_beam_{time_stamp}.dat"
+                self.files[filename] = False
+                with open(filename, mode="wb") as f:
                     f.write(struct.pack('<{}I'.format(len(data)), *data))
-                    files.append(f"output/read_beam_{time_stamp}.dat")
-                    if verbose:
-                        time_diff = round(time.time() - start)
-                        time_diff = str(datetime.timedelta(seconds=time_diff))
-                        print(f"Writing after {time_diff}")
+                read_etroc(self, time_stamp, full=False)
+                os.system(f"gzip {filename}")
+                self.files[filename] = True
 
-        if zipped:
-            with ZipFile(zip_file, 'w') as zfile:
-                for f in files:
-                    zfile.write(f)
-                    os.remove(f)
-
-    def monitoring_beam(self, on=True):
-        from rich.table import Table
+    def monitor(self):
         from rich.live import Live
         from rich.layout import Layout
-        from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn, TextColumn, BarColumn, TaskProgressColumn
+        from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn, TextColumn
         from rich.panel import Panel
-        from rich.console import Console
+        from rich.align import Align
 
-        from beam_utils import generate_table, generate_header, generate_static
+        from beam_utils import generate_table, generate_header, generate_static, generate_files
 
         from collections import deque
         import os
 
-        console = Console()
+        self.dashboard = True
 
         layout = Layout(name="root")
 
@@ -147,45 +156,51 @@ class Beam():
         )
 
         layout["main"].split_row(
-            Layout(name="dynamic", ratio=2),
+            Layout(name="dynamic", ratio=3),
             Layout(name="parameters", ratio=1),
         )
         layout["parameters"].split_column(
             Layout(name="static"),
+            Layout(name="files"),
             Layout(name="progress", size=5)
        )
 
         progress = Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            TaskProgressColumn(),
             TimeElapsedColumn(),
+            TextColumn(f"/ 0:{self.nmin:02d}:00")
         )
-        total = self.nmin * 60
-        sim_task = progress.add_task("[bold green]Beam Simulation", total=total)
+        total_task = self.nmin * 60
+        sim_task = progress.add_task("[bold green]Beam Simulation", total=total_task, start=False)
         
-        render_map = layout["dynamic"].render(console, console.options)
-        n_rows = render_map[layout["dynamic"]].region.height
-
         width, height = os.get_terminal_size()
-        table_height = int((height - 12) * 2 / 3)
+        table_height = int(height - 12 - 4)
         rows = deque(maxlen=table_height)
+        l1as = {}
+        for cycle in range(self.nmin): l1as[cycle] = []
 
-        with Live(layout, vertical_overflow="crop", console=console) as live:    
+        with Live(layout, vertical_overflow="crop") as live:
+            progress.start_task(sim_task)
+            self.start_timer = True
             while self.SIM:
-                l1a_rate_cnt = self.kcu.read_node("SYSTEM.L1A_RATE_CNT").value()/1000000.0
+                l1a_rate_cnt = self.kcu.read_node("SYSTEM.L1A_RATE_CNT").value()/1000.0
                 time_stamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 cycles = self.cycles
                 occupancy = self.kcu.read_node("READOUT_BOARD_0.RX_FIFO_OCCUPANCY")
                 temps = self.rb.read_temp()
-                rows.append((f"[bold red]{time_stamp}", f"{cycles}", f"{l1a_rate_cnt}", f"{occupancy}", f"{temps['t1']:.2f}", f"{temps['t2']:.2f}", f"{temps['t_SCA']:.2f}"))
+                lost = self.kcu.read_node(f"READOUT_BOARD_0.RX_FIFO_LOST_WORD_CNT")
+                packet_rate = self.kcu.read_node(f"READOUT_BOARD_0.PACKET_RX_RATE")
 
-                #layout["dynamic"].update(generate_table(rows, n_rows, layout["dynamic"], console))
+                rows.append((f"[bold red]{time_stamp}", f"{cycles}", f"{l1a_rate_cnt:.2f}", f"{occupancy}", f"{temps['t1']:.2f}", f"{temps['t2']:.2f}", f"{temps['t_SCA']:.2f}", f"{lost}", f"{packet_rate}"))
+                if l1a_rate_cnt != 0: l1as[cycles].append(l1a_rate_cnt)
+
                 layout["dynamic"].update(generate_table(rows))
-                layout["progress"].update(Panel(progress, expand=True))
+                layout["progress"].update(Panel(Align.center(progress), expand=True))
                 layout["header"].update(generate_header())
-                layout["static"].update(generate_static())
-                #live.update(generate_table(), refresh=True)
+                layout["static"].update(generate_static(l1as, self.l1a_rate, self.nmin))
+                layout["files"].update(generate_files(self))
+                
                 progress.update(sim_task, advance=1)
-                time.sleep(1) 
+                time.sleep(1)
+
