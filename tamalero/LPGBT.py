@@ -590,13 +590,11 @@ class LPGBT(RegParser):
             self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUE_8TO11", hi_bits)
 
     def read_dac(self):
-        ver = self.ver
-        print(f"lpGBT version {ver}")
         v_ref = 1.00
-        if ver == 0:
+        if self.ver == 0:
             lo_bits = self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEL")
             hi_bits = self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEH")
-        elif ver == 1:
+        elif self.ver == 1:
             lo_bits = self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUE_0TO7")
             hi_bits = self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUE_8TO11")
         value = lo_bits | (hi_bits << 8)
