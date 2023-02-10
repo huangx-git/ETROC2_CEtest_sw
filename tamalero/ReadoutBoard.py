@@ -31,8 +31,8 @@ class ReadoutBoard:
             self.DAQ_LPGBT.configure()
             if self.DAQ_LPGBT.ver == 1:
                 self.ver = 2
-                self.SCA.update_RBver(self.ver)
-                self.DAQ_LPGBT.update_RBver(self.ver)
+                self.SCA.update_ver(self.ver)
+                self.DAQ_LPGBT.set_adc_mapping()
             self.SCA.connect_KCU(kcu)
 
     def get_trigger(self):

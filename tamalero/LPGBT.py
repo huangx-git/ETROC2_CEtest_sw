@@ -19,7 +19,7 @@ from tamalero.lpgbt_constants import LpgbtConstants
 
 class LPGBT(RegParser):
 
-    def __init__(self, rb=0, trigger=False, flavor='small', master=None, kcu=None, rb_ver=1):
+    def __init__(self, rb=0, trigger=False, flavor='small', master=None, kcu=None):
         '''
         Initialize lpGBT for a certain readout board number (rb).
         The trigger lpGBT is accessed through I2C of the master (= DAQ lpGBT).
@@ -31,13 +31,12 @@ class LPGBT(RegParser):
             assert isinstance(master, LPGBT), "Trying to initialize a trigger lpGBT but got no lpGBT master."
             self.master = master
         self.LPGBT_CONST = LpgbtConstants()
-        self.rb_ver = rb_ver
-        self.set_adc_mapping()
 
         if kcu != None:
             self.kcu = kcu
 
         self.configure()
+        self.set_adc_mapping
 
     def configure(self):
         if not hasattr(self, 'kcu'):
@@ -143,15 +142,15 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.POWERUP.PLLCONFIGDONE", 0x1)
 
     def set_adc_mapping(self):
-        assert self.rb_ver in [1, 2], f"Unrecognized version {self.ver}"
-        if self.rb_ver == 1:
+        assert self.ver in [0, 1], f"Unrecognized version {self.ver}"
+        if self.ver == 0:
             self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping.yaml'), 'adc')
-        elif self.rb_ver == 2:
+        elif self.ver == 1:
             self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping_v2.yaml'), 'adc')
     
-    def update_RBver(self, new_ver):
-        assert new_ver in [1, 2], f"Unrecognized version {self.ver}"
-        self.rb_ver = new_ver
+    def update_ver(self, new_ver):
+        assert new_ver in [1, 2], f"Unrecognized version {new_ver}"
+        self.ver = new_ver
         self.set_adc_mapping()
 
     def link_status(self, verbose=False):

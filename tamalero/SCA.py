@@ -113,11 +113,11 @@ class SCA_I2C:
 
 class SCA:
 
-    def __init__(self, rb=0, flavor='small', rb_ver=1):
+    def __init__(self, rb=0, flavor='small'):
         self.rb = rb
         self.flavor = flavor
         self.err_count = 0
-        self.rb_ver = rb_ver
+        self.ver = rb.ver
         self.set_adc_mapping()
         self.set_gpio_mapping()
 
@@ -125,22 +125,22 @@ class SCA:
         self.kcu = kcu
 
     def set_adc_mapping(self):
-        assert self.rb_ver in [1, 2], f"Unrecognized version {self.ver}"
-        if self.rb_ver == 1:
+        assert self.ver in [1, 2], f"Unrecognized version {self.ver}"
+        if self.ver == 1:
             self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping.yaml'), 'adc')
-        elif self.rb_ver == 2:
+        elif self.ver == 2:
             self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping_v2.yaml'), 'adc')
 
     def set_gpio_mapping(self):
-        assert self.rb_ver in [1, 2], f"Unrecognized version {self.ver}"
-        if self.rb_ver == 1:
+        assert self.ver in [1, 2], f"Unrecognized version {self.ver}"
+        if self.ver == 1:
             self.gpio_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping.yaml'), 'gpio')
-        elif self.rb_ver == 2:
+        elif self.ver == 2:
             self.gpio_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping_v2.yaml'), 'gpio')
 
-    def update_RBver(self, new_ver):
-        assert new_ver in [1, 2], f"Unrecognized version {self.ver}"
-        self.rb_ver = new_ver
+    def update_ver(self, new_ver):
+        assert new_ver in [1, 2], f"Unrecognized version {new_ver}"
+        self.ver = new_ver
         self.set_adc_mapping()
         self.set_gpio_mapping()
 
