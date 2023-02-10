@@ -384,9 +384,8 @@ class LPGBT(RegParser):
         for i in range(4):
             # [0x0a7] EPTXDataRate
             self.wr_reg("LPGBT.RWF.EPORTTX.EPTX%dDATARATE" % i, 0x3)
-            self.wr_reg("LPGBT.RWF.EPORTTX.EPTX%dDATARATE" % i, 0x3)
-            self.wr_reg("LPGBT.RWF.EPORTTX.EPTX%dDATARATE" % i, 0x3)
-            self.wr_reg("LPGBT.RWF.EPORTTX.EPTX%dDATARATE" % i, 0x3)
+
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX00INVERT" , 0x1)
 
         # EPTXxxEnable
         # EPTXxxDriveStrength
@@ -395,6 +394,7 @@ class LPGBT(RegParser):
             link = str(i % 4)
             self.wr_reg("LPGBT.RWF.EPORTTX.EPTX%s%sENABLE" % (group, link), 0x1)
             self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX%dDRIVESTRENGTH" % i, 0x3)
+            print("LPGBT.RWF.EPORTTX.EPTX%s%sENABLE" % (group, link))
 
         # enable mirror feature
         for i in range(4):
@@ -597,7 +597,7 @@ class LPGBT(RegParser):
         # turn on clock outputs
         if (verbose):
             print ("Configuring clocks now.")
-        self.configure_clocks(0x0fffffff, 0x0)
+        self.configure_clocks(0x0fffffff, (1<<3) | (1<<4) | (1<<5) | (1<<24))
 
         # setup up sca eptx/rx
         # sca_setup() # maybe not needed???
