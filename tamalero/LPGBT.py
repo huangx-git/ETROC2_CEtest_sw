@@ -31,12 +31,12 @@ class LPGBT(RegParser):
             assert isinstance(master, LPGBT), "Trying to initialize a trigger lpGBT but got no lpGBT master."
             self.master = master
         self.LPGBT_CONST = LpgbtConstants()
-        self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping.yaml'), 'adc')
 
         if kcu != None:
             self.kcu = kcu
 
         self.configure()
+        self.set_adc_mapping
 
     def configure(self):
         if not hasattr(self, 'kcu'):
@@ -141,6 +141,17 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.POWERUP.DLLCONFIGDONE", 0x1)  # NOTE untested change
         self.wr_reg("LPGBT.RWF.POWERUP.PLLCONFIGDONE", 0x1)
 
+    def set_adc_mapping(self):
+        assert self.ver in [0, 1], f"Unrecognized version {self.ver}"
+        if self.ver == 0:
+            self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping.yaml'), 'adc')
+        elif self.ver == 1:
+            self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping_v2.yaml'), 'adc')
+    
+    def update_ver(self, new_ver):
+        assert new_ver in [1, 2], f"Unrecognized version {new_ver}"
+        self.ver = new_ver
+        self.set_adc_mapping()
 
     def link_status(self, verbose=False):
         if self.trigger:
@@ -579,8 +590,12 @@ class LPGBT(RegParser):
 
     def read_dac(self):
         v_ref = 1.00
-        lo_bits = self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEL")
-        hi_bits = self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEH")
+        if self.ver == 0:
+            lo_bits = self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEL")
+            hi_bits = self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUEH")
+        elif self.ver == 1:
+            lo_bits = self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUE_0TO7")
+            hi_bits = self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUE_8TO11")
         value = lo_bits | (hi_bits << 8)
         return value/4096*v_ref
 

@@ -1,0 +1,81 @@
+adc:
+    TH1:
+        pin: 0x00
+        conv: 1
+        flavor: small
+        comment: VTRX TH1
+    1V4D_ADC:
+        pin: 0x01
+        conv: 1.82 
+        flavor: small
+        comment: 1V4D * 0.55
+    1V5A_ADC:
+        pin: 0x02
+        conv: 1.82
+        flavor: small
+        comment: 1V5D * 0.55
+    2V5TX_ADC:
+        pin: 0x03
+        conv: 3.0
+        flavor: small
+        comment: 2V5TX * 0.33
+    RSSI_ADC:
+        pin: 0x04
+        conv: 1
+        flavor: small
+        comment: RSSI
+    ADC5:
+        pin: 0x05
+        conv: 1
+        flavor: small
+        comment: N/A
+    2V5RX_ADC:
+        pin: 0x06
+        conv: 3.0
+        flavor: small
+        comment: 2V5RX * 0.33 
+    VTEMP_ADC:
+        pin: 0x07
+        conv: 1
+        flavor: small
+        comment: RT1
+    EOM_ADC:
+        pin: 0x08
+        conv: 1
+        flavor: small
+        comment: EOM DAC (internal signal)
+    VDDIO:
+        pin: 0x09
+        conv: 2.38
+        flavor: small
+        comment: VDDIO * 0.42 (internal signal)
+    VDDTX:
+        pin: 0x0a
+        conv: 2.38
+        flavor: small
+        comment: VDDTX * 0.42 (internal signal)
+    VDDRX:
+        pin: 0x0b
+        conv: 2.38
+        flavor: small
+        comment: VDDRX * 0.42 (internal signal)
+    VDD:
+        pin: 0x0c
+        conv: 2.38
+        flavor: small
+        comment: VDD * 0.42 (internal signal)
+    VDDA:
+        pin: 0x0d
+        conv: 2.38
+        flavor: small
+        comment: VDDA * 0.42 (internal signal)
+    TEMP:
+        pin: 0x0e
+        conv: 1
+        flavor: small
+        comment: Temperature sensor (internal signal)
+    VREF:
+        pin: 0x0f
+        conv: 2.0
+        flavor: small
+        comment: VREF/2 (internal signal)
