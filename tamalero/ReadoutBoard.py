@@ -23,7 +23,7 @@ class ReadoutBoard:
         # This is not yet recommended:
         #for adr in [0x06, 0x0A, 0x0E, 0x12]:
         #    self.VTRX.wr_adr(adr, 0x20)
-        self.SCA = SCA(rb=rb, flavor=flavor)
+        self.SCA = SCA(rb=rb, flavor=flavor, ver=self.DAQ_LPGBT.ver)
 
         if kcu != None:
             self.kcu = kcu

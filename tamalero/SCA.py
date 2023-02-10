@@ -113,11 +113,11 @@ class SCA_I2C:
 
 class SCA:
 
-    def __init__(self, rb=0, flavor='small'):
+    def __init__(self, rb=0, flavor='small', ver=0):
         self.rb = rb
         self.flavor = flavor
         self.err_count = 0
-        self.ver = rb.ver
+        self.ver = ver + 1  # NOTE don't particularly like this, but we're giving it the lpGBT version
         self.set_adc_mapping()
         self.set_gpio_mapping()
 
