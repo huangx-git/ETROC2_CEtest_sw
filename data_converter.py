@@ -15,12 +15,47 @@ def merge_words(res):
     else:
         return []
 
+def event_merger(window_df,merged_idx):
+    # Removing events that have been merged already from current window
+    window_df = window_df[~window_df.index.isin(merged_idx[merged_idx].index)]
+    # Finding events to be merged
+    merge_idx = window_df.duplicated(subset=["l1counter"],keep=False)
+    unique_df = window_df[merge_idx].groupby("l1counter",as_index=False).agg(list)
+    
+    # Clean unique_df (probably a "cleaning" function is needed)
+    unique_df["data_type"] = unique_df["data_type"].apply(merge_datatype)
+    unique_df["chipid"] = [val[0] for val in unique_df["chipid"]]
+    unique_df["status"] = [val[0] for val in unique_df["status"]]
+    unique_df['hits'] = [sum(a) for a in unique_df['hits']]
+    unique_df['ea'] = unique_df['ea'].explode().explode().dropna().groupby(level=0).agg(list)
+    unique_df['bcid'] = unique_df['bcid'].explode().explode().dropna().groupby(level=0).agg(list)
+    unique_df['col_id'] = unique_df['col_id'].explode().explode().dropna().groupby(level=0).agg(list)
+    unique_df['row_id'] = unique_df['row_id'].explode().explode().dropna().groupby(level=0).agg(list)
+    unique_df['col_id2'] = unique_df['col_id2'].explode().explode().dropna().groupby(level=0).agg(list)
+    unique_df['row_id2'] = unique_df['row_id2'].explode().explode().dropna().groupby(level=0).agg(list)
+    unique_df['counter_a'] = unique_df['counter_a'].explode().explode().dropna().groupby(level=0).agg(list)
+    #prepare the new window of merged events and replace the input one
+    new_df = window_df.drop_duplicates('l1counter',keep='first')
+    update_df = new_df[["l1counter"]].merge(unique_df,on="l1counter",how="left")
+    new_idx = new_df.index
+    new_df.set_index("l1counter",inplace=True)
+    pd.options.mode.chained_assignment = None # TODO: dirty trick to avoid the SetWithCopy warning: double check everything is fine!
+    new_df.update(update_df.set_index("l1counter"))
+    pd.options.mode.chained_assignment = 'warn'
+    new_df = new_df.reset_index().set_index(new_idx)
+    return new_df,merge_idx
+
+def merge_datatype(data_string):
+        hd=  ["header"]
+        datas = [data for dt in data_string for data in dt if data == "data"]
+        tr= ['trailer']
+        return hd+datas+tr
 
 if __name__ == '__main__':
 
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--input', action='store', default='output/output_example.dat', help="Binary file to read from")
-    args = argParser.parse_args()
+    args = argParser.parse_args() 
 
     df = DataFrame('ETROC2')
 
@@ -32,47 +67,103 @@ if __name__ == '__main__':
     merged_data = merge_words(raw_data)
     unpacked_raw_data = [ df.read(x) for x in raw_data ]
     unpacked_data = [ df.read(x) for x in merged_data ]
-    
-    #TODO: this is a bit convoluted, at some point it should be rewritten
+
+
+    import time
+    start = time.process_time()
+    #TODO: this is a bit convoluted, at some point it should be cleaned
     # gymnastic to get an awkward array with header,[datas],trailer per each row
     tuple_df = pd.DataFrame.from_dict(unpacked_data)
     data_df = pd.json_normalize(tuple_df[1][:])
     data_df["data_type"] = tuple_df[0][:]
     event_df = data_df.groupby(data_df["elink"].diff().ne(0).cumsum(),as_index=False).agg(list)
-    event_ak = ak.Array({name: event_df[name].values for name in event_df.columns})
+
+    # pandas implementation:
+    #------------------------
+    print ( "time for loading the Dataframe {}".format(round(time.process_time() - start, 2 )))
+    Rstart = start
+    start=time.process_time()
 
     #cleaning the df structure  
-    for f in event_ak.fields: # Here I am merging the fields that are identical across header,hits,trailer 
-        maxes = ak.max(event_ak[f],axis=-1)
-        minmus = ak.min(event_ak[f],axis =-1 )
+    for f in event_df.columns: # Here I am merging the fields that are identical across header,hits,trailer 
+        maxes = ak.max(event_df[f],axis=-1)
+        minmus = ak.min(event_df[f],axis =-1 )
         if ak.all( maxes == minmus ):
-            event_ak[f] = minmus
+            event_df[f] = minmus
+    print ( "time for cleaning identical columns {} cumulative {}".format(round(time.process_time() - start, 2 ), round(time.process_time() - Rstart, 2 )))
+    start=time.process_time()
+    # merging unique fields
+    event_df["l1counter"] = ak.sum(ak.nan_to_num(event_df["l1counter"], nan=0.0),axis=-1 )
+    event_df["status"] = ak.sum(ak.nan_to_num(event_df["status"], nan=0.0),axis=-1 )
+    event_df["chipid"] = ak.sum(ak.nan_to_num(event_df["chipid"], nan=0.0),axis=-1 )
+    event_df["hits"] = ak.sum(ak.nan_to_num(event_df["hits"], nan=0.0),axis=-1 )
+    event_df["type"] = ak.sum(ak.nan_to_num(event_df["type"], nan=0.0),axis=-1 )
+    event_df["crc"] = ak.sum(ak.nan_to_num(event_df["crc"], nan=0.0),axis=-1 )
+    print ( "time for cleaning unique columns {} cumulative {}".format(round(time.process_time() - start, 2 ), round(time.process_time() - Rstart, 2 )))
+    start=time.process_time()
+    # dropping NaNs 
+    event_df['bcid'] = event_df['bcid'].explode().dropna().groupby(level=0).agg(list)
+    event_df['ea'] = event_df['ea'].explode().dropna().groupby(level=0).agg(list)
+    event_df['counter_a'] = event_df['counter_a'].explode().dropna().groupby(level=0).agg(list)
+    event_df['col_id'] = event_df['col_id'].explode().dropna().groupby(level=0).agg(list)
+    event_df['row_id'] = event_df['row_id'].explode().dropna().groupby(level=0).agg(list)
+    event_df['col_id2'] = event_df['col_id2'].explode().dropna().groupby(level=0).agg(list)
+    event_df['row_id2'] = event_df['row_id2'].explode().dropna().groupby(level=0).agg(list)
 
-    event_ak["l1counter"] = ak.sum(ak.nan_to_num(event_ak["l1counter"], nan=0.0),axis=-1 )
-    event_ak["status"] = ak.sum(ak.nan_to_num(event_ak["status"], nan=0.0),axis=-1 )
-    event_ak["chipid"] = ak.sum(ak.nan_to_num(event_ak["chipid"], nan=0.0),axis=-1 )
-    event_ak["hits"] = ak.sum(ak.nan_to_num(event_ak["hits"], nan=0.0),axis=-1 )
-    event_ak["type"] = ak.sum(ak.nan_to_num(event_ak["type"], nan=0.0),axis=-1 )
-    event_ak["crc"] = ak.sum(ak.nan_to_num(event_ak["crc"], nan=0.0),axis=-1 )
+    print ( "time for removing nans columns {} cumulative {}".format(round(time.process_time() - start, 2 ), round(time.process_time() - Rstart, 2 )))
+    start=time.process_time()
 
-    for i,l1c in enumerate(event_ak["l1counter"]):
-        print (i, " " ,l1c)
+    # awkward implementation:
+    #------------------------
+    # event_ak = ak.Array({name: event_df[name].values for name in event_df.columns})
+    # for f in event_ak.fields: # Here I am merging the fields that are identical across header,hits,trailer 
+    #     maxes = ak.max(event_ak[f],axis=-1)
+    #     minmus = ak.min(event_ak[f],axis =-1 )
+    #     if ak.all( maxes == minmus ):
+    #         event_ak[f] = minmus
+    #         event_df[f] = minmus
+    # event_ak["l1counter"] = ak.sum(ak.nan_to_num(event_ak["l1counter"], nan=0.0),axis=-1 )
+    # event_ak["status"] = ak.sum(ak.nan_to_num(event_ak["status"], nan=0.0),axis=-1 )
+    # event_ak["chipid"] = ak.sum(ak.nan_to_num(event_ak["chipid"], nan=0.0),axis=-1 )
+    # event_ak["hits"] = ak.sum(ak.nan_to_num(event_ak["hits"], nan=0.0),axis=-1 )
+    # event_ak["type"] = ak.sum(ak.nan_to_num(event_ak["type"], nan=0.0),axis=-1 )
+    # event_ak["crc"] = ak.sum(ak.nan_to_num(event_ak["crc"], nan=0.0),axis=-1 )
+   
+    # merging events in a 100 event window, with 10 events overlap
+    window_dfs = []
+    window = 100
+    overlap = 10
+    old_idx = pd.Series([i<-1 for i in range(window)]) #First dummy set of merged indeces
+ 
+    for i in range(0, len(event_df) - window, window - overlap) :
+       
+        window_df = event_df[i:i+window]
+        new_df,merge_idx = event_merger(window_df,old_idx) 
+        window_dfs.append(new_df)
+        old_idx = merge_idx
+        last = i+window
+
+    last_df,_=event_merger(event_df[last:],old_idx) # merging the ramaining events ()
+    window_dfs.append(last_df)
+   
+    # stitching evnt windows together, dropping overlaps
+    merged_df = pd.concat(window_dfs)
+    merged_df = merged_df[~merged_df.index.duplicated(keep='last')]
+
+    print ( "time for event merging {} cumulative {}".format(round(time.process_time() - start, 2 ), round(time.process_time() - Rstart, 2 )))
+    start=time.process_time()
+ 
+    # TODO extend consistency checks
+    # nHits_check= ak.nan_to_num(merged_df["col_id"].str.len(), nan=0.0) == merged_df["hits"]
+    cols_check = merged_df["col_id"] == merged_df["col_id2"]
+    raws_check = merged_df["row_id"] == merged_df["row_id2"]
+    header_check = merged_df.data_type.str[0] == "header"
+    headerUnique_check =  merged_df.data_type.str[1:] != "header"
+    trailer_check =  merged_df.data_type.str[-1] == "trailer"
+    trailerUnique_check =  merged_df.data_type.str[:-1] != "trailer"
     
-    l1a0 = event_ak["l1counter"] == 0
-    weird_dt = ak.where("header" not in event_ak["data_type"]
+    merged_df["valid"] = cols_check &raws_check\
+                         &header_check&headerUnique_check&trailer_check&trailerUnique_check
 
-    l1_ak = event_ak
-    for ev in l1_ak:
-        for f in l1_ak.fields:
-            print (f, " " ,ev[f])
-        print(" ")
-    
-    # merging events
+    print ( "time for consistency checks {} cumulative {}".format(round(time.process_time() - start, 2 ), round(time.process_time() - Rstart, 2 )))
 
-    sorted_ak = event_ak[ak.argsort(event_ak["l1counter"])]
-
-
-    # TODO
-    # - run consistency checks on unpacked data
-    # - do event merging
-    # - convert data into a sensible format and write to root/parquet/... file  
