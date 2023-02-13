@@ -18,7 +18,7 @@ def merge_words(res):
 def event_merger(window_df,merged_idx):
     # Removing events that have been merged already from current window
     window_df = window_df[~window_df.index.isin(merged_idx[merged_idx].index)]
-    # Finding events to be merged
+    # Finding events to be merged and group them on their l1counter value
     merge_idx = window_df.duplicated(subset=["l1counter"],keep=False)
     unique_df = window_df[merge_idx].groupby("l1counter",as_index=False).agg(list)
     
@@ -34,6 +34,7 @@ def event_merger(window_df,merged_idx):
     unique_df['col_id2'] = unique_df['col_id2'].explode().explode().dropna().groupby(level=0).agg(list)
     unique_df['row_id2'] = unique_df['row_id2'].explode().explode().dropna().groupby(level=0).agg(list)
     unique_df['counter_a'] = unique_df['counter_a'].explode().explode().dropna().groupby(level=0).agg(list)
+    
     #prepare the new window of merged events and replace the input one
     new_df = window_df.drop_duplicates('l1counter',keep='first')
     update_df = new_df[["l1counter"]].merge(unique_df,on="l1counter",how="left")
@@ -65,9 +66,7 @@ if __name__ == '__main__':
         raw_data = struct.unpack('<{}I'.format(int(len(bin_data)/4)), bin_data)
 
     merged_data = merge_words(raw_data)
-    unpacked_raw_data = [ df.read(x) for x in raw_data ]
     unpacked_data = [ df.read(x) for x in merged_data ]
-
 
     import time
     start = time.process_time()
@@ -113,8 +112,9 @@ if __name__ == '__main__':
     print ( "time for removing nans columns {} cumulative {}".format(round(time.process_time() - start, 2 ), round(time.process_time() - Rstart, 2 )))
     start=time.process_time()
 
-    # awkward implementation:
+    # awkward implementation: 
     #------------------------
+    # TODO if you can find an awkward way for groupby it would be interesting to compare the performances 
     # event_ak = ak.Array({name: event_df[name].values for name in event_df.columns})
     # for f in event_ak.fields: # Here I am merging the fields that are identical across header,hits,trailer 
     #     maxes = ak.max(event_ak[f],axis=-1)
@@ -154,16 +154,18 @@ if __name__ == '__main__':
     start=time.process_time()
  
     # TODO extend consistency checks
-    # nHits_check= ak.nan_to_num(merged_df["col_id"].str.len(), nan=0.0) == merged_df["hits"]
-    cols_check = merged_df["col_id"] == merged_df["col_id2"]
-    raws_check = merged_df["row_id"] == merged_df["row_id2"]
+    nHits_check= merged_df["col_id"].str.len().fillna(0) == merged_df["hits"]
+    cols_check =merged_df["col_id"].fillna(-99) == merged_df["col_id2"].fillna(-99)
+    raws_check = merged_df["row_id"].fillna(-99) == merged_df["row_id2"].fillna(-99)
     header_check = merged_df.data_type.str[0] == "header"
     headerUnique_check =  merged_df.data_type.str[1:] != "header"
     trailer_check =  merged_df.data_type.str[-1] == "trailer"
     trailerUnique_check =  merged_df.data_type.str[:-1] != "trailer"
-    
-    merged_df["valid"] = cols_check &raws_check\
-                         &header_check&headerUnique_check&trailer_check&trailerUnique_check
+    total_check=nHits_check&cols_check &raws_check&header_check&headerUnique_check&trailer_check&trailerUnique_check
 
+    merged_df["valid"] = total_check
     print ( "time for consistency checks {} cumulative {}".format(round(time.process_time() - start, 2 ), round(time.process_time() - Rstart, 2 )))
+    start=time.process_time()
+    merged_df.astype(str).to_parquet("output/converted_data.parquet") # parquet do not likes mixups of list/scalar 
+    print ( "time for writing the output {} cumulative {} \nAll done".format(round(time.process_time() - start, 2 ), round(time.process_time() - Rstart, 2 )))
 
