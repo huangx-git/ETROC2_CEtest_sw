@@ -3,6 +3,8 @@ from setuptools import setup, find_packages
 from codecs import open
 from os import path
 
+here = path.abspath(path.dirname(__file__))
+
 # get the dependencies and installs
 with open(path.join(here, "requirements.txt"), encoding="utf-8") as f:
     all_reqs = f.read().split("\n")
