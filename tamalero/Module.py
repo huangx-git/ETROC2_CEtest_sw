@@ -29,18 +29,18 @@ class Module:
             reg=reg,
             val=val,
             master=self.config['i2c']['channel'],
-            slave_addr=0x72  # NOTE this will need to change in the future
+            slave_addr=0x72,  # NOTE this will need to change in the future
         )
 
     def I2C_read(self, reg=0x0):
         return self.I2C_master.I2C_read(
             reg=reg,
             master=self.config['i2c']['channel'],
-            slave_addr=0x72  # NOTE this will need to change in the future
+            slave_addr=0x72,  # NOTE this will need to change in the future
         )
 
     def wr_reg(self, reg, val):
-        adr   = int(self.regs[reg]['regadr'].replace('PeriCfg', ''))
+        adr   = self.regs[reg]['regadr']
         shift = self.regs[reg]['shift']
         mask  = self.regs[reg]['mask']
 
@@ -50,7 +50,7 @@ class Module:
         self.I2C_write(adr, new_val)
 
     def rd_reg(self, reg):
-        adr = int(self.regs[reg]['regadr'].replace('PeriCfg', ''))
+        adr = self.regs[reg]['regadr']
         mask = self.regs[reg]['mask']
         shift = self.regs[reg]['shift']
 

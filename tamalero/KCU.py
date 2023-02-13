@@ -79,9 +79,9 @@ class KCU:
                 time & 0xff,
                 (time >> 8) & 0xff,
                 (time >> 8) & 0xff,
-                ver & 0xff,
-                (ver >> 8) & 0xff,
-                (ver >> 8) & 0xff,
+                (ver >> 24) & 0xff,
+                (ver >> 16) & 0xff,
+                (ver >> 0) & 0xff,
                 sha))
 
         res = ver

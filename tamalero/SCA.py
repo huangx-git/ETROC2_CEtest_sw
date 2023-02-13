@@ -113,15 +113,36 @@ class SCA_I2C:
 
 class SCA:
 
-    def __init__(self, rb=0, flavor='small'):
+    def __init__(self, rb=0, flavor='small', ver=0):
         self.rb = rb
         self.flavor = flavor
         self.err_count = 0
-        self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping.yaml'), 'adc')
-        self.gpio_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping.yaml'), 'gpio')
+        self.ver = ver + 1  # NOTE don't particularly like this, but we're giving it the lpGBT version
+        self.set_adc_mapping()
+        self.set_gpio_mapping()
 
     def connect_KCU(self, kcu):
         self.kcu = kcu
+
+    def set_adc_mapping(self):
+        assert self.ver in [1, 2], f"Unrecognized version {self.ver}"
+        if self.ver == 1:
+            self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping.yaml'), 'adc')
+        elif self.ver == 2:
+            self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping_v2.yaml'), 'adc')
+
+    def set_gpio_mapping(self):
+        assert self.ver in [1, 2], f"Unrecognized version {self.ver}"
+        if self.ver == 1:
+            self.gpio_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping.yaml'), 'gpio')
+        elif self.ver == 2:
+            self.gpio_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping_v2.yaml'), 'gpio')
+
+    def update_ver(self, new_ver):
+        assert new_ver in [1, 2], f"Unrecognized version {new_ver}"
+        self.ver = new_ver
+        self.set_adc_mapping()
+        self.set_gpio_mapping()
 
     def reset(self):
         self.kcu.action("READOUT_BOARD_%d.SC.START_RESET" % self.rb)
@@ -137,7 +158,7 @@ class SCA:
         channel = (reg >> 8) & 0xFF
         return self.rw_cmd(cmd, channel, data, adr, transid)
 
-    def rw_cmd(self, cmd, channel, data, adr=0x0, transid=0x00, time_out=0.3):
+    def rw_cmd(self, cmd, channel, data, adr=0x0, transid=0x00, time_out=1.3, verbose=False):
         """
         adr = chip address (0x0 by default)
         """
@@ -158,7 +179,11 @@ class SCA:
         # }
         # fcs
         # eof
-    
+
+        if verbose:
+            print("SCA r/w:")
+            print(f"{transid=}, {channel=}, {cmd=}, {adr=}, {data=}")
+
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_CHANNEL" % self.rb, channel)
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_CMD" % self.rb, cmd)
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_ADDRESS" % self.rb, adr)
@@ -183,7 +208,7 @@ class SCA:
         # eof
     
         # TODO: read reply
-        err = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_ERR" % self.rb)  # 8 bit
+        err = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_ERR" % self.rb).value()  # 8 bit
         if err > 0:
             if self.err_count < 10:
                 self.rw_cmd(cmd, channel, data, adr=adr, transid=transid)
@@ -207,23 +232,28 @@ class SCA:
         else:
             self.err_count = 0
 
+        rx_rec  = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_RECEIVED" % self.rb).value()  # flag pulse
+        rx_ch   = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_CHANNEL" % self.rb).value()  # channel reply
+        rx_len  = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_LEN" % self.rb).value()
+        rx_ad   = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_ADDRESS" % self.rb).value()
+        rx_ctrl = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_CONTROL" % self.rb).value()
+
+        if verbose:
+            print(f"Received: {err=}, {rx_rec=}, {rx_ch=}, {rx_len=}, {rx_ad=}, {rx_ctrl=}")
+
         # NOTE I2C transaction can be slow, so try reading the transid several times before it times out
         start_time = time.time()
         while not transid == self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_TRANSID" % self.rb):
+            self.kcu.write_node("READOUT_BOARD_%d.SC.RX_RESET" % self.rb, 0x01)
+            self.kcu.write_node("READOUT_BOARD_%d.SC.TX_RESET" % self.rb, 0x01)
             if time.time() - start_time > time_out:
+                print(f"data: {self.kcu.read_node('READOUT_BOARD_%d.SC.RX.RX_DATA' % self.rb)}")
                 print("SCA Read Error :: Transaction ID Does Not Match")
                 print("SCA Read Error :: Resetting RX/TX")
-                self.kcu.write_node("READOUT_BOARD_%d.SC.RX_RESET" % self.rb, 0x01)
-                self.kcu.write_node("READOUT_BOARD_%d.SC.TX_RESET" % self.rb, 0x01)
                 raise TimeoutError("SCA Error :: Transaction timed out.")
 
         return self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_DATA" % self.rb)  # 32 bit read data
     
-        self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_RECEIVED" % self.rb)  # flag pulse
-        self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_CHANNEL" % self.rb)  # channel reply
-        self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_LEN" % self.rb)
-        self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_ADDRESS" % self.rb)
-        self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_CONTROL" % self.rb)
 
     def configure_control_registers(self, en_spi=0, en_gpio=0, en_i2c=0, en_adc=0, en_dac=0):
     
@@ -522,3 +552,4 @@ class SCA:
         res = self.I2C_read_multi(channel=channel, servant = 0x48, nbytes=2)
         temp_dig = (res[0] << 4) + (res[1] >> 4)
         return temp_dig*0.0625
+

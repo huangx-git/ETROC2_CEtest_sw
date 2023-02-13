@@ -186,8 +186,14 @@ def check_repo_status(kcu_version=None):
         else:
             print (red("Please pull a more recent version from gitlab.\n"))
 
-def get_kcu(kcu_address, control_hub=True, host='localhost'):
+def get_kcu(kcu_address, control_hub=True, host='localhost', verbose=False):
     # Get the current firmware version number
+    if verbose:
+        if control_hub:
+            print(f"Using control hub on {host=}, {kcu_address=}")
+        else:
+            print(f"NOT using control hub on {host=}, {kcu_address=}")
+
     import uhal
     if control_hub:
         ipb_path = f"chtcp-2.0://{host}:10203?target={kcu_address}:50001"
@@ -205,6 +211,8 @@ def get_kcu(kcu_address, control_hub=True, host='localhost'):
 
         #raise
     xml_sha     = kcu_tmp.get_xml_sha()
+    if verbose:
+        print (f"Address table hash: {xml_sha}")
 
     if not os.path.isdir(f"address_table/{xml_sha}"):
         print ("Downloading latest firmware version address table.")

@@ -37,10 +37,10 @@ class Node:
 
 class RegParser(object):
 
-    def __init__(self):
+    def __init__(self, ver=0):
         self.nodes = {}
 
-        self.parse_xml()
+        self.parse_xml(ver=ver)
 
     # Functions related to parsing registers.xml
     def parse_xml(self, ver=0, address_table='default', top_node_name="LPGBT"):
@@ -227,11 +227,11 @@ class RegParser(object):
 
 def main():
 
-    lpgbt = RegParser()
-    # lpgbt.dump()
+    lpgbt = RegParser(ver=1)
+    lpgbt.dump()
 
-    for i in range(1000):
-        lpgbt.get_node("LPGBT.RO.FEC.DLDPFECCORRECTIONCOUNT_H")
+    #for i in range(1000):
+    #    lpgbt.get_node("LPGBT.RO.FEC.DLDPFECCORRECTIONCOUNT_H")
 
     lpgbt.get_node_from_address(0)
     lpgbt.get_nodes_containing("LPGBT")
