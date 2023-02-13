@@ -63,7 +63,7 @@ if __name__ == '__main__':
             #rb_0.DAQ_LPGBT.configure()  # NOTE this can be removed
             data = 0xabcd1234
             kcu.write_node("LOOPBACK.LOOPBACK", data)
-            if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
+            if (data != kcu.read_node("LOOPBACK.LOOPBACK")) or (kcu == 0):
                 print("No communications with KCU105... quitting")
                 sys.exit(0)
             break
@@ -73,6 +73,7 @@ if __name__ == '__main__':
             time.sleep(1)
             if (trycnt > 10):
                 sys.exit(0)
+
 
     if args.recal_lpgbt:
         rb_0.DAQ_LPGBT.calibrate_adc(recalibrate=True)
@@ -173,23 +174,6 @@ if __name__ == '__main__':
 
         print("\n\nReading DAQ lpGBT ADC values:")
         rb_0.DAQ_LPGBT.read_adcs()
-
-        from tamalero.utils import get_temp
-
-        # Low level reading of temperatures
-        # Read ADC channel 7 on DAQ lpGBT
-        adc_7 = rb_0.DAQ_LPGBT.read_adc(7)/(2**10-1)
-
-        # Read ADC channel 29 on GBT-SCA
-        adc_in29 = rb_0.SCA.read_adc(29)/(2**12-1)
-
-        # Check what the lpGBT DAC is set to
-        v_ref = rb_0.DAQ_LPGBT.read_dac()
-        print ("\nV_ref is set to: %.3f V"%v_ref)
-
-        if v_ref>0:
-            print ("\nTemperature on RB RT1 is: %.3f C"%get_temp(adc_7, v_ref, 10000, 25, 10000, 3900))
-            print ("Temperature on RB RT2 is: %.3f C"%get_temp(adc_in29, v_ref, 10000, 25, 10000, 3900))
 
         # High level reading of temperatures
         temp = rb_0.read_temp(verbose=1)
