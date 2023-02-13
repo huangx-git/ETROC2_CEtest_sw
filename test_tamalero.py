@@ -59,11 +59,15 @@ if __name__ == '__main__':
     while (True):
         try:
             kcu = get_kcu(args.kcu, control_hub=args.control_hub, host=args.host, verbose=args.verbose)
+            if (kcu == 0):
+                # if not basic connection was established the get_kcu function returns 0
+                # this would cause the RB init to fail.
+                sys.exit(0)
             rb_0 = ReadoutBoard(0, trigger=(not args.force_no_trigger), kcu=kcu)
             #rb_0.DAQ_LPGBT.configure()  # NOTE this can be removed
             data = 0xabcd1234
             kcu.write_node("LOOPBACK.LOOPBACK", data)
-            if (data != kcu.read_node("LOOPBACK.LOOPBACK")) or (kcu == 0):
+            if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
                 print("No communications with KCU105... quitting")
                 sys.exit(0)
             break
