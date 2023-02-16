@@ -103,6 +103,9 @@ class LPGBT(RegParser):
         self.base_config = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/lpgbt_config.yaml'))['base'][f'v{self.ver}']
         self.ec_config = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/lpgbt_config.yaml'))['ec'][f'v{self.ver}']
 
+        self.link_inversions = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/link_inversions.yaml'))
+        self.invert_links(clock=True, trigger=self.trigger)
+
         self.kcu.write_node("READOUT_BOARD_%d.SC.FRAME_FORMAT" % self.rb, self.ver)
         self.parse_xml(ver=self.ver)
 
@@ -355,6 +358,26 @@ class LPGBT(RegParser):
     def set_uplink_invert(self, link, invert=True):
         # 0x02 - not inverted, 0x0a - inverted. don't actually need those details any more
         self.wr_reg("LPGBT.RWF.EPORTRX.EPRX_CHN_CONTROL.EPRX%dINVERT" % link, invert)
+
+    def set_downlink_invert(self, link, invert=True):
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX%dINVERT" % link, invert)
+
+    def set_clock_invert(self, link):
+        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dINVERT" % link, 1)
+
+    def invert_links(self, clocks=True, trigger=False):
+        if clocks:
+            for link in self.link_inversions['emulator_adapter']['clocks']:
+                self.set_clock_invert(link)
+        
+        if trigger:
+            for link in self.link_inversions['emulator_adapter']['trigger']:
+                self.set_uplink_invert(link)
+        else:
+            for link in self.link_inversions['emulator_adapter']['downlink']:
+                self.set_downlink_invert(link)
+            for link in self.link_inversions['emulator_adapter']['uplink']:
+                self.set_uplink_invert(link)
 
     def get_uplink_invert(self, link):
         return self.rd_reg("LPGBT.RWF.EPORTRX.EPRX_CHN_CONTROL.EPRX%dINVERT" % link)
