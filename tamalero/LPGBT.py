@@ -103,9 +103,6 @@ class LPGBT(RegParser):
         self.base_config = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/lpgbt_config.yaml'))['base'][f'v{self.ver}']
         self.ec_config = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/lpgbt_config.yaml'))['ec'][f'v{self.ver}']
 
-        self.link_inversions = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/link_inversions.yaml'))
-        self.invert_links(clock=True, trigger=self.trigger)
-
         self.kcu.write_node("READOUT_BOARD_%d.SC.FRAME_FORMAT" % self.rb, self.ver)
         self.parse_xml(ver=self.ver)
 
@@ -118,6 +115,8 @@ class LPGBT(RegParser):
 
         # Get LPGBT Serial Num
         self.serial_num = 0# self.get_board_id()['lpgbt_serial']
+
+        self.link_inversions = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/link_inversions.yaml'))
 
         # Callibrate ADC
         if calibrate:
@@ -268,7 +267,7 @@ class LPGBT(RegParser):
                 self.configure_gpio_outputs(outputs=0x2409, defaults=0x0409)
             self.initialize(verbose=verbose)
             self.config_eport_dlls(verbose=verbose)
-            self.configure_eptx(verbose=verbose)
+            #self.configure_eptx(verbose=verbose)
             self.configure_eprx()
 
 
@@ -360,24 +359,52 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.EPORTRX.EPRX_CHN_CONTROL.EPRX%dINVERT" % link, invert)
 
     def set_downlink_invert(self, link, invert=True):
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX%dINVERT" % link, invert)
+        if link < 4: self.wr_reg("LPGBT.RWF.EPORTTX.EPTX0%dINVERT" % link, invert)
+        else: self.wr_reg("LPGBT.RWF.EPORTTX.EPTX%dINVERT" % link, invert)
 
-    def set_clock_invert(self, link):
-        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dINVERT" % link, 1)
+    def set_clock_invert(self, link, invert=True):
+        self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dINVERT" % link, invert)
 
-    def invert_links(self, clocks=True, trigger=False):
-        if clocks:
-            for link in self.link_inversions['emulator_adapter']['clocks']:
-                self.set_clock_invert(link)
-        
+    def invert_links(self, trigger=False):
         if trigger:
+            print("Trigger LPGBT; inverting uplinks")
             for link in self.link_inversions['emulator_adapter']['trigger']:
                 self.set_uplink_invert(link)
         else:
+            print("DAQ LPGBT; inverting clocks")
+            for link in self.link_inversions['emulator_adapter']['clocks']:
+                self.set_clock_invert(link)
+            print("DAQ LPGBT; inverting downlinks")
             for link in self.link_inversions['emulator_adapter']['downlink']:
                 self.set_downlink_invert(link)
+            print("DAQ LPGBT; inverting uplinks")
             for link in self.link_inversions['emulator_adapter']['uplink']:
                 self.set_uplink_invert(link)
+
+    def read_inversions(self):
+        if self.trigger:
+            print("Trigger LPGBT Registers -- Uplinks")
+            for link in self.link_inversions['emulator_adapter']['trigger']:
+                register = "LPGBT.RWF.EPORTRX.EPRX_CHN_CONTROL.EPRX%dINVERT" % link
+                val = self.rd_reg(register)
+                print(register, "\t", val)
+        else:
+            print("DAQ LPGBT Registers -- Clocks")
+            for link in self.link_inversions['emulator_adapter']['clocks']:
+                register = "LPGBT.RWF.EPORTCLK.EPCLK%dINVERT" % link
+                val = self.rd_reg(register)
+                print(register, "\t", val)
+            print("DAQ LPGBT Registers -- Downlinks")
+            for link in self.link_inversions['emulator_adapter']['downlink']:
+                if link < 4: register = "LPGBT.RWF.EPORTTX.EPTX0%dINVERT" % link
+                else: register = "LPGBT.RWF.EPORTTX.EPTX%dINVERT" % link
+                val = self.rd_reg(register)
+                print(register, "\t", val)
+            print("DAQ LPGBT Registers -- Uplinks")
+            for link in self.link_inversions['emulator_adapter']['uplink']:
+                register = "LPGBT.RWF.EPORTRX.EPRX_CHN_CONTROL.EPRX%dINVERT" % link
+                val = self.rd_reg(register)
+                print(register, "\t", val)
 
     def get_uplink_invert(self, link):
         return self.rd_reg("LPGBT.RWF.EPORTRX.EPRX_CHN_CONTROL.EPRX%dINVERT" % link)
@@ -635,7 +662,7 @@ class LPGBT(RegParser):
         # turn on clock outputs
         if (verbose):
             print ("Configuring clocks now.")
-        self.configure_clocks(0x0fffffff, (1<<3) | (1<<4) | (1<<5) | (1<<24))
+        #self.configure_clocks(0x0fffffff, (1<<3) | (1<<4) | (1<<5) | (1<<24))
 
         # setup up sca eptx/rx
         # sca_setup() # maybe not needed???
