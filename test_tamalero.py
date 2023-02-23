@@ -59,6 +59,10 @@ if __name__ == '__main__':
     while (True):
         try:
             kcu = get_kcu(args.kcu, control_hub=args.control_hub, host=args.host, verbose=args.verbose)
+            if (kcu == 0):
+                # if not basic connection was established the get_kcu function returns 0
+                # this would cause the RB init to fail.
+                sys.exit(0)
             rb_0 = ReadoutBoard(0, trigger=(not args.force_no_trigger), kcu=kcu)
             #rb_0.DAQ_LPGBT.configure()  # NOTE this can be removed
             data = 0xabcd1234
@@ -73,6 +77,7 @@ if __name__ == '__main__':
             time.sleep(1)
             if (trycnt > 10):
                 sys.exit(0)
+
 
     if args.recal_lpgbt:
         rb_0.DAQ_LPGBT.calibrate_adc(recalibrate=True)
@@ -173,23 +178,6 @@ if __name__ == '__main__':
 
         print("\n\nReading DAQ lpGBT ADC values:")
         rb_0.DAQ_LPGBT.read_adcs()
-
-        from tamalero.utils import get_temp
-
-        # Low level reading of temperatures
-        # Read ADC channel 7 on DAQ lpGBT
-        adc_7 = rb_0.DAQ_LPGBT.read_adc(7)/(2**10-1)
-
-        # Read ADC channel 29 on GBT-SCA
-        adc_in29 = rb_0.SCA.read_adc(29)/(2**12-1)
-
-        # Check what the lpGBT DAC is set to
-        v_ref = rb_0.DAQ_LPGBT.read_dac()
-        print ("\nV_ref is set to: %.3f V"%v_ref)
-
-        if v_ref>0:
-            print ("\nTemperature on RB RT1 is: %.3f C"%get_temp(adc_7, v_ref, 10000, 25, 10000, 3900))
-            print ("Temperature on RB RT2 is: %.3f C"%get_temp(adc_in29, v_ref, 10000, 25, 10000, 3900))
 
         # High level reading of temperatures
         temp = rb_0.read_temp(verbose=1)

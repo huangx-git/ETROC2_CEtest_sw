@@ -34,9 +34,15 @@
 
 ## Dependencies
 
-- [ipbus](https://github.com/ipbus/ipbus-firmware) for uhal. Needs to be compiled from source for linking with python3 (done on strange.bu.edu, docker image available [here](https://hub.docker.com/repository/docker/danbarto/centos-uhal-py3)).
-- [pyyaml](https://pypi.org/project/PyYAML/) for reading the mapping. Install with `pip install pyyaml`.
-- [jupyter](https://jupyter.org) for notebook usage. Install with `pip install jupyter`.
+Tested on python 3.8.10.
+Install the software with all its dependencies except IPbus:
+
+``` shell
+git clone https://gitlab.cern.ch/cms-etl-electronics/module_test_sw.git
+pip install --editable .
+```
+
+To install IPbus please see the [IPbus user guide](https://ipbus.web.cern.ch/doc/user/html/software/installation.html).
 
 ## Running the code
 

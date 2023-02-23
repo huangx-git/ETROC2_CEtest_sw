@@ -346,14 +346,21 @@ class ReadoutBoard:
     def read_temp(self, verbose=0):
         # high level function to read all the temperature sensors
         
-        adc_7    = self.DAQ_LPGBT.read_adc(7)/2**10
-        adc_in29 = self.SCA.read_adc(29)/2**12
+        adc_7    = self.DAQ_LPGBT.read_adc(7)/(2**10-1)
+        adc_in29 = self.SCA.read_adc(29)/(2**12-1)
         v_ref    = self.DAQ_LPGBT.read_dac()
         t_SCA    = self.SCA.read_temp()  # internal temp from SCA
 
         if v_ref>0:
-            t1 = get_temp(adc_7, v_ref, 10000, 25, 10000, 3900)  # this comes from the lpGBT ADC
-            t2 = get_temp(adc_in29, v_ref, 10000, 25, 10000, 3900)  # this comes from the SCA ADC
+            if self.ver == 1:
+                # https://www.digikey.com/en/products/detail/tdk-corporation/NTCG063UH103HTBX/8565486
+                t1 = get_temp(adc_7, v_ref, 10000, 25, 10000, 3900)  # this comes from the lpGBT ADC
+                t2 = get_temp(adc_in29, v_ref, 10000, 25, 10000, 3900)  # this comes from the SCA ADC
+            elif self.ver == 2:
+                # https://www.digikey.com/en/products/detail/tdk-corporation/NTCG063JF103FTB/5872743
+                # Parameters need updating?
+                t1 = get_temp(adc_7, v_ref, 10000, 25, 10000, 3900)  # this comes from the lpGBT ADC
+                t2 = get_temp(adc_in29, v_ref, 10000, 25, 10000, 3380)  # this comes from the SCA ADC
 
             if verbose>0:
                 print ("\nV_ref is set to: %.3f V"%v_ref)
