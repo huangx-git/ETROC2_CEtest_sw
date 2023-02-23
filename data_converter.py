@@ -2,8 +2,8 @@
 import struct
 import argparse
 import numpy as np
-import awkward as ak
 import pandas as pd
+import awkward as ak
 # from tamalero.FIFO import merge_words
 from tamalero.DataFrame import DataFrame
 
@@ -114,7 +114,7 @@ if __name__ == '__main__':
 
     # awkward implementation: 
     #------------------------
-    # TODO if you can find an awkward way for groupby it would be interesting to compare the performances 
+    # TODO if you can find an awkward way for groupby it would be interesting to compare the performances  
     # event_ak = ak.Array({name: event_df[name].values for name in event_df.columns})
     # for f in event_ak.fields: # Here I am merging the fields that are identical across header,hits,trailer 
     #     maxes = ak.max(event_ak[f],axis=-1)
@@ -161,7 +161,23 @@ if __name__ == '__main__':
     headerUnique_check =  merged_df.data_type.str[1:] != "header"
     trailer_check =  merged_df.data_type.str[-1] == "trailer"
     trailerUnique_check =  merged_df.data_type.str[:-1] != "trailer"
-    total_check=nHits_check&cols_check &raws_check&header_check&headerUnique_check&trailer_check&trailerUnique_check
+    data_type_check = header_check & headerUnique_check & trailer_check & trailerUnique_check
+    # counter_a_check check that everytime a pixel has a hit, its counter increases by one 
+    hits_df = merged_df[merged_df["hits"]>0]
+    cols=hits_df['col_id'].apply(lambda x : list(map(int,x)))
+    rows=hits_df['row_id'].apply(lambda x : list(map(int,x)))
+    counters=hits_df['counter_a'].apply(lambda x : list(map(int,x)))
+    counter_ak = ak.Array({"col_id":cols,"row_id":rows,"counter_a":counters})
+    for i in range(16):
+        for j in range(16):
+            print(i,j,"\n")
+            pixel_counter=ak.flatten(counter_ak['counter_a'][(counter_ak['col_id']== i) & (counter_ak['row_id']==j)])
+            for c in pixel_counter:
+                print (c)
+            counter_series= pd.Series(pixel_counter.to_numpy())
+            print (counter_series.is_monotonic_increasing)
+    # counter_a_check = 
+    total_check= nHits_check & cols_check & raws_check & data_type_check
 
     merged_df["valid"] = total_check
     print ( "time for consistency checks {} cumulative {}".format(round(time.process_time() - start, 2 ), round(time.process_time() - Rstart, 2 )))
