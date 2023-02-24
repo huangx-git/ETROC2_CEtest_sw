@@ -3,6 +3,7 @@ from tamalero.ReadoutBoard import ReadoutBoard
 from tamalero.utils import header, make_version_header, get_kcu, check_repo_status
 from tamalero.FIFO import FIFO
 from tamalero.DataFrame import DataFrame
+from tamalero.ETROC import ETROC
 from tamalero.Module import Module
 
 from tamalero.SCA import SCA_CONTROL
@@ -165,7 +166,7 @@ if __name__ == '__main__':
     print()
     print("Querying module status")
     for m in modules:
-        m.configure()
+        #m.configure()
         m.show_status()
 
     #-------------------------------------------------------------------------------

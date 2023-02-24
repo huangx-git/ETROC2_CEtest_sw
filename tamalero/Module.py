@@ -2,122 +2,100 @@
 import os
 from tamalero.utils import load_yaml
 from tamalero.colors import red, green
+from tamalero.ETROC import ETROC
 
 class Module:
     def __init__(self, rb, i=1):
         # don't like that this also needs a RB
         # think about a better solution
-        self.config = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/module_mapping.yaml'))[f'm{i}']
-        self.regs = load_yaml(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC2.yaml'))
-        self.regs_em = ['disScrambler', 'singlePort', 'mergeTriggerData', 'triggerGranularity']
+        map_file = os.path.expandvars(f'$TAMALERO_BASE/configs/module_mapping_v{rb.ver}.yaml')
+        self.config = load_yaml(map_file)[f'm{i}']
+        #self.regs = load_yaml(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC2.yaml'))
+        #self.regs_em = ['disScrambler', 'singlePort', 'mergeTriggerData', 'triggerGranularity']
         self.i = i
-        #self.config = read_mapping()
 
-        self.I2C_master = rb.DAQ_LPGBT if self.config['i2c']['master'] == 'lpgbt' else rb.SCA
-        self.rb = rb
-        # check if connected
-        self.connected = self.I2C_read(reg=0x13) or self.I2C_read(reg=0x13) is 0
-
-    def configure(self):
-        if self.connected:
-            self.wr_reg('singlePort', 0)
-            self.wr_reg('mergeTriggerData', 0)
-            self.wr_reg('disScrambler', 1)
-
-    def I2C_write(self, reg=0x0, val=0x0):
-        self.I2C_master.I2C_write(
-            reg=reg,
-            val=val,
-            master=self.config['i2c']['channel'],
-            slave_addr=0x72,  # NOTE this will need to change in the future
-        )
-
-    def I2C_read(self, reg=0x0):
-        return self.I2C_master.I2C_read(
-            reg=reg,
-            master=self.config['i2c']['channel'],
-            slave_addr=0x72,  # NOTE this will need to change in the future
-        )
-
-    def wr_reg(self, reg, val):
-        adr   = self.regs[reg]['regadr']
-        shift = self.regs[reg]['shift']
-        mask  = self.regs[reg]['mask']
-
-        orig_val = self.I2C_read(adr)
-        new_val = ((val<<shift)&mask) | (orig_val&(~mask))
-
-        self.I2C_write(adr, new_val)
-
-    def rd_reg(self, reg):
-        adr = self.regs[reg]['regadr']
-        mask = self.regs[reg]['mask']
-        shift = self.regs[reg]['shift']
-
-        return (self.I2C_read(adr)&mask) >> shift
-
-    def get_elink_status(self):
-        locked = self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.ETROC_LOCKED").value()
-        locked_slave = self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.ETROC_LOCKED_SLAVE").value()
-
-        self.daq_elinks = {}
-        self.trig_elinks = {}
-        for elink in self.config['elinks']:
-            if (locked >> elink) & 1:
-                self.daq_elinks[elink] = True
+        self.ETROCs = []
+        for j in range(len(self.config['elinks'])):
+            if self.config['i2c']['master']=='fake':
+                self.ETROCs.append(
+                    ETROC(
+                        usefake=True,
+                        master=self.config['i2c']['master'],
+                        i2c_channel=self.config['i2c']['channel'],
+                        elink=self.config['elinks'][j],
+                        i2c_adr = self.config['addresses'][j],
+                    ))
             else:
-                self.daq_elinks[elink] = False
-            if (locked_slave >> elink) & 1:
-                self.trig_elinks[elink] = True
-            else:
-                self.trig_elinks[elink] = False
+                self.ETROCs.append(
+                    ETROC(
+                        rb=rb,
+                        master=self.config['i2c']['master'],
+                        i2c_channel=self.config['i2c']['channel'],
+                        elink=self.config['elinks'][j],
+                        i2c_adr = self.config['addresses'][j],
+                    ))
 
+    #def configure(self):
+    #    if self.connected:
+    #        self.wr_reg('singlePort', 0)
+    #        self.wr_reg('mergeTriggerData', 0)
+    #        self.wr_reg('disScrambler', 1)
+
+    #def I2C_write(self, reg=0x0, val=0x0):
+    #    self.I2C_master.I2C_write(
+    #        reg=reg,
+    #        val=val,
+    #        master=self.config['i2c']['channel'],
+    #        slave_addr=0x72,  # NOTE this will need to change in the future
+    #    )
+
+    #def I2C_read(self, reg=0x0):
+    #    return self.I2C_master.I2C_read(
+    #        reg=reg,
+    #        master=self.config['i2c']['channel'],
+    #        slave_addr=0x72,  # NOTE this will need to change in the future
+    #    )
+
+    #def wr_reg(self, reg, val):
+    #    adr   = self.regs[reg]['regadr']
+    #    shift = self.regs[reg]['shift']
+    #    mask  = self.regs[reg]['mask']
+
+    #    orig_val = self.I2C_read(adr)
+    #    new_val = ((val<<shift)&mask) | (orig_val&(~mask))
+
+    #    self.I2C_write(adr, new_val)
+
+    #def rd_reg(self, reg):
+    #    adr = self.regs[reg]['regadr']
+    #    mask = self.regs[reg]['mask']
+    #    shift = self.regs[reg]['shift']
+
+    #    return (self.I2C_read(adr)&mask) >> shift
 
     def show_status(self):
-        self.get_elink_status()
-        len_corrector = len(''.join([str(x) for x in self.trig_elinks.keys()]))
+        len_corrector = len(''.join([str(x) for x in self.config['elinks']]))
 
         print ('┏━┳━' + 25*'━' + '━┳━┓')
         print ('┃○┃ ' + 25*' ' + ' ┃○┃')
         print ('┃ ┃ ' + '{:10}{:<15}'.format("Module:", self.i) + ' ┃ ┃' )
-        ver = self.get_emulator_ver()
+        ver = self.ETROCs[0].ver
         print ('┃ ┃ ' + '{:16}{:9}'.format("Emulator FW ver.",ver) + ' ┃ ┃' )
         #print ('┃ ┃ ' + 25*' ' + ' ┃ ┃')
-        col = green if self.connected else red
-        prefix = '' if self.connected else "Not "
+        col = green if self.ETROCs[0].connected else red
+        prefix = '' if self.ETROCs[0].connected else "Not "
         print ('┃ ┃ ' + col('{:25}'.format(prefix+"Connected:")) + ' ┃ ┃' )
-        print ('┃ ┃ ' + col(' {:12}{:12}'.format('i2c master:', self.config['i2c']['master'])) + ' ┃ ┃')
-        print ('┃ ┃ ' + col(' {:12}{:<12}'.format('channel:', self.config['i2c']['channel'] )) + ' ┃ ┃')
+        print ('┃ ┃ ' + col(' {:12}{:12}'.format('i2c master:', self.ETROCs[0].master)) + ' ┃ ┃')
+        print ('┃ ┃ ' + col(' {:12}{:<12}'.format('channel:', self.ETROCs[0].i2c_channel )) + ' ┃ ┃')
 
         print ('┃ ┃ ' + '{:25}'.format("DAQ links:") + ' ┃ ┃' )
-        stats = [ green(str(l)) if (self.daq_elinks[l]==True) else red(str(l)) for l in self.daq_elinks.keys() ]
+        stats = [ green(str(etroc.elink)) if etroc.daq_locked else red(str(etroc.elink)) for etroc in self.ETROCs ]
         print ('┃ ┃ ' + ' {} {} {} {}'.format(*stats) + (25-len_corrector - 4)*' ' + ' ┃ ┃' )
 
         print ('┃ ┃ ' + '{:25}'.format("Trigger links:") + ' ┃ ┃' )
-        stats = [ green(str(l)) if (self.trig_elinks[l]==True) else red(str(l)) for l in self.trig_elinks.keys() ]
+        stats = [ green(str(etroc.elink)) if etroc.trig_locked else red(str(etroc.elink)) for etroc in self.ETROCs ]
         print ('┃ ┃ ' + ' {} {} {} {}'.format(*stats) + (25-len_corrector - 4)*' ' + ' ┃ ┃' )
-        #print ('┃ ┃ ' + 25*' ' + ' ┃ ┃')
 
 
         print ('┃○┃ ' + 25*' ' + ' ┃○┃')
         print ('┗━┻━' + 25*'━' + '━┻━┛')
-
-
-    def show_emulator_status(self):
-        print("┏" + 31*'━' + "┓")
-        print("┃{:^31s}┃".format("ETROC Hardware Emulator"))
-        print("┃{:^31s}┃".format("fw ver."+self.get_emulator_ver()))
-        print("┃" + 31*" " + "┃")
-
-        for reg in self.regs_em:
-            col = green if self.rd_reg(reg) else red
-            print("┃ " + col('{:25}{:4}'.format(reg, hex(self.rd_reg(reg)))) + " ┃")
-
-        print("┗" + 31*"━" + "┛")
-
-    def get_emulator_ver(self):
-        try:
-            ver = [hex(self.I2C_read(i))[2:] for i in [0x19,0x18,0x17]]
-            return "-".join(ver)
-        except:
-            return "--"

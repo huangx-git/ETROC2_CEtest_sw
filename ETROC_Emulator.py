@@ -14,8 +14,9 @@ except ImportError:
 maxpixel = 256
 
 class software_ETROC2():
-    def __init__(self, BCID=0):
-        print('Initiating fake ETROC2...\n')
+    def __init__(self, BCID=0, verbose=False):
+        if verbose:
+            print('Initiating fake ETROC2...\n')
        
         # load ETROC2 dataformat
         with open(os.path.expandvars('$TAMALERO_BASE/configs/dataformat.yaml'), 'r') as f:
@@ -49,10 +50,19 @@ class software_ETROC2():
 
 
     # emulating I2C connections
-    def I2C_write(self, reg, val):
-        self.regs[reg] = val
+    def wr_reg(self, reg, val, pix=None):
+        if pix is None:
+            self.regs[reg]['value'] = val
+        else:
+            try:
+                self.regs[reg]['value'][pix] = val
+            except KeyError:
+                self.regs[reg]['value'] = {}
+                self.regs[reg]['value'][pix] = val
 
         # update regs for other pixels if data is shared amongst pixels
+        # FIXME I honestly don't know what this does...
+        # The whole pixel business needs restructuring
         regcfg = reg.split('Cfg')
         if (len(regcfg) > 1) and (regcfg[1] in [0, 1, 2]):
             for r in range(16):
@@ -62,8 +72,11 @@ class software_ETROC2():
 
         return None
 
-    def I2C_read(self, reg):
-        return self.regs[reg]
+    def rd_reg(self, reg, pix=None):
+        if pix is None:
+            return self.regs[reg]['value']
+        else:
+            return self.regs[reg]['value'][pix]
 
 
     # add hit data to self.L1Adata & increment hit counter
