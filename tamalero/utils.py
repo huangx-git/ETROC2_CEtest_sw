@@ -82,10 +82,11 @@ def plot_phase_scan(f_in, channel):
     plt.show()
 
 
-def header():
-    from tamalero.colors import magenta
+def header(configured=False):
+    from tamalero.colors import magenta, green
+    col = green if configured else magenta
     try:
-        print(magenta("\n\n\
+        print(col("\n\n\
         ████████╗ █████╗ ███╗   ███╗ █████╗ ██╗     ███████╗███████╗\n\
         ╚══██╔══╝██╔══██╗████╗ ████║██╔══██╗██║     ██╔════╝██╔════╝\n\
            ██║   ███████║██╔████╔██║███████║██║     █████╗  ███████╗\n\
@@ -94,7 +95,7 @@ def header():
            ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝\n\n\
         "))
     except UnicodeEncodeError:
-        print (magenta("\n\n\
+        print (col("\n\n\
         #########################\n\
         #######  TAMALES  #######\n\
         #########################\n\n\

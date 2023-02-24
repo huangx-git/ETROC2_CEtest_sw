@@ -1169,6 +1169,12 @@ class LPGBT(RegParser):
                 for i in range(max_adr+1):
                     f.write(f"{i} {hex(self.rd_adr(i))}\n")
 
+    def set_configured(self):
+        self.wr_reg("LPGBT.RWF.CHIPID.USERID0", 0xFF)
+        return self.is_configured()
+
+    def is_configured(self):
+        return self.rd_reg("LPGBT.RWF.CHIPID.USERID0") == 0xFF
 
 
 if __name__ == '__main__':

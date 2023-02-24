@@ -37,13 +37,13 @@ class Node:
 
 class RegParser(object):
 
-    def __init__(self, ver=0):
+    def __init__(self, ver=0, verbose=False):
         self.nodes = {}
 
-        self.parse_xml(ver=ver)
+        self.parse_xml(ver=ver, verbose=verbose)
 
     # Functions related to parsing registers.xml
-    def parse_xml(self, ver=0, address_table='default', top_node_name="LPGBT"):
+    def parse_xml(self, ver=0, address_table='default', top_node_name="LPGBT", verbose=False):
         self.top_node_name = top_node_name
         if address_table == 'default':
             if ver == 0:
@@ -52,7 +52,8 @@ class RegParser(object):
                 self.address_table = os.path.expandvars('$TAMALERO_BASE/address_table/lpgbt_v1.xml')
         else:
             self.address_table = address_table
-        print('Parsing', self.address_table, '...')
+        if verbose:
+            print('Parsing', self.address_table, '...')
         self.tree = xml.parse(self.address_table)
         root = self.tree.getroot()[0]
         self.vars = {}

@@ -41,7 +41,6 @@ if __name__ == '__main__':
     argParser.add_argument('--devel', action='store_true', default=False, help="Don't check repo status (not recommended)")
     args = argParser.parse_args()
 
-    header()
 
     verbose = args.verbose
     data_mode = args.etroc in ['ETROC1', 'ETROC2']
@@ -79,6 +78,8 @@ if __name__ == '__main__':
             if (trycnt > 10):
                 sys.exit(0)
 
+    is_configured = rb_0.DAQ_LPGBT.is_configured()
+    header(configured=is_configured)
 
     if args.recal_lpgbt:
         rb_0.DAQ_LPGBT.calibrate_adc(recalibrate=True)
@@ -159,15 +160,16 @@ if __name__ == '__main__':
     # Module Status
     #-------------------------------------------------------------------------------
 
-    modules = []
-    for i in range(res['n_module']):
-        modules.append(Module(rb_0, i+1))
+    if args.verbose:
+        modules = []
+        for i in range(res['n_module']):
+            modules.append(Module(rb_0, i+1))
 
-    print()
-    print("Querying module status")
-    for m in modules:
-        #m.configure()
-        m.show_status()
+        print()
+        print("Querying module status")
+        for m in modules:
+            #m.configure()
+            m.show_status()
 
     #-------------------------------------------------------------------------------
     # Read ADCs
@@ -245,25 +247,6 @@ if __name__ == '__main__':
     if args.eyescan:
         rb_0.DAQ_LPGBT.eyescan()
 
-    #-------------------------------------------------------------------------------
-    # Data Readout
-    #-------------------------------------------------------------------------------
-
-    if data_mode:
-        time.sleep(1)
-        fifo_link = int(args.read_fifo)
-        df = DataFrame(args.etroc)
-        if fifo_link>=0:
-            fifo = FIFO(rb_0, elink=fifo_link, ETROC=args.etroc)
-            fifo.set_trigger(
-                df.get_trigger_words(),
-                df.get_trigger_masks(),
-                )
-            fifo.reset()
-            try:
-                hex_dump = fifo.giant_dump(300, 255, align=(args.etroc=="ETROC1"))
-            except:
-                print("Dispatch failed, trying again.")
-                hex_dump = fifo.giant_dump(300, 255, align=(args.etroc=="ETROC1"))
-            print (hex_dump)
-            fifo.dump_to_file(fifo.wipe(hex_dump, trigger_words=[]))  # use 5 columns --> better to read for our data format
+    all_tests_passed = True  # FIXME this should be properly defined
+    if all_tests_passed:
+        rb_0.DAQ_LPGBT.set_configured()
