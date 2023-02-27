@@ -355,29 +355,25 @@ class LPGBT(RegParser):
             return self.kcu.read_node("READOUT_BOARD_%d.LPGBT.DAQ.UPLINK.ALIGN_%d"%(self.rb, link)).value()
 
     def set_uplink_invert(self, link, invert=True):
-        # 0x02 - not inverted, 0x0a - inverted. don't actually need those details any more
         self.wr_reg("LPGBT.RWF.EPORTRX.EPRX_CHN_CONTROL.EPRX%dINVERT" % link, invert)
 
     def set_downlink_invert(self, link, invert=True):
-        if link < 4: self.wr_reg("LPGBT.RWF.EPORTTX.EPTX0%dINVERT" % link, invert)
-        else: self.wr_reg("LPGBT.RWF.EPORTTX.EPTX%dINVERT" % link, invert)
+        group = link // 4
+        elink = link % 4
+        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX%d%dINVERT" % (group, elink), invert)
 
     def set_clock_invert(self, link, invert=True):
         self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dINVERT" % link, invert)
 
     def invert_links(self, trigger=False):
         if trigger:
-            print("Trigger LPGBT; inverting uplinks")
             for link in self.link_inversions['emulator_adapter']['trigger']:
                 self.set_uplink_invert(link)
         else:
-            print("DAQ LPGBT; inverting clocks")
             for link in self.link_inversions['emulator_adapter']['clocks']:
                 self.set_clock_invert(link)
-            print("DAQ LPGBT; inverting downlinks")
             for link in self.link_inversions['emulator_adapter']['downlink']:
                 self.set_downlink_invert(link)
-            print("DAQ LPGBT; inverting uplinks")
             for link in self.link_inversions['emulator_adapter']['uplink']:
                 self.set_uplink_invert(link)
 
@@ -396,8 +392,9 @@ class LPGBT(RegParser):
                 print(register, "\t", val)
             print("DAQ LPGBT Registers -- Downlinks")
             for link in self.link_inversions['emulator_adapter']['downlink']:
-                if link < 4: register = "LPGBT.RWF.EPORTTX.EPTX0%dINVERT" % link
-                else: register = "LPGBT.RWF.EPORTTX.EPTX%dINVERT" % link
+                group = link // 4
+                elink = link % 4
+                register = "LPGBT.RWF.EPORTTX.EPTX%d%dINVERT" % (group, elink)
                 val = self.rd_reg(register)
                 print(register, "\t", val)
             print("DAQ LPGBT Registers -- Uplinks")
@@ -658,11 +655,6 @@ class LPGBT(RegParser):
 
     def initialize(self, verbose=False):
         self.wr_reg("LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT", 0x1)  # this is already done for v1
-
-        # turn on clock outputs
-        if (verbose):
-            print ("Configuring clocks now.")
-        #self.configure_clocks(0x0fffffff, (1<<3) | (1<<4) | (1<<5) | (1<<24))
 
         # setup up sca eptx/rx
         # sca_setup() # maybe not needed???

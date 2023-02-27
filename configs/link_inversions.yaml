@@ -8,12 +8,12 @@ emulator_adapter:
       - 25
       - 26
       - 27
-   downlink:   # Downlink registers follow the AB = 4A + B system (e.g. 10 = 4*1 + 0 = 4)
-      - 02     # -> 2
-      - 10     # -> 4
-      - 20     # -> 8
-      - 22     # -> 10
-      - 30     # -> 12
+   downlink:
+      - 2     
+      - 4    
+      - 8    
+      - 10   
+      - 12 
    uplink:
       - 6
       - 12
