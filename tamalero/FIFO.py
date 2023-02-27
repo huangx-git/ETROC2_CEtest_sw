@@ -31,11 +31,11 @@ class FIFO:
     def get_zero_suppress_status(self):
         return self.rb.kcu.read_node("READOUT_BOARD_%s.ZERO_SUPRESS"%self.rb.rb).value()
 
-    def turn_on_zero_surpress(self):
+    def enable_zero_surpress(self):
         self.rb.kcu.write_node("READOUT_BOARD_%s.ZERO_SUPRESS"%self.rb.rb, 0xfffffff)
         self.reset()
 
-    def turn_off_zero_surpress(self):
+    def disable_zero_surpress(self):
         self.rb.kcu.write_node("READOUT_BOARD_%s.ZERO_SUPRESS"%self.rb.rb, 0x0)
         self.reset()
 
