@@ -64,6 +64,9 @@ class FIFO:
         rate_setting = rate / 25E-9 / (0xffffffff) * 10000
         self.rb.kcu.write_node("SYSTEM.L1A_RATE", int(rate_setting))
         time.sleep(0.5)
+        return self.get_trigger_rate()
+
+    def get_trigger_rate(self):
         rate = self.rb.kcu.read_node("SYSTEM.L1A_RATE_CNT").value()
         return rate
 
