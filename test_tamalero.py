@@ -156,6 +156,12 @@ if __name__ == '__main__':
 
     rb_0.DAQ_LPGBT.set_dac(1.0)  # set the DAC / Vref to 1.0V.
 
+    if args.power_up or args.reconfigure:
+        print("Link inversions")
+        rb_0.DAQ_LPGBT.invert_links()
+        if rb_0.trigger: 
+            rb_0.TRIG_LPGBT.invert_links(trigger=rb_0.trigger)
+
     #-------------------------------------------------------------------------------
     # Module Status
     #-------------------------------------------------------------------------------
