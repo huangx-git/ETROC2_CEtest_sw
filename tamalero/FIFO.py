@@ -103,8 +103,7 @@ class FIFO:
             last_block = occupancy % self.block
             data = []
             if (num_blocks_to_read):
-                reads = [self.read_block(self.block)]
-                #reads = num_blocks_to_read * [self.read_block(self.block)] + [self.read_block(last_block)]
+                reads = num_blocks_to_read * [self.read_block(self.block)] + [self.read_block(last_block)]
                 self.rb.kcu.hw.dispatch()
                 for read in reads:
                     data += read.value()
