@@ -411,13 +411,11 @@ class LPGBT(RegParser):
         #else:
         #    return self.rd_adr(0xcc+link).value()
 
-    def configure_clocks(self, en_mask, invert_mask=0):
+    def configure_clocks(self, en_mask):
         for i in range(27):
             if 0x1 & (en_mask >> i):
                 self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dFREQ" % i, 1)
                 self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dDRIVESTRENGTH" % i, 4)
-            if 0x1 & (invert_mask >> i):
-                self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dINVERT" % i, 1)
 
     def config_eport_dlls(self, verbose=False):
         if verbose:
@@ -655,6 +653,11 @@ class LPGBT(RegParser):
 
     def initialize(self, verbose=False):
         self.wr_reg("LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT", 0x1)  # this is already done for v1
+
+        # turn on clock outputs
+        if (verbose):
+            print ("Configuring clocks now.")
+        self.configure_clocks(0x0fffffff)
 
         # setup up sca eptx/rx
         # sca_setup() # maybe not needed???
