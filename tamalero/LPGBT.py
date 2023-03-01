@@ -267,7 +267,7 @@ class LPGBT(RegParser):
                 self.configure_gpio_outputs(outputs=0x2409, defaults=0x0409)
             self.initialize(verbose=verbose)
             self.config_eport_dlls(verbose=verbose)
-            #self.configure_eptx(verbose=verbose)
+            self.configure_eptx(verbose=verbose)
             self.configure_eprx()
 
 
@@ -441,7 +441,7 @@ class LPGBT(RegParser):
             # [0x0a7] EPTXDataRate
             self.wr_reg("LPGBT.RWF.EPORTTX.EPTX%dDATARATE" % i, 0x3)
 
-        self.wr_reg("LPGBT.RWF.EPORTTX.EPTX00INVERT" , 0x1)
+        #self.wr_reg("LPGBT.RWF.EPORTTX.EPTX00INVERT" , 0x1)
 
         # EPTXxxEnable
         # EPTXxxDriveStrength
