@@ -170,7 +170,7 @@ class ReadoutBoard:
         return alignment
 
     def load_uplink_alignment(self, alignment, n_links=24):
-
+        
         for i in range(n_links):
             self.DAQ_LPGBT.set_uplink_alignment(i ,alignment['daq']['alignment'][i])
             self.DAQ_LPGBT.set_uplink_invert(i, alignment['daq']['inversion'][i])
