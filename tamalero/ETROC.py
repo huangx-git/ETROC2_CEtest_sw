@@ -22,6 +22,7 @@ class ETROC():
             elink=0,
             usefake=False,
             verbose=False,
+            strict=True,
     ):
         self.usefake = usefake
         if usefake:
@@ -64,7 +65,8 @@ class ETROC():
                 print("Warning: ETROC default configuration failed!")
             pass
 
-        self.consistency(verbose=verbose)
+        if strict:
+            self.consistency(verbose=verbose)
 
     # =========================
     # === UTILITY FUNCTIONS ===

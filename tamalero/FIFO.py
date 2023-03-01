@@ -19,14 +19,19 @@ def merge_words(res):
     empty_frame_mask = np.array(res[0::2]) > (2**8)  # masking empty fifo entries
     len_cut = min(len(res[0::2]), len(res[1::2]))  # ensuring equal length of arrays downstream
     if len(res) > 0:
-        return list (np.array(res[0::2])[:len_cut][empty_frame_mask[:len_cut]] | (np.array(res[1::2]) << 32)[:len_cut][empty_frame_mask[:len_cut]])
+        # NOTE: this is a dangerous solution for when the byte order in the FIFO is shifted.
+        if res[1] < res[0]:
+            return list (np.array(res[0::2])[:len_cut][empty_frame_mask[:len_cut]] | (np.array(res[1::2]) << 32)[:len_cut][empty_frame_mask[:len_cut]])
+        else:
+            return list (np.array(res[1::2])[:len_cut][empty_frame_mask[:len_cut]] | (np.array(res[0::2]) << 32)[:len_cut][empty_frame_mask[:len_cut]])
     else:
         return []
 
 class FIFO:
     def __init__(self, rb, block=255):
         self.rb = rb
-        self.block = 255
+        self.block = block
+        self.reset()
 
     def get_zero_suppress_status(self):
         return self.rb.kcu.read_node("READOUT_BOARD_%s.ZERO_SUPRESS"%self.rb.rb).value()
@@ -81,7 +86,8 @@ class FIFO:
             last_block = occupancy % self.block
             data = []
             if (num_blocks_to_read):
-                reads = num_blocks_to_read * [self.read_block(self.block)] + [self.read_block(last_block)]
+                reads = [self.read_block(self.block)]
+                #reads = num_blocks_to_read * [self.read_block(self.block)] + [self.read_block(last_block)]
                 self.rb.kcu.hw.dispatch()
                 for read in reads:
                     data += read.value()
