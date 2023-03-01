@@ -40,8 +40,15 @@ class FIFO:
         self.rb.kcu.write_node("READOUT_BOARD_%s.ZERO_SUPRESS"%self.rb.rb, 0xfffffff)
         self.reset()
 
-    def disable_zero_surpress(self):
-        self.rb.kcu.write_node("READOUT_BOARD_%s.ZERO_SUPRESS"%self.rb.rb, 0x0)
+    def disable_zero_surpress(self, only=None):
+        '''
+        turn off zero suppression for all channels
+        use only if you only want to disable zero suppression for one elink
+        '''
+        if only != None:
+            self.rb.kcu.write_node("READOUT_BOARD_%s.ZERO_SUPRESS"%self.rb.rb, 0xfffffff ^ (1 << only))
+        else:
+            self.rb.kcu.write_node("READOUT_BOARD_%s.ZERO_SUPRESS"%self.rb.rb, 0x0)
         self.reset()
 
     def use_fixed_pattern(self):
@@ -66,6 +73,13 @@ class FIFO:
 
     def reset(self):
         self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_RESET" % self.rb.rb, 0x01)
+
+    def select_elink(self, elink, lpgbt=0):
+        '''
+        only needed for ILA debugging
+        '''
+        self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_ELINK_SEL0" % self.rb.rb, elink)
+        self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_LPGBT_SEL0" % self.rb.rb, lpgbt)
 
     def read_block(self, block, dispatch=False):
         try:
