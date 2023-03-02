@@ -16,14 +16,19 @@ def revbits(x):
     return int(f'{x:08b}'[::-1],2)
 
 def merge_words(res):
-    empty_frame_mask = np.array(res[0::2]) > (2**8)  # masking empty fifo entries
-    len_cut = min(len(res[0::2]), len(res[1::2]))  # ensuring equal length of arrays downstream
+    '''
+    this function merges 32 bit words from the fifo into 64 bit words (40bit ETROC2 + added meta data in the DAQ)
+    it strips empty entries and removes orphan 32 bit words that could be present at the end of a FIFO read
+    '''
     if len(res) > 0:
-        # NOTE: this is a dangerous solution for when the byte order in the FIFO is shifted.
-        if res[1] < res[0]:
-            return list (np.array(res[0::2])[:len_cut][empty_frame_mask[:len_cut]] | (np.array(res[1::2]) << 32)[:len_cut][empty_frame_mask[:len_cut]])
-        else:
-            return list (np.array(res[1::2])[:len_cut][empty_frame_mask[:len_cut]] | (np.array(res[0::2]) << 32)[:len_cut][empty_frame_mask[:len_cut]])
+        # offset is only needed when zero suppression is turned off, and packet boundaries are not defined
+        # it relies on the fact that the second 32 bit word is half empty (8 bit ETROC data + 12 bits meta data)
+        # if we ever add more meta data this has to be revisited
+        offset = 1 if (res[1] > res[0]) else 0
+        res = res[offset:]
+        empty_frame_mask = np.array(res[0::2]) > (2**8)  # masking empty fifo entries
+        len_cut = min(len(res[0::2]), len(res[1::2]))  # ensuring equal length of arrays downstream
+        return list (np.array(res[0::2])[:len_cut][empty_frame_mask[:len_cut]] | (np.array(res[1::2]) << 32)[:len_cut][empty_frame_mask[:len_cut]])
     else:
         return []
 
