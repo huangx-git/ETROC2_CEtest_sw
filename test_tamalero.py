@@ -167,6 +167,7 @@ if __name__ == '__main__':
     #-------------------------------------------------------------------------------
 
     if args.verbose:
+        print("Configuring ETROCs")
         modules = []
         for i in range(res['n_module']):
             modules.append(Module(rb_0, i+1))
