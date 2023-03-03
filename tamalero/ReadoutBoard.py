@@ -247,6 +247,12 @@ class ReadoutBoard:
             print("Error counts after reset:")
             self.get_FEC_error_count()
 
+    def enable_rhett(self):
+        self.DAQ_LPGBT.set_gpio(3, 1)
+
+    def disable_rhett(self):
+        self.DAQ_LPGBT.set_gpio(3, 1)
+
     def bad_boy(self, m=1):
         for x in range(60):
             self.DAQ_LPGBT.set_gpio(3, 1)
