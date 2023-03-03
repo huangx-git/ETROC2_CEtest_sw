@@ -150,6 +150,10 @@ class ETROC():
     # === MONITORING FUNCTIONS ===
     # ============================
 
+    def is_connected(self):
+        self.conected = self.I2C_read(0x13)
+        return self.connected
+
     def get_elink_status(self):
         if self.usefake:
             self.trig_locked = True
