@@ -277,7 +277,7 @@ gpio:
         comment: pin 15 in ETROC 10 and 11
     sca_led:
         pin: 0x1B
-        default: 0
+        default: 1
         direction: out
         flavor: small
         comment: SCA LED indicator
