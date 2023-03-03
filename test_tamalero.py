@@ -178,6 +178,14 @@ if __name__ == '__main__':
             #m.configure()
             m.show_status()
 
+        # Monitoring threads
+        from tamalero.Monitoring import Monitoring, module_mon
+        mon = module_mon(modules[0])
+        #monitoring_threads = []
+        #for i in range(res['n_module']):
+        #    if modules[i].ETROCs[0].connected:
+        #        monitoring_threads.append(module_mon(modules[i]))
+
     #-------------------------------------------------------------------------------
     # Read ADCs
     #-------------------------------------------------------------------------------
