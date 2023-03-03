@@ -14,10 +14,10 @@ except ImportError:
 maxpixel = 256
 
 class software_ETROC2():
-    def __init__(self, BCID=0, verbose=False):
+    def __init__(self, BCID=0, verbose=False, chipid=123456, elink=0):
         if verbose:
             print('Initiating fake ETROC2...\n')
-       
+
         # load ETROC2 dataformat
         with open(os.path.expandvars('$TAMALERO_BASE/configs/dataformat.yaml'), 'r') as f:
             self.format = load(f, Loader=Loader)['ETROC2']
@@ -28,10 +28,11 @@ class software_ETROC2():
 
         # storing data for running L1As
         self.data = {
+                'elink'     : elink,
                 'l1counter' : 0,
                 'bcid'      : BCID,
                 'type'      : 0,  # use type regular data
-                'chipid'    : 0,
+                'chipid'    : chipid,
                 'status'    : 0,
                 'hits'      : 0,
                 'crc'       : 0,
@@ -98,10 +99,14 @@ class software_ETROC2():
             word = ( word +
                 ((data[datatype]<<self.format['data']['data'][datatype]['shift'])
                 &self.format['data']['data'][datatype]['mask']) )
-        self.L1Adata.append(word)
 
-        # inc Nhits
-        self.data['hits'] += 1
+        if self.data['hits'] < 255:
+            # the data format does not allow us to actually have 256 hits
+            # so we always have to cut the last one if there would be 100% occupancy
+            self.L1Adata.append(word)
+
+            # inc Nhits
+            self.data['hits'] += 1
 
         return None
 
@@ -147,5 +152,5 @@ class software_ETROC2():
             trailer = ( trailer +
                 ((self.data[datatype]<<self.format['data']['trailer'][datatype]['shift'])
                 &self.format['data']['trailer'][datatype]['mask']) )
-        
+
         return [header] + self.L1Adata + [trailer]
