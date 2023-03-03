@@ -3,6 +3,7 @@ import os
 from tamalero.utils import load_yaml
 from tamalero.colors import red, green
 from tamalero.ETROC import ETROC
+from time import sleep
 
 class Module:
     def __init__(self, rb, i=1):
@@ -13,6 +14,7 @@ class Module:
         #self.regs = load_yaml(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC2.yaml'))
         #self.regs_em = ['disScrambler', 'singlePort', 'mergeTriggerData', 'triggerGranularity']
         self.i = i
+        self.rb = rb
 
         self.ETROCs = []
         for j in range(len(self.config['elinks'])):
@@ -99,3 +101,26 @@ class Module:
 
         print ('┃○┃ ' + 25*' ' + ' ┃○┃')
         print ('┗━┻━' + 25*'━' + '━┻━┛')
+
+    def monitor(self):
+        status = 0
+        if self.ETROCs[0].is_connected(): status += 1
+        for etroc in self.ETROCs:
+            etroc.get_elink_status()
+            if etroc.daq_locked:
+                status += 1
+
+        self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], to=0)
+        sleep(0.25)
+        for i in range(status):
+            self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], to=1)
+            sleep(0.25)
+            self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], to=0)
+            sleep(0.25)
+
+        if status > 0:
+            self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], to=1)
+        else:
+            self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], to=0)
+
+            #sleep(5)
