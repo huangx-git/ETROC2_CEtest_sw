@@ -127,6 +127,8 @@ class LPGBT(RegParser):
                 self.cal_gain = 1.85
                 self.cal_offset = 512
 
+        self.set_current_adc7()
+
     def read_base_config(self):
         #
         print("{:80}{:10}{:10}".format("Register", "value", "default"))
@@ -626,7 +628,20 @@ class LPGBT(RegParser):
 
         self.cal_gain = gain
         self.cal_offset = offset
+
+    def set_current_adc7(self, verbose=False):
+        self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE", 0x1)
+        if verbose:
+            print("Set current DAC...", self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE"))
         
+        self.wr_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE", 0x40) # Set pin ADC7 to current source; 0x40 = 64 = 01000000
+        if verbose:
+            print("Set current source to pin ADC7...", bin(self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE")))
+        
+        self.wr_reg("LPGBT.RWF.CUR_DAC.CURDACSELECT", 0xE) # Set current to 14 uA; max V = 0.977, min V = 0.080 for T in -20-40C range
+        if verbose:
+            print("Set current source value to...", int(self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACSELECT")), "uA")
+
     def set_dac(self, v_out):
         if v_out > 1.00:
             print ("Can't set the DAC to a value larger than 1.0 V!")
