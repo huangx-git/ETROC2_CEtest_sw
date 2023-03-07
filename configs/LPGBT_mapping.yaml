@@ -79,3 +79,22 @@ adc:
         conv: 2.0
         flavor: small
         comment: VREF/2 (internal signal)
+gpio:
+    GBT_RESET_B:
+        pin: 0x00
+        default: 1
+        direction: out
+        flavor: small
+        comment: GBT SCA reset
+    LD_RSTN:
+        pin: 0x0A
+        default: 1
+        direction: out
+        flavor: small
+        comment: VTRX reset
+    LD_DIS:
+        pin: 0x0D
+        default: 0
+        direction: out
+        flavor: small
+        comment: VTRX DIS 
