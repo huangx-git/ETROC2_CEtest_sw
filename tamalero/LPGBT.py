@@ -5,6 +5,7 @@ import pickle
 import copy
 import random
 import json
+from functools import wraps
 import tamalero.colors as colors
 from tamalero.colors import red, green
 from tamalero.utils import read_mapping, chunk, load_yaml
@@ -16,6 +17,21 @@ except ModuleNotFoundError:
     print ("Package `tabulate` not found.")
 
 from tamalero.lpgbt_constants import LpgbtConstants
+
+def gpio_byname(gpio_func):
+    @wraps(gpio_func)
+    def wrapper(lpgbt, pin, direction=1):
+        if isinstance(pin, str):
+            gpio_dict = lpgbt.gpio_mapping
+            pin = gpio_dict[pin]['pin']
+            return gpio_func(lpgbt, pin, direction)
+        elif isinstance(pin, int):
+            return gpio_func(lpgbt, pin, direction)
+        else:
+            invalid_type = type(pin)
+            raise TypeError(f"{gpio_func.__name__} can only take positional arguments of type int or str, but argument of type {invalid_type} was given.")
+
+    return wrapper
 
 class LPGBT(RegParser):
 
@@ -352,6 +368,21 @@ class LPGBT(RegParser):
 #        self.wr_reg('LPGBT.RWF.PIO.PIODIRH', outputs >> 8)
 #        self.wr_reg('LPGBT.RWF.PIO.PIODIRL', outputs & 0xFF)
 
+#    def gpio_byname(self, gpio_func):
+#        @wraps(gpio_func)
+#        def wrapper(*args, **kwargs):
+#            if all([type(arg) == str for arg in args]):
+#                gpio_dict = self.gpio_mapping
+#                pin = gpio_dict[list(args)[0]]['pin']
+#                return gpio_func(pin, **kwargs)
+#            elif all([type(arg) == int for arg in args]):
+#                return gpio_func(*args, **kwargs)
+#            else:
+#                invalid_type = type(list(args)[0])
+#                raise TypeError(f"{gpio_func.__name__} can only take positional arguments of type int or str, but argument of type {invalid_type} was given.")
+#
+#        return wrapper
+
     def configure_gpios(self, verbose=False): #read and print all adc values
         gpio_dict = self.gpio_mapping
         if verbose:
@@ -370,6 +401,7 @@ class LPGBT(RegParser):
         val = self.rd_reg(reg)
         return int((val >> pin) & 1)
 
+    @gpio_byname
     def set_gpio(self, pin, direction=1):
         assert pin < 16 and pin >= 0
 
@@ -391,6 +423,7 @@ class LPGBT(RegParser):
         self.wr_reg(out_reg, currently_set)
         return self.read_gpio(out_reg, pin)  # in order to check it is actually set
 
+    @gpio_byname
     def set_gpio_direction(self, pin, direction=1):
         assert pin < 16 and pin >= 0
 

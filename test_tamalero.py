@@ -263,10 +263,10 @@ if __name__ == '__main__':
     # Success LEDs
     #-------------------------------------------------------------------------------
     if rb_0.DAQ_LPGBT.ver == 1:
-        rb_0.DAQ_LPGBT.set_gpio(2, 1) # Set LED1 after tamalero finishes succesfully
+        rb_0.DAQ_LPGBT.set_gpio("LED_1", 1) # Set LED1 after tamalero finishes succesfully
         t_end = time.time() + 10
         while time.time() < t_end:
-            rb_0.DAQ_LPGBT.set_gpio(3, 1) # Let Rhett LED blink for 10s
+            rb_0.DAQ_LPGBT.set_gpio("LED_RHETT", 1) # Let Rhett LED blink for 10s
             time.sleep(0.5)
-            rb_0.DAQ_LPGBT.set_gpio(3, 0)
-        rb_0.DAQ_LPGBT.set_gpio(3, 1)
+            rb_0.DAQ_LPGBT.set_gpio("LED_RHETT", 0)
+        rb_0.DAQ_LPGBT.set_gpio("LED_RHETT", 1)
