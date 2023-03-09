@@ -1,7 +1,7 @@
 import os
 from tamalero.LPGBT import LPGBT
 from tamalero.SCA import SCA
-from tamalero.utils import get_temp, chunk
+from tamalero.utils import get_temp, chunk, get_temp_direct
 from tamalero.VTRX import VTRX
 
 from time import sleep
@@ -365,7 +365,8 @@ class ReadoutBoard:
             elif self.ver == 2:
                 # https://www.digikey.com/en/products/detail/tdk-corporation/NTCG063JF103FTB/5872743
                 # Parameters need updating?
-                t1 = get_temp(adc_7, v_ref, 10000, 25, 10000, 3900)  # this comes from the lpGBT ADC
+                curr_dac = self.DAQ_LPGBT.rd_reg("LPGBT.RWF.CUR_DAC.CURDACSELECT")*900/256
+                t1 = get_temp_direct(adc_7, curr_dac, 25, 10000, 3380)  # this comes from the lpGBT ADC
                 t2 = get_temp(adc_in29, v_ref, 10000, 25, 10000, 3380)  # this comes from the SCA ADC
 
             if verbose>0:

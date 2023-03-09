@@ -127,7 +127,7 @@ class LPGBT(RegParser):
                 self.cal_gain = 1.85
                 self.cal_offset = 512
 
-        self.set_current_adc7()
+        self.set_current_adc(7)
 
     def read_base_config(self):
         #
@@ -629,18 +629,39 @@ class LPGBT(RegParser):
         self.cal_gain = gain
         self.cal_offset = offset
 
-    def set_current_adc7(self, verbose=False):
+    def set_current_adc(self, channel, verbose=True):
+        assert channel in range(8), f"Can only choose from ADC0 to ADC7; ADC{channel} was given instead"
+        
         self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE", 0x1)
         if verbose:
             print("Set current DAC...", self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE"))
         
-        self.wr_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE", 0x40) # Set pin ADC7 to current source; 0x40 = 64 = 01000000
+        if channel == 0:
+            adc_chn = self.LPGBT_CONST.CURDAC_CHN0_bm
+        elif channel == 1:
+            adc_chn = self.LPGBT_CONST.CURDAC_CHN1_bm
+        elif channel == 2:
+            adc_chn = self.LPGBT_CONST.CURDAC_CHN2_bm
+        elif channel == 3:
+            adc_chn = self.LPGBT_CONST.CURDAC_CHN3_bm
+        elif channel == 4:
+            adc_chn = self.LPGBT_CONST.CURDAC_CHN4_bm
+        elif channel == 5:
+            adc_chn = self.LPGBT_CONST.CURDAC_CHN5_bm
+        elif channel == 6:
+            adc_chn = self.LPGBT_CONST.CURDAC_CHN6_bm
+        elif channel == 7:
+            adc_chn = self.LPGBT_CONST.CURDAC_CHN7_bm
+
+        self.wr_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE", adc_chn) # Set pin ADC channel to current source
         if verbose:
             print("Set current source to pin ADC7...", bin(self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE")))
-        
-        self.wr_reg("LPGBT.RWF.CUR_DAC.CURDACSELECT", 0xE) # Set current to 14 uA; max V = 0.977, min V = 0.080 for T in -20-40C range
+       
+        curr_dac = 14 # Desired current of 14 uA; max V = 0.977, min V = 0.080 for T in -20-40C range
+        curr_dac_select = round(curr_dac*256/900) # CURDACSELECT is in units of 900/256 uA per bit
+        self.wr_reg("LPGBT.RWF.CUR_DAC.CURDACSELECT", curr_dac_select)
         if verbose:
-            print("Set current source value to...", int(self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACSELECT")), "uA")
+            print("Set current source value to...", curr_dac_select*900/256, "uA")
 
     def set_dac(self, v_out):
         if v_out > 1.00:

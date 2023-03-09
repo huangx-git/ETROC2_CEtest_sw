@@ -37,6 +37,33 @@ def get_temp(v_out, v_ref, r_ref, t_1, r_1, b, celcius=True):
         return -999
     return t_2-delta_t
 
+def get_temp_direct(v_out, curr_dac, t_1, r_1, b, celcius=True):
+    """
+    Calculate the temperature of a thermistor, given the voltage measured on it.
+
+    Arguments:
+    v_out (float) -- voltage measured on the thermistor
+    curr_dac (float) -- current source value set on the DAC (in uA)
+    t_1 (float) -- reference temperature of thermistor
+    r_1 (float) -- resistance of NTC at reference temperature
+    b (float) -- B coefficient, with B = (ln(r_1)-ln(r_t)) / (1/t_1 - 1/t_out)
+
+    Keyword arguments:
+    celcius (bool) -- give and return the temperature in degree celcius. Kelvin scale used otherwise.
+    """
+
+    delta_t = 273.15 if celcius else 0
+    try:
+        r_t = v_out / (curr_dac / 10**6)
+        print(f"r_t: {r_t}")
+        print(f"v_out: {v_out}")
+        print(f"curr_dac: {curr_dac / 10**6}")
+        print(f"b: {b}")
+        t_2 = b/((b/(t_1+delta_t)) - math.log(r_1) + math.log(r_t))
+    except ZeroDivisionError:
+        print ("Temperature calculation failed!")
+        return -999
+    return t_2-delta_t
 
 def read_mapping(f_in, selection='adc', flavor='small'):
     flavors = {'small':0, 'medium':1, 'large': 2}
