@@ -5,6 +5,7 @@ from yaml import load, dump
 import os
 
 from tamalero.KCU import KCU
+from emoji import emojize
 
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -180,7 +181,7 @@ def check_repo_status(kcu_version=None):
     if commit_based and tag_based:
         print (green("Your tamalero repository is up-to-date with master"))
     else:
-        print (red("\n! WARNING: You are potentially working on an outdated or out-of-sync version of tamalero !"))
+        print ( emojize("\n:warning: :warning: ") + red(" WARNING: You are potentially working on an outdated or out-of-sync version of tamalero ") + emojize(" :warning: :warning:"))
         if not tag_based:
             print (red(f"You are using KCU firmware version {kcu_version}, but the corresponding tag has not been found in your local tamalero repo."))
             print (red(f"You can ignore this warning for firmware versions BEFORE 1.3.5\n"))
