@@ -5,7 +5,6 @@ from yaml import load, dump
 import os
 
 from tamalero.KCU import KCU
-from emoji import emojize
 
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -162,6 +161,7 @@ def check_repo_status(kcu_version=None):
     import os
     from git import Repo
     from tamalero.colors import red, green
+    from emoji import emojize
 
     # get remote repo log
     r = requests.get(f"https://gitlab.cern.ch/api/v4/projects/110883/repository/commits")
