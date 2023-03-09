@@ -21,3 +21,15 @@ class Monitoring:
         while self._running and True:
             self.fun()
             time.sleep(sleep)
+
+class Lock:
+    def __init__(self, to_lock):
+        self.to_lock = to_lock
+        self.to_lock.locked = to_lock.locked
+    def __enter__(self):
+        while self.to_lock.locked:
+            time.sleep(0.001)  # this is not for performance computing
+        self.to_lock.locked = True
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.to_lock.locked = False
+        return False
