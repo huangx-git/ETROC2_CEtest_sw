@@ -120,6 +120,7 @@ class SCA:
         self.ver = ver + 1  # NOTE don't particularly like this, but we're giving it the lpGBT version
         self.set_adc_mapping()
         self.set_gpio_mapping()
+        self.locked = False
 
     def connect_KCU(self, kcu):
         self.kcu = kcu
@@ -162,7 +163,6 @@ class SCA:
         """
         adr = chip address (0x0 by default)
         """
-
         if transid == 0:
             transid = random.randint(1, 2**8-2)  # transid of 0 or 255 gives error
 
