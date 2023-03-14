@@ -353,6 +353,7 @@ class ReadoutBoard:
         # high level function to read all the temperature sensors
         
         adc_7    = self.DAQ_LPGBT.read_adc(7)/(2**10-1)
+        adc_0    = self.DAQ_LPGBT.read_adc(0)/(2**10-1)
         adc_in29 = self.SCA.read_adc(29)/(2**12-1)
         v_ref    = self.DAQ_LPGBT.read_dac()
         t_SCA    = self.SCA.read_temp()  # internal temp from SCA
@@ -366,16 +367,18 @@ class ReadoutBoard:
                 # https://www.digikey.com/en/products/detail/tdk-corporation/NTCG063JF103FTB/5872743
                 # Parameters need updating?
                 curr_dac = self.DAQ_LPGBT.rd_reg("LPGBT.RWF.CUR_DAC.CURDACSELECT")*900/256
-                t1 = get_temp_direct(adc_7, curr_dac, 25, 10000, 3380)  # this comes from the lpGBT ADC
+                t1 = get_temp_direct(adc_7, curr_dac, thermistor="NTCG063JF103FTB")  # this comes from the lpGBT ADC
                 t2 = get_temp(adc_in29, v_ref, 10000, 25, 10000, 3380)  # this comes from the SCA ADC
+                t_VTRX = get_temp_direct(adc_0, curr_dac, thermistor="NCP03XM102E05RL")  # this comes from the lpGBT ADC (VTRX TH)
 
             if verbose>0:
                 print ("\nV_ref is set to: %.3f V"%v_ref)
                 print ("\nTemperature on RB RT1 is: %.3f C"%t1)
                 print ("Temperature on RB RT2 is: %.3f C"%t2)
                 print ("Temperature on RB SCA is: %.3f C"%t_SCA)
+                print ("Temperature on RB VTRX is: %.3f C"%t_VTRX)
         else:
             print ("V_ref found to be 0. Exiting.")
             return {'t_SCA': t_SCA}
 
-        return {'t1': t1, 't2': t2, 't_SCA': t_SCA}
+        return {'t1': t1, 't2': t2, 't_SCA': t_SCA, 't_VTRX': t_VTRX}

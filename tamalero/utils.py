@@ -37,33 +37,68 @@ def get_temp(v_out, v_ref, r_ref, t_1, r_1, b, celcius=True):
         return -999
     return t_2-delta_t
 
-def get_temp_direct(v_out, curr_dac, t_1, r_1, b, celcius=True):
+def get_temp_direct(v_out, curr_dac, thermistor="NTCG063JF103FTB", celcius=True):
     """
     Calculate the temperature of a thermistor, given the voltage measured on it.
 
     Arguments:
     v_out (float) -- voltage measured on the thermistor
     curr_dac (float) -- current source value set on the DAC (in uA)
-    t_1 (float) -- reference temperature of thermistor
-    r_1 (float) -- resistance of NTC at reference temperature
-    b (float) -- B coefficient, with B = (ln(r_1)-ln(r_t)) / (1/t_1 - 1/t_out)
+    thermistor (str="NTCG063JF103FTB") -- thermistor used for temperature calculation
 
     Keyword arguments:
     celcius (bool) -- give and return the temperature in degree celcius. Kelvin scale used otherwise.
     """
 
-    delta_t = 273.15 if celcius else 0
-    try:
-        r_t = v_out / (curr_dac / 10**6)
-        print(f"r_t: {r_t}")
-        print(f"v_out: {v_out}")
-        print(f"curr_dac: {curr_dac / 10**6}")
-        print(f"b: {b}")
-        t_2 = b/((b/(t_1+delta_t)) - math.log(r_1) + math.log(r_t))
-    except ZeroDivisionError:
-        print ("Temperature calculation failed!")
-        return -999
-    return t_2-delta_t
+    find_temp = temp_res_fit(thermistor=thermistor)
+
+    r_t = v_out / (curr_dac / 10**6)
+    t = find_temp(np.log10(r_t))
+
+    delta_t = 0 if celcius else 273.15
+    
+    print(f"Thermistor: {thermistor}")
+    print(f"Voltage: {v_out} \t Current: {curr_dac} uA")
+    print(f"Resistance: {r_t}")
+    print(f"Temperature: {t}")
+
+    return t+delta_t
+
+def temp_res_fit(thermistor="NTCG063JF103FTB", power=2):
+
+    T_ref = 25
+    if thermistor=="NTCG063JF103FTB":
+        B_list = [3194, 3270, 3382, 3422]
+        T_list = [-25, 0, 50, 75]
+        R_ref = 10e3
+    elif thermistor=="NTCG063UH103HTBX":
+        B_list = [3770, 3822, 3900, 3926]
+        T_list = [-25, 0, 50, 75]
+        R_ref = 10e3
+    elif thermistor=="NCP03XM102E05RL":
+        B_list = [3500, 3539, 3545, 3560]
+        T_list = [50, 80, 85, 100]
+        R_ref = 1e3
+    else:
+        raise ValueError(f"Only thermistors NTCG063JF103FTB, NTCG063UH103HTBX or NCP03XM102E05RL are currently allowed, but {thermistor} was passed.")
+
+    R_list = []
+
+    for B, T in zip(B_list, T_list):
+        R = R_ref * math.exp(-B * ((1/298.15) - (1/(T+273.15))))
+        R_list.append(R)
+
+    if thermistor=="NTCG063JF103FTB" or thermistor=="NTCG063UH103HTBX":
+        T_list.insert(2, T_ref)     # Reference temperature of thermistor
+        R_list.insert(2, R_ref)     # Reference resistance of NTC at reference temperature
+    elif thermistor=="NCP03XM102E05RL":
+        T_list = [T_ref] + T_list
+        R_list = [R_ref] + R_list
+    
+    poly_coeffs = np.polyfit(np.log10(R_list), T_list, power)
+    fit = np.poly1d(poly_coeffs)
+
+    return fit
 
 def read_mapping(f_in, selection='adc', flavor='small'):
     flavors = {'small':0, 'medium':1, 'large': 2}

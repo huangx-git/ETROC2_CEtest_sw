@@ -128,6 +128,7 @@ class LPGBT(RegParser):
                 self.cal_offset = 512
 
         self.set_current_adc(7)
+        self.set_current_adc(0)
 
     def read_base_config(self):
         #
@@ -653,9 +654,14 @@ class LPGBT(RegParser):
         elif channel == 7:
             adc_chn = self.LPGBT_CONST.CURDAC_CHN7_bm
 
-        self.wr_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE", adc_chn) # Set pin ADC channel to current source
+        currently_set = self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE")
+        print(f"LPGBT.RWF.CUR_DAC.CURDACCHNENABLE currently set: {bin(currently_set)}")
+        print(f"Want to set {bin(adc_chn)}")
+        print(f"LPGBT.RWF.CUR_DAC.CURDACCHNENABLE new set: {bin(adc_chn | currently_set)}")
+
+        self.wr_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE", adc_chn | currently_set) # Set pin ADC channel to current source
         if verbose:
-            print("Set current source to pin ADC7...", bin(self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE")))
+            print(f"Set current source to pin ADC{channel}...", bin(self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE")))
        
         curr_dac = 14 # Desired current of 14 uA; max V = 0.977, min V = 0.080 for T in -20-40C range
         curr_dac_select = round(curr_dac*256/900) # CURDACSELECT is in units of 900/256 uA per bit
@@ -954,12 +960,20 @@ class LPGBT(RegParser):
                         print ("Write not successfull!")
                     break
 
-    def I2C_read(self, reg=0x0, master=2, slave_addr=0x70, nbytes=1, adr_nbytes=2, freq=2, verbose=False):
+    def I2C_read(self, reg=0x0, master=2, slave_addr=0x70, nbytes=1, adr_nbytes=2, freq=2, verbose=True):
         #https://gitlab.cern.ch/lpgbt/pigbt/-/blob/master/backend/apiapp/lpgbtLib/lowLevelDrivers/MASTERI2C.py#L83
+        
+        # debugging
+        #print("### LPGBT.I2C_read ###")
+        #print(f"reg: {reg}, \tmaster: {master}, \tslave_addr: {slave_addr}, \tnbytes: {nbytes}, \tadr_nbytes: {adr_nbytes}, \tfreq: {freq}, \tver: {self.ver}")
+
         i2cm      = master
 	
         i2cm1cmd = self.get_node('LPGBT.RW.I2C.I2CM1CMD').real_address
         i2cm0cmd = self.get_node('LPGBT.RW.I2C.I2CM0CMD').real_address
+
+        # debugging
+        #print(f"i2cm1cmd: {i2cm1cmd}, \ti2cm0cmd: {i2cm0cmd}")
 
         if self.ver == 0:
             i2cm1status = self.LPGBT_CONST.I2CM1STATUS
@@ -975,28 +989,49 @@ class LPGBT(RegParser):
         OFFSET_WR = i2cm*(i2cm1cmd - i2cm0cmd) #using the offset trick to switch between masters easily
         OFFSET_RD = i2cm*(i2cm1status - i2cm0status)
 
+        # debugging
+        #print(f"i2cm1status: {i2cm1status}, \ti2cm0status: {i2cm0status}, \ti2cm0data0: {i2cm0data0}, \ti2cm0cmd: {i2cm0cmd}, \ti2cm0address: {i2cm0address}, \tOFFSET_WR: {OFFSET_WR}, \tOFFSET_RD: {OFFSET_RD}")
+
         ################################################################################
         # Write the register address
         ################################################################################
 
         # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-write-cr-0x0
         self.wr_adr(i2cm0data0+OFFSET_WR, adr_nbytes<<self.LPGBT_CONST.I2CM_CR_NBYTES_of | (freq<<self.LPGBT_CONST.I2CM_CR_FREQ_of))
+        # debugging
+        #print(f"Address: {i2cm0data0+OFFSET_WR}, \tValue: {adr_nbytes<<self.LPGBT_CONST.I2CM_CR_NBYTES_of | (freq<<self.LPGBT_CONST.I2CM_CR_FREQ_of)}")
         self.wr_adr(i2cm0cmd+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_CRA) #write to config register
+        # debugging
+        #print(f"Address: {i2cm0cmd+OFFSET_WR}, \tValue: {self.LPGBT_CONST.I2CM_WRITE_CRA}")
     
         # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-w-multi-4byte0-0x8
         for i in range (adr_nbytes):
             self.wr_adr(self.get_node("LPGBT.RW.I2C.I2CM0DATA%d"%i).real_address + OFFSET_WR, (reg >> (8*i)) & 0xff )
+            # debugging
+            #print(f"Address: {self.get_node('LPGBT.RW.I2C.I2CM0DATA%d'%i).real_address + OFFSET_WR}, \tValue: {(reg >> (8*i)) & 0xff}, \ti: {i}")
         # self.wr_adr(self.LPGBT_CONST.I2CM0DATA1 + OFFSET_WR , regh)
         self.wr_adr(i2cm0cmd+OFFSET_WR, self.LPGBT_CONST.I2CM_W_MULTI_4BYTE0) # prepare a multi-write
+        # debugging
+        #print(f"Address: {i2cm0cmd+OFFSET_WR}, \tValue: {self.LPGBT_CONST.I2CM_W_MULTI_4BYTE0}")
     
         # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-write-multi-0xc
         self.wr_adr(i2cm0address+OFFSET_WR, slave_addr)
+        # debugging
+        #print(f"Address: {i2cm0address+OFFSET_WR}, \tValue: {slave_addr}")
         self.wr_adr(i2cm0cmd+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_MULTI)# execute multi-write
+        # debugging
+        #print(f"Address: {i2cm0cmd+OFFSET_WR}, \tValue: {self.LPGBT_CONST.I2CM_WRITE_MULTI}")
 
         status = self.rd_adr(i2cm0status+OFFSET_RD)
+        
+        # debugging
+        #print(f"status: {status}, LPGBT_CONST.I2CM_SR_SUCC_bm: {self.LPGBT_CONST.I2CM_SR_SUCC_bm}, Address: {i2cm0status+OFFSET_RD}")
+
         retries = 0
         while (status != self.LPGBT_CONST.I2CM_SR_SUCC_bm):
             status = self.rd_adr(i2cm0status+OFFSET_RD)
+            # debugging
+            #print(f"Updating status: {status}, retries: {retries}")
             retries += 1
             if retries > 50:
                 if verbose:
@@ -1016,12 +1051,16 @@ class LPGBT(RegParser):
         self.wr_adr(i2cm0cmd+OFFSET_WR, self.LPGBT_CONST.I2CM_READ_MULTI)# execute read
         
         status = self.rd_adr(i2cm0status+OFFSET_RD)
+
+        # debugging
+        #print(f"status: {status}")
+
         retries = 0
         while (status != self.LPGBT_CONST.I2CM_SR_SUCC_bm):
             status = self.rd_adr(i2cm0status+OFFSET_RD)
             retries += 1
             if retries > 50:
-                if not quiet:
+                if verbose:
                     print ("Read not successfull!")
                 return None
 
@@ -1032,8 +1071,13 @@ class LPGBT(RegParser):
         else:
             i2cm0read15 = self.get_node("LPGBT.RO.I2CREAD.I2CM0READ.I2CM0READ15").real_address
 
+        # debugging
+        #print(f"i2cm0read15: {i2cm0read15}")
+
         for i in range(0, nbytes):
             tmp_adr = abs(i-i2cm0read15)+OFFSET_RD
+            # debugging
+            #print(f"tmp_adr: {tmp_adr}, \ttmp_adr_val: {self.rd_adr(tmp_adr).value()}")
             read_values.append(self.rd_adr(tmp_adr).value())
 
         #read_value = self.rd_adr(self.LPGBT_CONST.I2CM0READ15+OFFSET_RD) # get the read value. this is just the first byte
