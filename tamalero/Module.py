@@ -31,11 +31,12 @@ class Module:
             else:
                 self.ETROCs.append(
                     ETROC(
-                        rb=rb,
-                        master=self.config['i2c']['master'],
-                        i2c_channel=self.config['i2c']['channel'],
-                        elink=self.config['elinks'][j],
-                        i2c_adr = self.config['addresses'][j],
+                        rb          = rb,
+                        master      = self.config['i2c']['master'],
+                        i2c_channel = self.config['i2c']['channel'],
+                        elink       = self.config['elinks'][j],
+                        i2c_adr     = self.config['addresses'][j],
+                        strict      = False,
                     ))
 
     #def configure(self):

@@ -39,6 +39,7 @@ if __name__ == '__main__':
     argParser.add_argument('--control_hub', action='store_true', default=False, help="Use control hub for communication?")
     argParser.add_argument('--host', action='store', default='localhost', help="Specify host for control hub")
     argParser.add_argument('--devel', action='store_true', default=False, help="Don't check repo status (not recommended)")
+    argParser.add_argument('--monitor', action='store_true', default=False, help="Start up montoring threads in the background")
     args = argParser.parse_args()
 
 
@@ -179,12 +180,13 @@ if __name__ == '__main__':
             m.show_status()
 
         # Monitoring threads
-        from tamalero.Monitoring import Monitoring, module_mon
-        #mon1 = module_mon(modules[0])
-        monitoring_threads = []
-        for i in range(res['n_module']):
-            if modules[i].ETROCs[0].connected:
-                monitoring_threads.append(module_mon(modules[i]))
+        if args.monitor:
+            from tamalero.Monitoring import Monitoring, module_mon
+            #mon1 = module_mon(modules[0])
+            monitoring_threads = []
+            for i in range(res['n_module']):
+                if modules[i].ETROCs[0].connected:
+                    monitoring_threads.append(module_mon(modules[i]))
 
     #-------------------------------------------------------------------------------
     # Read ADCs
