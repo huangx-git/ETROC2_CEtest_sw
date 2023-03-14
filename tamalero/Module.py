@@ -112,8 +112,6 @@ class Module:
                 if etroc.daq_locked:
                     status += 1
 
-            # "global" lock
-            #self.rb.SCA.lock()
             self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], to=0)
             sleep(0.25)
             for i in range(status):
@@ -126,6 +124,3 @@ class Module:
                 self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], to=1)
             else:
                 self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], to=0)
-        #self.rb.SCA.unlock()
-
-            #sleep(5)
