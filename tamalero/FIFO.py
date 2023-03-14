@@ -36,7 +36,8 @@ class FIFO:
     def __init__(self, rb, block=255):
         self.rb = rb
         self.block = block
-        self.reset()
+        if rb != None:
+            self.reset()
 
     def get_zero_suppress_status(self):
         return self.rb.kcu.read_node("READOUT_BOARD_%s.ZERO_SUPRESS"%self.rb.rb).value()

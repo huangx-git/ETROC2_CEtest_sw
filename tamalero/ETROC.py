@@ -26,7 +26,7 @@ class ETROC():
     ):
         self.usefake = usefake
         if usefake:
-            self.fakeETROC = software_ETROC2()
+            self.fakeETROC = software_ETROC2(elink=elink)
             self.connected = True
             self.master = "software"
             self.i2c_channel = "0"
@@ -145,6 +145,12 @@ class ETROC():
                 return (vals[0] << lens[1]) | vals[1]
             else:
                 return (self.I2C_read(adr)&mask) >> shift
+
+    def runL1A(self):
+        if not self.usefake:
+            raise NotImplementedError("Can't send L1As for individual ETROCs / hardware emulators")
+        else:
+            return self.fakeETROC.runL1A()
 
     # ============================
     # === MONITORING FUNCTIONS ===
