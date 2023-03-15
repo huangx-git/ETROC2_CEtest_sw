@@ -198,6 +198,7 @@ if __name__ == '__main__':
 
         print("\n\nReading DAQ lpGBT ADC values:")
         rb_0.DAQ_LPGBT.read_adcs()
+        rb_0.DAQ_LPGBT.check_adcs()
 
         # High level reading of temperatures
         temp = rb_0.read_temp(verbose=1)

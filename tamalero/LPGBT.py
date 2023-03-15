@@ -518,6 +518,21 @@ class LPGBT(RegParser):
     #        read = self.read_adc(i)
     #        print("\tch %X: 0x%03X = %f, reading = %f (%s)" % (i, read, read/1024., conv*read/1024., name))
 
+    def check_adcs(self):
+        adc_dict = self.adc_mapping
+
+        for adc_reg in adc_dict.keys():
+            try:
+                min_v = adc_dict[adc_reg]['min']
+                max_v = adc_dict[adc_reg]['max']
+            except:
+                continue
+            pin = adc_dict[adc_reg]['pin']
+            value = self.read_adc(pin)
+            value_calibrated = value * self.cal_gain / 1.85 + (512 - self.cal_offset)
+            input_voltage = value_calibrated / (2**10 - 1) * adc_dict[adc_reg]['conv']
+            assert (input_voltage >= min_v) and (input_voltage <= max_v), f"Voltage for ADC{pin} is out of limits [{min_v} V, {max_v} V] with value {input_voltage:.2f} V."
+
     def read_adcs(self): #read and print all adc values
         self.init_adc()
         adc_dict = self.adc_mapping
