@@ -1,26 +1,33 @@
 #!/usr/bin/env python3
 
 from cocina.PowerSupply import PowerSupply
-
+import argparse
 
 if __name__ == '__main__':
 
-    ps1 = PowerSupply("Readout", "192.168.2.1")
-    ps2 = PowerSupply("Emulator", "192.168.2.2")
-    ps3 = PowerSupply("CI", "192.168.2.3")
+    argParser = argparse.ArgumentParser(description = "Argument parser")
+    argParser.add_argument('--verbose', action='store_true', default=False, help="Verbose PSU monitor")
+    argParser.add_argument('--ip', action='store', default="192.168.2.3", help="IP address of PSU to power cycle")
+    argParser.add_argument('--ch', action='store', default="ch1, ch2", help="Channels of PSU to power cycle")
+    args = argParser.parse_args()
 
-    print ("\nPS 1 (RBs)")
-    ps1.cycle(channel='ch1')
-    ps1.cycle(channel='ch2')    
-    ps1.monitor()
+    assert args.ch in "ch1, ch2", "Only channel 1 and channel 2 are available."
 
-    print ("\nPS 2 (Emulators)")
-    ps2.cycle(channel='ch1')
-    ps2.cycle(channel='ch2')
-    ps2.monitor()
+    if args.ip == "192.168.2.1":
+        name = "Readout"
+    elif args.ip == "192.168.2.2":
+        name = "Emulator"
+    elif args.ip == "192.168.2.3":
+        name = "CI"
+    else:
+        raise ValueError(f"Unrecognized IP address {args.ip}")
 
-    print ("\nPS 3 (CI)")
-    ps3.cycle(channel='ch1')
-    ps3.cycle(channel='ch2')
-    ps3.monitor()
+    psu = PowerSupply(name, args.ip)
+   
+    print (f"PS -- {name}")
+    channels = [ch for ch in args.ch.split(',')]
+    for ch in channels:
+        psu.cycle(channel=ch)
+    if args.verbose:
+        psu.monitor()
 
