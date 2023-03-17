@@ -520,7 +520,7 @@ class LPGBT(RegParser):
 
     def check_adcs(self):
         adc_dict = self.adc_mapping
-
+        name = "DAQ" if not self.trigger else "Trigger"
         for adc_reg in adc_dict.keys():
             try:
                 min_v = adc_dict[adc_reg]['min']
@@ -531,7 +531,7 @@ class LPGBT(RegParser):
             value = self.read_adc(pin)
             value_calibrated = value * self.cal_gain / 1.85 + (512 - self.cal_offset)
             input_voltage = value_calibrated / (2**10 - 1) * adc_dict[adc_reg]['conv']
-            assert (input_voltage >= min_v) and (input_voltage <= max_v), f"Voltage for ADC{pin} is out of limits [{min_v} V, {max_v} V] with value {input_voltage:.2f} V."
+            assert (input_voltage >= min_v) and (input_voltage <= max_v), f"Voltage for {name} lpGBT ADC{pin} is out of limits [{min_v} V, {max_v} V] with value {input_voltage:.2f} V."
 
     def read_adcs(self): #read and print all adc values
         self.init_adc()
