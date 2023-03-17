@@ -195,6 +195,7 @@ if __name__ == '__main__':
     if args.adcs:
         print("\n\nReading GBT-SCA ADC values:")
         rb_0.SCA.read_adcs()
+        rb_0.SCA.check_adcs()
 
         print("\n\nReading DAQ lpGBT ADC values:")
         rb_0.DAQ_LPGBT.read_adcs()

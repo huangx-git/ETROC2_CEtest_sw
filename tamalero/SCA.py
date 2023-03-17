@@ -420,6 +420,19 @@ class SCA:
 
         print(tabulate(table, headers=["Register","Pin", "Reading", "Voltage", "Comment"],  tablefmt="simple_outline"))
 
+    def check_adcs(self):
+        adc_dict = self.adc_mapping
+        for adc_reg in adc_dict.keys():
+            try:
+                min_v = adc_dict[adc_reg]['min']
+                max_v = adc_dict[adc_reg]['max']
+            except:
+                continue
+            pin = adc_dict[adc_reg]['pin']
+            value = self.read_adc(pin)
+            input_voltage = value / (2**12 - 1) * adc_dict[adc_reg]['conv']
+            assert (input_voltage >= min_v) and (input_voltage <= max_v), f"Voltage for GBT-SCA ADC{pin} is out of limits [{min_v} V, {max_v} V] with value {input_voltage:.2f} V."
+
     def read_temp(self):
         # not very precise (according to manual), but still useful.
         return ((self.read_adc(31)/2**12)*1000 - 716)/-1.829
