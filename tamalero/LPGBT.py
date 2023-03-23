@@ -127,8 +127,9 @@ class LPGBT(RegParser):
                 self.cal_gain = 1.85
                 self.cal_offset = 512
 
-        self.set_current_adc(7)
-        self.set_current_adc(0)
+        self.current_adcs = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/current_adcs.yaml'))['lpGBT']
+        for adc in self.current_adcs:
+            self.set_current_adc(adc)
 
     def read_base_config(self):
         #
