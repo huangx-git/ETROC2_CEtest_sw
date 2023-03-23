@@ -194,12 +194,10 @@ if __name__ == '__main__':
 
     if args.adcs:
         print("\n\nReading GBT-SCA ADC values:")
-        rb_0.SCA.read_adcs()
-        rb_0.SCA.check_adcs()
+        rb_0.SCA.read_adcs(check=True)
 
         print("\n\nReading DAQ lpGBT ADC values:")
-        rb_0.DAQ_LPGBT.read_adcs()
-        rb_0.DAQ_LPGBT.check_adcs()
+        rb_0.DAQ_LPGBT.read_adcs(check=True)
 
         # High level reading of temperatures
         temp = rb_0.read_temp(verbose=1)

@@ -408,7 +408,7 @@ class SCA:
         self.rw_reg(SCA_ADC.ADC_W_MUX, 0x0) #reset register to default (0)
         return val
 
-    def read_adcs(self): #read and print all adc values
+    def read_adcs(self, check=False): #read and print all adc values
         adc_dict = self.adc_mapping
         table=[]
         for adc_reg in adc_dict.keys():
@@ -416,22 +416,21 @@ class SCA:
             comment = adc_dict[adc_reg]['comment']
             value = self.read_adc(pin)
             input_voltage = value / (2**12 - 1) * adc_dict[adc_reg]['conv']
-            table.append([adc_reg, pin, value, input_voltage, comment])
+            if check:
+                try:
+                    min_v = adc_dict[adc_reg]['min']
+                    max_v = adc_dict[adc_reg]['max']
+                    status = "OK" if (input_voltage >= min_v) and (input_voltage <= max_v) else "ERR"
+                except:
+                    status = "N/A"
+                table.append([adc_reg, pin, value, input_voltage, status, comment])
+            else:
+                table.append([adc_reg, pin, value, input_voltage, comment])
 
-        print(tabulate(table, headers=["Register","Pin", "Reading", "Voltage", "Comment"],  tablefmt="simple_outline"))
-
-    def check_adcs(self):
-        adc_dict = self.adc_mapping
-        for adc_reg in adc_dict.keys():
-            try:
-                min_v = adc_dict[adc_reg]['min']
-                max_v = adc_dict[adc_reg]['max']
-            except:
-                continue
-            pin = adc_dict[adc_reg]['pin']
-            value = self.read_adc(pin)
-            input_voltage = value / (2**12 - 1) * adc_dict[adc_reg]['conv']
-            assert (input_voltage >= min_v) and (input_voltage <= max_v), f"Voltage for GBT-SCA ADC{pin} is out of limits [{min_v} V, {max_v} V] with value {input_voltage:.2f} V."
+        if check:
+            print(tabulate(table, headers=["Register","Pin", "Reading", "Voltage", "Status", "Comment"],  tablefmt="simple_outline"))
+        else:
+            print(tabulate(table, headers=["Register","Pin", "Reading", "Voltage", "Comment"],  tablefmt="simple_outline"))
 
     def read_temp(self):
         # not very precise (according to manual), but still useful.

@@ -518,22 +518,7 @@ class LPGBT(RegParser):
     #        read = self.read_adc(i)
     #        print("\tch %X: 0x%03X = %f, reading = %f (%s)" % (i, read, read/1024., conv*read/1024., name))
 
-    def check_adcs(self):
-        adc_dict = self.adc_mapping
-        name = "DAQ" if not self.trigger else "Trigger"
-        for adc_reg in adc_dict.keys():
-            try:
-                min_v = adc_dict[adc_reg]['min']
-                max_v = adc_dict[adc_reg]['max']
-            except:
-                continue
-            pin = adc_dict[adc_reg]['pin']
-            value = self.read_adc(pin)
-            value_calibrated = value * self.cal_gain / 1.85 + (512 - self.cal_offset)
-            input_voltage = value_calibrated / (2**10 - 1) * adc_dict[adc_reg]['conv']
-            assert (input_voltage >= min_v) and (input_voltage <= max_v), f"Voltage for {name} lpGBT ADC{pin} is out of limits [{min_v} V, {max_v} V] with value {input_voltage:.2f} V."
-
-    def read_adcs(self): #read and print all adc values
+    def read_adcs(self, check=False): #read and print all adc values
         self.init_adc()
         adc_dict = self.adc_mapping
 
@@ -545,9 +530,21 @@ class LPGBT(RegParser):
             value = self.read_adc(pin)
             value_calibrated = value * self.cal_gain / 1.85 + (512 - self.cal_offset)
             input_voltage = value_calibrated / (2**10 - 1) * adc_dict[adc_reg]['conv']
-            table.append([adc_reg, pin, value, input_voltage, comment])
+            if check:
+                try:
+                    min_v = adc_dict[adc_reg]['min']
+                    max_v = adc_dict[adc_reg]['max']
+                    status = "OK" if (input_voltage >= min_v) and (input_voltage <= max_v) else "ERR"
+                except:
+                    status = "N/A"
+                table.append([adc_reg, pin, value, input_voltage, status, comment])
+            else:
+                table.append([adc_reg, pin, value, input_voltage, comment])
 
-        print(tabulate(table, headers=["Register","Pin", "Reading", "Voltage", "Comment"],  tablefmt="simple_outline"))
+        if check:
+            print(tabulate(table, headers=["Register","Pin", "Reading", "Voltage", "Status", "Comment"],  tablefmt="simple_outline"))
+        else:
+            print(tabulate(table, headers=["Register","Pin", "Reading", "Voltage", "Comment"],  tablefmt="simple_outline"))
 
     def read_adc(self, channel, convert=False):
         # ADCInPSelect[3:0]  |  Input
