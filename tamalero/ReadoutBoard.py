@@ -365,7 +365,6 @@ class ReadoutBoard:
                 t2 = get_temp(adc_in29, v_ref, 10000, 25, 10000, 3900)  # this comes from the SCA ADC
             elif self.ver == 2:
                 # https://www.digikey.com/en/products/detail/tdk-corporation/NTCG063JF103FTB/5872743
-                # Parameters need updating?
                 curr_dac = self.DAQ_LPGBT.rd_reg("LPGBT.RWF.CUR_DAC.CURDACSELECT")*900/256
                 t1 = get_temp_direct(adc_7, curr_dac, thermistor="NTCG063JF103FTB")  # this comes from the lpGBT ADC
                 t2 = get_temp(adc_in29, v_ref, 10000, 25, 10000, 3380)  # this comes from the SCA ADC

@@ -664,12 +664,12 @@ class LPGBT(RegParser):
         if verbose:
             print(f"Set current source to pin ADC{channel}...", bin(self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE")))
        
-        curr_dac = 14 # Desired current of 14 uA; max V = 0.977, min V = 0.080 for T in -20-40C range
-        curr_dac_select = round(curr_dac*256/900) # CURDACSELECT is in units of 900/256 uA per bit
+        curr_dac = 100 # Desired current of 100 uA
+        curr_dac_select = min(round(curr_dac*256/900), 255) # CURDACSELECT is in units of 900/256 uA per bit, with max of 255
         self.wr_reg("LPGBT.RWF.CUR_DAC.CURDACSELECT", curr_dac_select)
         if verbose:
             print("Set current source value to...", curr_dac_select*900/256, "uA")
-
+    
     def set_dac(self, v_out):
         if v_out > 1.00:
             print ("Can't set the DAC to a value larger than 1.0 V!")
