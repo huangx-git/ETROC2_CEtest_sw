@@ -11,6 +11,7 @@ FIRMWARE="v2.1.4"
 PSU="192.168.2.3"
 KCU="192.168.0.11"
 HELP="false"
+POWER_CYCLE="false"
 
 function info() { echo -e "${BLUE}${@}${NC}"; }
 function error() { echo -e "${RED}${@}${NC}"; }
@@ -34,14 +35,14 @@ USAGE()
        	      Options:	
 		[-i | --id ID]              Unique ID of CI KCU
 		[-f | --firmware FIRMWARE]  Firmware version of KCU
-		[-p | --psu PSU]            IP address of Power Supply Unit
+		[-p | --psu PSU]            IP address of Power Supply Unit (will trigger power cycle)
 		[-k | --kcu KCU]            IP address of Xiling KCU
 		[-h | --help]               Show this screen"
 }
 
 
 #### Parse and check options and flags ####
-PARSED_ARGS=$(getopt -a -n "startup" --options i:f:p:k:h --longoptions "id:,firmware:,psu:,kcu:,help" -- "$@")
+PARSED_ARGS=$(getopt -a -n "startup" --options i:f:p:k:ch --longoptions "id:,firmware:,psu:,kcu:,cycle,help" -- "$@")
 VALID_ARGS=$?
 if [ "${VALID_ARGS}" -ne 0 ]; then
 	USAGE
@@ -56,13 +57,14 @@ while true; do
 		-f | --firmware ) FIRMWARE="$2"; shift 2;;
 		-p | --psu ) PSU="$2"; shift 2;;
 		-k | --kcu ) KCU="$2"; shift 2;;
+		-c | --cycle ) POWER_CYCLE="true"; shift;;
 		-h | --help ) HELP="true"; shift;;
 		--) shift; break;;
 	        * ) echo "Unexpected option: $1 - this should not happen"; USAGE; return 1;;
 	esac
 done
 
-if [ "${HELP}" -eq "true" ]; then
+if [ "${HELP}" == "true" ]; then
 	USAGE
 	return 0
 fi
@@ -73,21 +75,28 @@ if [ -z "${TAMALERO_BASE}" ]; then
 	return 1
 fi
 
+VIVADO=$(command -v vivado || command -v vivado_lab)
+if [[ -z "${VIVADO}" ]]; then
+	error "ERROR: Vivado not found in path. Must source Vivado first."
+        return 1
+fi
+
 cd $TAMALERO_BASE
 
-source /media/data_hdd/Xilinx/Vivado/2021.1/settings64.sh
 get_firmware_zip "${FIRMWARE}"
 cd ./etl_test_fw-${FIRMWARE}
 source ./program.sh "${ID}" noflash
 cd -
 
 # power cycle the PSUs with cocina
-info "Power cycle of PSUs with cocina..."
-/usr/bin/python3 power_cycle.py --ip "${PSU}" --ch "ch2"
+if [ "${POWER_CYCLE}" == "true" ]; then
+	info "Power cycle of PSUs with cocina..."
+	/usr/bin/env python3 power_cycle.py --ip "${PSU}" --ch "ch2"
+fi
 
 # run test_tamalero with power up
 info "Running test_tamalero..."
-/usr/bin/python3 test_tamalero.py --kcu "${KCU}" --power_up --control_hub --verbose --adcs
+/usr/bin/env python3 test_tamalero.py --kcu "${KCU}" --power_up --control_hub --verbose --adcs
 EXIT=$?
 if [ ${EXIT} -ne 0 ]; then
 	error "Failure when running test_tamalero.py; exit code is ${EXIT}. Blocking merge."

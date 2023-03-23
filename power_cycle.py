@@ -20,7 +20,7 @@ if __name__ == '__main__':
     elif args.ip == "192.168.2.3":
         name = "CI"
     else:
-        raise ValueError(f"Unrecognized IP address {args.ip}")
+        name = "Unknown"
 
     psu = PowerSupply(name, args.ip)
    
