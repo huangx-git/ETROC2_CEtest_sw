@@ -10,7 +10,7 @@ except ImportError:
 
 
 class DataFrame:
-    def __init__(self, version='ETROC1'):
+    def __init__(self, version='ETROC2'):
         with open(os.path.expandvars('$TAMALERO_BASE/configs/dataformat.yaml'), 'r') as f:
             self.format = load(f, Loader=Loader)[version]
         self.type = 0

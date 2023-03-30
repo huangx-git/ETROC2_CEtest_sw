@@ -131,145 +131,145 @@ adc:
         comment: temperature sensor 
             
 gpio:
-    mon_d00:
+    mod_d00:
         pin: 0x1E
         default: 0
         direction: out
         flavor: small
         comment: pin 32 in ETROC 0 and 1
-    mon_d01:
+    mod_d01:
         pin: 0x1F
         default: 0
         direction: out
         flavor: small
         comment: pin 30 in ETROC 0 and 1
-    mon_d02:
+    mod_d02:
         pin: 0x1D
         default: 0
         direction: out
         flavor: small
         comment: pin 28 in ETROC 0 and 1
-    mon_d03:
+    mod_d03:
         pin: 0x1C
         default: 0
         direction: out
         flavor: small
         comment: pin 26 in ETROC 0 and 1
-    mon_d04:
+    mod_d04:
         pin: 0x00
         default: 0
         direction: out
         flavor: small
         comment: pin 9 in ETROC 2 and 3
-    mon_d05:
+    mod_d05:
         pin: 0x02
         default: 0
         direction: out
         flavor: small
         comment: pin 11 in ETROC 2 and 3
-    mon_d06:
+    mod_d06:
         pin: 0x01
         default: 0
         direction: out
         flavor: small
         comment: pin 13 in ETROC 2 and 3
-    mon_d07:
+    mod_d07:
         pin: 0x03
         default: 0
         direction: out
         flavor: small
         comment: pin 15 in ETROC 2 and 3
-    mon_d08:
+    mod_d08:
         pin: 0x16
         default: 0
         direction: out
         flavor: small
         comment: pin 32 in ETROC 4 and 5
-    mon_d09:
+    mod_d09:
         pin: 0x19
         default: 0
         direction: out
         flavor: small
         comment: pin 30 in ETROC 4 and 5
-    mon_d10:
+    mod_d10:
         pin: 0x13
         default: 0
         direction: out
         flavor: small
         comment: pin 28 in ETROC 4 and 5
-    mon_d11:
+    mod_d11:
         pin: 0x10
         default: 0
         direction: out
         flavor: small
         comment: pin 26 in ETROC 4 and 5
-    mon_d12:
+    mod_d12:
         pin: 0x0A
         default: 0
         direction: out
         flavor: small
         comment: pin 9 in ETROC 6 and 7
-    mon_d13:
+    mod_d13:
         pin: 0x04
         default: 0
         direction: out
         flavor: small
         comment: pin 11 in ETROC 6 and 7
-    mon_d14:
+    mod_d14:
         pin: 0x07
         default: 0
         direction: out
         flavor: small
         comment: pin 13 in ETROC 6 and 7
-    mon_d15:
+    mod_d15:
         pin: 0x0D
         default: 0
         direction: out
         flavor: small
         comment: pin 15 in ETROC 6 and 7
-    mon_d16:
+    mod_d16:
         pin: 0x0F
         default: 0
         direction: out
         flavor: small
         comment: pin 32 in ETROC 8 and 9
-    mon_d17:
+    mod_d17:
         pin: 0x0E
         default: 0
         direction: out
         flavor: small
         comment: pin 30 in ETROC 8 and 9
-    mon_d18:
+    mod_d18:
         pin: 0x0C
         default: 0
         direction: out
         flavor: small
         comment: pin 28 in ETROC 8 and 9
-    mon_d19:
+    mod_d19:
         pin: 0x0B
         default: 0
         direction: out
         flavor: small
         comment: pin 26 in ETROC 8 and 9
-    mon_d20:
+    mod_d20:
         pin: 0x09
         default: 0
         direction: out
         flavor: small
         comment: pin 9 in ETROC 10 and 11
-    mon_d21:
+    mod_d21:
         pin: 0x08
         default: 0
         direction: out
         flavor: small
         comment: pin 11 in ETROC 10 and 11
-    mon_d22:
+    mod_d22:
         pin: 0x06
         default: 0
         direction: out
         flavor: small
         comment: pin 13 in ETROC 10 and 11
-    mon_d23:
+    mod_d23:
         pin: 0x05
         default: 0
         direction: out
@@ -277,7 +277,7 @@ gpio:
         comment: pin 15 in ETROC 10 and 11
     sca_led:
         pin: 0x1B
-        default: 0
+        default: 1
         direction: out
         flavor: small
         comment: SCA LED indicator

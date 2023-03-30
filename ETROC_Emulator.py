@@ -14,23 +14,25 @@ except ImportError:
 maxpixel = 256
 
 class software_ETROC2():
-    def __init__(self, BCID=0):
-        print('Initiating fake ETROC2...\n')
-       
+    def __init__(self, BCID=0, verbose=False, chipid=123456, elink=0):
+        if verbose:
+            print('Initiating fake ETROC2...\n')
+
         # load ETROC2 dataformat
         with open(os.path.expandvars('$TAMALERO_BASE/configs/dataformat.yaml'), 'r') as f:
             self.format = load(f, Loader=Loader)['ETROC2']
 
         # load emulated "registers"
-        with open(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC2_def.yaml'), 'r') as f:
+        with open(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC2.yaml'), 'r') as f:
             self.regs = load(f, Loader=Loader)
 
         # storing data for running L1As
         self.data = {
+                'elink'     : elink,
                 'l1counter' : 0,
                 'bcid'      : BCID,
                 'type'      : 0,  # use type regular data
-                'chipid'    : 0,
+                'chipid'    : chipid,
                 'status'    : 0,
                 'hits'      : 0,
                 'crc'       : 0,
@@ -49,10 +51,19 @@ class software_ETROC2():
 
 
     # emulating I2C connections
-    def I2C_write(self, reg, val):
-        self.regs[reg] = val
+    def wr_reg(self, reg, val, pix=None):
+        if pix is None:
+            self.regs[reg]['value'] = val
+        else:
+            try:
+                self.regs[reg]['value'][pix] = val
+            except KeyError:
+                self.regs[reg]['value'] = {}
+                self.regs[reg]['value'][pix] = val
 
         # update regs for other pixels if data is shared amongst pixels
+        # FIXME I honestly don't know what this does...
+        # The whole pixel business needs restructuring
         regcfg = reg.split('Cfg')
         if (len(regcfg) > 1) and (regcfg[1] in [0, 1, 2]):
             for r in range(16):
@@ -62,8 +73,11 @@ class software_ETROC2():
 
         return None
 
-    def I2C_read(self, reg):
-        return self.regs[reg]
+    def rd_reg(self, reg, pix=None):
+        if pix is None:
+            return self.regs[reg]['value']
+        else:
+            return self.regs[reg]['value'][pix]
 
 
     # add hit data to self.L1Adata & increment hit counter
@@ -85,10 +99,14 @@ class software_ETROC2():
             word = ( word +
                 ((data[datatype]<<self.format['data']['data'][datatype]['shift'])
                 &self.format['data']['data'][datatype]['mask']) )
-        self.L1Adata.append(word)
 
-        # inc Nhits
-        self.data['hits'] += 1
+        if self.data['hits'] < 255:
+            # the data format does not allow us to actually have 256 hits
+            # so we always have to cut the last one if there would be 100% occupancy
+            self.L1Adata.append(word)
+
+            # inc Nhits
+            self.data['hits'] += 1
 
         return None
 
@@ -134,5 +152,5 @@ class software_ETROC2():
             trailer = ( trailer +
                 ((self.data[datatype]<<self.format['data']['trailer'][datatype]['shift'])
                 &self.format['data']['trailer'][datatype]['mask']) )
-        
+
         return [header] + self.L1Adata + [trailer]

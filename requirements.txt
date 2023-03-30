@@ -11,3 +11,4 @@ rich==13.3.0
 pandas==1.5.2
 awkward==2.0.7
 pyarrow==11.0.0
+emoji==2.2.0

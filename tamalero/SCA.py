@@ -120,6 +120,7 @@ class SCA:
         self.ver = ver + 1  # NOTE don't particularly like this, but we're giving it the lpGBT version
         self.set_adc_mapping()
         self.set_gpio_mapping()
+        self.locked = False
 
     def connect_KCU(self, kcu):
         self.kcu = kcu
@@ -162,7 +163,6 @@ class SCA:
         """
         adr = chip address (0x0 by default)
         """
-
         if transid == 0:
             transid = random.randint(1, 2**8-2)  # transid of 0 or 255 gives error
 
@@ -183,6 +183,7 @@ class SCA:
         if verbose:
             print("SCA r/w:")
             print(f"{transid=}, {channel=}, {cmd=}, {adr=}, {data=}")
+
 
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_CHANNEL" % self.rb, channel)
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_CMD" % self.rb, cmd)
@@ -210,27 +211,20 @@ class SCA:
         # TODO: read reply
         err = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_ERR" % self.rb).value()  # 8 bit
         if err > 0:
-            if self.err_count < 10:
-                self.rw_cmd(cmd, channel, data, adr=adr, transid=transid)
-                self.err_count += 1
-            else:
-                print ("Failed %s times: %s. Last error:"%self.err_count)
-                if (err & 0x1):
-                    print("SCA Read Error :: Generic Error Flag")
-                if (err & 0x2):
-                    print("SCA Read Error :: Invalid Channel Request")
-                if (err & 0x4):
-                    print("SCA Read Error :: Invalid Command Request")
-                if (err & 0x8):
-                    print("SCA Read Error :: Invalid Transaction Number Request")
-                if (err & 0x10):
-                    print("SCA Read Error :: Invalid Length")
-                if (err & 0x20):
-                    print("SCA Read Error :: Channel Not Enabled")
-                if (err & 0x40):
-                    print("SCA Read Error :: Command In Treatment")
-        else:
-            self.err_count = 0
+            if (err & 0x1):
+                print("SCA Read Error :: Generic Error Flag")
+            if (err & 0x2):
+                print("SCA Read Error :: Invalid Channel Request")
+            if (err & 0x4):
+                print("SCA Read Error :: Invalid Command Request")
+            if (err & 0x8):
+                print("SCA Read Error :: Invalid Transaction Number Request")
+            if (err & 0x10):
+                print("SCA Read Error :: Invalid Length")
+            if (err & 0x20):
+                print("SCA Read Error :: Channel Not Enabled")
+            if (err & 0x40):
+                print("SCA Read Error :: Command In Treatment")
 
         rx_rec  = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_RECEIVED" % self.rb).value()  # flag pulse
         rx_ch   = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_CHANNEL" % self.rb).value()  # channel reply
@@ -253,7 +247,100 @@ class SCA:
                 raise TimeoutError("SCA Error :: Transaction timed out.")
 
         return self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_DATA" % self.rb)  # 32 bit read data
-    
+
+    def read_control_registers(self, verbose=False):
+        # don't need to read CRC
+        crb_rd = self.rw_reg(SCA_CONTROL.CTRL_R_CRB) >> 24
+        crc_rd = self.rw_reg(SCA_CONTROL.CTRL_R_CRC) >> 24
+        crd_rd = self.rw_reg(SCA_CONTROL.CTRL_R_CRD) >> 24
+
+        en_gpio = (crb_rd >> SCA_CRB.ENGPIO) & 1
+        en_spi = (crb_rd >> SCA_CRB.ENSPI) & 1
+        #en_i2c = (crb_rd >> )
+        if verbose:
+            print(f"SCA control registers: {en_gpio=}")
+            print(f"SCA control registers: {en_spi=}")
+            print (crb_rd, crc_rd, crd_rd)
+        return crb_rd, crc_rd, crd_rd
+
+    def get_I2C_status(self, channel):
+        channel_str = hex(channel).upper()[-1]
+        if channel < 5:
+            crb_rd = self.rw_reg(SCA_CONTROL.CTRL_R_CRB) >> 24
+            return (crb_rd >> getattr(SCA_CRB, f"ENI2C{channel_str}")) & 0x1
+        elif channel < 13:
+            crc_rd = self.rw_reg(SCA_CONTROL.CTRL_R_CRC) >> 24
+            return (crc_rd >> getattr(SCA_CRC, f"ENI2C{channel_str}")) & 0x1
+        elif channel < 16:
+            crd_rd = self.rw_reg(SCA_CONTROL.CTRL_R_CRD) >> 24
+            return (crd_rd >> getattr(SCA_CRD, f"ENI2C{channel_str}")) & 0x1
+        else:
+            raise RuntimeError(f"SCA only has 16 I2C channels, don't know what to do with channel {channel}")
+
+    def enable_I2C(self, channel=0):
+        '''
+        just enable a single i2c channel
+        '''
+        crb, crc, crd = self.read_control_registers()
+        ENI2C0  = (channel == 0) & 0x1
+        ENI2C1  = (channel == 1) & 0x1
+        ENI2C2  = (channel == 2) & 0x1
+        ENI2C3  = (channel == 3) & 0x1
+        ENI2C4  = (channel == 4) & 0x1
+        ENI2C5  = (channel == 5) & 0x1
+        ENI2C6  = (channel == 6) & 0x1
+        ENI2C7  = (channel == 7) & 0x1
+        ENI2C8  = (channel == 8) & 0x1
+        ENI2C9  = (channel == 9) & 0x1
+        ENI2CA  = (channel == 10) & 0x1
+        ENI2CB  = (channel == 11) & 0x1
+        ENI2CC  = (channel == 12) & 0x1
+        ENI2CD  = (channel == 13) & 0x1
+        ENI2CE  = (channel == 14) & 0x1
+        ENI2CF  = (channel == 15) & 0x1
+
+        crb |= ENI2C0 << SCA_CRB.ENI2C0
+        crb |= ENI2C1 << SCA_CRB.ENI2C1
+        crb |= ENI2C2 << SCA_CRB.ENI2C2
+        crb |= ENI2C3 << SCA_CRB.ENI2C3
+        crb |= ENI2C4 << SCA_CRB.ENI2C4
+
+        crc |= ENI2C5 << SCA_CRC.ENI2C5
+        crc |= ENI2C6 << SCA_CRC.ENI2C6
+        crc |= ENI2C7 << SCA_CRC.ENI2C7
+        crc |= ENI2C8 << SCA_CRC.ENI2C8
+        crc |= ENI2C9 << SCA_CRC.ENI2C9
+        crc |= ENI2CA << SCA_CRC.ENI2CA
+        crc |= ENI2CB << SCA_CRC.ENI2CB
+        crc |= ENI2CC << SCA_CRC.ENI2CC
+
+        crd |= ENI2CD << SCA_CRD.ENI2CD
+        crd |= ENI2CE << SCA_CRD.ENI2CE
+        crd |= ENI2CF << SCA_CRD.ENI2CF
+
+        self.rw_reg(SCA_CONTROL.CTRL_W_CRB, crb << 24)
+        self.rw_reg(SCA_CONTROL.CTRL_W_CRC, crc << 24)
+        self.rw_reg(SCA_CONTROL.CTRL_W_CRD, crd << 24)
+
+    def enable_gpio(self):
+        crb, crc, crd = self.read_control_registers()
+        crb |= 1 << SCA_CRB.ENGPIO
+        self.rw_reg(SCA_CONTROL.CTRL_W_CRB, crb << 24)
+
+    def enable_spi(self):
+        crb, crc, crd = self.read_control_registers()
+        crb |= 1 << SCA_CRB.ENSPI
+        self.rw_reg(SCA_CONTROL.CTRL_W_CRB, crb << 24)
+
+    def enable_adc(self):
+        crb, crc, crd = self.read_control_registers()
+        crd |= 1 << SCA_CRD.ENADC
+        self.rw_reg(SCA_CONTROL.CTRL_W_CRD, crd << 24)
+
+    def enable_dac(self):
+        crb, crc, crd = self.read_control_registers()
+        crd |= 1 << SCA_CRD.ENDAC
+        self.rw_reg(SCA_CONTROL.CTRL_W_CRD, crd << 24)
 
     def configure_control_registers(self, en_spi=0, en_gpio=0, en_i2c=0, en_adc=0, en_dac=0):
     
@@ -315,7 +402,7 @@ class SCA:
             print("CRD wr=%02X, rd=%02X" % (crd, crd_rd))
 
     def read_adc(self, MUX_reg = 0):
-        self.configure_control_registers(en_adc=1) #enable ADC
+        self.enable_adc() #enable ADC
         self.rw_reg(SCA_ADC.ADC_W_MUX, MUX_reg) #configure register we want to read
         val = self.rw_reg(SCA_ADC.ADC_GO, 0x01).value() #execute and read ADC_GO command
         self.rw_reg(SCA_ADC.ADC_W_MUX, 0x0) #reset register to default (0)
@@ -338,12 +425,12 @@ class SCA:
         return ((self.read_adc(31)/2**12)*1000 - 716)/-1.829
 
     def read_gpio(self, line):
-        self.configure_control_registers(en_gpio=1)  # enable GPIO
+        self.enable_gpio()  # enable GPIO
         val = self.rw_reg(SCA_GPIO.GPIO_R_DATAIN).value()
         return int((val >> line) & 1)
 
     def set_gpio(self, line, to=1):
-        self.configure_control_registers(en_gpio=1)  # enable GPIO
+        self.enable_gpio()  # enable GPIO
         currently_set = self.rw_reg(SCA_GPIO.GPIO_R_DATAOUT).value()
         if (currently_set & (1 << line)) and to==0:
             currently_set ^= (1 << line)
@@ -354,7 +441,7 @@ class SCA:
         return self.read_gpio(line)  # in order to check it is actually set
 
     def set_gpio_direction(self, line, to=1):
-        self.configure_control_registers(en_gpio=1)  # enable GPIO
+        self.enable_gpio()  # enable GPIO
         currently_set = self.rw_reg(SCA_GPIO.GPIO_R_DIRECTION).value()
         if (currently_set & (1 << line)) and to==0:
             currently_set ^= (1 << line)
@@ -365,7 +452,7 @@ class SCA:
         return (currently_set >> line) & 1  # in order to check it is actually set
 
     def reset_gpio(self):
-        self.configure_control_registers(en_gpio=1)  # enable GPIO
+        self.enable_gpio()  # enable GPIO
         self.rw_reg(SCA_GPIO.GPIO_W_DATAOUT, 0)
         self.rw_reg(SCA_GPIO.GPIO_W_DIRECTION, 0)
 
@@ -390,13 +477,15 @@ class SCA:
             self.set_gpio(pin, default)
 
     def get_I2C_channel(self, channel):
-        # this only works for channel 0-4 right now, enough for the tests. Needs to be fixed!
-        return getattr(SCA_CRB, "ENI2C%s"%channel)
+        channel_str = hex(channel).upper()[-1]
+        if channel < 16:
+            return SCA_CRB.ENI2C0 + channel  # offset in channel count
+        else:
+            raise RuntimeError(f"SCA only has 16 I2C channels, don't know what to do with channel {channel}")
 
     def I2C_write(self, reg=0x0, val=0x0, master=3, slave_addr=0x48, adr_nbytes=2):
         # wrapper function to have similar interface as lpGBT I2C_write
-        # enable corresponding channel. only one enabled at a time
-        self.configure_control_registers(en_i2c=(1<<master))
+        self.enable_I2C(channel=master)
         adr_bytes = [ ((reg >> (8*i)) & 0xff) for i in range(adr_nbytes) ]
         if isinstance(val, int):
             data_bytes = [val]
@@ -414,14 +503,19 @@ class SCA:
             return self.I2C_read_single_byte(channel=master, servant=slave_addr, reg=reg)
 
     def I2C_read_single_byte(self, channel=3, servant=0x48, reg=0x00):
-        # enable corresponding channel. only one enabled at a time
-        self.configure_control_registers(en_i2c=(1<<channel))
-        
+        self.enable_I2C(channel=channel)
+
         # write to the pointer reg
         self.I2C_write_single_byte(channel=channel, servant=servant, data=reg)
 
         # single byte read
-        res = self.rw_cmd(SCA_I2C.I2C_S_7B_R, self.get_I2C_channel(channel), servant<<24, 0x0).value()
+        res = self.rw_cmd(
+            SCA_I2C.I2C_S_7B_R,
+            self.get_I2C_channel(channel),
+            servant<<24,
+            0x0,
+        ).value()
+
         status = (res >> 24)
         success = (status & 4)
         if success:
@@ -432,10 +526,14 @@ class SCA:
 
     def I2C_write_single_byte(self, channel, servant, data):
         #enable channel
-        self.configure_control_registers(en_i2c=(1<<channel))
+        self.enable_I2C(channel=channel)
         #single byte write
         data_field = (servant<<24) | ((data & 255) << 16) #[31:24] is servant address, [23:16] is data byte
-        res = self.rw_cmd(SCA_I2C.I2C_S_7B_W, self.get_I2C_channel(channel), data_field).value()
+        res = self.rw_cmd(
+            SCA_I2C.I2C_S_7B_W,
+            self.get_I2C_channel(channel),
+            data_field,
+        ).value()
         status = res >> 24
         success = status & 4
         if success:
@@ -446,7 +544,7 @@ class SCA:
 
     def I2C_write_ctrl(self, channel, data):
         #enable channel
-        self.configure_control_registers(en_i2c=(1<<channel))
+        self.enable_I2C(channel=channel)
         #write control register
         data_field = data << 24
         res = self.rw_cmd(SCA_I2C.I2C_W_CTRL, self.get_I2C_channel(channel), data_field).value()
@@ -454,14 +552,14 @@ class SCA:
 
     def I2C_read_ctrl(self, channel):
         #enable channel
-        self.configure_control_registers(en_i2c=(1<<channel))
+        self.enable_I2C(channel=channel)
         #read control register
         res = self.rw_cmd(SCA_I2C.I2C_R_CTRL, self.get_I2C_channel(channel), 0x0).value()
         return res >> 24
 
     def I2C_read_multi(self, channel=3, servant=0x48, nbytes=15, reg=0x0):
         #enable channel
-        self.configure_control_registers(en_i2c=(1<<channel))
+        self.enable_I2C(channel=channel)
         #configure NBYTES in the control register
         self.I2C_write_ctrl(channel, nbytes<<2)
         # write to the pointer reg
@@ -499,7 +597,7 @@ class SCA:
             data = [data]
         nbytes = len(data)
         #enable channel
-        self.configure_control_registers(en_i2c=(1<<channel))
+        self.enable_I2C(channel=channel)
         #configure NBYTES in the control register
         self.I2C_write_ctrl(channel, nbytes<<2)
         #begin writing to the data registers [I2C_W_DATA0, I2C_W_DATA1, I2C_W_DATA2, I2C_W_DATA3]
@@ -528,7 +626,7 @@ class SCA:
 
     def I2C_status(self, channel=3, verbose=1):
         # returns whether last transaction was successful
-        self.configure_control_registers(en_i2c=(1<<channel))
+        self.enable_I2C(channel=channel)
         res = self.rw_cmd(SCA_I2C.I2C_R_STR, self.get_I2C_channel(channel), 0x0, 0x0).value()
         status = (res >> 24)
         success = (status & (1<<2)) >> 2 # bit 2 is for success

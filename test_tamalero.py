@@ -3,6 +3,7 @@ from tamalero.ReadoutBoard import ReadoutBoard
 from tamalero.utils import header, make_version_header, get_kcu, check_repo_status
 from tamalero.FIFO import FIFO
 from tamalero.DataFrame import DataFrame
+from tamalero.ETROC import ETROC
 from tamalero.Module import Module
 
 from tamalero.SCA import SCA_CONTROL
@@ -40,7 +41,6 @@ if __name__ == '__main__':
     argParser.add_argument('--devel', action='store_true', default=False, help="Don't check repo status (not recommended)")
     args = argParser.parse_args()
 
-    header()
 
     verbose = args.verbose
     data_mode = args.etroc in ['ETROC1', 'ETROC2']
@@ -78,6 +78,8 @@ if __name__ == '__main__':
             if (trycnt > 10):
                 sys.exit(0)
 
+    is_configured = rb_0.DAQ_LPGBT.is_configured()
+    header(configured=is_configured)
 
     if args.recal_lpgbt:
         rb_0.DAQ_LPGBT.calibrate_adc(recalibrate=True)
@@ -154,19 +156,35 @@ if __name__ == '__main__':
 
     rb_0.DAQ_LPGBT.set_dac(1.0)  # set the DAC / Vref to 1.0V.
 
+    if args.power_up or args.reconfigure:
+        print("Link inversions")
+        rb_0.DAQ_LPGBT.invert_links()
+        if rb_0.trigger: 
+            rb_0.TRIG_LPGBT.invert_links(trigger=rb_0.trigger)
+
     #-------------------------------------------------------------------------------
     # Module Status
     #-------------------------------------------------------------------------------
 
-    modules = []
-    for i in range(res['n_module']):
-        modules.append(Module(rb_0, i+1))
+    if args.verbose:
+        print("Configuring ETROCs")
+        modules = []
+        for i in range(res['n_module']):
+            modules.append(Module(rb_0, i+1))
 
-    print()
-    print("Querying module status")
-    for m in modules:
-        m.configure()
-        m.show_status()
+        print()
+        print("Querying module status")
+        for m in modules:
+            #m.configure()
+            m.show_status()
+
+        # Monitoring threads
+        from tamalero.Monitoring import Monitoring, module_mon
+        #mon1 = module_mon(modules[0])
+        monitoring_threads = []
+        for i in range(res['n_module']):
+            if modules[i].ETROCs[0].connected:
+                monitoring_threads.append(module_mon(modules[i]))
 
     #-------------------------------------------------------------------------------
     # Read ADCs
@@ -244,25 +262,6 @@ if __name__ == '__main__':
     if args.eyescan:
         rb_0.DAQ_LPGBT.eyescan()
 
-    #-------------------------------------------------------------------------------
-    # Data Readout
-    #-------------------------------------------------------------------------------
-
-    if data_mode:
-        time.sleep(1)
-        fifo_link = int(args.read_fifo)
-        df = DataFrame(args.etroc)
-        if fifo_link>=0:
-            fifo = FIFO(rb_0, elink=fifo_link, ETROC=args.etroc)
-            fifo.set_trigger(
-                df.get_trigger_words(),
-                df.get_trigger_masks(),
-                )
-            fifo.reset()
-            try:
-                hex_dump = fifo.giant_dump(300, 255, align=(args.etroc=="ETROC1"))
-            except:
-                print("Dispatch failed, trying again.")
-                hex_dump = fifo.giant_dump(300, 255, align=(args.etroc=="ETROC1"))
-            print (hex_dump)
-            fifo.dump_to_file(fifo.wipe(hex_dump, trigger_words=[]))  # use 5 columns --> better to read for our data format
+    all_tests_passed = True  # FIXME this should be properly defined
+    if all_tests_passed:
+        rb_0.DAQ_LPGBT.set_configured()

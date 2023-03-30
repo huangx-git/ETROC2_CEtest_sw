@@ -3,6 +3,7 @@ For ETROC control
 """
 
 from ETROC_Emulator import software_ETROC2
+from tamalero.colors import red, green
 import os
 from yaml import load, dump
 try:
@@ -12,77 +13,219 @@ except ImportError:
 
 class ETROC():
 
-    def __init__(self, write=None, read=None, usefake=True):
+    def __init__(
+            self,
+            rb=None,
+            master='lpgbt',
+            i2c_adr=0x72,
+            i2c_channel=0,
+            elink=0,
+            usefake=False,
+            verbose=False,
+            strict=True,
+    ):
         self.usefake = usefake
         if usefake:
-            self.fakeETROC = software_ETROC2()
-        elif write == None or read == None:
-            raise Exception("Pass in write&read functions for ETROC class!")
+            self.fakeETROC = software_ETROC2(elink=elink)
+            self.connected = True
+            self.master = "software"
+            self.i2c_channel = "0"
+            self.elink = elink
+            self.ver = "23-2-23"  # yy-mm-dd
+        else:
+            self.I2C_master = rb.DAQ_LPGBT if master == 'lpgbt' else rb.SCA
+            self.master = master
+            self.rb = rb
+            # check if connected
+            self.i2c_channel = i2c_channel
+            self.i2c_adr = i2c_adr
+            self.elink = elink
+            self.connected = self.I2C_read(0x13)
+            if self.connected:
+                self.ver = self.get_ver()
+            else:
+                self.ver = "X-X-X"
 
         with open(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC2.yaml'), 'r') as f:
             self.regs = load(f, Loader=Loader)
 
+        self.get_elink_status()
+        if usefake:
+            for reg in self.regs:
+                if isinstance(self.regs[reg]['regadr'], list):
+                    for pix in self.regs[reg]['regadr']:
+                        self.fakeETROC.wr_reg(reg, self.regs[reg]['default'], pix)
+                else:
+                    self.fakeETROC.wr_reg(reg, self.regs[reg]['default'], pix=None)
+
+        try:
+            self.default_config()
+        except TimeoutError:
+            if verbose:
+                print("Warning: ETROC default configuration failed!")
+            pass
+
+        if strict:
+            self.consistency(verbose=verbose)
 
     # =========================
     # === UTILITY FUNCTIONS ===
     # =========================
-
-    # read & write using register addresses
-    def wr_adr(self, adr, val):
+    def I2C_write(self, adr=0x0, val=0x0):
         if self.usefake:
-            self.fakeETROC.I2C_write(adr, val)
-        return None
+            raise NotImplementedError("I2C read not implemented for software ETROC")
+        else:
+            self.I2C_master.I2C_write(
+                reg=adr,  # NOTE bad naming, change?
+                val=val,
+                master=self.i2c_channel,
+                slave_addr=self.i2c_adr,
+            )
 
-    def rd_adr(self, adr):
+    def I2C_read(self, adr=0x0):
         if self.usefake:
-            return self.fakeETROC.I2C_read(adr)
-        return None
+            raise NotImplementedError("I2C read not implemented for software ETROC")
+        else:
+            return self.I2C_master.I2C_read(
+                reg=adr,
+                master=self.i2c_channel,
+                slave_addr=self.i2c_adr,
+            )
 
     # read & write using register name & pix num
-    def wr_reg(self, reg, pix, val):
-        adr = self.regs[reg]['regadr'][pix]
-        mask = self.regs[reg]['mask']
-        shift = self.regs[reg]['shift']
-        
-        # check for data overflow
-        if type(adr) is list:
-            # get the lengths of parts that we care about in each adr
-            lens = [bin(mask[i]).count("1") for i in range(len(adr))]
-            masklength = sum(lens)
+    def wr_reg(self, reg, val, pix=None):
+        if self.usefake:
+            self.fakeETROC.wr_reg(reg, val)
         else:
-            masklength = bin(mask).count("1")
-        vallength = len(bin(val)) - 2
-        if vallength > masklength:
-            print('Overflow warning! Trying to store %s in %d-bit long register %s'%(bin(val), masklength, reg))
+            if pix is None:
+                adr = self.regs[reg]['regadr']
+            else:
+                adr = self.regs[reg]['regadr'][pix]
+            mask = self.regs[reg]['mask']
+            shift = self.regs[reg]['shift']
 
-        # for some registers, data is stored in two adrs
-        if type(adr) is list:
-            # split val into two parts
-            vals = [val>>lens[1], val&(2**lens[0]-1)]
-            for i in range(len(adr)):
-                orig_val = self.rd_adr(adr[i])
-                new_val = ((vals[i]<<shift[i])&mask[i]) | (orig_val&(~mask[i]))
-                self.wr_adr(adr[i], new_val)
+            # check for data overflow
+            if type(adr) is list:
+                # get the lengths of parts that we care about in each adr
+                lens = [bin(mask[i]).count("1") for i in range(len(adr))]
+                masklength = sum(lens)
+            else:
+                masklength = bin(mask).count("1")
+            vallength = len(bin(val)) - 2
+            if vallength > masklength:
+                print('Overflow warning! Trying to store %s in %d-bit long register %s'%(bin(val), masklength, reg))
+
+            # for some registers, data is stored in two adrs
+            if isinstance(adr, list):
+                # split val into two parts
+                vals = [val>>lens[1], val&(2**lens[0]-1)]
+                for i in range(len(adr)):
+                    orig_val = self.I2C_read(adr[i])
+                    new_val = ((vals[i]<<shift[i])&mask[i]) | (orig_val&(~mask[i]))
+                    self.I2C_write(adr[i], new_val)
+            else:
+                orig_val = self.I2C_read(adr)
+                new_val = ((val<<shift)&mask) | (orig_val&(~mask))
+                self.I2C_write(adr, new_val)
+
+    def rd_reg(self, reg, pix=None):
+        if self.usefake:
+            return self.fakeETROC.rd_reg(reg, pix=pix)
         else:
-            orig_val = self.rd_adr(adr)
-            new_val = ((val<<shift)&mask) | (orig_val&(~mask))
-            self.wr_adr(adr, new_val)
+            if pix is None:
+                adr = self.regs[reg]['regadr']
+            else:
+                adr = self.regs[reg]['regadr'][pix]
+            mask = self.regs[reg]['mask']
+            shift = self.regs[reg]['shift']
+            # for some registers, data is stored in two adrs
+            if type(adr) is list:
+                lens = [bin(mask[i]).count("1") for i in range(len(adr))]
+                vals = [(self.I2C_read(adr[i])&mask[i]) >> shift[i] for i in range(len(adr))]
+                return (vals[0] << lens[1]) | vals[1]
+            else:
+                return (self.I2C_read(adr)&mask) >> shift
 
-    def rd_reg(self, reg, pix):
-        adr = self.regs[reg]['regadr'][pix]
-        mask = self.regs[reg]['mask']
-        shift = self.regs[reg]['shift']
-        # for some registers, data is stored in two adrs
-        if type(adr) is list:
-            lens = [bin(mask[i]).count("1") for i in range(len(adr))]
-            vals = [(self.rd_adr(adr[i])&mask[i]) >> shift[i] for i in range(len(adr))]
-            return (vals[0] << lens[1]) | vals[1]
+    def runL1A(self):
+        if not self.usefake:
+            raise NotImplementedError("Can't send L1As for individual ETROCs / hardware emulators")
         else:
-            return (self.rd_adr(adr)&mask) >> shift
+            return self.fakeETROC.runL1A()
 
+    # ============================
+    # === MONITORING FUNCTIONS ===
+    # ============================
+
+    def is_connected(self):
+        self.conected = self.I2C_read(0x13)
+        return self.connected
+
+    def get_elink_status(self):
+        if self.usefake:
+            self.trig_locked = True
+            self.daq_locked = True
+        else:
+            locked = self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.ETROC_LOCKED").value()
+            locked_slave = self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.ETROC_LOCKED_SLAVE").value()
+            self.trig_locked = ((locked_slave >> self.elink) & 1) == True
+            self.daq_locked = ((locked >> self.elink) & 1) == True
+        return self.daq_locked, self.trig_locked
+
+    def get_ver(self):
+        try:
+            ver = [hex(self.I2C_read(i))[2:] for i in [0x19,0x18,0x17]]
+            return "-".join(ver)
+        except:
+            return "--"
+
+    def consistency(self, verbose=False):
+        if self.usefake:
+            return True
+        daq, trig = self.get_elink_status()
+        if daq:
+            self.wr_reg('disScrambler', 0x0)
+            daq1, trig1 = self.get_elink_status()
+            self.wr_reg('disScrambler', 0x1)
+            assert daq != daq1, "Links and I2C configuration are inconsistent, please check"
+            self.get_elink_status()
+        else:
+            if verbose:
+                print("Could not check consistency because link is not ready.")
+                print(f"{self.master}, {self.i2c_channel}, {self.elink}")
+        return True
+
+    def show_occupancy(self):
+        # this needs to be connected to a FIFO read - FIXME
+        print ('┏' + 16*'━' + '┓')
+        for i in range(16):
+            print ('┃'+16*'X'+'┃')
+        print ('┗' + 16*'━' + '┛')
+
+    def show_status(self):
+        self.get_elink_status()
+        print("┏" + 31*'━' + "┓")
+        if self.usefake:
+            print("┃{:^31s}┃".format("ETROC Software Emulator"))
+        else:
+            print("┃{:^31s}┃".format("ETROC Hardware Emulator"))
+            print("┃{:^31s}┃".format(f"{self.master} channel {self.i2c_channel}"))
+            print("┃{:^31s}┃".format(f"address: {hex(self.i2c_adr)}"))
+        print("┃{:^31s}┃".format("version: "+self.ver))
+        print("┃" + 31*" " + "┃")
+        print("┃{:^31s}┃".format(f"Link: {self.elink}"))
+        print ('┃' + (green('{:^31s}'.format('DAQ')) if self.daq_locked else red('{:^31s}'.format('DAQ'))) + '┃' )
+        print ('┃' + (green('{:^31s}'.format('Trigger')) if self.trig_locked else red('{:^31s}'.format('Trigger'))) + '┃' )
+
+        print("┗" + 31*"━" + "┛")
     # =========================
     # === CONTROL FUNCTIONS ===
     # =========================
+
+    def default_config(self):
+        if self.connected:
+            self.wr_reg('singlePort', 0)
+            self.wr_reg('mergeTriggerData', 0)
+            self.wr_reg('disScrambler', 1)
 
     # *** IN-PIXEL CONFIG ***
 
@@ -91,7 +234,7 @@ class ETROC():
     def set_Cload(self, C):
         val = {0:0b00, 40:0b01, 80:0b10, 160:0b11}
         try:
-            self.wr_reg('CLsel', 0, val(C))
+            self.wr_reg('CLsel', val(C), 0)
         except KeyError:
             print('Capacitance should be 0, 80, 80, or 160 fC.')
 
@@ -197,7 +340,7 @@ class ETROC():
         self.wr_reg('Bypass_THCal', pix, 0)
 
     def set_Vth_pix(self, pix, vth):
-        self.wr_reg('DAC', pix, vth)
+        self.wr_reg('DAC', vth, pix)
 
     def set_Vth_pix_mV(self, pix, vth):
         if self.usefake:
@@ -205,7 +348,7 @@ class ETROC():
             print("Vth set to %f."%vth)
         else:
             v = vth # FIXME: convert from mV to bit representation
-            self.wr_reg('DAC', pix, vth)
+            self.wr_reg('DAC', vth, pix)
 
     def get_Vth_pix(self, pix):
         self.rd_reg('DAC', pix)
@@ -217,7 +360,7 @@ class ETROC():
 
     def set_Vth(self, vth):
         for pix in range(256):
-            set_Vth_pix(self, pix, vth)
+            self.set_Vth_pix(self, pix, vth)
 
     def set_Vth_mV(self, vth):
         if self.usefake:
@@ -225,7 +368,7 @@ class ETROC():
             print("Vth set to %f."%vth)
         else:
             for pix in range(256):
-                set_Vth_pix_mV(self, pix, vth)
+                self.set_Vth_pix_mV(self, pix, vth)
 
     # return vth value if vth for all pixels are same;
     # return None if they are not all the same
