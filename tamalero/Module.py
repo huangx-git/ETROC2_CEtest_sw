@@ -7,7 +7,7 @@ from tamalero.Monitoring import Lock
 from time import sleep
 
 class Module:
-    def __init__(self, rb, i=1):
+    def __init__(self, rb, i=1, strict=False):
         # don't like that this also needs a RB
         # think about a better solution
         map_file = os.path.expandvars(f'$TAMALERO_BASE/configs/module_mapping_v{rb.ver}.yaml')
@@ -36,7 +36,7 @@ class Module:
                         i2c_channel = self.config['i2c']['channel'],
                         elink       = self.config['elinks'][j],
                         i2c_adr     = self.config['addresses'][j],
-                        strict      = False,
+                        strict      = strict,
                     ))
 
     #def configure(self):
