@@ -7,8 +7,9 @@ BLUE='\033[1;34m'
 NC='\033[0m'
 
 ID="210308B0B4F5"
-FIRMWARE="v2.1.4"
+FIRMWARE="v`python -c 'import tamalero; print(tamalero.__fw_version__)'`"
 PSU="192.168.2.3"
+CH="ch2"
 KCU="192.168.0.11"
 HELP="false"
 POWER_CYCLE="false"
@@ -30,13 +31,14 @@ get_firmware_zip() {
 
 USAGE()
 {
-	echo "Usage: 
+	info "Usage: 
 		startup
        	      Options:	
 		[-i | --id ID]              Unique ID of CI KCU
 		[-f | --firmware FIRMWARE]  Firmware version of KCU
-		[-p | --psu PSU]            IP address of Power Supply Unit (will trigger power cycle)
-		[-k | --kcu KCU]            IP address of Xiling KCU
+		[-p | --psu PSU:CH]         IP address and channel(s) of Power Supply Unit (will trigger power cycle)
+		[-k | --kcu KCU]            IP address of Xilinx KCU
+		[-c | --cycle]		    Power cycle PSU (not necessary if -p is set)
 		[-h | --help]               Show this screen"
 }
 
@@ -55,12 +57,18 @@ while true; do
 	case "$1" in
 		-i | --id ) ID="$2"; shift 2;;
 		-f | --firmware ) FIRMWARE="$2"; shift 2;;
-		-p | --psu ) PSU="$2"; shift 2;;
+		-p | --psu )
+			old_ifs="$IFS"
+			IFS=":"
+			read -r PSU CH <<< "$2"
+			POWER_CYCLE="true"
+			IFS="$old_ifs"
+			shift 2;;
 		-k | --kcu ) KCU="$2"; shift 2;;
 		-c | --cycle ) POWER_CYCLE="true"; shift;;
 		-h | --help ) HELP="true"; shift;;
 		--) shift; break;;
-	        * ) echo "Unexpected option: $1 - this should not happen"; USAGE; return 1;;
+	        * ) error "Unexpected option: $1 - this should not happen"; USAGE; return 1;;
 	esac
 done
 
@@ -91,7 +99,7 @@ cd -
 # power cycle the PSUs with cocina
 if [ "${POWER_CYCLE}" == "true" ]; then
 	info "Power cycle of PSUs with cocina..."
-	/usr/bin/env python3 power_cycle.py --ip "${PSU}" --ch "ch2"
+	/usr/bin/env python3 power_cycle.py --ip "${PSU}" --ch "${CH}"
 fi
 
 # run test_tamalero with power up

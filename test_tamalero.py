@@ -63,21 +63,21 @@ if __name__ == '__main__':
             if (kcu == 0):
                 # if not basic connection was established the get_kcu function returns 0
                 # this would cause the RB init to fail.
-                sys.exit(0)
+                sys.exit(1)
             rb_0 = ReadoutBoard(0, trigger=(not args.force_no_trigger), kcu=kcu)
             #rb_0.DAQ_LPGBT.configure()  # NOTE this can be removed
             data = 0xabcd1234
             kcu.write_node("LOOPBACK.LOOPBACK", data)
             if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
                 print("No communications with KCU105... quitting")
-                sys.exit(0)
+                sys.exit(1)
             break
         except uhal._core.exception:
             print("uhal UDP error... trying again ")
             trycnt += 1
             time.sleep(1)
             if (trycnt > 10):
-                sys.exit(0)
+                sys.exit(1)
 
     is_configured = rb_0.DAQ_LPGBT.is_configured()
     header(configured=is_configured)
