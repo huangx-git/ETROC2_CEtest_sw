@@ -69,8 +69,11 @@ if __name__ == '__main__':
             data = 0xabcd1234
             kcu.write_node("LOOPBACK.LOOPBACK", data)
             if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
-                print("No communications with KCU105... quitting")
-                sys.exit(1)
+                trycnt += 1
+                time.sleep(1)
+                if (trycnt > 10):
+                    print("No communications with KCU105... quitting")
+                    sys.exit(1)
             break
         except uhal._core.exception:
             print("uhal UDP error... trying again ")
