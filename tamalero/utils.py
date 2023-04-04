@@ -197,19 +197,26 @@ def get_kcu(kcu_address, control_hub=True, host='localhost', verbose=False):
             print(f"NOT using control hub on {host=}, {kcu_address=}")
 
     import uhal
+    import time
     if control_hub:
         ipb_path = f"chtcp-2.0://{host}:10203?target={kcu_address}:50001"
     else:
         ipb_path = f"ipbusudp-2.0://{kcu_address}:50001"
     print (f"IPBus address: {ipb_path}")
 
-    try:
-        kcu_tmp = KCU(name="tmp_kcu",
-                    ipb_path=ipb_path,
-                    adr_table="address_table/generic/etl_test_fw.xml")
-    except uhal.exception:
-        print ("Could not establish connection with KCU. Exiting.")
-        return 0
+    trycnt = 0
+    while (True):
+        try:
+            kcu_tmp = KCU(name="tmp_kcu",
+                        ipb_path=ipb_path,
+                        adr_table="address_table/generic/etl_test_fw.xml")
+            break
+        except uhal.exception or uhal._core.exception:
+            trycnt += 1
+            time.sleep(1)
+            if (trycnt > 10):
+                print ("Could not establish connection with KCU. Exiting.")
+                return 0
 
         #raise
     xml_sha     = kcu_tmp.get_xml_sha()
