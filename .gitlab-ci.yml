@@ -23,4 +23,4 @@ make_test:
   script:
     - source setup.sh
     - source /media/data_hdd/Xilinx/Vivado/2021.1/settings64.sh
-    - source ci/startup.sh -i 210308B0B4F5 -f v2.1.5 -k 192.168.0.12 -p 192.168.2.3 -c
+    - source tests/startup.sh -i 210308B0B4F5 -f v2.1.5 -k 192.168.0.12 -p 192.168.2.3:ch2
