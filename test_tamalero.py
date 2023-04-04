@@ -74,9 +74,6 @@ if __name__ == '__main__':
     if args.recal_lpgbt:
         rb_0.DAQ_LPGBT.calibrate_adc(recalibrate=True)
 
-    if (verbose):
-        kcu.status()
-
     if not args.devel:
         check_repo_status(kcu_version=kcu.get_firmware_version(verbose=True))
 
@@ -139,6 +136,9 @@ if __name__ == '__main__':
             allow_bad_links=args.allow_bad_links)
         if verbose:
             rb_0.status()
+
+    if (verbose):
+        kcu.status()
 
     rb_0.VTRX.get_version()
     if (verbose):
@@ -256,3 +256,4 @@ if __name__ == '__main__':
     all_tests_passed = True  # FIXME this should be properly defined
     if all_tests_passed:
         rb_0.DAQ_LPGBT.set_configured()
+
