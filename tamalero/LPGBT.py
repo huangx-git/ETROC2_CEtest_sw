@@ -121,12 +121,7 @@ class LPGBT(RegParser):
         # Callibrate ADCs
         # will automatically load from the config file if it is found
         if self.cal_gain == -1 or self.cal_offset == -1:
-            try:
-                self.calibrate_adc()
-            except:
-                print("Need to calibrate ADC in the future. Use default values for now.")
-                self.cal_gain = 1.85
-                self.cal_offset = 512
+            self.calibrate_adc()
 
         self.current_adcs = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/current_adcs.yaml'))['lpGBT']
         for adc in self.current_adcs:
