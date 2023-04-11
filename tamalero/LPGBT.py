@@ -550,7 +550,25 @@ class LPGBT(RegParser):
         else:
             print(tabulate(table, headers=["Register","Pin", "Reading", "Voltage", "Comment"],  tablefmt="simple_outline"))
 
-    def read_adc(self, channel, convert=False):
+    def set_current_dac(self, units):
+        self.wr_reg("LPGBT.RWF.CUR_DAC.CURDACSELECT", units)
+
+    def get_current_dac(self):
+        return self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACSELECT")
+
+    def set_current_dac_uA(self, uA):
+        # CURDACSELECT is in units of 900/256 uA per bit, with max of 255
+        conv = 256.0/900
+        val = min(round(uA*conv), 255)
+        self.set_current_dac(val)
+        return val/conv
+
+    def get_current_dac_uA(self):
+        # CURDACSELECT is in units of 900/256 uA per bit, with max of 255
+        return self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACSELECT") * 900/256.0
+
+
+    def read_adc(self, channel, calibrate=True, convert=False):
         # ADCInPSelect[3:0]  |  Input
         # ------------------ |----------------------------------------
         # 4'd0               |  ADC0 (external pin)
@@ -587,13 +605,19 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RW.ADC.ADCCONVERT", 0x0)
         self.wr_reg("LPGBT.RW.ADC.ADCENABLE", 0x1)
 
+        if calibrate:
+            val = val*self.cal_gain/1.85 + (512 - self.cal_offset) # calibrate
+
         if convert:
+            conversion = None
             for k in self.adc_mapping.keys():
                 if int(self.adc_mapping[k]['pin']) == channel:
                     conversion = self.adc_mapping[k]['conv']
                     break
-            val = val*self.cal_gain/1.85 + (512 - self.cal_offset) # calibrate
-            val = val / (2**10 - 1) * conversion # convert
+            if conversion is not None:
+                val = val * conversion / (2**10 - 1)
+            else:
+                raise Exception(f"ADC conversion not found when reading ADC {channel}")
         return val
 
     def calibrate_adc(self, recalibrate=False):
@@ -631,7 +655,7 @@ class LPGBT(RegParser):
         self.cal_gain = gain
         self.cal_offset = offset
 
-    def set_current_adc(self, channel, verbose=True):
+    def set_current_adc(self, channel, verbose=False):
         assert channel in range(8), f"Can only choose from ADC0 to ADC7; ADC{channel} was given instead"
         
         self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE", 0x1)
@@ -654,21 +678,24 @@ class LPGBT(RegParser):
             adc_chn = self.LPGBT_CONST.CURDAC_CHN6_bm
         elif channel == 7:
             adc_chn = self.LPGBT_CONST.CURDAC_CHN7_bm
+        else:
+            raise Exception("Invalid lpGBT ADC channel selected")
 
         currently_set = self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE")
-        print(f"LPGBT.RWF.CUR_DAC.CURDACCHNENABLE currently set: {bin(currently_set)}")
-        print(f"Want to set {bin(adc_chn)}")
-        print(f"LPGBT.RWF.CUR_DAC.CURDACCHNENABLE new set: {bin(adc_chn | currently_set)}")
+
+        if verbose:
+            print(f"LPGBT.RWF.CUR_DAC.CURDACCHNENABLE currently set: {bin(currently_set)}")
+            print(f"Want to set {bin(adc_chn)}")
+            print(f"LPGBT.RWF.CUR_DAC.CURDACCHNENABLE new set: {bin(adc_chn | currently_set)}")
 
         self.wr_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE", adc_chn | currently_set) # Set pin ADC channel to current source
         if verbose:
             print(f"Set current source to pin ADC{channel}...", bin(self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE")))
-       
-        curr_dac = 100 # Desired current of 100 uA
-        curr_dac_select = min(round(curr_dac*256/900), 255) # CURDACSELECT is in units of 900/256 uA per bit, with max of 255
-        self.wr_reg("LPGBT.RWF.CUR_DAC.CURDACSELECT", curr_dac_select)
+
+        current = 100 # Desired current of 100 uA
+        self.set_current_dac_uA(current)
         if verbose:
-            print("Set current source value to...", curr_dac_select*900/256, "uA")
+            print(f"Set current source value to {current} uA")
     
     def set_dac(self, v_out):
         if v_out > 1.00:
@@ -696,6 +723,8 @@ class LPGBT(RegParser):
         elif self.ver == 1:
             lo_bits = self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUE_0TO7")
             hi_bits = self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACVALUE_8TO11")
+        else:
+            raise Exception("Invalid lpgbt version detected.")
         value = lo_bits | (hi_bits << 8)
         return value/4096*v_ref
 

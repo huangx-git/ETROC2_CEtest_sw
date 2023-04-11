@@ -349,35 +349,73 @@ class ReadoutBoard:
                     else:
                         raise RuntimeError(f"{link} link does not have a stable connection after {max_retries} retries")
 
-    def read_temp(self, verbose=0):
-        # high level function to read all the temperature sensors
-        
-        adc_7    = self.DAQ_LPGBT.read_adc(7)/(2**10-1)
-        adc_0    = self.DAQ_LPGBT.read_adc(0)/(2**10-1)
-        adc_in29 = self.SCA.read_adc(29)/(2**12-1)
-        v_ref    = self.DAQ_LPGBT.read_dac()
-        t_SCA    = self.SCA.read_temp()  # internal temp from SCA
+    def read_vtrx_temp(self):
 
-        if v_ref>0:
+        # vtrx thermistors
+        current_vtrx    = self.DAQ_LPGBT.set_current_dac_uA(600)
+        rt_vtrx_voltage = self.DAQ_LPGBT.read_adc(0)/(2**10-1)
+
+        if self.ver == 1:
+            return -1.0
+        elif self.ver == 2:
+            return get_temp_direct(rt_vtrx_voltage, current_vtrx, thermistor="NCP03XM102E05RL")  # this comes from the lpGBT ADC (VTRX TH)
+        else:
+            raise Exception("Unknown lpgbt version")
+
+    def read_rb_thermistor(self, rt):
+
+        # read voltage reference; some temperature readings depend on it
+        v_ref = self.DAQ_LPGBT.read_dac()
+        if v_ref==0 and ((rt==1 and self.ver==1) or rt==2):
+            raise Exception("Read temperature called with VREF configured as 0V. VREF must be configured to read the temperatures.")
+
+        if rt==1:
+
+            if self.ver == 1:
+                # This uses the DAC output for current so just read the voltage
+                rt1_voltage = self.DAQ_LPGBT.read_adc(7)/(2**10-1) # FIXME: 7 should not be hardcoded
+                return get_temp(rt1_voltage, v_ref, 10000, 25, 10000, 3900)  # this comes from the lpGBT ADC
+            elif self.ver == 2:
+                # Set the DAC current then read the voltage
+                current_rt1 = self.DAQ_LPGBT.set_current_dac_uA(50)
+                rt1_voltage = self.DAQ_LPGBT.read_adc(7)/(2**10-1) # FIXME: 7 should not be hardcoded
+                return get_temp_direct(rt1_voltage, current_rt1, thermistor="NTCG063JF103FTB")  # this comes from the lpGBT ADC
+            else:
+                raise Exception("Unknown lpgbt version")
+
+        elif rt==2:
+
+            rt2_voltage = self.SCA.read_adc(29)/(2**12-1) # FIXME: 29 should not be hardcoded
+
             if self.ver == 1:
                 # https://www.digikey.com/en/products/detail/tdk-corporation/NTCG063UH103HTBX/8565486
-                t1 = get_temp(adc_7, v_ref, 10000, 25, 10000, 3900)  # this comes from the lpGBT ADC
-                t2 = get_temp(adc_in29, v_ref, 10000, 25, 10000, 3900)  # this comes from the SCA ADC
+                return get_temp(rt2_voltage, v_ref, 10000, 25, 10000, 3900)  # this comes from the SCA ADC
             elif self.ver == 2:
                 # https://www.digikey.com/en/products/detail/tdk-corporation/NTCG063JF103FTB/5872743
-                curr_dac = self.DAQ_LPGBT.rd_reg("LPGBT.RWF.CUR_DAC.CURDACSELECT")*900/256
-                t1 = get_temp_direct(adc_7, curr_dac, thermistor="NTCG063JF103FTB")  # this comes from the lpGBT ADC
-                t2 = get_temp(adc_in29, v_ref, 10000, 25, 10000, 3380)  # this comes from the SCA ADC
-                t_VTRX = get_temp_direct(adc_0, curr_dac, thermistor="NCP03XM102E05RL")  # this comes from the lpGBT ADC (VTRX TH)
+                return get_temp(rt2_voltage, v_ref, 10000, 25, 10000, 3380)  # this comes from the SCA ADC
+            else:
+                raise Exception("Unknown lpgbt version")
 
-            if verbose>0:
-                print ("\nV_ref is set to: %.3f V"%v_ref)
-                print ("\nTemperature on RB RT1 is: %.3f C"%t1)
-                print ("Temperature on RB RT2 is: %.3f C"%t2)
-                print ("Temperature on RB SCA is: %.3f C"%t_SCA)
-                print ("Temperature on RB VTRX is: %.3f C"%t_VTRX)
         else:
-            print ("V_ref found to be 0. Exiting.")
-            return {'t_SCA': t_SCA}
 
-        return {'t1': t1, 't2': t2, 't_SCA': t_SCA, 't_VTRX': t_VTRX}
+            raise Exception(f"Attempt to read unknown thermistor {rt=}")
+
+    def read_temp(self, verbose=False):
+
+        """
+        read all the temperature sensors
+        """
+
+        # internal temp from SCA
+        t_sca = self.SCA.read_temp()
+        t_vtrx = self.read_vtrx_temp()
+        t_rt1 = self.read_rb_thermistor(1)
+        t_rt2 = self.read_rb_thermistor(2)
+
+        if verbose:
+            print ("\nTemperature on RB RT1 is: %.1f C" % t_rt1)
+            print ("Temperature on RB RT2 is: %.1f C" % t_rt2)
+            print ("Temperature on RB SCA is: %.1f C" % t_sca)
+            print ("Temperature on RB VTRX is: %.1f C" % t_vtrx)
+
+        return {'t1': t_rt1, 't2': t_rt2, 't_SCA': t_sca, 't_VTRX': t_vtrx}

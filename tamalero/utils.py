@@ -37,7 +37,7 @@ def get_temp(v_out, v_ref, r_ref, t_1, r_1, b, celcius=True):
         return -999
     return t_2-delta_t
 
-def get_temp_direct(v_out, curr_dac, thermistor="NTCG063JF103FTB", celcius=True):
+def get_temp_direct(v_out, curr_dac, thermistor="NTCG063JF103FTB", celcius=True, verbose=False):
     """
     Calculate the temperature of a thermistor, given the voltage measured on it.
 
@@ -56,11 +56,12 @@ def get_temp_direct(v_out, curr_dac, thermistor="NTCG063JF103FTB", celcius=True)
     t = find_temp(np.log10(r_t))
 
     delta_t = 0 if celcius else 273.15
-    
-    print(f"Thermistor: {thermistor}")
-    print(f"Voltage: {v_out} \t Current: {curr_dac} uA")
-    print(f"Resistance: {r_t}")
-    print(f"Temperature: {t}")
+
+    if verbose:
+        print(f"Thermistor: {thermistor}")
+        print(f"Voltage: {v_out} \t Current: {curr_dac} uA")
+        print(f"Resistance: {r_t}")
+        print(f"Temperature: {t}")
 
     return t+delta_t
 

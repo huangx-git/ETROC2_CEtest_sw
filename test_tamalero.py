@@ -189,7 +189,7 @@ if __name__ == '__main__':
         rb_0.DAQ_LPGBT.read_adcs(check=True)
 
         # High level reading of temperatures
-        temp = rb_0.read_temp(verbose=1)
+        temp = rb_0.read_temp(verbose=True)
 
     #-------------------------------------------------------------------------------
     # I2C Test
