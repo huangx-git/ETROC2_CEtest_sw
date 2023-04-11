@@ -353,7 +353,7 @@ class ReadoutBoard:
 
         # vtrx thermistors
         current_vtrx    = self.DAQ_LPGBT.set_current_dac_uA(600)
-        rt_vtrx_voltage = self.DAQ_LPGBT.read_adc(0)/(2**10-1)
+        rt_vtrx_voltage = self.DAQ_LPGBT.read_adc(0)/(2**10-1) # FIXME: 0 should not be hardcoded
 
         if self.ver == 1:
             return -1.0
