@@ -1,5 +1,5 @@
 from tamalero.ETROC import ETROC
-from ETROC_Emulator import software_ETROC2
+from tamalero.ETROC_Emulator import ETROC2_Emulator as software_ETROC2
 from tamalero.DataFrame import DataFrame
 
 import numpy as np
