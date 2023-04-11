@@ -642,7 +642,7 @@ class LPGBT(RegParser):
         # else, determine calibration constants
         else:
             # determine offset; both at Vref/2
-            offset = self.read_adc(0xf)
+            offset = self.read_adc(0xf, calibrate=False)
 
             # determine gain; one at Vref/2, one at ground
             # use internal grounding - ADC12, supply voltage divider off
@@ -650,7 +650,7 @@ class LPGBT(RegParser):
             self.wr_reg("LPGBT.RW.ADC.VDDMONENA", 0x0)
 
             # ADC = (Vdiff/Vref)*Gain*512 + Offset
-            gain = 2*abs(self.read_adc(0xC)-offset)/512
+            gain = 2*abs(self.read_adc(0xC, calibrate=False)-offset)/512
             self.wr_reg("LPGBT.RW.ADC.VDDMONENA", initial_val)
             print("Calibrated ADC. Gain: %f / Offset: %d" % (gain, offset))
 
