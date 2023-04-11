@@ -42,6 +42,7 @@ USAGE()
 		[-h | --help]               Show this screen"
 }
 
+FIRMWARE=v`/usr/bin/env python3 -c "import tamalero; print(tamalero.__fw_version__)"`
 
 #### Parse and check options and flags ####
 PARSED_ARGS=$(getopt -a -n "startup" --options i:f:p:k:ch --longoptions "id:,firmware:,psu:,kcu:,cycle,help" -- "$@")
@@ -49,6 +50,8 @@ VALID_ARGS=$?
 if [ "${VALID_ARGS}" -ne 0 ]; then
 	USAGE
 fi
+
+
 
 info "PARSED_ARGUMENTS is ${PARSED_ARGS}"
 eval set -- "${PARSED_ARGS}"
