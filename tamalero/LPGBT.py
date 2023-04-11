@@ -1171,10 +1171,7 @@ class LPGBT(RegParser):
         n_module = {0:3, 1:6, 2:7}
         flavors = {0: '3 module', 1: '6 module', 2: '7 module'}
 
-        user_id =   self.rd_reg("LPGBT.RWF.CHIPID.USERID3") << 24 |\
-                    self.rd_reg("LPGBT.RWF.CHIPID.USERID2") << 16 |\
-                    self.rd_reg("LPGBT.RWF.CHIPID.USERID1") << 8 |\
-                    self.rd_reg("LPGBT.RWF.CHIPID.USERID0")
+        user_id =   self.get_chip_userid()
         board_id['rb_ver_major']    = user_id >> 29
         board_id['rb_ver_minor']    = user_id >> 25 & (2**4-1)
         board_id['lpgbt_ver']       = user_id >> 23 & (2**2-1)
@@ -1278,6 +1275,12 @@ class LPGBT(RegParser):
                 sys.stdout.write("%s%01d%s" % (bg(color_scale[printval]), printval, attr('reset')))
                 sys.stdout.flush()
             sys.stdout.write("\n")
+
+    def get_chip_userid(self):
+        return self.rd_reg("LPGBT.RWF.CHIPID.USERID3") << 24 |\
+               self.rd_reg("LPGBT.RWF.CHIPID.USERID2") << 16 |\
+               self.rd_reg("LPGBT.RWF.CHIPID.USERID1") << 8 |\
+               self.rd_reg("LPGBT.RWF.CHIPID.USERID0")
 
     def get_chip_serial(self):
         return self.rd_reg("LPGBT.RWF.CHIPID.CHIPID3") << 24 |\
