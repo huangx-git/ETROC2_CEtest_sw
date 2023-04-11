@@ -2,7 +2,7 @@
 For ETROC control
 """
 
-from ETROC_Emulator import software_ETROC2
+from tamalero.ETROC_Emulator import ETROC2_Emulator as software_ETROC2
 from tamalero.colors import red, green
 import os
 from yaml import load, dump
@@ -10,6 +10,8 @@ try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
     from yaml import Loader, Dumper
+
+here = os.path.dirname(os.path.abspath(__file__))
 
 class ETROC():
 
@@ -46,7 +48,7 @@ class ETROC():
             else:
                 self.ver = "X-X-X"
 
-        with open(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC2.yaml'), 'r') as f:
+        with open(os.path.join(here, '../address_table/ETROC2.yaml'), 'r') as f:
             self.regs = load(f, Loader=Loader)
 
         self.get_elink_status()

@@ -13,7 +13,7 @@ except ImportError:
 
 maxpixel = 256
 
-class software_ETROC2():
+class ETROC2_Emulator():
     def __init__(self, BCID=0, verbose=False, chipid=123456, elink=0):
         if verbose:
             print('Initiating fake ETROC2...\n')
