@@ -11,6 +11,7 @@ try:
 except ImportError:
     from yaml import Loader, Dumper
 
+here = os.path.dirname(os.path.abspath(__file__))
 
 def get_temp(v_out, v_ref, r_ref, t_1, r_1, b, celcius=True):
     """
@@ -232,7 +233,7 @@ def check_repo_status(kcu_version=None):
     last_commit_sha = log[0]['id']
 
     # get local log
-    working_tree_dir = os.path.expandvars("$TAMALERO_BASE")
+    working_tree_dir = '/' + os.path.join(*(here.split('/')[:-1]))
     repo = Repo(working_tree_dir)
     hashes = [ c.hexsha for c in repo.iter_commits(max_count=50) ]
     tags = [ t.name.strip('v') for t in repo.tags ]
