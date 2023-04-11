@@ -124,6 +124,21 @@ def load_yaml(f_in):
         res = load(f, Loader=Loader)
     return res
 
+def ffs(x):
+    '''
+    Returns the index, counting from 0, of the
+    least significant set bit in `x`.
+    from https://stackoverflow.com/questions/5520655/return-index-of-least-significant-bit-in-python
+    There really is no better way!
+    '''
+    return (x&-x).bit_length()-1
+
+def bit_count(x):
+    '''
+    get number of bits from a mask. this is ugly, python 3.10 has `int .bit_count()`
+    '''
+    return bin(x).count('1')
+
 def prbs_phase_scan(lpgbt, f_out='phase_scan.txt'):
     with open(f_out, "w") as f:
         for phase in range(0x0, 0x1ff, 1):

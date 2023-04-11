@@ -1,0 +1,27 @@
+CLSel:
+  address:  0
+  pixel:    1
+  stat:     0
+  mask:     0x3
+  default:  0x0
+
+disScrambler:
+  address:  19
+  pixel:    0
+  stat:     0
+  mask:     0x1
+  default:  0x1
+
+singlePort:
+  address:  19
+  pixel:    0
+  stat:     0
+  mask:     0x40
+  default:  0x1
+
+mergeTriggerData:
+  address:  20
+  pixel:    0
+  stat:     0
+  mask:     0x1
+  default:  0x0
