@@ -564,7 +564,7 @@ class LPGBT(RegParser):
         return self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACSELECT") * 900/256.0
 
 
-    def read_adc(self, channel, calibrate=False, convert=False):
+    def read_adc(self, channel, calibrate=True, convert=False):
         # ADCInPSelect[3:0]  |  Input
         # ------------------ |----------------------------------------
         # 4'd0               |  ADC0 (external pin)
