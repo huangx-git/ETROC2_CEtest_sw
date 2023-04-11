@@ -27,6 +27,8 @@ class LPGBT(RegParser):
         self.nodes = {}
         self.rb = rb
         self.trigger = trigger
+        self.cal_gain = -1
+        self.cal_offset = -1
         if self.trigger:
             assert isinstance(master, LPGBT), "Trying to initialize a trigger lpGBT but got no lpGBT master."
             self.master = master
@@ -54,10 +56,8 @@ class LPGBT(RegParser):
 
         # Get LPGBT Version
         timeout = 0
-        calibrate = False
         if not hasattr(self, 'ver'):
             print ("Figuring out lpGBT version by reading from ROMREG")
-            calibrate = True
             while True:
                 # https://lpgbt.web.cern.ch/lpgbt/v0/registermap.html#x1c5-rom
                 # Writing to addresses directly because readback will still fail here
@@ -118,8 +118,9 @@ class LPGBT(RegParser):
 
         self.link_inversions = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/link_inversions.yaml'))
 
-        # Callibrate ADC
-        if calibrate:
+        # Callibrate ADCs
+        # will automatically load from the config file if it is found
+        if self.cal_gain == -1 or self.cal_offset == -1:
             try:
                 self.calibrate_adc()
             except:
