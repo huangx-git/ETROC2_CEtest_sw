@@ -53,7 +53,6 @@ class ReadoutBoard:
 
         if self.trigger:
             self.TRIG_LPGBT = LPGBT(rb=self.rb, flavor=self.flavor, trigger=True, master=self.DAQ_LPGBT, kcu=self.kcu)
-            self.TRIG_LPGBT.calibrate_adc()
 
 
     def connect_KCU(self, kcu):
