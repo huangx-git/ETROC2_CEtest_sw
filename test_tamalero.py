@@ -87,7 +87,7 @@ if __name__ == '__main__':
 
         print("Power up init sequence for: DAQ")
 
-        rb_0.DAQ_LPGBT.power_up_init()
+        #rb_0.DAQ_LPGBT.power_up_init()
 
         rb_0.VTRX.get_version()
         if (verbose):
@@ -146,7 +146,6 @@ if __name__ == '__main__':
     if (verbose):
         _ = rb_0.VTRX.status()
 
-    rb_0.DAQ_LPGBT.set_dac(1.0)  # set the DAC / Vref to 1.0V.
 
     if args.power_up or args.reconfigure:
         print("Link inversions")
