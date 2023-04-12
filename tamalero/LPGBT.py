@@ -27,8 +27,7 @@ class LPGBT(RegParser):
         self.nodes = {}
         self.rb = rb
         self.trigger = trigger
-        self.cal_gain = -1
-        self.cal_offset = -1
+        self.calibrated = False
         if self.trigger:
             assert isinstance(master, LPGBT), "Trying to initialize a trigger lpGBT but got no lpGBT master."
             self.master = master
@@ -120,7 +119,7 @@ class LPGBT(RegParser):
 
         # Callibrate ADCs
         # will automatically load from the config file if it is found
-        if self.cal_gain == -1 or self.cal_offset == -1:
+        if not self.calibrated:
             self.calibrate_adc()
 
         self.current_adcs = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/current_adcs.yaml'))['lpGBT']
@@ -663,6 +662,7 @@ class LPGBT(RegParser):
 
         self.cal_gain = gain
         self.cal_offset = offset
+        self.calibrated = True
 
     def set_current_adc(self, channel, verbose=False):
         assert channel in range(8), f"Can only choose from ADC0 to ADC7; ADC{channel} was given instead"
