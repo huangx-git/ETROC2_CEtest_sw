@@ -1,4 +1,10 @@
 CLSel:
+  doc:      "Select of load capacitance of the preamp first stage.
+  2‘b00: 0 fC;
+  2‘b01–> 80 fC;
+  2‘b10–> 80 fC;
+  2‘b01–> 160 fC.
+  Debugging use only."
   address:  0
   pixel:    1
   stat:     0
@@ -6,6 +12,9 @@ CLSel:
   default:  0x0
 
 disScrambler:
+  doc:      "Disable scrambler.
+  0: enable scrambler
+  1: disable scrambler"
   address:  19
   pixel:    0
   stat:     0
@@ -13,6 +22,9 @@ disScrambler:
   default:  0x1
 
 singlePort:
+  doc:      "enable single port or both ports.
+  0: use both left and right serial ports.
+  1: use right serial port only"
   address:  19
   pixel:    0
   stat:     0
@@ -20,6 +32,9 @@ singlePort:
   default:  0x1
 
 mergeTriggerData:
+  doc:      "merge trigger and data in a port
+  0: trigger and data in separate port, only valid when single port is false.
+  1: trigger and data are merged in serial port"
   address:  20
   pixel:    0
   stat:     0
