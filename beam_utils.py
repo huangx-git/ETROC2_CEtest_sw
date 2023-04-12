@@ -25,7 +25,7 @@ def generate_table(rows):
     table.add_column("RB RT2 Temp [°C]", justify="right", vertical="middle")
     table.add_column("RB SCA Temp [°C]", justify="right", vertical="middle")
     table.add_column("FIFO Lost", justify="right", vertical="middle")
-    table.add_column("Packet Rate", justify="right", vertical="middle")
+    table.add_column("Packet Rate [kHz]", justify="right", vertical="middle")
 
     rows = list(rows)
 
@@ -43,7 +43,7 @@ def generate_table(rows):
         table.add_column("RB RT2 Temp [°C]", justify="right", vertical="middle")
         table.add_column("RB SCA Temp [°C]", justify="right", vertical="middle")
         table.add_column("FIFO Lost", justify="right", vertical="middle")
-        table.add_column("Packet Rate", justify="right", vertical="middle")
+        table.add_column("Packet Rate [kHz]", justify="right", vertical="middle")
 
         for row in rows[-n_rows:]:
             table.add_row(*row)

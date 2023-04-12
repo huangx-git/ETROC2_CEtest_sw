@@ -190,9 +190,9 @@ class Beam():
                 occupancy = self.kcu.read_node("READOUT_BOARD_0.RX_FIFO_OCCUPANCY")
                 temps = self.rb.read_temp()
                 lost = self.kcu.read_node(f"READOUT_BOARD_0.RX_FIFO_LOST_WORD_CNT")
-                packet_rate = self.kcu.read_node(f"READOUT_BOARD_0.PACKET_RX_RATE")
+                packet_rate = self.kcu.read_node(f"READOUT_BOARD_0.PACKET_RX_RATE").value()/1000.0
 
-                rows.append((f"[bold red]{time_stamp}", f"{cycles}", f"{l1a_rate_cnt:.2f}", f"{occupancy}", f"{temps['t1']:.2f}", f"{temps['t2']:.2f}", f"{temps['t_SCA']:.2f}", f"{lost}", f"{packet_rate}"))
+                rows.append((f"[bold red]{time_stamp}", f"{cycles}", f"{l1a_rate_cnt:.2f}", f"{occupancy}", f"{temps['t1']:.2f}", f"{temps['t2']:.2f}", f"{temps['t_SCA']:.2f}", f"{lost}", f"{packet_rate:.2f}"))
                 if l1a_rate_cnt != 0: l1as[cycles].append(l1a_rate_cnt)
 
                 layout["dynamic"].update(generate_table(rows))
