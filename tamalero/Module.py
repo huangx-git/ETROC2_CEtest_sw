@@ -83,7 +83,7 @@ class Module:
         print ('┏━┳━' + 25*'━' + '━┳━┓')
         print ('┃○┃ ' + 25*' ' + ' ┃○┃')
         print ('┃ ┃ ' + '{:10}{:<15}'.format("Module:", self.i) + ' ┃ ┃' )
-        ver = self.ETROCs[0].ver
+        ver = self.ETROCs[0].get_ver()
         print ('┃ ┃ ' + '{:16}{:9}'.format("Emulator FW ver.",ver) + ' ┃ ┃' )
         #print ('┃ ┃ ' + 25*' ' + ' ┃ ┃')
         col = green if self.ETROCs[0].connected else red

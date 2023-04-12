@@ -38,7 +38,7 @@ class ETROC():
             self.i2c_channel = i2c_channel
             self.i2c_adr = i2c_adr
             self.elink = elink
-            self.connected = self.I2C_read(0x13)
+            self.is_connected()
             if self.connected:
                 self.ver = self.get_ver()
             else:
@@ -111,7 +111,7 @@ class ETROC():
             self.fakeETROC.wr_reg(reg, val, pix=(col<<4 | row))
         else:
             adr     = self.get_adr(reg, row=row, col=col, broadcast=broadcast)
-            print(f"{adr=}")
+            #print(f"{adr=}")
             mask    = self.regs[reg]['mask']
             shift   = ffs(mask)
             if val > 2**(bit_count(mask)-1):
@@ -147,7 +147,7 @@ class ETROC():
     # ============================
 
     def is_connected(self):
-        self.conected = self.I2C_read(0x13)
+        self.connected = self.I2C_read(0x0)  # read from first register (default value 0x2C)
         return self.connected
 
     def get_elink_status(self):
