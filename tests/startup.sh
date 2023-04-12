@@ -108,7 +108,7 @@ fi
 
 # run test_tamalero with power up
 info "Running test_tamalero..."
-/usr/bin/env python3 test_tamalero.py --kcu "${KCU}" --power_up --control_hub --verbose --adcs
+/usr/bin/env python3 test_tamalero.py --kcu "${KCU}" --power_up --control_hub --verbose --adcs --strict
 EXIT=$?
 if [ ${EXIT} -ne 0 ]; then
 	error "Failure when running test_tamalero.py; exit code is ${EXIT}. Blocking merge."

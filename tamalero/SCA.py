@@ -408,9 +408,10 @@ class SCA:
         self.rw_reg(SCA_ADC.ADC_W_MUX, 0x0) #reset register to default (0)
         return val
 
-    def read_adcs(self, check=False): #read and print all adc values
+    def read_adcs(self, check=False, strict_limits=False): #read and print all adc values
         adc_dict = self.adc_mapping
         table=[]
+        will_fail = False
         for adc_reg in adc_dict.keys():
             pin = adc_dict[adc_reg]['pin']
             comment = adc_dict[adc_reg]['comment']
@@ -421,8 +422,8 @@ class SCA:
                     min_v = adc_dict[adc_reg]['min']
                     max_v = adc_dict[adc_reg]['max']
                     status = "OK" if (input_voltage >= min_v) and (input_voltage <= max_v) else "ERR"
-                    if status == "ERR":
-                        raise ValueError(f"Voltage {input_voltage} V ({adc_reg}) is not within [{min_v}, {max_v}]")
+                    if status == "ERR" and strict_limits:
+                        will_fail = True
                 except KeyError:
                     status = "N/A"
                 table.append([adc_reg, pin, value, input_voltage, status, comment])
@@ -433,6 +434,9 @@ class SCA:
             print(tabulate(table, headers=["Register","Pin", "Reading", "Voltage", "Status", "Comment"],  tablefmt="simple_outline"))
         else:
             print(tabulate(table, headers=["Register","Pin", "Reading", "Voltage", "Comment"],  tablefmt="simple_outline"))
+
+        if will_fail:
+            raise ValueError("At least one input voltage is out of bounds, with status ERR as seen in the table above")
 
     def read_temp(self):
         # not very precise (according to manual), but still useful.

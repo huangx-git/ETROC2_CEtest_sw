@@ -40,6 +40,7 @@ if __name__ == '__main__':
     argParser.add_argument('--host', action='store', default='localhost', help="Specify host for control hub")
     argParser.add_argument('--devel', action='store_true', default=False, help="Don't check repo status (not recommended)")
     argParser.add_argument('--monitor', action='store_true', default=False, help="Start up montoring threads in the background")
+    argParser.add_argument('--strict', action='store_true', default=False, help="Enforce strict limits on ADC reads for SCA and LPGBT")
     args = argParser.parse_args()
 
 
@@ -184,10 +185,10 @@ if __name__ == '__main__':
 
     if args.adcs:
         print("\n\nReading GBT-SCA ADC values:")
-        rb_0.SCA.read_adcs(check=True)
+        rb_0.SCA.read_adcs(check=True, strict_limits=args.strict)
 
         print("\n\nReading DAQ lpGBT ADC values:")
-        rb_0.DAQ_LPGBT.read_adcs(check=True)
+        rb_0.DAQ_LPGBT.read_adcs(check=True, strict_limits=args.strict)
 
         # High level reading of temperatures
         temp = rb_0.read_temp(verbose=True)

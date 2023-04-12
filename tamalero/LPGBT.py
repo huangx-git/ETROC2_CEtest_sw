@@ -526,12 +526,11 @@ class LPGBT(RegParser):
     #        read = self.read_adc(i)
     #        print("\tch %X: 0x%03X = %f, reading = %f (%s)" % (i, read, read/1024., conv*read/1024., name))
 
-    def read_adcs(self, check=False): #read and print all adc values
+    def read_adcs(self, check=False, strict_limits=False): #read and print all adc values
         self.init_adc()
         adc_dict = self.adc_mapping
-
         table = []
-
+        will_fail = False
         for adc_reg in adc_dict.keys():
             pin = adc_dict[adc_reg]['pin']
             comment = adc_dict[adc_reg]['comment']
@@ -543,8 +542,8 @@ class LPGBT(RegParser):
                     min_v = adc_dict[adc_reg]['min']
                     max_v = adc_dict[adc_reg]['max']
                     status = "OK" if (input_voltage >= min_v) and (input_voltage <= max_v) else "ERR"
-                    if status == "ERR":
-                        raise ValueError(f"Voltage {input_voltage:.2f} V ({adc_reg}) is not within [{min_v}, {max_v}]")
+                    if status == "ERR" and strict_limits:
+                        will_fail = True
                 except KeyError:
                     status = "N/A"
                 table.append([adc_reg, pin, value, input_voltage, status, comment])
@@ -555,6 +554,9 @@ class LPGBT(RegParser):
             print(tabulate(table, headers=["Register","Pin", "Reading", "Voltage", "Status", "Comment"],  tablefmt="simple_outline"))
         else:
             print(tabulate(table, headers=["Register","Pin", "Reading", "Voltage", "Comment"],  tablefmt="simple_outline"))
+
+        if will_fail:
+            raise ValueError("At least one input voltage is out of bounds, with status ERR as seen in the table above")
 
     def set_current_dac(self, units):
         self.wr_reg("LPGBT.RWF.CUR_DAC.CURDACSELECT", units)
