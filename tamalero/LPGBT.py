@@ -39,7 +39,6 @@ class LPGBT(RegParser):
             self.kcu = kcu
 
         self.configure(do_adc_calibration=do_adc_calibration)
-        self.set_adc_mapping()
 
     def configure(self, do_adc_calibration=True):
         if not hasattr(self, 'kcu'):
@@ -100,6 +99,8 @@ class LPGBT(RegParser):
                 print (" > unsure about lpGBT version. This case should have been impossible to reach.")
                 raise Exception("Spurious lpGBT version.")
 
+        self.set_adc_mapping()
+
         self.base_config = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/lpgbt_config.yaml'))['base'][f'v{self.ver}']
         self.ec_config = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/lpgbt_config.yaml'))['ec'][f'v{self.ver}']
 
@@ -118,6 +119,11 @@ class LPGBT(RegParser):
 
         self.link_inversions = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/link_inversions.yaml'))
 
+        if not self.power_up_done():
+            print("Running power up within LPGBT.configure()")
+            self.power_up_init()
+
+        self.set_dac(1.0)  # set the DAC / Vref to 1.0V.
         # Callibrate ADCs
         # will automatically load from the config file if it is found
         if do_adc_calibration and not self.calibrated:
@@ -270,6 +276,7 @@ class LPGBT(RegParser):
             self.configure_eptx(verbose=verbose)
             self.configure_eprx()
 
+        self.set_power_up_done()
 
 
     def connect_KCU(self, kcu):
@@ -450,7 +457,8 @@ class LPGBT(RegParser):
             link = str(i % 4)
             self.wr_reg("LPGBT.RWF.EPORTTX.EPTX%s%sENABLE" % (group, link), 0x1)
             self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX%dDRIVESTRENGTH" % i, 0x3)
-            print("LPGBT.RWF.EPORTTX.EPTX%s%sENABLE" % (group, link))
+            if verbose:
+                print("LPGBT.RWF.EPORTTX.EPTX%s%sENABLE" % (group, link))
 
         # enable mirror feature
         for i in range(4):
@@ -658,6 +666,8 @@ class LPGBT(RegParser):
         
         # else, determine calibration constants
         else:
+            print("Recalibrating")
+            sleep(0.5)
             # determine offset; both at Vref/2
             offset = self.read_adc_raw(0xf)
 
@@ -1377,6 +1387,12 @@ class LPGBT(RegParser):
     def is_configured(self):
         return self.rd_reg("LPGBT.RWF.CHIPID.USERID0") == 0xFF
 
+    def set_power_up_done(self):
+        self.wr_reg("LPGBT.RWF.CHIPID.USERID1", 0xAA)
+        return self.power_up_done()
+
+    def power_up_done(self):
+        return self.rd_reg("LPGBT.RWF.CHIPID.USERID1") == 0xAA
 
 if __name__ == '__main__':
 
