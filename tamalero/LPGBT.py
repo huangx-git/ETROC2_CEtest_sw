@@ -655,7 +655,7 @@ class LPGBT(RegParser):
         if serial_valid(serial) and serial in cal_data and not recalibrate:
             gain = cal_data[serial]['gain']
             offset = cal_data[serial]['offset']
-            print("Loaded ADC calibration data. Gain: %f / Offset: %d" % (gain, offset))
+            print("Loaded ADC calibration data for chip %d. Gain: %f / Offset: %d" % (serial, gain, offset))
         
         # else, determine calibration constants
         else:
