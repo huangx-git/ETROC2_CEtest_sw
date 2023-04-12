@@ -51,8 +51,6 @@ if [ "${VALID_ARGS}" -ne 0 ]; then
 	USAGE
 fi
 
-
-
 info "PARSED_ARGUMENTS is ${PARSED_ARGS}"
 eval set -- "${PARSED_ARGS}"
 
@@ -93,6 +91,9 @@ if [[ -z "${VIVADO}" ]]; then
 fi
 
 cd $TAMALERO_BASE
+
+### delete previous FW downloads
+rm -rf etl_test_fw-v*
 
 get_firmware_zip "${FIRMWARE}"
 cd ./etl_test_fw-${FIRMWARE}
