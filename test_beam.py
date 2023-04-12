@@ -3,7 +3,7 @@ import uhal
 import argparse
 from tamalero.utils import get_kcu
 from tamalero.ReadoutBoard import ReadoutBoard
-from Beam import Beam
+from tamalero.Beam import Beam
 from threading import Thread
 
 if __name__ == '__main__':
