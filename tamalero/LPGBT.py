@@ -28,6 +28,8 @@ class LPGBT(RegParser):
         self.rb = rb
         self.trigger = trigger
         self.calibrated = False
+        self.gain = 1.85
+        self.offset = 512
         if self.trigger:
             assert isinstance(master, LPGBT), "Trying to initialize a trigger lpGBT but got no lpGBT master."
             self.master = master
@@ -669,6 +671,9 @@ class LPGBT(RegParser):
             gain = 2*abs(self.read_adc_raw(0xC)-offset)/512
             self.wr_reg("LPGBT.RW.ADC.VDDMONENA", initial_val)
             print("Calibrated ADC. Gain: %f / Offset: %d" % (gain, offset))
+
+            if gain < 1.65 or gain > 2 or offset < 490 or offset > 530:
+                raise RuntimeError("ADC Calibration Failed!")
 
             # update and save to json file
             if serial_valid(serial):
