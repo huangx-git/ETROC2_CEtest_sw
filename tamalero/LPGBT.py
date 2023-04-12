@@ -632,25 +632,27 @@ class LPGBT(RegParser):
 
     def calibrate_adc(self, recalibrate=False):
 
+        def serial_valid(serial):
+            return serial != 0
+
         if (self.ver==0):
             serial = self.get_chip_userid()
         else:
             serial = self.get_chip_serial()
 
-        print(f'{serial=}')
+        cal_file = "lpgbt_adc_calibrations.json"
 
-        # require the serial number to be non-zero...
-        if serial > 0:
-            cal_file = "lpgbt_cal_%d.json" % serial
-        else:
-            cal_file = None
-        
-        # load from json file if it exists (unless recalibrate)
-        if cal_file is not None and os.path.isfile(cal_file) and not(recalibrate):
+        # if the json file exists, load it
+        if os.path.isfile(cal_file):
             with open(cal_file, 'r') as openfile:
                 cal_data = json.load(openfile)
-            gain = cal_data['gain']
-            offset = cal_data['offset']
+        else:
+            cal_data = {}
+
+        # if the serial number is valid and calibration data is stored, just load it from the json
+        if serial_valid(serial) and serial in cal_data and not recalibrate:
+            gain = cal_data[serial]['gain']
+            offset = cal_data[serial]['offset']
             print("Loaded ADC calibration data. Gain: %f / Offset: %d" % (gain, offset))
         
         # else, determine calibration constants
@@ -668,9 +670,9 @@ class LPGBT(RegParser):
             self.wr_reg("LPGBT.RW.ADC.VDDMONENA", initial_val)
             print("Calibrated ADC. Gain: %f / Offset: %d" % (gain, offset))
 
-            # save to json file
-            cal_data = {'gain': gain, 'offset': offset}
-            if cal_file is not None:
+            # update and save to json file
+            if serial_valid(serial):
+                cal_data[serial] = {'gain': gain, 'offset': offset}
                 with open(cal_file, "w") as outfile:
                     json.dump(cal_data, outfile)
                     print("Calibration data saved to %s"%cal_file)
