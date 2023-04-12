@@ -670,7 +670,8 @@ class LPGBT(RegParser):
             # ADC = (Vdiff/Vref)*Gain*512 + Offset
             gain = 2*abs(self.read_adc_raw(0xC)-offset)/512
             self.wr_reg("LPGBT.RW.ADC.VDDMONENA", initial_val)
-            print("Calibrated ADC. Gain: %f / Offset: %d" % (gain, offset))
+            type = "Trigger" if self.trigger else "DAQ"
+            print("Calibrated %s ADC. Gain: %f / Offset: %d" % (type, gain, offset))
 
             if gain < 1.65 or gain > 2 or offset < 490 or offset > 530:
                 raise RuntimeError("ADC Calibration Failed!")
