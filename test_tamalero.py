@@ -73,6 +73,8 @@ if __name__ == '__main__':
 
     if args.recal_lpgbt:
         rb_0.DAQ_LPGBT.calibrate_adc(recalibrate=True)
+        if rb_0.trigger:
+            rb_0.TRIG_LPGBT.calibrate_adc(recalibrate=True)
 
     if not args.devel:
         check_repo_status(kcu_version=kcu.get_firmware_version(verbose=True))
