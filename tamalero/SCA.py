@@ -421,7 +421,9 @@ class SCA:
                     min_v = adc_dict[adc_reg]['min']
                     max_v = adc_dict[adc_reg]['max']
                     status = "OK" if (input_voltage >= min_v) and (input_voltage <= max_v) else "ERR"
-                except:
+                    if status == "ERR":
+                        raise ValueError(f"Voltage {input_voltage} V ({adc_reg}) is not within [{min_v}, {max_v}]")
+                except KeyError:
                     status = "N/A"
                 table.append([adc_reg, pin, value, input_voltage, status, comment])
             else:
