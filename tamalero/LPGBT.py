@@ -19,7 +19,7 @@ from tamalero.lpgbt_constants import LpgbtConstants
 
 class LPGBT(RegParser):
 
-    def __init__(self, rb=0, trigger=False, flavor='small', master=None, kcu=None):
+    def __init__(self, rb=0, trigger=False, flavor='small', master=None, kcu=None, do_adc_calibration=False):
         '''
         Initialize lpGBT for a certain readout board number (rb).
         The trigger lpGBT is accessed through I2C of the master (= DAQ lpGBT).
@@ -38,13 +38,12 @@ class LPGBT(RegParser):
         if kcu != None:
             self.kcu = kcu
 
-        self.configure()
+        self.configure(do_adc_calibration=do_adc_calibration)
         self.set_adc_mapping()
 
-    def configure(self):
+    def configure(self, do_adc_calibration=True):
         if not hasattr(self, 'kcu'):
             raise Exception("Connect to KCU first.")
-            return
 
         if self.trigger:
             self.ver = self.master.ver
@@ -121,7 +120,7 @@ class LPGBT(RegParser):
 
         # Callibrate ADCs
         # will automatically load from the config file if it is found
-        if not self.calibrated:
+        if do_adc_calibration and not self.calibrated:
             self.calibrate_adc()
 
         self.current_adcs = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/current_adcs.yaml'))['lpGBT']
