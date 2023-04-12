@@ -563,29 +563,11 @@ class LPGBT(RegParser):
         return self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACSELECT") * 900/256.0
 
 
-    def read_adc(self, channel, calibrate=True, convert=False):
-        # ADCInPSelect[3:0]  |  Input
-        # ------------------ |----------------------------------------
-        # 4'd0               |  ADC0 (external pin)
-        # 4'd1               |  ADC1 (external pin)
-        # 4'd2               |  ADC2 (external pin)
-        # 4'd3               |  ADC3 (external pin)
-        # 4'd4               |  ADC4 (external pin)
-        # 4'd5               |  ADC5 (external pin)
-        # 4'd6               |  ADC6 (external pin)
-        # 4'd7               |  ADC7 (external pin)
-        # 4'd8               |  EOM DAC (internal signal)
-        # 4'd9               |  VDDIO * 0.42 (internal signal)
-        # 4'd10              |  VDDTX * 0.42 (internal signal)
-        # 4'd11              |  VDDRX * 0.42 (internal signal)
-        # 4'd12              |  VDD * 0.42 (internal signal)
-        # 4'd13              |  VDDA * 0.42 (internal signal)
-        # 4'd14              |  Temperature sensor (internal signal)
-        # 4'd15              |  VREF/2 (internal signal)
-    
+    def read_adc_raw (self, channel):
+
         self.wr_reg("LPGBT.RW.ADC.ADCINPSELECT", channel)
         self.wr_reg("LPGBT.RW.ADC.ADCINNSELECT", 0xf)
-    
+
         self.wr_reg("LPGBT.RW.ADC.ADCCONVERT", 0x1)
         self.wr_reg("LPGBT.RW.ADC.ADCENABLE", 0x1)
 
@@ -593,15 +575,47 @@ class LPGBT(RegParser):
         while (done==0):
             #print ("Waiting")
             done = self.rd_reg("LPGBT.RO.ADC.ADCDONE")
-    
+
         val = self.rd_reg("LPGBT.RO.ADC.ADCVALUEL")
         val |= self.rd_reg("LPGBT.RO.ADC.ADCVALUEH") << 8
-    
+
         self.wr_reg("LPGBT.RW.ADC.ADCCONVERT", 0x0)
         self.wr_reg("LPGBT.RW.ADC.ADCENABLE", 0x1)
 
+        return val
+
+    def apply_adc_calibration(self, val):
+        return val*self.cal_gain/1.85 + (512 - self.cal_offset) # calibrate
+
+    def read_adc(self, channel, calibrate=True, convert=False):
+
+        """
+        Reads an ADC channel with optional calibration and conversion
+
+        ADCInPSelect[3:0]  |  Input
+        ------------------ |----------------------------------------
+        4'd0               |  ADC0 (external pin)
+        4'd1               |  ADC1 (external pin)
+        4'd2               |  ADC2 (external pin)
+        4'd3               |  ADC3 (external pin)
+        4'd4               |  ADC4 (external pin)
+        4'd5               |  ADC5 (external pin)
+        4'd6               |  ADC6 (external pin)
+        4'd7               |  ADC7 (external pin)
+        4'd8               |  EOM DAC (internal signal)
+        4'd9               |  VDDIO * 0.42 (internal signal)
+        4'd10              |  VDDTX * 0.42 (internal signal)
+        4'd11              |  VDDRX * 0.42 (internal signal)
+        4'd12              |  VDD * 0.42 (internal signal)
+        4'd13              |  VDDA * 0.42 (internal signal)
+        4'd14              |  Temperature sensor (internal signal)
+        4'd15              |  VREF/2 (internal signal)
+        """
+
+        val=self.read_adc_raw(channel)
+
         if calibrate:
-            val = val*self.cal_gain/1.85 + (512 - self.cal_offset) # calibrate
+            val = self.apply_adc_calibration(val)
 
         if convert:
             conversion = None
@@ -613,6 +627,7 @@ class LPGBT(RegParser):
                 val = val * conversion / (2**10 - 1)
             else:
                 raise Exception(f"ADC conversion not found when reading ADC {channel}")
+
         return val
 
     def calibrate_adc(self, recalibrate=False):
@@ -641,7 +656,7 @@ class LPGBT(RegParser):
         # else, determine calibration constants
         else:
             # determine offset; both at Vref/2
-            offset = self.read_adc(0xf, calibrate=False)
+            offset = self.read_adc_raw(0xf)
 
             # determine gain; one at Vref/2, one at ground
             # use internal grounding - ADC12, supply voltage divider off
@@ -649,7 +664,7 @@ class LPGBT(RegParser):
             self.wr_reg("LPGBT.RW.ADC.VDDMONENA", 0x0)
 
             # ADC = (Vdiff/Vref)*Gain*512 + Offset
-            gain = 2*abs(self.read_adc(0xC, calibrate=False)-offset)/512
+            gain = 2*abs(self.read_adc_raw(0xC)-offset)/512
             self.wr_reg("LPGBT.RW.ADC.VDDMONENA", initial_val)
             print("Calibrated ADC. Gain: %f / Offset: %d" % (gain, offset))
 
