@@ -40,6 +40,7 @@ if __name__ == '__main__':
     argParser.add_argument('--host', action='store', default='localhost', help="Specify host for control hub")
     argParser.add_argument('--devel', action='store_true', default=False, help="Don't check repo status (not recommended)")
     argParser.add_argument('--monitor', action='store_true', default=False, help="Start up montoring threads in the background")
+    argParser.add_argument('--strict', action='store_true', default=False, help="Enforce strict limits on ADC reads for SCA and LPGBT")
     args = argParser.parse_args()
 
 
@@ -73,6 +74,8 @@ if __name__ == '__main__':
 
     if args.recal_lpgbt:
         rb_0.DAQ_LPGBT.calibrate_adc(recalibrate=True)
+        if rb_0.trigger:
+            rb_0.TRIG_LPGBT.calibrate_adc(recalibrate=True)
 
     if not args.devel:
         check_repo_status(kcu_version=kcu.get_firmware_version(verbose=True))
@@ -85,7 +88,7 @@ if __name__ == '__main__':
 
         print("Power up init sequence for: DAQ")
 
-        rb_0.DAQ_LPGBT.power_up_init()
+        #rb_0.DAQ_LPGBT.power_up_init()
 
         rb_0.VTRX.get_version()
         if (verbose):
@@ -144,7 +147,6 @@ if __name__ == '__main__':
     if (verbose):
         _ = rb_0.VTRX.status()
 
-    rb_0.DAQ_LPGBT.set_dac(1.0)  # set the DAC / Vref to 1.0V.
 
     if args.power_up or args.reconfigure:
         print("Link inversions")
@@ -183,13 +185,13 @@ if __name__ == '__main__':
 
     if args.adcs:
         print("\n\nReading GBT-SCA ADC values:")
-        rb_0.SCA.read_adcs(check=True)
+        rb_0.SCA.read_adcs(check=True, strict_limits=args.strict)
 
         print("\n\nReading DAQ lpGBT ADC values:")
-        rb_0.DAQ_LPGBT.read_adcs(check=True)
+        rb_0.DAQ_LPGBT.read_adcs(check=True, strict_limits=args.strict)
 
         # High level reading of temperatures
-        temp = rb_0.read_temp(verbose=1)
+        temp = rb_0.read_temp(verbose=True)
 
     #-------------------------------------------------------------------------------
     # I2C Test

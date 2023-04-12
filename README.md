@@ -52,7 +52,7 @@ A minimal example of usage of this package is given in `test_tamalero.py`, which
 `ipython3 -i test_tamalero.py`
 
 The code is organized similar to the physical objects.
-The 0th readout board object can be initialzied with
+The 0th readout board object can be initialized with
 ```
 rb_0 = ReadoutBoard(0, trigger=False, flavor='small')
 ```
@@ -62,13 +62,16 @@ The current RB prototype is of the small flavor (3 modules, 12 ETROCs). We antic
 To interact with `rb_0` we need to initialize a control board (KCU105)
 ```
 kcu = KCU(name="my_device",
-          ipb_path="ipbusudp-2.0://192.168.0.10:50001",
-          adr_table="module_test_fw/address_tables/etl_test_fw.xml")
+          ipb_path="chtcp-2.0://localhost:10203?target=192.168.0.11:50001",
+          adr_table="module_test_fw/address_tables/etl_test_fw.xml",
+	  dummy=False)
 ```
 and connect it to the readout board
 ```
-kcu.connect_readout_board(rb_0)
+rb_0.connect_KCU(kcu)
 ```
+
+**Note:** Control hub is now required for using the KCU, as shown in the default `ipb_path` of the KCU (i.e. `"chtcp-2.0://localhost:10203?target=192.168.0.11:50001"` instead of `"ipbusudp-2.0://192.168.0.11:50001"`). `tamalero` won't run otherwise.
 
 We can then configure the RB and get a status of the lpGBT:
 ```
@@ -97,7 +100,7 @@ The current reading of the SCA ADCs can be obtained with
 ```
 rb_0.SCA.read_adcs()
 ```
-which reads all ADC lines that are connected, according to the mapping given in [configs/SCA_mapping.yaml](https://gitlab.cern.ch/cms-etl-electronics/module_test_sw/-/blob/master/configs/SCA_mapping.yaml).
+which reads all ADC lines that are connected, according to the mapping given in [configs/SCA_mapping.yaml](https://gitlab.cern.ch/cms-etl-electronics/module_test_sw/-/blob/master/configs/SCA_mapping.yaml) or [configs/SCA_mapping_v2.yaml](https://gitlab.cern.ch/cms-etl-electronics/module_test_sw/-/blob/master/configs/SCA_mapping_v2.yaml) depending on the readout board version.
 An example is given here:
 ```
 adc:
@@ -114,6 +117,24 @@ adc:
         conv: 1220
         flavor: small
         comment: monitoring for BV line 0
+```
+## Developing the code
+
+While developing software for `tamalero`, it is necessary to test new features with the `tests/startup.sh` script before opening a merge request. Both `tamalero` (`setup.sh`) and Vivado must be sourced first. To use `startup.sh`, source the script and pass the appropriate options:
+```
+Usage: 
+	startup
+       Options:	
+	[-i | --id ID]              Unique ID of CI KCU
+	[-f | --firmware FIRMWARE]  Firmware version of KCU
+	[-p | --psu PSU:CH]         IP address and channel(s) of Power Supply Unit (will trigger power cycle)
+	[-k | --kcu KCU]            IP address of Xilinx KCU
+	[-c | --cycle]		    Power cycle PSU (not necessary if -p is set)
+	[-h | --help]               Show this screen
+```
+It is generally recommended to power cycle the Power Supply Units when testing a new feauture with `tests/startup.sh`. An example command is given below:
+```
+source tests/startup.sh -i 210308B0B4F5 -k 192.168.0.12 -p 192.168.2.3:ch2
 ```
 
 ## Notebook
