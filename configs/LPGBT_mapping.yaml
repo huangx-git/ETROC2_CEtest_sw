@@ -97,4 +97,4 @@ gpio:
         default: 0
         direction: out
         flavor: small
-        comment: VTRX DIS 
+        comment: VTRX DIS

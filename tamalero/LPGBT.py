@@ -805,7 +805,8 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE", 0x1)
         if verbose:
             print("Set current DAC...", self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE"))
-        if channel == 0:
+
+	if channel == 0:
             adc_chn = self.LPGBT_CONST.CURDAC_CHN0_bm
         elif channel == 1:
             adc_chn = self.LPGBT_CONST.CURDAC_CHN1_bm
@@ -839,7 +840,7 @@ class LPGBT(RegParser):
         self.set_current_dac_uA(current)
         if verbose:
             print(f"Set current source value to {current} uA")
-    
+
     def set_dac(self, v_out):
         if v_out > 1.00:
             print ("Can't set the DAC to a value larger than 1.0 V!")
@@ -919,7 +920,6 @@ class LPGBT(RegParser):
 #        reg = self.get_node(node)
 #        adr = reg.address
 #        rd = self.rd_adr(adr)
-#        
 #        if val == 0:
 #            rd = rd & (0xff ^ (1 << ch))
 #        else:
@@ -928,7 +928,7 @@ class LPGBT(RegParser):
 #        self.wr_adr(adr, rd)
 
     def reset_pattern_checkers(self):
-    
+
         self.kcu.action("READOUT_BOARD_%i.LPGBT.PATTERN_CHECKER.RESET" % self.rb)
 
         for link in (0, 1):

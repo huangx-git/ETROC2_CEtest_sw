@@ -151,7 +151,7 @@ if __name__ == '__main__':
     if args.power_up or args.reconfigure:
         print("Link inversions")
         rb_0.DAQ_LPGBT.invert_links()
-        if rb_0.trigger: 
+        if rb_0.trigger:
             rb_0.TRIG_LPGBT.invert_links(trigger=rb_0.trigger)
 
     #-------------------------------------------------------------------------------

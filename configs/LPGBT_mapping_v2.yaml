@@ -47,7 +47,7 @@ adc:
         min: 2.0
         max: 3.0
         flavor: small
-        comment: 2V5RX * 0.33 
+        comment: 2V5RX * 0.33
     VTEMP_ADC:
         pin: 0x07
         conv: 1
@@ -132,4 +132,3 @@ gpio:
         direction: out
         flavor: small
         comment: VTRX DIS
-
