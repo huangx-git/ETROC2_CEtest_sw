@@ -116,7 +116,7 @@ class LPGBT(RegParser):
                 raise Exception("Spurious lpGBT version.")
 
         self.set_adc_mapping()
-	self.set_gpio_mapping()
+        self.set_gpio_mapping()
 
         self.base_config = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/lpgbt_config.yaml'))['base'][f'v{self.ver}']
         self.ec_config = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/lpgbt_config.yaml'))['ec'][f'v{self.ver}']
@@ -806,7 +806,7 @@ class LPGBT(RegParser):
         if verbose:
             print("Set current DAC...", self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE"))
 
-	if channel == 0:
+        if channel == 0:
             adc_chn = self.LPGBT_CONST.CURDAC_CHN0_bm
         elif channel == 1:
             adc_chn = self.LPGBT_CONST.CURDAC_CHN1_bm
