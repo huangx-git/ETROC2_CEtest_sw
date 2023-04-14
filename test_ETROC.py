@@ -7,6 +7,7 @@ from scipy.optimize import curve_fit
 from matplotlib import pyplot as plt
 
 import os
+import sys
 import json
 from yaml import load, dump
 try:
@@ -290,5 +291,14 @@ if __name__ == '__main__':
             print(f'Threshold at {th=}mV')
             ETROC2.set_Vth_mV(th)  # anything between 196 and 203 should give reasonable numbers of hits
             data = ETROC2.runL1A()  # this will spit out data for a single event, with an occupancy corresponding to the previously set threshold
+            unpacked = [DF.read(d) for d in data]
             for d in data:
                 print(DF.read(d))
+
+
+        if unpacked[-1][1]['hits'] == len(unpacked)-2:
+            print("Very simple check passed.")
+            sys.exit(0)
+        else:
+            print("Data looks inconsistent.")
+            sys.exit(1)

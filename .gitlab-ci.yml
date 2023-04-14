@@ -24,3 +24,4 @@ make_test:
     - source setup.sh
     - source /media/data_hdd/Xilinx/Vivado/2021.1/settings64.sh
     - source tests/startup.sh -i 210308B0B4F5 -k 192.168.0.12 -p 192.168.2.3:ch2
+    - source tests/software_emulator.sh
