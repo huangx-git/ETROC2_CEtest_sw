@@ -1,7 +1,10 @@
 """
 Control board class (KCU105). Depends on uhal.
 """
-import uhal
+try:
+    import uhal
+except ModuleNotFoundError:
+    print("Running without uhal (ipbus not installed with correct python bindings)")
 from tamalero.colors import red, green
 
 
