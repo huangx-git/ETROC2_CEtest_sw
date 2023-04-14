@@ -17,7 +17,7 @@ def open_kcu_serial_port():
 
     print('\nWelcome to KCU105 clock configuration')
     print('\n')
-    usb = input('Which USB port is the board connected to? Type a number:_')
+    usb = input('Which USB port is the board connected to? Type a number: ')
     try: 
         portName = '/dev/ttyUSB'+ str(usb)
         ser = serial.Serial()
@@ -34,104 +34,94 @@ def pprint(line):
     for l in line: 
         print(l)
 
-def dump(line): 
-    print("Unexpected read: ")
-    pprint(line)
-    sys.exit(1)
 
-def configure_kcu_clocks(): 
+def configure_kcu_clocks():
+
+    def dump(line, msg=""):
+        print("Unexpected read, looking for \"" + str(msg) + "\" but got:")
+        pprint(line)
+        return_to_main()
+        sys.exit(1)
+
+    def check_and_write(msg, expect, action=None):
+        line = ser.readlines()
+        if expect not in line:
+            dump(line, expect)
+        else:
+            print(msg)
+            if action is not None:
+                ser.write(action)
+
+    def return_to_main():
+        """get back to the main menu from a nested menu"""
+
+        ser.write(b'\n')
+        line = ser.readlines()
+
+        while b'\r0. Return to Main Menu\r\n' in line or b'\r0. Return to Clock Menu\r\n' in line:
+            print("Returning to main menu")
+            ser.write(b'\n0\n')
+            line = ser.readlines()
+
+        ser.write(b'\n')
 
     ser = open_kcu_serial_port()
     
-    print('\n')
-    print(ser.name)
-    print("Configuring KCU105 at: " + ser.name)
+    print("Configuring KCU105 at: " + str(ser.name))
 
     if ser.is_open:
-        check = input('\nAbout to setup KCU105 Si570, is this okay?  [y/n]:_')
+        check = input('\nAbout to setup KCU105 Si570, is this okay?  [y/n]: ')
+    else:
+        check=""
 
     if (check != 'y'):
         print('\nDid not set up KCU105 Si570\n')
         sys.exit(0)
 
-    ser.write(b'\n')
-    line = ser.readlines()
+    return_to_main()
 
-    while b'\r0. Return to Main Menu\r\n' in line:
-        print("Returning to main menu")
-        ser.write(b'\n0\n')
-        line = ser.readlines()
+    # transition from main menu to the clock menu
+    check_and_write("Main Menu -> Clock Menu",
+                    b'\r      - Main Menu -\r\n',
+                    b'\n1\n')
 
-    print('\n Starting \n')
-    if b'\r      - Main Menu -\r\n' not in line:
-        dump(line)
-    else: 
-        print('In Main Menu\n')
-        ser.write(b'\n1\n')
-        line = ser.readlines()
+    check_and_write("Clock Menu -> Si750 User Clock Frequency Menu (1)",
+                    b'\r      - Clock Menu -\r\n',
+                    b'\n1\n')
 
-    if b'\r      - Clock Menu -\r\n' not in line:
-        dump(line)
-    else: 
-        print('In Clock Menu\n')
-        ser.write(b'\n1\n')
-        line = ser.readlines()
+    check_and_write("Si750 User Clock Frequency Menu: Enter Clock Freq (320.64)",
+                    b'Enter the Si570 frequency (10-810MHz):\r\n',
+                    b'\n320.64\n')
 
+    check_and_write("Clock Menu -> Save Clocks to EEPROMs (3)",
+                    b'\r3. Save    KCU105 Clock Frequency  to  EEPROM\r\n',
+                    b'\n3\n')
 
-    if b'Enter the Si570 frequency (10-810MHz):\r\n' not in line:
-        dump(line)
-    else: 
-        print('Typing frequency...\n')
-        ser.write(b'\n320.64\n')
-        line = ser.readlines()
+    check_and_write("Save Clock frequency to EEPROM (1)",
+                    b'\r        - Save Menu -\r\n',
+                    b'\n1\n')
 
-    if b'\r3. Save    KCU105 Clock Frequency  to  EEPROM\r\n' not in line:
-        dump(line)
-    else: 
-        print('Entered frequency... Saving')
-        ser.write(b'\n3\n')
-        line = ser.readlines()
+    check_and_write("Return to Clock Menu (0)",
+                    b'\r        - Save Menu -\r\n',
+                    b'\n0\n')
 
-    if b'\r        - Save Menu -\r\n' not in line:
-        dump(line)
-    else:
-        print('\nIn Save Menu\n')
-        ser.write(b'\n1\n')
-        line = ser.readlines()
+    check_and_write("View KCU105 Saved Clocks (5)",
+                    b'\r      - Clock Menu -\r\n',
+                    b'\n5\n')
 
-    if b'\r        - Save Menu -\r\n' not in line:
-        dump(line)
-    else:
-        ser.write(b'\n0\n')
-        print('Loading...\n')
-        line = ser.readlines()
+    check_and_write("Checking Clock frequency",
+                    b'\rSi570  User Clock:  320.64000000 MHz\r\n',
+                    b'\n')
 
+    check_and_write("Setting up automatic restore (6)",
+                    b'\r      - Clock Menu -\r\n',
+                    b'\n6\n')
 
-    if b'\r      - Clock Menu -\r\n' not in line:
-        dump(line)
-    else: 
-        ser.write(b'\n5\n')
-        line = ser.readlines()
+    check_and_write("Enabling automatic restore (2)",
+                    b'\r      - Options Menu -\r\n',
+                    b'\n2\n')
 
-    if b'\rSi570  User Clock:  320.64000000 MHz\r\n' not in line:
-        dump(line)
-    else: 
-        print('Saved 320.64 MHz to KCU105 Si570 user clock frequency')
-        ser.write(b'\n6\n')
-        line = ser.readlines()
-
-    if b'\r      - Options Menu -\r\n' not in line:
-        dump(line)
-    else: 
-        print('\nIn Options Menu\n')
-        ser.write(b'\n2\n')
-        line = ser.readlines()
-        print('Setting up Automatic Restore\n')
-        ser.write(b'\n0\n')
-        line = ser.readlines()
-        ser.write(b'\n0\n')
-        line = ser.readlines()
-        print('Successful set up of Automatic Restore at Power-Up/Reset\n')
+    return_to_main()
 
     print('End of Program\n')
     ser.close()
