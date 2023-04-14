@@ -195,3 +195,15 @@ Setup the paths using `source setup.sh` inside the `module_test_sw` directory an
 
 [Xilinx](https://www.xilinx.com/products/boards-and-kits/kcu105.html)
 
+A simple helper script to configure the KCU105 is available in `kcu_clock_config`. It can be run as:
+
+``` bash
+python3 configure_kcu_clock_synth.py
+```
+
+It will prompt you to specify the number of the serial port (e.g. `2` for
+`/dev/ttyUSB2`), and will give some suggestions about which port it likely is.
+If you only have one KCU105 connected to the UART then it is likely the first
+choice.
+
+Confirm `y` and it will automatically configure the KCU105.
