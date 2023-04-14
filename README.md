@@ -44,11 +44,52 @@ pip install --editable .
 
 To install IPbus please see the [IPbus user guide](https://ipbus.web.cern.ch/doc/user/html/software/installation.html).
 
+The software emulator also runs without ipbus installed.
+To use a container with preinstalled dependencies, refer to [this section](https://gitlab.cern.ch/cms-etl-electronics/module_test_sw#using-docker) (needs docker installed).
+
 ## Running the code
 
 To properly set all paths run `source setup.sh`.
 
-A minimal example of usage of this package is given in `test_tamalero.py`, which can be run as:
+### Software only
+
+A software emulator of ETROC2 has been implemented, and examples of its usage are implemented in `test_ETROC.py`.
+The simplest example requests a handful of data words by sending L1As at different threshold values.
+
+``` bash
+ipython3 -i test_ETROC.py
+```
+
+Which should return something like
+
+``` bash
+Running without uhal (ipbus not installed with correct python bindings)
+Sending 10 L1As and reading back data, for the following thresholds:
+[203.0, 202.7, 202.4, 202.1, 201.8, 201.5, 201.2, 200.9, 200.6, 200.3]
+Threshold at th=203.0mV
+Vth set to 203.000000.
+('header', {'elink': 0, 'sof': 0, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 1, 'type': 0, 'bcid': 0})
+('trailer', {'elink': 0, 'sof': 0, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 25152, 'status': 0, 'hits': 0, 'crc': 0})
+Threshold at th=202.7mV
+Vth set to 202.700000.
+('header', {'elink': 0, 'sof': 0, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 2, 'type': 0, 'bcid': 0})
+('trailer', {'elink': 0, 'sof': 0, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 25152, 'status': 0, 'hits': 0, 'crc': 0})
+Threshold at th=202.4mV
+...
+```
+
+A threshold scan can be run with
+
+``` bash
+ipython3 -i test_ETROC.py -- --vth --fitplots
+```
+
+The threshold scans will produce S-curves for each pixel.
+![](output/pixel_1.png)
+
+### With a physical Readout Board
+
+A minimal example of usage of this package with a physical readout board (v1 or v2) is given in `test_tamalero.py`, which can be run as:
 `ipython3 -i test_tamalero.py`
 
 The code is organized similar to the physical objects.
@@ -72,6 +113,7 @@ rb_0.connect_KCU(kcu)
 ```
 
 **Note:** Control hub is now required for using the KCU, as shown in the default `ipb_path` of the KCU (i.e. `"chtcp-2.0://localhost:10203?target=192.168.0.11:50001"` instead of `"ipbusudp-2.0://192.168.0.11:50001"`). `tamalero` won't run otherwise.
+Control hub is part of the IPbus package and can be started with e.g. `/opt/cactus/bin/controlhub_start`.
 
 We can then configure the RB and get a status of the lpGBT:
 ```
