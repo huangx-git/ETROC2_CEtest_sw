@@ -160,7 +160,7 @@ class ETROC():
         return self.connected
 
     def get_elink_status(self):
-        if self.usefake:
+        if self.isfake:
             self.trig_locked = True
             self.daq_locked = True
         else:
@@ -178,7 +178,7 @@ class ETROC():
             return "--"
 
     def consistency(self, verbose=False):
-        if self.usefake:
+        if self.isfake:
             return True
         daq, trig = self.get_elink_status()
         if daq:
@@ -203,7 +203,7 @@ class ETROC():
     def show_status(self):
         self.get_elink_status()
         print("┏" + 31*'━' + "┓")
-        if self.usefake:
+        if self.isfake:
             print("┃{:^31s}┃".format("ETROC Software Emulator"))
         else:
             print("┃{:^31s}┃".format("ETROC Hardware Emulator"))
