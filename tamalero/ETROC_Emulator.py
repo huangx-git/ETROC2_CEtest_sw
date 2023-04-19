@@ -4,27 +4,30 @@
 
 import numpy as np
 import os
-from yaml import load, dump
-try:
-    from yaml import CLoader as Loader, CDumper as Dumper
-except ImportError:
-    from yaml import Loader, Dumper
+from tamalero.utils import load_yaml, ffs, bit_count
+from tamalero.ETROC import ETROC
 
-
+here = os.path.dirname(os.path.abspath(__file__))
 maxpixel = 256
 
-class ETROC2_Emulator():
+class ETROC2_Emulator(ETROC):
     def __init__(self, BCID=0, verbose=False, chipid=123456, elink=0):
+        self.isfake = True
         if verbose:
             print('Initiating fake ETROC2...\n')
 
-        # load ETROC2 dataformat
-        with open(os.path.expandvars('$TAMALERO_BASE/configs/dataformat.yaml'), 'r') as f:
-            self.format = load(f, Loader=Loader)['ETROC2']
+        self.connected      = True
+        self.master         = "software"
+        self.i2c_channel    = "0"
+        self.elink          = elink
+        self.ver            = "23-2-23"  # yy-mm-dd
 
-        # load emulated "registers"
-        with open(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC2.yaml'), 'r') as f:
-            self.regs = load(f, Loader=Loader)
+        # load ETROC2 dataformat
+        self.format = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/dataformat.yaml'))['ETROC2']
+
+        ## load emulated "registers"
+        #with open(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC2.yaml'), 'r') as f:
+        #    self.regs = load(f, Loader=Loader)
 
         # storing data for running L1As
         self.data = {
@@ -46,49 +49,26 @@ class ETROC2_Emulator():
         self.nbits = self.format['nbits']
 
         # generate fake baseline/noise properties per pixel
-        self.bl_means  = [np.random.normal(198, .8) for x in range(maxpixel)]
-        self.bl_stdevs = [np.random.normal(  1, .2) for x in range(maxpixel)]
+        self.bl_means  = [[np.random.normal(198, .8) for x in range(16)] for y in range(16)]
+        self.bl_stdevs = [[np.random.normal(  1, .2) for x in range(16)] for y in range(16)]
 
+        # this should not be duplicated...
+        self.regs = load_yaml(os.path.join(here, '../address_table/ETROC2_example.yaml'))
+        self.register = {adr: 0 for adr in range(2**16)}  # fill all registers with 0
 
-    # emulating I2C connections
-    def wr_reg(self, reg, val, pix=None):
-        if pix is None:
-            self.regs[reg]['value'] = val
-        else:
-            try:
-                self.regs[reg]['value'][pix] = val
-            except KeyError:
-                self.regs[reg]['value'] = {}
-                self.regs[reg]['value'][pix] = val
+    def write_adr(self, adr, val):
+        self.register[adr] = val
 
-        # update regs for other pixels if data is shared amongst pixels
-        # FIXME I honestly don't know what this does...
-        # The whole pixel business needs restructuring
-        regcfg = reg.split('Cfg')
-        if (len(regcfg) > 1) and (regcfg[1] in [0, 1, 2]):
-            for r in range(16):
-                for c in range(16):
-                    newreg = 'PixR%dC%dCfg%d'%(r,c,regcfg)
-                    self.regs[newreg] = val
-
-        return None
-
-    def rd_reg(self, reg, pix=None):
-        if pix is None:
-            return self.regs[reg]['value']
-        else:
-            return self.regs[reg]['value'][pix]
-
+    def read_adr(self, adr):
+        return self.register[adr]
 
     # add hit data to self.L1Adata & increment hit counter
-    def add_hit(self,pix):
-        matrix_w = int(round(np.sqrt(maxpixel))) # pixels in NxN matrix
-        
+    def add_hit(self, row, col):
         # generate random data
         data = {
                 'ea'     : 0,
-                'row_id' : pix%matrix_w,
-                'col_id' : int(np.floor(pix/matrix_w)),
+                'row_id' : row,
+                'col_id' : col,
                 'toa'    : np.random.randint(0,500),
                 'cal'    : np.random.randint(0,500),
                 'tot'    : np.random.randint(0,500),
@@ -113,16 +93,20 @@ class ETROC2_Emulator():
 
     # run one L1A
     def runL1A(self):
+        # FIXME I don't like the current structure.
+        # the emulator should be in the ETROC class hierarchy
+        # so that it has access to its members
         self.data['hits'] = 0
         self.L1Adata = [] # wipe previous L1A data
         self.data['l1counter'] += 1
 
-        for pix in range(maxpixel):
-            # produce random hit
-            val = np.random.normal(self.bl_means[pix], self.bl_stdevs[pix]) 
-            # if we have a hit
-            if val > self.data['vth'] :
-                self.add_hit(pix)
+        for row in range(16):
+            for col in range(16):
+                # produce random hit
+                val = np.random.normal(self.bl_means[row][col], self.bl_stdevs[row][col])
+                # if we have a hit
+                if val > self.get_Vth_pix(row=0, col=0):
+                    self.add_hit(row, col)
         
         data = self.get_data()
         return data

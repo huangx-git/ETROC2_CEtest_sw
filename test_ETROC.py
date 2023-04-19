@@ -88,7 +88,7 @@ def vth_scan(ETROC2):
 if __name__ == '__main__':
 
     # initiate
-    ETROC2 = ETROC(usefake=True) # currently using Software ETROC2 (fake)
+    ETROC2 = software_ETROC2()  # currently using Software ETROC2 (fake)
     DF = DataFrame('ETROC2')
 
     # argsparser
