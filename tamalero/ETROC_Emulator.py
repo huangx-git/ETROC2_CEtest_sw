@@ -14,20 +14,20 @@ class ETROC2_Emulator(ETROC):
     def __init__(self, BCID=0, verbose=False, chipid=123456, elink=0):
         self.isfake = True
         if verbose:
-            print('Initiating fake ETROC2...\n')
+            print('Initiating software ETROC2 (software emulator) ...\n')
 
         self.connected      = True
         self.master         = "software"
         self.i2c_channel    = "0"
         self.elink          = elink
         self.ver            = "23-2-23"  # yy-mm-dd
+        self.rb             = None
 
         # load ETROC2 dataformat
         self.format = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/dataformat.yaml'))['ETROC2']
 
-        ## load emulated "registers"
-        #with open(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC2.yaml'), 'r') as f:
-        #    self.regs = load(f, Loader=Loader)
+        # load register map
+        self.regs = load_yaml(os.path.join(here, '../address_table/ETROC2_example.yaml'))
 
         # storing data for running L1As
         self.data = {
@@ -52,9 +52,10 @@ class ETROC2_Emulator(ETROC):
         self.bl_means  = [[np.random.normal(198, .8) for x in range(16)] for y in range(16)]
         self.bl_stdevs = [[np.random.normal(  1, .2) for x in range(16)] for y in range(16)]
 
-        # this should not be duplicated...
-        self.regs = load_yaml(os.path.join(here, '../address_table/ETROC2_example.yaml'))
+        # this represents the registers on the actual chip
         self.register = {adr: 0 for adr in range(2**16)}  # fill all registers with 0
+
+        self.default_config()
 
     def write_adr(self, adr, val):
         self.register[adr] = val
@@ -93,9 +94,6 @@ class ETROC2_Emulator(ETROC):
 
     # run one L1A
     def runL1A(self):
-        # FIXME I don't like the current structure.
-        # the emulator should be in the ETROC class hierarchy
-        # so that it has access to its members
         self.data['hits'] = 0
         self.L1Adata = [] # wipe previous L1A data
         self.data['l1counter'] += 1
@@ -105,7 +103,7 @@ class ETROC2_Emulator(ETROC):
                 # produce random hit
                 val = np.random.normal(self.bl_means[row][col], self.bl_stdevs[row][col])
                 # if we have a hit
-                if val > self.get_Vth_pix(row=0, col=0):
+                if val > self.get_Vth_mV():
                     self.add_hit(row, col)
         
         data = self.get_data()

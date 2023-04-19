@@ -20,7 +20,7 @@ except ImportError:
 # run N L1A's and return packaged ETROC2 dataformat
 def run(N):
     # currently uses the software ETROC to produce fake data
-    return ETROC2.fakeETROC.run(N)
+    return ETROC2.run(N)
 
 
 def toPixNum(row, col, w):
@@ -76,6 +76,7 @@ def vth_scan(ETROC2):
     run_results = np.empty([N_steps, N_pix])
 
     for vth in vth_axis:
+        print(f"Working on threshold {vth=}")
         ETROC2.set_Vth_mV(vth)
         i = int(round((vth-vth_min)/vth_step))
         run_results[i] = parse_data(run(N_l1a), N_pix)
@@ -89,6 +90,7 @@ if __name__ == '__main__':
 
     # initiate
     ETROC2 = software_ETROC2()  # currently using Software ETROC2 (fake)
+    print("ETROC2 emulator instantiated, base configuration successful")
     DF = DataFrame('ETROC2')
 
     # argsparser
@@ -101,60 +103,39 @@ if __name__ == '__main__':
     args = argParser.parse_args()
 
 
-    # ==============================
-    # === Test simple read/write ===
-    # ==============================
-    # FIXME this needs to be fixed for new ETROC2 register table / structure
     if args.test_readwrite:
+        # ==============================
+        # === Test simple read/write ===
+        # ==============================
         print("<--- Test simple read/write --->")
         print("Testing read/write to addresses...")
-        for r in range(16):
-            for c in range(16):
-                for n in range(32):
-                    regadr = 'PixR%dC%dCfg%d'%(r,c,n)
-                    ETROC2.wr_adr(regadr, 1)
-                    readval = ETROC2.rd_adr(regadr)
-                    if not(readval == 1):
-                        raise Exception('Test failed for %s, value read was %d.'%(regname,readval))
-                for n in range(8):
-                    regadr = 'PixR%dC%dSta%d'%(r,c,n)
-                    ETROC2.wr_adr(regadr, 1)
-                    readval = ETROC2.rd_adr(regadr)
-                    if not(readval == 1):
-                        raise Exception('Test failed for %s, value read was %d.'%(regname,readval))
+
+        test_val = 0x2
+        print(f"Broadcasting {test_val=} to CLSel in-pixel registers")
+        ETROC2.wr_reg('CLSel', test_val, broadcast=True)
+        assert ETROC2.rd_reg('CLSel', row=2, col=3) == test_val, "Did not read back the expected value"
         print("Test passed.\n")
 
-        print("Testing read/write for shared pixels...")
-        for n in range(32):
-            regadr = 'PixR%dC%dCfg%d'%(1,1,n)
-            ETROC2.wr_adr(regadr, 1)
-            for r in range(16):
-                for c in range(16):
-                    readval = ETROC2.rd_adr(regadr)
-                    if not(readval == 1):
-                        raise Exception('Test failed for %s, value read was %d.'%(regname,readval))
+        test_val = 2**8 + 2**5
+        print(f"Broadcasting {test_val=} to DAC in-pixel registers")
+        ETROC2.wr_reg('DAC', test_val, broadcast=True)
+        assert ETROC2.rd_reg('DAC', row=5, col=4) == test_val, "Did not read back the expected value"
         print("Test passed.\n")
 
-        print("Testing read/write with register names...")
-        with open(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC2.yaml'), 'r') as f:
-            regnames = load(f, Loader=Loader)
-        for regname in list(regnames.keys()):
-            for pix in range(256):
-                ETROC2.wr_reg(regname, pix, 1)
-                readval = ETROC2.rd_reg(regname, pix)
-                if not(readval == 1):
-                    raise Exception('Test failed for %s, value read was %d.'%(regname,readval))
+        test_val = 2**11 + 2**5
+        print(f"Trying to broadcast too large value {test_val=} to DAC in-pixel registers")
+        try:
+            ETROC2.wr_reg('DAC', test_val, broadcast=True)
+            raise NotImplementedError("Test failed.")
+        except RuntimeError:
+            print("Succesfully failed, as expected.")
+            pass
         print("Test passed.\n")
 
-
-    # ==============================
-    # ======= Test Vth scan ========
-    # ==============================
-
-
-
-    # ========= Vth SCAN =========
-    if args.vth:
+    elif args.vth:
+        # ==============================
+        # ======= Test Vth scan ========
+        # ==============================
         print("<--- Testing Vth scan --->")
 
         # run only if no saved data or we want to rerun
