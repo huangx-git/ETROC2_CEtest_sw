@@ -313,6 +313,8 @@ class LPGBT(RegParser):
             self.kcu.write_node(id, 2)
 
     def wr_adr(self, adr, data):
+        if self.trigger:
+            raise NotImplementedError("rd_adr does only read from the master lpGBT, and you're trying to write to a servant")
         #defer = not self.kcu.auto_dispatch  # if auto dispatch is turned off, keep it off.
         #self.kcu.toggle_dispatch()  # turn off auto dispatch for this transaction
         #self.kcu.write_node("READOUT_BOARD_%d.SC.TX_GBTX_ADDR" % self.rb, 115)
@@ -326,6 +328,8 @@ class LPGBT(RegParser):
         #self.rd_flush()
 
     def rd_adr(self, adr):
+        if self.trigger:
+            raise NotImplementedError("rd_adr does only read from the master lpGBT, and you're trying to read from a servant")
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_REGISTER_ADDR" % self.rb, adr)
         self.kcu.action("READOUT_BOARD_%d.SC.TX_START_READ" % self.rb)
         valid = self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_VALID" % self.rb).valid()
