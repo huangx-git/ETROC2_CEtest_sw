@@ -8,8 +8,6 @@ import os
 
 here = os.path.dirname(os.path.abspath(__file__))
 
-here = os.path.dirname(os.path.abspath(__file__))
-
 class ETROC():
 
     def __init__(
