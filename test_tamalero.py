@@ -269,4 +269,5 @@ if __name__ == '__main__':
             rb_0.DAQ_LPGBT.set_gpio("LED_RHETT", 1) # Let Rhett LED blink for 10s
             time.sleep(0.5)
             rb_0.DAQ_LPGBT.set_gpio("LED_RHETT", 0)
+            time.sleep(0.5)
         rb_0.DAQ_LPGBT.set_gpio("LED_RHETT", 1)
