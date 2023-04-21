@@ -22,7 +22,7 @@ class Module:
             if self.config['i2c']['master']=='fake':
                 self.ETROCs.append(
                     ETROC(
-                        usefake=True,
+                        #usefake=,
                         master=self.config['i2c']['master'],
                         i2c_channel=self.config['i2c']['channel'],
                         elink=self.config['elinks'][j],

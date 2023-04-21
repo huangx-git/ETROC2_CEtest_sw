@@ -1132,11 +1132,11 @@ class LPGBT(RegParser):
                 status = self.rd_adr(i2cm0status+OFFSET_RD)
                 retries += 1
                 if retries > 50:
-                    if not verbose:
+                    if verbose:
                         print ("Write not successfull!")
                     break
 
-    def I2C_read(self, reg=0x0, master=2, slave_addr=0x70, nbytes=1, adr_nbytes=2, freq=2, verbose=True):
+    def I2C_read(self, reg=0x0, master=2, slave_addr=0x70, nbytes=1, adr_nbytes=2, freq=2, verbose=False):
         #https://gitlab.cern.ch/lpgbt/pigbt/-/blob/master/backend/apiapp/lpgbtLib/lowLevelDrivers/MASTERI2C.py#L83
 
         # debugging

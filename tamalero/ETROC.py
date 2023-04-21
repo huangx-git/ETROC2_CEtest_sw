@@ -2,7 +2,6 @@
 For ETROC control
 """
 
-from tamalero.ETROC_Emulator import ETROC2_Emulator as software_ETROC2
 from tamalero.utils import load_yaml, ffs, bit_count
 from tamalero.colors import red, green
 import os
@@ -20,43 +19,26 @@ class ETROC():
             i2c_adr=0x72,
             i2c_channel=0,
             elink=0,
-            usefake=False,
             verbose=False,
             strict=True,
     ):
-        self.usefake = usefake
-        if usefake:
-            self.fakeETROC = software_ETROC2(elink=elink)
-            self.connected = True
-            self.master = "software"
-            self.i2c_channel = "0"
-            self.elink = elink
-            self.ver = "23-2-23"  # yy-mm-dd
+        self.isfake = False
+        self.I2C_master = rb.DAQ_LPGBT if master == 'lpgbt' else rb.SCA
+        self.master = master
+        self.rb = rb
+        # check if connected
+        self.i2c_channel = i2c_channel
+        self.i2c_adr = i2c_adr
+        self.elink = elink
+        self.is_connected()
+        if self.connected:
+            self.ver = self.get_ver()
         else:
-            self.I2C_master = rb.DAQ_LPGBT if master == 'lpgbt' else rb.SCA
-            self.master = master
-            self.rb = rb
-            # check if connected
-            self.i2c_channel = i2c_channel
-            self.i2c_adr = i2c_adr
-            self.elink = elink
-            self.is_connected()
-            if self.connected:
-                self.ver = self.get_ver()
-            else:
-                self.ver = "X-X-X"
+            self.ver = "X-X-X"
 
         self.regs = load_yaml(os.path.join(here, '../address_table/ETROC2_example.yaml'))
 
         self.get_elink_status()
-        #if usefake:
-        #    for reg in self.regs:
-        #        if isinstance(self.regs[reg]['regadr'], list):
-        #            for pix in self.regs[reg]['regadr']:
-        #                self.fakeETROC.wr_reg(reg, self.regs[reg]['default'], pix)
-        #        else:
-        #            self.fakeETROC.wr_reg(reg, self.regs[reg]['default'], pix=None)
-
         try:
             self.default_config()
         except TimeoutError:
@@ -71,7 +53,7 @@ class ETROC():
     # === UTILITY FUNCTIONS ===
     # =========================
     def I2C_write(self, adr=0x0, val=0x0):
-        if self.usefake:
+        if self.isfake:
             raise NotImplementedError("I2C read not implemented for software ETROC")
         else:
             self.I2C_master.I2C_write(
@@ -82,7 +64,7 @@ class ETROC():
             )
 
     def I2C_read(self, adr=0x0):
-        if self.usefake:
+        if self.isfake:
             raise NotImplementedError("I2C read not implemented for software ETROC")
         else:
             return self.I2C_master.I2C_read(
@@ -92,13 +74,29 @@ class ETROC():
             )
 
     def get_adr(self, reg, row=0, col=0, broadcast=False):
-        tmp = (self.regs[reg]['address'] | \
+        tmp = []
+        for address in self.regs[reg]['address']:
+            tmp.append(address | \
                row << 5 | \
                col << 9 | \
                broadcast << 13 | \
                self.regs[reg]['stat'] << 14 | \
                self.regs[reg]['pixel'] << 15 )
         return tmp
+
+    def wr_adr(self, adr, val):
+        if self.isfake:
+            #print ("writing fake")
+            self.write_adr(adr, val)
+        else:
+            self.I2C_write(adr, val)
+
+    def rd_adr(self, adr):
+        if self.isfake:
+            #print ("reading fake")
+            return self.read_adr(adr)
+        else:
+            return self.I2C_read(adr)
 
     # read & write using register name & pix num
     def wr_reg(self, reg, val, row=0, col=0, broadcast=False):
@@ -109,17 +107,24 @@ class ETROC():
         col - arbitrary value for periphery, 0..15 for in pixel
         broadcast - True for broadcast to all pixels
         '''
-        if self.usefake:
-            self.fakeETROC.wr_reg(reg, val, pix=(col<<4 | row))
-        else:
-            adr     = self.get_adr(reg, row=row, col=col, broadcast=broadcast)
-            #print(f"{adr=}")
-            mask    = self.regs[reg]['mask']
-            shift   = ffs(mask)
-            if val > 2**(bit_count(mask)-1):
-                raise RuntimeError(f"Value {val} is larger than the number of bits of register {reg} allow ({bit_count(mask)})")
+        masks    = self.regs[reg]['mask']
+        shifts   = list(map(ffs, masks))
+        n_bits   = [0] + list(map(bit_count, masks))
+        adr      = self.get_adr(reg, row=row, col=col, broadcast=broadcast)
+        if val > 2**(sum(n_bits))-1:
+            raise RuntimeError(f"Value {val} is larger than the number of bits of register {reg} allow ({sum(n_bits)})")
+        if self.isfake:
+            #print(f"writing {adr=}, {value=}")
+            adr = self.get_adr(reg, row=row, col=col, broadcast=False)
+            if broadcast:
+                for row in range(16):
+                    for col in range(16):
+                        self.wr_reg(reg, val, row=row, col=col, broadcast=False)
 
-            self.I2C_write(adr, val << shift)
+        for i, a in enumerate(adr):
+            read = self.rd_adr(a)
+            value = (((val >> n_bits[i]) << shifts[i]) & masks[i]) | (read & ~masks[i])
+            self.wr_adr(a, value)
 
 
     def rd_reg(self, reg, row=0, col=0):
@@ -129,20 +134,16 @@ class ETROC():
         row - arbitrary value for periphery, 0..15 for in pixel
         col - arbitrary value for periphery, 0..15 for in pixel
         '''
-        if self.usefake:
-            return self.fakeETROC.rd_reg(reg, pix=(col<<4 | row))
-        else:
-            adr     = self.get_adr(reg, row=row, col=col)
-            print(f"{adr=}")
-            mask    = self.regs[reg]['mask']
-            shift   = ffs(mask)
-            return (self.I2C_read(adr)&mask) >> shift
+        masks    = self.regs[reg]['mask']
+        shifts   = list(map(ffs, masks))
+        n_bits   = [0] + list(map(bit_count, masks))
 
-    def runL1A(self):
-        if not self.usefake:
-            raise NotImplementedError("Can't send L1As for individual ETROCs / hardware emulators")
-        else:
-            return self.fakeETROC.runL1A()
+        adr = self.get_adr(reg, row=row, col=col)
+        tmp = 0
+        for i, a in enumerate(adr):
+            read = (self.rd_adr(a) & masks[i]) >> shifts[i]
+            tmp |= (read << n_bits[i])
+        return tmp
 
     # ============================
     # === MONITORING FUNCTIONS ===
@@ -153,7 +154,7 @@ class ETROC():
         return self.connected
 
     def get_elink_status(self):
-        if self.usefake:
+        if self.isfake:
             self.trig_locked = True
             self.daq_locked = True
         else:
@@ -171,7 +172,7 @@ class ETROC():
             return "--"
 
     def consistency(self, verbose=False):
-        if self.usefake:
+        if self.isfake:
             return True
         daq, trig = self.get_elink_status()
         if daq:
@@ -196,7 +197,7 @@ class ETROC():
     def show_status(self):
         self.get_elink_status()
         print("┏" + 31*'━' + "┓")
-        if self.usefake:
+        if self.isfake:
             print("┃{:^31s}┃".format("ETROC Software Emulator"))
         else:
             print("┃{:^31s}┃".format("ETROC Hardware Emulator"))
@@ -223,62 +224,62 @@ class ETROC():
 
     # (FOR ALL PIXELS) set/get load capacitance of preamp first stage
     # 0, 80, 80, or 160 fC FIXME typo? 80 appears twice in doc
-    def set_Cload(self, C):
+    def set_Cload(self, C, row=0, col=0, broadcast=True):
         val = {0:0b00, 40:0b01, 80:0b10, 160:0b11}
         try:
-            self.wr_reg('CLsel', val(C), 0)
+            self.wr_reg('CLsel', val(C), row=row, col=col, broadcast=broadcast)
         except KeyError:
             print('Capacitance should be 0, 80, 80, or 160 fC.')
 
-    def get_Cload(self):
+    def get_Cload(self, row=0, col=0):
         val = {0b00:0, 0b01:40, 0b10:80, 0b11:160}
-        return val[self.rd_reg('CLsel', 0)]
+        return val[self.rd_reg('CLsel', row=row, col=col)]
 
     # (FOR ALL PIXELS) set/get bias current
     # I1 > I2 > I3 > I4
-    def set_Ibias(self, i):
+    def set_Ibias(self, i, row=0, col=0, broadcast=True):
         val = {1:0b000, 2:0b001, 3:0b011, 4:0b111}
         try:
-            self.wr_reg('IBsel', 0, val[i])
+            self.wr_reg('IBsel', val[i], row=row, col=col, broadcast=broadcast)
         except KeyError:
             print('Select between 1 ~ 4.')
 
-    def get_Ibias(self):
+    def get_Ibias(self, row=0, col=0):
         val = {0b000:'I1', 0b001:'I2', 0b011:'I3', 0b111:'I4'}
-        return val[self.rd_reg('IBSel', 0)]
+        return val[self.rd_reg('IBSel', row=row, col=col)]
 
     # (FOR ALL PIXELS) set/get feedback resistance
     # 20, 10, 5.7 or 4.4 kOhm
-    def set_Rfeedback(self, R):
+    def set_Rfeedback(self, R, row=0, col=0, broadcast=True):
         val = {20:0b00, 10:0b00, 5.7:0b10, 4.4:0b11}
         try:
-            self.wr_reg('RfSel', 0, val(R))
+            self.wr_reg('RfSel', val(R), row=row, col=col, broadcast=broadcast)
         except KeyError:
             print('Resistance should be 20, 10, 5.7, or 4.4 kOhms')
 
-    def get_Rfeedback(self):
+    def get_Rfeedback(self, row=0, col=0):
         val = {0b00:20, 0b00:10, 0b10:5.7, 0b11:4.4}
-        return val[self.rd_reg('RfSel', 0)]
+        return val[self.rd_reg('RfSel', row=row, col=col)]
 
     # (FOR ALL PIXELS) set/get hysteresis voltage
     # Vhys1 > Vhys2 > Vhys3 > Vhys4 > Vhys5 = 0
-    def set_Vhys(self, i):
+    def set_Vhys(self, i, row=0, col=0, broadcast=True):
         val = [0b0000, 0b0001, 0b0011, 0b0111, 0b1111]
         try:
-            self.wr_reg('HysSel', 0, val(i))
+            self.wr_reg('HysSel', val(i), row=row, col=col, broadcast=broadcast)
         except IndexError:
             print('Select between 1 ~ 5.')
 
-    def get_Vhys(self):
+    def get_Vhys(self, row=0, col=0):
         val = {0b0000:1, 0b0001:2, 0b0011:3, 0b0111:4, 0b1111:5}
-        return val[self.rd_reg('HysSel', 0)]
+        return val[self.rd_reg('HysSel', row=row, col=col)]
 
     # (FOR ALL PIXELS) Power up/down DAC & discriminator
-    def power_up_DACDiscri(self):
-        self.wr_reg('PD_DACDiscri', 0, 0)
+    def power_up_DACDiscri(self, row=0, col=0, broadcast=True):
+        self.wr_reg('PD_DACDiscri', 0, row=row, col=col, broadcast=broadcast)
 
-    def power_down_DACDiscri(self):
-        self.wr_reg('PD_DACDiscri', 0, 1)
+    def power_down_DACDiscri(self, row=0, col=0):
+        self.wr_reg('PD_DACDiscri', 1, row=row, col=col)
 
     # (FOR ALL PIXELS) set/get injected charge
     # 1 ~ 36 fC, typical charge is 7fC
@@ -334,50 +335,30 @@ class ETROC():
     def set_Vth_pix(self, pix, vth):
         self.wr_reg('DAC', vth, pix)
 
-    def set_Vth_pix_mV(self, pix, vth):
-        if self.usefake:
-            self.fakeETROC.data['vth'] = vth
-            print("Vth set to %f."%vth)
-        else:
-            v = vth # FIXME: convert from mV to bit representation
-            self.wr_reg('DAC', vth, pix)
+    def set_Vth_mV(self, vth, row=0, col=0, broadcast=True):
+        # FIXME this needs to be understood
+        # Pretend that we set the threshold and then the "DAC" register
+        # sets the threshold in offset_step/2**10 steps?
+        offset_step = (1000/2**6)
+        th_step = offset_step/2**10
+        offset = int(vth/offset_step)
+        residual = vth - offset*offset_step
+        th = round(residual/th_step)
+        self.wr_reg('TH_offset', offset, row=row, col=col, broadcast=broadcast)
+        self.wr_reg('DAC', th, row=row, col=col, broadcast=broadcast)
+        #if self.usefake:
+        #    self.fakeETROC.data['vth'] = vth
+        #    print("Vth set to %f."%vth)
+        #else:
+        #    v = vth # FIXME: convert from mV to bit representation
+        #    self.wr_reg('DAC', vth, pix)
 
-    def get_Vth_pix(self, pix):
-        self.rd_reg('DAC', pix)
-
-    def get_Vth_pix_mV(self, pix):
-        vth = self.rd_reg('DAC', pix)
-        # FIXME: convert from bit to mV representation
-        return vth
-
-    def set_Vth(self, vth):
-        for pix in range(256):
-            self.set_Vth_pix(self, pix, vth)
-
-    def set_Vth_mV(self, vth):
-        if self.usefake:
-            self.fakeETROC.data['vth'] = vth
-            print("Vth set to %f."%vth)
-        else:
-            for pix in range(256):
-                self.set_Vth_pix_mV(self, pix, vth)
-
-    # return vth value if vth for all pixels are same;
-    # return None if they are not all the same
-    def get_Vth(self):
-        vth = self.rd_reg('DAC', 0)
-        for pix in range(1, 256):
-            vth2 = self.rd_reg('DAC', pix)
-            if not(vth == vth2):
-                return None
-        return vth
-
-    def get_Vth_mV(self):
-        vth = self.get_Vth
-        if vth == None:
-            return None
-        else:
-            return vth # FIXME: convert from bit to mV representation
+    def get_Vth_mV(self, row=0, col=0):
+        offset_step = (1000/2**6)
+        th_step = offset_step/2**10
+        offset = self.rd_reg('TH_offset', row=row, col=col)
+        th = self.rd_reg('DAC', row=row, col=col)
+        return offset*offset_step + th*th_step
 
     def set_THoffset(self, pix, V):
         self.wr_reg('TH_offset', pix, V)
