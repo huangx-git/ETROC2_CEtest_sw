@@ -542,7 +542,7 @@ PixelID:
 ############################################
 
 readoutClockDelayPixel:
-  doc: "phase delay of pixel readout clock, 780 ps a step."
+  doc: "Phase delay of pixel readout clock, 780 ps a step."
   address:
     - 13
   mask:
@@ -597,7 +597,7 @@ serRateRight:
 
 serRateLeft:
   doc: |-
-    Data rate selection of the right data port.
+    Data rate selection of the left data port.
     2'b00: 320 Mbps;
     2'b01: 640 Mbps;
     2'b10: 1280 Mbps.
@@ -767,7 +767,7 @@ fcDataDelayEn:
 
 chargeInjectionDelay:
   doc: |-
-    The charge injection delay to the 40 MHz clcok rising
+    The charge injection delay to the 40 MHz clock rising
     edge. Start from the rising edge of 40 MHz clock,
     each step 781 ps. The pulse width is fixed of 50 ns.
   address:
