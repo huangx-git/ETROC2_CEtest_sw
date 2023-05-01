@@ -339,42 +339,42 @@ class ETROC():
         self.wr_reg('Bypass_THCal', 0, row=row, col=col, broadcast=broadcast)
 
     # When Bypass_THCal = 1, TH = DAC
-    def set_Vth_pix(self, vth, row=0, col=0, broadcast=True):
-        self.wr_reg('DAC', vth, row=row, col=col, broadcast=broadcast)
-
-    def get_Vth_pix(self, row=0, col=0):
-        return self.rd_reg('DAC', row=row, col=col)
-#    def set_Vth_mV(self, vth, row=0, col=0, broadcast=True):
-#        # FIXME this needs to be understood
-#        # Pretend that we set the threshold and then the "DAC" register
-#        # sets the threshold in offset_step/2**10 steps?
-#        offset_step = (1000/2**6)
-#        th_step = offset_step/2**10
-#        offset = int(vth/offset_step)
-#        residual = vth - offset*offset_step
-#        th = round(residual/th_step)
-#        self.wr_reg('TH_offset', offset, row=row, col=col, broadcast=broadcast)
-#        self.wr_reg('DAC', th, row=row, col=col, broadcast=broadcast)
-#        #if self.usefake:
-#        #    self.fakeETROC.data['vth'] = vth
-#        #    print("Vth set to %f."%vth)
-#        #else:
-#        #    v = vth # FIXME: convert from mV to bit representation
-#        #    self.wr_reg('DAC', vth, pix)
+#    def set_Vth_pix(self, vth, row=0, col=0, broadcast=True):
+#        self.wr_reg('DAC', vth, row=row, col=col, broadcast=broadcast)
 #
-#    def get_Vth_mV(self, row=0, col=0):
-#        offset_step = (1000/2**6)
-#        th_step = offset_step/2**10
-#        offset = self.rd_reg('TH_offset', row=row, col=col)
-#        th = self.rd_reg('DAC', row=row, col=col)
-#        return offset*offset_step + th*th_step
+#    def get_Vth_pix(self, row=0, col=0):
+#        return self.rd_reg('DAC', row=row, col=col)
+    def set_Vth_mV(self, vth, row=0, col=0, broadcast=True):
+        # FIXME this needs to be understood
+        # Pretend that we set the threshold and then the "DAC" register
+        # sets the threshold in offset_step/2**10 steps?
+        offset_step = (1000/2**6)
+        th_step = offset_step/2**10
+        offset = int(vth/offset_step)
+        residual = vth - offset*offset_step
+        th = round(residual/th_step)
+        self.wr_reg('TH_offset', offset, row=row, col=col, broadcast=broadcast)
+        self.wr_reg('DAC', th, row=row, col=col, broadcast=broadcast)
+        #if self.usefake:
+        #    self.fakeETROC.data['vth'] = vth
+        #    print("Vth set to %f."%vth)
+        #else:
+        #    v = vth # FIXME: convert from mV to bit representation
+        #    self.wr_reg('DAC', vth, pix)
+
+    def get_Vth_mV(self, row=0, col=0):
+        offset_step = (1000/2**6)
+        th_step = offset_step/2**10
+        offset = self.rd_reg('TH_offset', row=row, col=col)
+        th = self.rd_reg('DAC', row=row, col=col)
+        return offset*offset_step + th*th_step
 
     # Threshold offset for calibrated baseline. TH = BL + TH_offset
-    def set_THoffset(self, V, row=0, col=0, broadcast=True):
-        self.wr_reg('TH_offset', V, row=row, col=col, broadcast=broadcast)
-
-    def get_THoffset(self, row=0, col=0):
-        return self.rd_reg('TH_offset', row=row, col=col)
+#    def set_THoffset(self, V, row=0, col=0, broadcast=True):
+#        self.wr_reg('TH_offset', V, row=row, col=col, broadcast=broadcast)
+#
+#    def get_THoffset(self, row=0, col=0):
+#        return self.rd_reg('TH_offset', row=row, col=col)
 
     # Reset of threshold calibration block, active low
     def reset_THCal(self, row=0, col=0, broadcast=True):
