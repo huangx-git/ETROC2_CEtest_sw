@@ -13,6 +13,7 @@ import random
 import sys
 import os
 import uhal
+from emoji import emojize
 
 if __name__ == '__main__':
 
@@ -265,8 +266,11 @@ if __name__ == '__main__':
     if rb_0.DAQ_LPGBT.ver == 1:
         rb_0.DAQ_LPGBT.set_gpio("LED_1", 1) # Set LED1 after tamalero finishes succesfully
         t_end = time.time() + 10
-        while time.time() < t_end:
-            rb_0.DAQ_LPGBT.set_gpio("LED_RHETT", 1) # Let Rhett LED blink for 10s
-            time.sleep(0.5)
-            rb_0.DAQ_LPGBT.set_gpio("LED_RHETT", 0)
+        if args.power_up:
+            print("RB configured successfully. Rhett is happy " + emojize(":dog_face:"))
+            while time.time() < t_end:
+                rb_0.DAQ_LPGBT.set_gpio("LED_RHETT", 1) # Let Rhett LED blink for 10s
+                time.sleep(0.5)
+                rb_0.DAQ_LPGBT.set_gpio("LED_RHETT", 0)
+                time.sleep(0.5)
         rb_0.DAQ_LPGBT.set_gpio("LED_RHETT", 1)
