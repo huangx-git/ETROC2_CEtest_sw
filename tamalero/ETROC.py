@@ -47,6 +47,11 @@ class ETROC():
         if strict:
             self.consistency(verbose=verbose)
 
+        self.DAC_min  = 600  # in mV
+        self.DAC_max  = 1000  # in mV
+        self.DAC_step = 400/2**10
+
+
     # =========================
     # === UTILITY FUNCTIONS ===
     # =========================
@@ -142,6 +147,9 @@ class ETROC():
             read = (self.rd_adr(a) & masks[i]) >> shifts[i]
             tmp |= (read << n_bits[i])
         return tmp
+
+    def print_reg_doc(self, reg):
+        print(self.regs[reg]['doc'])
 
     # ============================
     # === MONITORING FUNCTIONS ===
@@ -345,29 +353,15 @@ class ETROC():
 #    def get_Vth_pix(self, row=0, col=0):
 #        return self.rd_reg('DAC', row=row, col=col)
     def set_Vth_mV(self, vth, row=0, col=0, broadcast=True):
-        # FIXME this needs to be understood
-        # Pretend that we set the threshold and then the "DAC" register
-        # sets the threshold in offset_step/2**10 steps?
-        offset_step = (1000/2**6)
-        th_step = offset_step/2**10
-        offset = int(vth/offset_step)
-        residual = vth - offset*offset_step
-        th = round(residual/th_step)
-        self.wr_reg('TH_offset', offset, row=row, col=col, broadcast=broadcast)
+        # From the Manual:
+        # DAC from 0.6-1.0V (400mV), step size 0.4mV (400mV/2**10)
+        assert self.DAC_min < vth < self.DAC_max, "vth out of range: 600-1000mV"
+        th = round((vth-self.DAC_min)/self.DAC_step)
         self.wr_reg('DAC', th, row=row, col=col, broadcast=broadcast)
-        #if self.usefake:
-        #    self.fakeETROC.data['vth'] = vth
-        #    print("Vth set to %f."%vth)
-        #else:
-        #    v = vth # FIXME: convert from mV to bit representation
-        #    self.wr_reg('DAC', vth, pix)
 
     def get_Vth_mV(self, row=0, col=0):
-        offset_step = (1000/2**6)
-        th_step = offset_step/2**10
-        offset = self.rd_reg('TH_offset', row=row, col=col)
         th = self.rd_reg('DAC', row=row, col=col)
-        return offset*offset_step + th*th_step
+        return th*self.DAC_step + self.DAC_min
 
     # Threshold offset for calibrated baseline. TH = BL + TH_offset
 #    def set_THoffset(self, V, row=0, col=0, broadcast=True):

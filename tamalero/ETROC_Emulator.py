@@ -49,13 +49,17 @@ class ETROC2_Emulator(ETROC):
         self.nbits = self.format['nbits']
 
         # generate fake baseline/noise properties per pixel
-        self.bl_means  = [[np.random.normal(198, .8) for x in range(16)] for y in range(16)]
+        self.bl_means  = [[np.random.normal(700, 2.0) for x in range(16)] for y in range(16)]
         self.bl_stdevs = [[np.random.normal(  1, .2) for x in range(16)] for y in range(16)]
 
         # this represents the registers on the actual chip
         self.register = {adr: 0 for adr in range(2**16)}  # fill all registers with 0
 
         self.default_config()
+
+        self.DAC_min  = 600  # in mV
+        self.DAC_max  = 1000  # in mV
+        self.DAC_step = 400/2**10
 
     def write_adr(self, adr, val):
         self.register[adr] = val
