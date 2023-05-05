@@ -1,5 +1,6 @@
 import math
 import numpy as np
+from itertools import combinations
 from time import sleep
 from yaml import load, dump
 import os
@@ -210,6 +211,16 @@ def make_version_header(res):
 def chunk(in_list, n):
     return [in_list[i * n:(i + 1) * n] for i in range((len(in_list) + n - 1) // n )] 
 
+def get_last_commit_sha(version):
+    import requests
+    import json
+
+
+    r2 = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/commits?ref=devel")
+    log = json.loads(r2.content)
+    last_commit_sha = log[0]['id'][:7]
+    return last_commit_sha
+
 def download_address_table(version):
     import os
     import requests
@@ -219,7 +230,7 @@ def download_address_table(version):
 
     r2 = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/commits?ref=devel")
     log = json.loads(r2.content)
-    last_commit_sha = log[0]['id'][:7]
+    last_commit_sha = get_last_commit_sha(version)
 
     r = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/tree?ref={version}&&path=address_tables&&recursive=True")
     tree = json.loads(r.content)
@@ -234,7 +245,7 @@ def download_address_table(version):
         tree = json.loads(r.content)
         print (f"Local firmware version detected. Will download address table corresponding to commit {version}.")
 
-    
+    print("Making directory: address_table/{version}")
     os.makedirs(f"address_table/{version}")
     for f in tree:
         if f['type'] == 'tree':
@@ -316,9 +327,12 @@ def get_kcu(kcu_address, control_hub=True, host='localhost', verbose=False):
     if verbose:
         print (f"Address table hash: {xml_sha}")
 
-    if not os.path.isdir(f"address_table/{xml_sha}"):
-        print ("Downloading latest firmware version address table.")
+    last_commit = get_last_commit_sha(xml_sha)
+    if not os.path.isdir(f"address_table/{last_commit}"):
+        print (f"Downloading latest firmware version address table to address_table/{last_commit}")
         xml_sha = download_address_table(xml_sha)
+    else:
+        xml_sha = last_commit
 
     kcu = KCU(name="my_device",
               ipb_path=ipb_path,
@@ -327,6 +341,34 @@ def get_kcu(kcu_address, control_hub=True, host='localhost', verbose=False):
     kcu.get_firmware_version(string=False)
 
     return kcu
+
+def get_config(config, version='v2', verbose=False):
+    default_cfg = load_yaml(os.path.join(here, f'../configs/rb_default_{version}.yaml'))
+    if config != 'default':
+        updated_cfg = load_yaml(os.path.join(here, f'../configs/{config}_{version}.yaml'))
+        for chip in ['SCA', 'LPGBT']:
+            for interface in ['adc', 'gpio']:
+                if updated_cfg[chip][interface] is not None:
+                    for k in updated_cfg[chip][interface]:
+                        if verbose:
+                            print(f"\n - Updating configuration for {chip}, {interface}, {k} to:")
+                            print(updated_cfg[chip][interface][k])
+                        default_cfg[chip][interface][k] = updated_cfg[chip][interface][k]
+    return default_cfg
+
+def majority_vote(values, majority=None):
+    from functools import reduce
+    if majority is None:
+        majority = len(values)-1
+    combs = combinations(range(len(values)), majority)
+    votes = []
+    for comb in combs:
+        #print(comb)
+        tmp_list = [values[i] for i in comb]
+        votes.append(reduce(lambda x, y: x & y, tmp_list))
+
+    #print(votes)
+    return reduce(lambda x, y: x | y, votes)
 
 if __name__ == '__main__':
     print ("Temperature example:")
