@@ -1,6 +1,7 @@
 import os
 import random
-from tamalero.utils import read_mapping
+from tamalero.utils import read_mapping, get_config
+from functools import wraps
 import time
 try:
     from tabulate import tabulate
@@ -110,34 +111,43 @@ class SCA_I2C:
     I2C_R_DATA3 = 0x71 # read from data register 3
     I2C_RW_DATA_OFFSET = 16 # offset to access data register 1, 2, 3
 
+def gpio_byname(gpio_func):
+    @wraps(gpio_func)
+    def wrapper(lpgbt, pin, direction=1):
+        if isinstance(pin, str):
+            gpio_dict = lpgbt.gpio_mapping
+            pin = gpio_dict[pin]['pin']
+            return gpio_func(lpgbt, pin, direction)
+        elif isinstance(pin, int):
+            return gpio_func(lpgbt, pin, direction)
+        else:
+            invalid_type = type(pin)
+            raise TypeError(f"{gpio_func.__name__} can only take positional arguments of type int or str, but argument of type {invalid_type} was given.")
+
+    return wrapper
 
 class SCA:
 
-    def __init__(self, rb=0, flavor='small', ver=0):
+    def __init__(self, rb=0, flavor='small', ver=0, config='default'):
         self.rb = rb
         self.flavor = flavor
         self.err_count = 0
         self.ver = ver + 1  # NOTE don't particularly like this, but we're giving it the lpGBT version
+        self.config = config
+        self.locked = False
         self.set_adc_mapping()
         self.set_gpio_mapping()
-        self.locked = False
 
     def connect_KCU(self, kcu):
         self.kcu = kcu
 
     def set_adc_mapping(self):
         assert self.ver in [1, 2], f"Unrecognized version {self.ver}"
-        if self.ver == 1:
-            self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping.yaml'), 'adc')
-        elif self.ver == 2:
-            self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping_v2.yaml'), 'adc')
+        self.adc_mapping = get_config(self.config, version=f'v{self.ver}')['SCA']['adc']
 
     def set_gpio_mapping(self):
         assert self.ver in [1, 2], f"Unrecognized version {self.ver}"
-        if self.ver == 1:
-            self.gpio_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping.yaml'), 'gpio')
-        elif self.ver == 2:
-            self.gpio_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping_v2.yaml'), 'gpio')
+        self.gpio_mapping = get_config(self.config, version=f'v{self.ver}')['SCA']['gpio']
 
     def update_ver(self, new_ver):
         assert new_ver in [1, 2], f"Unrecognized version {new_ver}"
@@ -447,6 +457,7 @@ class SCA:
         val = self.rw_reg(SCA_GPIO.GPIO_R_DATAIN).value()
         return int((val >> line) & 1)
 
+    @gpio_byname
     def set_gpio(self, line, to=1):
         self.enable_gpio()  # enable GPIO
         currently_set = self.rw_reg(SCA_GPIO.GPIO_R_DATAOUT).value()
@@ -458,6 +469,7 @@ class SCA:
         self.rw_reg(SCA_GPIO.GPIO_W_DATAOUT, currently_set)
         return self.read_gpio(line)  # in order to check it is actually set
 
+    @gpio_byname
     def set_gpio_direction(self, line, to=1):
         self.enable_gpio()  # enable GPIO
         currently_set = self.rw_reg(SCA_GPIO.GPIO_R_DIRECTION).value()
@@ -491,8 +503,9 @@ class SCA:
             default     = gpio_dict[gpio_reg]['default']
             if verbose:
                 print("Setting SCA GPIO pin %s (%s) to %s"%(pin, comment, gpio_dict[gpio_reg]['direction']))
+            self.set_gpio(pin, default)  # NOTE this is important because otherwise the GPIO pin can be set to a false default value when switched to output
             self.set_gpio_direction(pin, direction)
-            self.set_gpio(pin, default)
+            self.set_gpio(pin, default)  # redundant but keep it
 
     def get_I2C_channel(self, channel):
         channel_str = hex(channel).upper()[-1]

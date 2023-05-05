@@ -8,7 +8,7 @@ import json
 from functools import wraps
 import tamalero.colors as colors
 from tamalero.colors import red, green
-from tamalero.utils import read_mapping, chunk, load_yaml
+from tamalero.utils import read_mapping, chunk, load_yaml, get_config, majority_vote
 from time import sleep
 from datetime import datetime
 try:
@@ -35,7 +35,7 @@ def gpio_byname(gpio_func):
 
 class LPGBT(RegParser):
 
-    def __init__(self, rb=0, trigger=False, flavor='small', master=None, kcu=None, do_adc_calibration=False):
+    def __init__(self, rb=0, trigger=False, flavor='small', master=None, kcu=None, do_adc_calibration=False, config='default'):
         '''
         Initialize lpGBT for a certain readout board number (rb).
         The trigger lpGBT is accessed through I2C of the master (= DAQ lpGBT).
@@ -54,6 +54,7 @@ class LPGBT(RegParser):
         if kcu != None:
             self.kcu = kcu
 
+        self.config = config
         self.configure(do_adc_calibration=do_adc_calibration)
 
     def configure(self, do_adc_calibration=True):
@@ -168,22 +169,25 @@ class LPGBT(RegParser):
 
     def set_adc_mapping(self):
         assert self.ver in [0, 1], f"Unrecognized version {self.ver}"
-        if self.ver == 0:
-            self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping.yaml'), 'adc')
-        elif self.ver == 1:
-            self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping_v2.yaml'), 'adc')
+        self.adc_mapping = get_config(self.config, version=f'v{self.ver+1}')['LPGBT']['adc']
+        #if self.ver == 0:
+        #    self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping.yaml'), 'adc')
+        #elif self.ver == 1:
+        #    self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping_v2.yaml'), 'adc')
 
     def set_gpio_mapping(self):
         assert self.ver in [0, 1], f"Unrecognized version {self.ver}"
-        if self.ver == 0:
-            self.gpio_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping.yaml'), 'gpio')
-        elif self.ver == 1:
-            self.gpio_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping_v2.yaml'), 'gpio')
+        self.gpio_mapping = get_config(self.config, version=f'v{self.ver+1}')['LPGBT']['gpio']
+        #if self.ver == 0:
+        #    self.gpio_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping.yaml'), 'gpio')
+        #elif self.ver == 1:
+        #    self.gpio_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping_v2.yaml'), 'gpio')
 
     def update_ver(self, new_ver):
-        assert new_ver in [1, 2], f"Unrecognized version {new_ver}"
+        assert new_ver in [0, 1], f"Unrecognized version {new_ver}"
         self.ver = new_ver
         self.set_adc_mapping()
+        self.set_gpio_mapping()
 
     def link_status(self, verbose=False):
         if self.trigger:
@@ -314,32 +318,36 @@ class LPGBT(RegParser):
 
     def wr_adr(self, adr, data):
         if self.trigger:
-            raise NotImplementedError("rd_adr does only read from the master lpGBT, and you're trying to write to a servant")
-        #defer = not self.kcu.auto_dispatch  # if auto dispatch is turned off, keep it off.
-        #self.kcu.toggle_dispatch()  # turn off auto dispatch for this transaction
-        #self.kcu.write_node("READOUT_BOARD_%d.SC.TX_GBTX_ADDR" % self.rb, 115)
-        self.kcu.write_node("READOUT_BOARD_%d.SC.TX_REGISTER_ADDR" % self.rb, adr)
-        self.kcu.write_node("READOUT_BOARD_%d.SC.TX_DATA_TO_GBTX" % self.rb, data)
-        self.kcu.action("READOUT_BOARD_%d.SC.TX_WR" % self.rb)
-        self.kcu.action("READOUT_BOARD_%d.SC.TX_START_WRITE" % self.rb)
-        #return self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_FROM_GBTX" % self.rb)
-        #if not defer:  # turn auto dispatch back on only if it wasn't set to false before
-        #    self.kcu.dispatch()
-        #self.rd_flush()
+            return self.master.I2C_write(adr, data)
+            #raise NotImplementedError("rd_adr does only read from the master lpGBT, and you're trying to write to a servant")
+        else:
+            #defer = not self.kcu.auto_dispatch  # if auto dispatch is turned off, keep it off.
+            #self.kcu.toggle_dispatch()  # turn off auto dispatch for this transaction
+            #self.kcu.write_node("READOUT_BOARD_%d.SC.TX_GBTX_ADDR" % self.rb, 115)
+            self.kcu.write_node("READOUT_BOARD_%d.SC.TX_REGISTER_ADDR" % self.rb, adr)
+            self.kcu.write_node("READOUT_BOARD_%d.SC.TX_DATA_TO_GBTX" % self.rb, data)
+            self.kcu.action("READOUT_BOARD_%d.SC.TX_WR" % self.rb)
+            self.kcu.action("READOUT_BOARD_%d.SC.TX_START_WRITE" % self.rb)
+            #return self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_FROM_GBTX" % self.rb)
+            #if not defer:  # turn auto dispatch back on only if it wasn't set to false before
+            #    self.kcu.dispatch()
+            #self.rd_flush()
 
     def rd_adr(self, adr):
         if self.trigger:
-            raise NotImplementedError("rd_adr does only read from the master lpGBT, and you're trying to read from a servant")
-        self.kcu.write_node("READOUT_BOARD_%d.SC.TX_REGISTER_ADDR" % self.rb, adr)
-        self.kcu.action("READOUT_BOARD_%d.SC.TX_START_READ" % self.rb)
-        valid = self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_VALID" % self.rb).valid()
-        if valid:
-            # this only means that the KCU successfully read data
-            # not necessarily does it mean there's communication with the lpGBT
-            return self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_FROM_GBTX" % self.rb)
+            return self.master.I2C_read(adr)
+            #raise NotImplementedError("rd_adr does only read from the master lpGBT, and you're trying to read from a servant")
+        else:
+            self.kcu.write_node("READOUT_BOARD_%d.SC.TX_REGISTER_ADDR" % self.rb, adr)
+            self.kcu.action("READOUT_BOARD_%d.SC.TX_START_READ" % self.rb)
+            valid = self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_VALID" % self.rb).valid()
+            if valid:
+                # this only means that the KCU successfully read data
+                # not necessarily does it mean there's communication with the lpGBT
+                return self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_FROM_GBTX" % self.rb)
 
-        print("LpGBT read failed!")
-        return None
+            print("LpGBT read failed!")
+            return None
 
     def wr_reg(self, id, data):
         node = self.get_node(id)
@@ -752,9 +760,9 @@ class LPGBT(RegParser):
             return serial != 0
 
         if (self.ver==0):
-            serial = self.get_chip_userid()
+            serial = str(self.get_chip_userid())
         else:
-            serial = self.get_chip_serial()
+            serial = str(self.get_chip_serial())
 
         cal_file = "lpgbt_adc_calibrations.json"
 
@@ -769,7 +777,7 @@ class LPGBT(RegParser):
         if serial_valid(serial) and serial in cal_data and not recalibrate:
             gain = cal_data[serial]['gain']
             offset = cal_data[serial]['offset']
-            print("Loaded ADC calibration data for chip %d. Gain: %f / Offset: %d" % (serial, gain, offset))
+            print("Loaded ADC calibration data for chip %s. Gain: %f / Offset: %d" % (serial, gain, offset))
 
         # else, determine calibration constants
         else:
@@ -788,6 +796,7 @@ class LPGBT(RegParser):
             self.wr_reg("LPGBT.RW.ADC.VDDMONENA", initial_val)
             type = "Trigger" if self.trigger else "DAQ"
             print("Calibrated %s ADC. Gain: %f / Offset: %d" % (type, gain, offset))
+            print("Chip %s"%serial)
 
             if gain < 1.65 or gain > 2 or offset < 490 or offset > 530:
                 raise RuntimeError("ADC Calibration Failed!")
@@ -1429,10 +1438,36 @@ class LPGBT(RegParser):
                self.rd_reg("LPGBT.RWF.CHIPID.USERID0")
 
     def get_chip_serial(self):
-        return self.rd_reg("LPGBT.RWF.CHIPID.CHIPID3") << 24 |\
-               self.rd_reg("LPGBT.RWF.CHIPID.CHIPID2") << 16 |\
-               self.rd_reg("LPGBT.RWF.CHIPID.CHIPID1") << 8 |\
-               self.rd_reg("LPGBT.RWF.CHIPID.CHIPID0")
+        if self.ver == 1:
+            # NOTE we have to read from the fuses directly.
+            # ideally this can still be verified (May 2023)
+            self.wr_adr(0x119, 0x1 << 1)  # write FuseRead https://lpgbt.web.cern.ch/lpgbt/v1/registermap.html#reg-fusecontrol
+            while True:
+                # wait for FuseDataValid https://lpgbt.web.cern.ch/lpgbt/v1/registermap.html#reg-fusestatus
+                if self.rd_adr(0x1b1) >> 2 == 1: break
+
+            chipids = []
+            # there should be 5 copies of the chipid, but I can only find 4
+            # there's nothing else in the fuses that's non-zero
+            for i in range(4):
+                self.wr_adr(0x11f, i)
+                chipids.append(self.rd_adr(0x1b2) << 24 | self.rd_adr(0x1b3) << 16 | self.rd_adr(0x1b4) << 8 | self.rd_adr(0x1b5) << 24)
+
+            self.wr_adr(0x119, 0)  # write FuseRead https://lpgbt.web.cern.ch/lpgbt/v1/registermap.html#reg-fusecontrol
+
+            if all([c==chipids[0] for c in chipids]):
+                return chipids[0]
+            else:
+                print("CHIPD serial needs majority vote")
+                return majority_vote(chipids, majority=3)
+
+        elif self.ver == 0:
+            # NOTE: this is what's supposed to work for lpGBT v0
+            # but note sure if that's actually true
+            return self.rd_reg("LPGBT.RWF.CHIPID.CHIPID3") << 24 |\
+                self.rd_reg("LPGBT.RWF.CHIPID.CHIPID2") << 16 |\
+                self.rd_reg("LPGBT.RWF.CHIPID.CHIPID1") << 8 |\
+                self.rd_reg("LPGBT.RWF.CHIPID.CHIPID0")
 
     def get_power_up_state_machine(self, quiet=True):
 

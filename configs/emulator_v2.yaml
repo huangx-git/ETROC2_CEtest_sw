@@ -1,0 +1,25 @@
+SCA:
+    adc:
+    gpio:
+        mod_d01:
+            pin: 0x1F
+            default: 0
+            direction: out
+            flavor: small
+            comment: pin 30 in ETROC 0 and 1
+        mod_d09:
+            pin: 0x19
+            default: 0
+            direction: out
+            flavor: small
+            comment: pin 30 in ETROC 4 and 5
+        mod_d17:
+            pin: 0x0E
+            default: 0
+            direction: out
+            flavor: small
+            comment: pin 30 in ETROC 8 and 9
+
+LPGBT:
+    adc:
+    gpio:
