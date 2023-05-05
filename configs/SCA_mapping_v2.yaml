@@ -182,7 +182,7 @@ gpio:
     mod_d00:
         pin: 0x1E
         default: 0
-        direction: out
+        direction: in
         flavor: small
         comment: pin 32 in ETROC 0 and 1
     mod_d01:
