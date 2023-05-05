@@ -8,22 +8,23 @@ from time import sleep
 
 class ReadoutBoard:
 
-    def __init__(self, rb=0, trigger=True, flavor='small', kcu=None):
+    def __init__(self, rb=0, trigger=True, flavor='small', kcu=None, config='default'):
         '''
         create a readout board.
         trigger: if true, also configure a trigger lpGBT
         '''
         self.rb = rb
         self.flavor = flavor
-        self.ver = 1
+        self.ver = 2
+        self.config = config
 
         self.trigger = trigger
-        self.DAQ_LPGBT = LPGBT(rb=rb, flavor=flavor, kcu=kcu)
+        self.DAQ_LPGBT = LPGBT(rb=rb, flavor=flavor, kcu=kcu, config=self.config)
         self.VTRX = VTRX(self.DAQ_LPGBT)
         # This is not yet recommended:
         #for adr in [0x06, 0x0A, 0x0E, 0x12]:
         #    self.VTRX.wr_adr(adr, 0x20)
-        self.SCA = SCA(rb=rb, flavor=flavor, ver=self.DAQ_LPGBT.ver)
+        self.SCA = SCA(rb=rb, flavor=flavor, ver=self.DAQ_LPGBT.ver, config=self.config)
 
         if kcu != None:
             self.kcu = kcu
@@ -32,7 +33,11 @@ class ReadoutBoard:
             if self.DAQ_LPGBT.ver == 1:
                 self.ver = 2
                 self.SCA.update_ver(self.ver)
-                self.DAQ_LPGBT.set_adc_mapping()
+                self.DAQ_LPGBT.update_ver(self.ver-1)  #  FIXME we need to disentangle lpGBT version from RB version
+            elif self.DAQ_LPGBT.ver == 0:
+                self.ver = 1
+                self.SCA.update_ver(self.ver)
+                self.DAQ_LPGBT.update_ver(self.ver-1)  # FIXME we need to disentangle lpGBT version from RB version
             self.SCA.connect_KCU(kcu)
 
     def get_trigger(self):
@@ -52,7 +57,7 @@ class ReadoutBoard:
             print ("Trigger lpGBT was found, but will not be added.")
 
         if self.trigger:
-            self.TRIG_LPGBT = LPGBT(rb=self.rb, flavor=self.flavor, trigger=True, master=self.DAQ_LPGBT, kcu=self.kcu)
+            self.TRIG_LPGBT = LPGBT(rb=self.rb, flavor=self.flavor, trigger=True, master=self.DAQ_LPGBT, kcu=self.kcu, config=self.config)
 
 
     def connect_KCU(self, kcu):
@@ -291,6 +296,8 @@ class ReadoutBoard:
         self.SCA.reset()
         self.SCA.connect()
         try:
+            print("version in SCA", self.SCA.ver)
+            print("config in SCA", self.SCA.config)
             self.SCA.config_gpios()  # this sets the directions etc according to the mapping
         except TimeoutError:
             print ("SCA config failed. Will continue without SCA.")

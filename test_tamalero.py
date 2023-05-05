@@ -39,6 +39,7 @@ if __name__ == '__main__':
     argParser.add_argument('--recal_lpgbt', action='store_true', default=False, help="Recalibrate ADC in LPGBT? (instead of using saved values)")
     argParser.add_argument('--control_hub', action='store_true', default=False, help="Use control hub for communication?")
     argParser.add_argument('--host', action='store', default='localhost', help="Specify host for control hub")
+    argParser.add_argument('--configuration', action='store', default='default', choices=['default', 'emulator', 'modulev0'], help="Specify a configuration of the RB, e.g. emulator or modulev0")
     argParser.add_argument('--devel', action='store_true', default=False, help="Don't check repo status (not recommended)")
     argParser.add_argument('--monitor', action='store_true', default=False, help="Start up montoring threads in the background")
     argParser.add_argument('--strict', action='store_true', default=False, help="Enforce strict limits on ADC reads for SCA and LPGBT")
@@ -63,7 +64,9 @@ if __name__ == '__main__':
         # if not basic connection was established the get_kcu function returns 0
         # this would cause the RB init to fail.
         sys.exit(1)
-    rb_0 = ReadoutBoard(0, trigger=(not args.force_no_trigger), kcu=kcu)
+
+
+    rb_0 = ReadoutBoard(0, trigger=(not args.force_no_trigger), kcu=kcu, config=args.configuration)
     data = 0xabcd1234
     kcu.write_node("LOOPBACK.LOOPBACK", data)
     if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
@@ -159,7 +162,7 @@ if __name__ == '__main__':
     # Module Status
     #-------------------------------------------------------------------------------
 
-    if args.verbose:
+    if args.verbose and args.configuration == 'emulator':
         print("Configuring ETROCs")
         modules = []
         for i in range(res['n_module']):
