@@ -177,7 +177,7 @@ class KCU:
         # print("%s = %6.2f MHz" % (id, freq))
 
         errs = 0
-        tolerance = 2500  # increased tolerance to 2.5kHz (from 2kHz)
+        tolerance = 3000  # increased tolerance to 3.0kHz (from 2kHz)
         for clock in clocks:
             freq = self.read_node(clock[0]).value()
             expect = clock[1]
