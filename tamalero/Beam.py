@@ -65,7 +65,7 @@ class Beam():
             sleeper_ON.join()
 
             if verbose:
-                print("Shutting off beam...") 
+                print("Shutting off beam...")
                 print("\tON time  = {:.2f} s".format(time.time() - start_ON))
                 print("\tL1A rate = {:.2f} MHz".format(self.kcu.read_node("SYSTEM.L1A_RATE_CNT").value()/1000000.0))
 
@@ -88,7 +88,7 @@ class Beam():
                 print("\tOFF time = {:.2f} s".format(time.time() - start_OFF))
                 print("\tL1A rate = {:.2f} MHz".format(self.kcu.read_node("SYSTEM.L1A_RATE_CNT").value()/1000000.0))
 
-        if verbose: 
+        if verbose:
             total_time = round(time.time() - verbose_start)
             total_time = str(datetime.timedelta(seconds=total_time))
             print("Test beam simulation completed; it took {}.".format(total_time))
@@ -96,7 +96,7 @@ class Beam():
         self.SIM = False
 
     def read_fifo(self, block=255, verbose=False):
-        from beam_utils import read_etroc
+        # from tamalero.beam_utils import read_etroc
         while not self.start_timer:
             if not self.dashboard: break
             continue
@@ -119,7 +119,7 @@ class Beam():
                         reads = self.kcu.hw.getNode("DAQ_RB0").readBlock(occupancy.value())   # reads is a single uhal._core.ValVector_uint32 element, not a list; not iterable
                         self.kcu.dispatch()
                         data += reads.value()
-                        
+
                 except uhal._core.exception:
                     print("uhal UDP error in daq")
 
@@ -130,7 +130,7 @@ class Beam():
                 self.files[filename] = False
                 with open(filename, mode="wb") as f:
                     f.write(struct.pack('<{}I'.format(len(data)), *data))
-                read_etroc(self, time_stamp, full=False)
+                # read_etroc(self, time_stamp, full=False)
                 os.system(f"gzip {filename}")
                 self.files[filename] = True
 
@@ -141,7 +141,7 @@ class Beam():
         from rich.panel import Panel
         from rich.align import Align
 
-        from beam_utils import generate_table, generate_header, generate_static, generate_files
+        from tamalero.beam_utils import generate_table, generate_header, generate_static, generate_files
 
         from collections import deque
         import os
@@ -173,7 +173,7 @@ class Beam():
         )
         total_task = self.nmin * 60
         sim_task = progress.add_task("[bold green]Beam Simulation", total=total_task, start=False)
-        
+
         width, height = os.get_terminal_size()
         table_height = int(height - 12 - 4)
         rows = deque(maxlen=table_height)
@@ -192,7 +192,7 @@ class Beam():
                 lost = self.kcu.read_node(f"READOUT_BOARD_0.RX_FIFO_LOST_WORD_CNT")
                 packet_rate = self.kcu.read_node(f"READOUT_BOARD_0.PACKET_RX_RATE").value()/1000.0
 
-                rows.append((f"[bold red]{time_stamp}", f"{cycles}", f"{l1a_rate_cnt:.2f}", f"{occupancy}", f"{temps['t1']:.2f}", f"{temps['t2']:.2f}", f"{temps['t_SCA']:.2f}", f"{lost}", f"{packet_rate:.2f}"))
+                rows.append((f"[bold red]{time_stamp}", f"{cycles}", f"{l1a_rate_cnt:.2f}", f"{occupancy}", f"{temps['t1']:.2f}", f"{temps['t2']:.2f}", f"{temps['t_SCA']:.2f}", f"{temps['t_VTRX']:.2f}", f"{lost}", f"{packet_rate:.2f}"))
                 if l1a_rate_cnt != 0: l1as[cycles].append(l1a_rate_cnt)
 
                 layout["dynamic"].update(generate_table(rows))
@@ -200,7 +200,7 @@ class Beam():
                 layout["header"].update(generate_header())
                 layout["static"].update(generate_static(l1as, self.l1a_rate, self.nmin))
                 layout["files"].update(generate_files(self))
-                
+
                 progress.update(sim_task, advance=1)
                 time.sleep(1)
 
