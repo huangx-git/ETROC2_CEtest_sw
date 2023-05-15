@@ -66,9 +66,9 @@ def parse_data(data, N_pix):
 
 def vth_scan(ETROC2):
     N_l1a    =  3200 # how many L1As to send
-    vth_min  =   190 # scan range
-    vth_max  =   210
-    vth_step =   .25 # step size
+    vth_min  =   693 # scan range
+    vth_max  =   709
+    vth_step =   ETROC2.DAC_step # step size
     N_steps  = int((vth_max-vth_min)/vth_step)+1 # number of steps
     N_pix    = 16*16 # total number of pixels
 
@@ -78,7 +78,7 @@ def vth_scan(ETROC2):
     for vth in vth_axis:
         print(f"Working on threshold {vth=}")
         ETROC2.set_Vth_mV(vth)
-        i = int(round((vth-vth_min)/vth_step))
+        i = int((vth-vth_min)/vth_step)
         run_results[i] = parse_data(run(N_l1a), N_pix)
 
     # transpose so each 1d list is for a pixel & normalize
@@ -131,6 +131,16 @@ if __name__ == '__main__':
             print("Succesfully failed, as expected.")
             pass
         print("Test passed.\n")
+
+        test_val = 700.25
+        print(f"Trying to set the threshold to {test_val=}mV")
+        ETROC2.set_Vth_mV(test_val)
+        read_val = ETROC2.get_Vth_mV(row=4, col=5)
+        if abs(read_val-test_val)>ETROC2.DAC_step:
+            raise RuntimeError("Returned discriminator threshold is off.")
+        else:
+            print(f"Threshold is currently set to {read_val=} mV")
+            print("Test passed.\n")
 
     elif args.vth:
         # ==============================
@@ -265,12 +275,12 @@ if __name__ == '__main__':
         plt.show()
 
     else:
-        thresholds = [203-x*0.3 for x in range(10)]
+        thresholds = [706-x*ETROC2.DAC_step for x in range(10)]
         print("Sending 10 L1As and reading back data, for the following thresholds:")
         print(thresholds)
         for th in thresholds:
-            print(f'Threshold at {th=}mV')
             ETROC2.set_Vth_mV(th)  # anything between 196 and 203 should give reasonable numbers of hits
+            print(f'Threshold at {ETROC2.get_Vth_mV(row=4, col=5)}mV')
             data = ETROC2.runL1A()  # this will spit out data for a single event, with an occupancy corresponding to the previously set threshold
             unpacked = [DF.read(d) for d in data]
             for d in data:
