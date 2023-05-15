@@ -173,7 +173,7 @@ class LPGBT(RegParser):
         for channel in self.adc_mapping:
             if self.adc_mapping[channel]['current'] == 1:
                 print(f'Setting {channel} to current DAC')
-                self.set_current_dac(self.adc_mapping[channel]['pin'])
+                self.set_current_adc(self.adc_mapping[channel]['pin'])
         #if self.ver == 0:
         #    self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping.yaml'), 'adc')
         #elif self.ver == 1:
