@@ -113,15 +113,15 @@ class Module:
                 if etroc.daq_locked:
                     status += 1
 
-            self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], to=0)
+            self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], 0)
             sleep(0.25)
             for i in range(status):
-                self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], to=1)
+                self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], 1)
                 sleep(0.25)
-                self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], to=0)
+                self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], 0)
                 sleep(0.25)
 
             if status > 0:
-                self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], to=1)
+                self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], 1)
             else:
-                self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], to=0)
+                self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], 0)

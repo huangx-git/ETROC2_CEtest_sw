@@ -1,5 +1,0 @@
-# FIXME: these should be moved to the readout board yaml
-# this file doesn't really make sense
-lpGBT:
-   - 0
-   - 7

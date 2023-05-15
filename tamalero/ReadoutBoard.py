@@ -296,8 +296,6 @@ class ReadoutBoard:
         self.SCA.reset()
         self.SCA.connect()
         try:
-            print("version in SCA", self.SCA.ver)
-            print("config in SCA", self.SCA.config)
             self.SCA.config_gpios()  # this sets the directions etc according to the mapping
         except TimeoutError:
             print ("SCA config failed. Will continue without SCA.")

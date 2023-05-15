@@ -116,9 +116,6 @@ class LPGBT(RegParser):
                 print (" > unsure about lpGBT version. This case should have been impossible to reach.")
                 raise Exception("Spurious lpGBT version.")
 
-        self.set_adc_mapping()
-        self.set_gpio_mapping()
-
         self.base_config = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/lpgbt_config.yaml'))['base'][f'v{self.ver}']
         self.ec_config = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/lpgbt_config.yaml'))['ec'][f'v{self.ver}']
 
@@ -132,10 +129,13 @@ class LPGBT(RegParser):
             self.wr_reg("LPGBT.RWF.POWERUP.DLLCONFIGDONE", 0x1)  # NOTE untested change
             self.wr_reg("LPGBT.RWF.POWERUP.PLLCONFIGDONE", 0x1)
 
+        self.set_adc_mapping()
+        self.set_gpio_mapping()
+
         # Get LPGBT Serial Num
         self.serial_num = 0# self.get_board_id()['lpgbt_serial']
 
-        self.link_inversions = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/link_inversions.yaml'))
+        self.link_inversions = get_config(self.config, version=f'v{self.ver+1}')['inversions']
 
         if not self.power_up_done():
             print("Running power up within LPGBT.configure()")
@@ -147,9 +147,9 @@ class LPGBT(RegParser):
         if do_adc_calibration and not self.calibrated:
             self.calibrate_adc()
 
-        self.current_adcs = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/current_adcs.yaml'))['lpGBT']
-        for adc in self.current_adcs:
-            self.set_current_adc(adc)
+        #self.current_adcs = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/current_adcs.yaml'))['lpGBT']
+        #for adc in self.current_adcs:
+        #    self.set_current_adc(adc)
 
     def read_base_config(self):
         #
@@ -170,6 +170,10 @@ class LPGBT(RegParser):
     def set_adc_mapping(self):
         assert self.ver in [0, 1], f"Unrecognized version {self.ver}"
         self.adc_mapping = get_config(self.config, version=f'v{self.ver+1}')['LPGBT']['adc']
+        for channel in self.adc_mapping:
+            if self.adc_mapping[channel]['current'] == 1:
+                print(f'Setting {channel} to current DAC')
+                self.set_current_dac(self.adc_mapping[channel]['pin'])
         #if self.ver == 0:
         #    self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping.yaml'), 'adc')
         #elif self.ver == 1:
@@ -485,38 +489,38 @@ class LPGBT(RegParser):
 
     def invert_links(self, trigger=False):
         if trigger:
-            for link in self.link_inversions['emulator_adapter']['trigger']:
+            for link in self.link_inversions['trigger']:
                 self.set_uplink_invert(link)
         else:
-            for link in self.link_inversions['emulator_adapter']['clocks']:
+            for link in self.link_inversions['clocks']:
                 self.set_clock_invert(link)
-            for link in self.link_inversions['emulator_adapter']['downlink']:
+            for link in self.link_inversions['downlink']:
                 self.set_downlink_invert(link)
-            for link in self.link_inversions['emulator_adapter']['uplink']:
+            for link in self.link_inversions['uplink']:
                 self.set_uplink_invert(link)
 
     def read_inversions(self):
         if self.trigger:
             print("Trigger LPGBT Registers -- Uplinks")
-            for link in self.link_inversions['emulator_adapter']['trigger']:
+            for link in self.link_inversions['trigger']:
                 register = "LPGBT.RWF.EPORTRX.EPRX_CHN_CONTROL.EPRX%dINVERT" % link
                 val = self.rd_reg(register)
                 print(register, "\t", val)
         else:
             print("DAQ LPGBT Registers -- Clocks")
-            for link in self.link_inversions['emulator_adapter']['clocks']:
+            for link in self.link_inversions['clocks']:
                 register = "LPGBT.RWF.EPORTCLK.EPCLK%dINVERT" % link
                 val = self.rd_reg(register)
                 print(register, "\t", val)
             print("DAQ LPGBT Registers -- Downlinks")
-            for link in self.link_inversions['emulator_adapter']['downlink']:
+            for link in self.link_inversions['downlink']:
                 group = link // 4
                 elink = link % 4
                 register = "LPGBT.RWF.EPORTTX.EPTX%d%dINVERT" % (group, elink)
                 val = self.rd_reg(register)
                 print(register, "\t", val)
             print("DAQ LPGBT Registers -- Uplinks")
-            for link in self.link_inversions['emulator_adapter']['uplink']:
+            for link in self.link_inversions['uplink']:
                 register = "LPGBT.RWF.EPORTRX.EPRX_CHN_CONTROL.EPRX%dINVERT" % link
                 val = self.rd_reg(register)
                 print(register, "\t", val)
@@ -817,7 +821,7 @@ class LPGBT(RegParser):
 
         self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE", 0x1)
         if verbose:
-            print("Set current DAC...", self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE"))
+            print("Enable DAC current source...", self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE"))
 
         if channel == 0:
             adc_chn = self.LPGBT_CONST.CURDAC_CHN0_bm

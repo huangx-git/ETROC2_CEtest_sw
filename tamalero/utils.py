@@ -354,6 +354,8 @@ def get_config(config, version='v2', verbose=False):
                             print(f"\n - Updating configuration for {chip}, {interface}, {k} to:")
                             print(updated_cfg[chip][interface][k])
                         default_cfg[chip][interface][k] = updated_cfg[chip][interface][k]
+        for links in ['trigger', 'clocks', 'downlink', 'uplink']:
+            default_cfg['inversions'][links] = updated_cfg['inversions'][links]
     return default_cfg
 
 def majority_vote(values, majority=None):
