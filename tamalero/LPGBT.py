@@ -321,28 +321,27 @@ class LPGBT(RegParser):
             self.kcu.write_node(id, 2)
 
     def wr_adr(self, adr, data):
+
         if self.trigger:
             return self.master.I2C_write(adr, data)
             #raise NotImplementedError("rd_adr does only read from the master lpGBT, and you're trying to write to a servant")
         else:
-            #defer = not self.kcu.auto_dispatch  # if auto dispatch is turned off, keep it off.
-            #self.kcu.toggle_dispatch()  # turn off auto dispatch for this transaction
+            self.kcu.toggle_dispatch()
             #self.kcu.write_node("READOUT_BOARD_%d.SC.TX_GBTX_ADDR" % self.rb, 115)
             self.kcu.write_node("READOUT_BOARD_%d.SC.TX_REGISTER_ADDR" % self.rb, adr)
             self.kcu.write_node("READOUT_BOARD_%d.SC.TX_DATA_TO_GBTX" % self.rb, data)
             self.kcu.action("READOUT_BOARD_%d.SC.TX_WR" % self.rb)
             self.kcu.action("READOUT_BOARD_%d.SC.TX_START_WRITE" % self.rb)
-            #return self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_FROM_GBTX" % self.rb)
-            #if not defer:  # turn auto dispatch back on only if it wasn't set to false before
-            #    self.kcu.dispatch()
-            #self.rd_flush()
+            self.kcu.dispatch()
 
     def rd_adr(self, adr):
         if self.trigger:
             return self.master.I2C_read(adr)
             #raise NotImplementedError("rd_adr does only read from the master lpGBT, and you're trying to read from a servant")
         else:
+            self.kcu.toggle_dispatch()
             self.kcu.write_node("READOUT_BOARD_%d.SC.TX_REGISTER_ADDR" % self.rb, adr)
+            self.kcu.dispatch()
             self.kcu.action("READOUT_BOARD_%d.SC.TX_START_READ" % self.rb)
             valid = self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_VALID" % self.rb).valid()
             if valid:
@@ -693,11 +692,13 @@ class LPGBT(RegParser):
 
     def read_adc_raw (self, channel):
 
+        self.kcu.toggle_dispatch()
         self.wr_reg("LPGBT.RW.ADC.ADCINPSELECT", channel)
         self.wr_reg("LPGBT.RW.ADC.ADCINNSELECT", 0xf)
 
         self.wr_reg("LPGBT.RW.ADC.ADCCONVERT", 0x1)
         self.wr_reg("LPGBT.RW.ADC.ADCENABLE", 0x1)
+        self.kcu.dispatch()
 
         done = 0
         while (done==0):
@@ -707,8 +708,10 @@ class LPGBT(RegParser):
         val = self.rd_reg("LPGBT.RO.ADC.ADCVALUEL")
         val |= self.rd_reg("LPGBT.RO.ADC.ADCVALUEH") << 8
 
+        self.kcu.toggle_dispatch()
         self.wr_reg("LPGBT.RW.ADC.ADCCONVERT", 0x0)
         self.wr_reg("LPGBT.RW.ADC.ADCENABLE", 0x1)
+        self.kcu.dispatch()
 
         return val
 
@@ -1077,10 +1080,9 @@ class LPGBT(RegParser):
         this function is following https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#example-2-multi-byte-write
         '''
 
-        if ignore_response and False:
-            self.kcu.toggle_dispatch()
+        self.kcu.toggle_dispatch()
 
-        i2cm      = master
+        i2cm = master
 
         i2cm1cmd = self.get_node('LPGBT.RW.I2C.I2CM1CMD').real_address
         i2cm0cmd = self.get_node('LPGBT.RW.I2C.I2CM0CMD').real_address
@@ -1138,6 +1140,8 @@ class LPGBT(RegParser):
         self.wr_adr(i2cm0address+OFFSET_WR, slave_addr)# write the address of the follower
         self.wr_adr(i2cm0cmd+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_MULTI)# execute write (c)
 
+        self.kcu.dispatch()
+
         if not ignore_response:
             status = self.rd_adr(i2cm0status+OFFSET_RD)
             retries = 0
@@ -1185,6 +1189,8 @@ class LPGBT(RegParser):
         # Write the register address
         ################################################################################
 
+        self.kcu.toggle_dispatch()
+
         # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-write-cr-0x0
         self.wr_adr(i2cm0data0+OFFSET_WR, adr_nbytes<<self.LPGBT_CONST.I2CM_CR_NBYTES_of | (freq<<self.LPGBT_CONST.I2CM_CR_FREQ_of))
         # debugging
@@ -1211,6 +1217,8 @@ class LPGBT(RegParser):
         # debugging
         #print(f"Address: {i2cm0cmd+OFFSET_WR}, \tValue: {self.LPGBT_CONST.I2CM_WRITE_MULTI}")
 
+        self.kcu.dispatch()
+
         status = self.rd_adr(i2cm0status+OFFSET_RD)
 
         # debugging
@@ -1231,6 +1239,8 @@ class LPGBT(RegParser):
         # Write the data
         ################################################################################
 
+        self.kcu.toggle_dispatch()
+
         # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-write-cr-0x0
         self.wr_adr(i2cm0data0+OFFSET_WR, nbytes<<self.LPGBT_CONST.I2CM_CR_NBYTES_of | freq<<self.LPGBT_CONST.I2CM_CR_FREQ_of)
         self.wr_adr(i2cm0cmd+OFFSET_WR, self.LPGBT_CONST.I2CM_WRITE_CRA) #write to config register
@@ -1238,6 +1248,8 @@ class LPGBT(RegParser):
         # https://lpgbt.web.cern.ch/lpgbt/v0/i2cMasters.html#i2c-read-multi-0xd
         self.wr_adr(i2cm0address+OFFSET_WR, slave_addr) #write the address of follower first
         self.wr_adr(i2cm0cmd+OFFSET_WR, self.LPGBT_CONST.I2CM_READ_MULTI)# execute read
+
+        self.kcu.dispatch()
 
         status = self.rd_adr(i2cm0status+OFFSET_RD)
 

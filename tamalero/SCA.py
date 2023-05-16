@@ -195,6 +195,8 @@ class SCA:
             print(f"{transid=}, {channel=}, {cmd=}, {adr=}, {data=}")
 
 
+        self.kcu.toggle_dispatch()
+
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_CHANNEL" % self.rb, channel)
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_CMD" % self.rb, cmd)
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_ADDRESS" % self.rb, adr)
@@ -203,6 +205,8 @@ class SCA:
     
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_DATA" % self.rb, data)
         self.kcu.action("READOUT_BOARD_%d.SC.START_COMMAND" % self.rb)
+
+        self.kcu.dispatch()
     
         # reply packet structure
         # sof
@@ -236,11 +240,20 @@ class SCA:
             if (err & 0x40):
                 print("SCA Read Error :: Command In Treatment")
 
-        rx_rec  = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_RECEIVED" % self.rb).value()  # flag pulse
-        rx_ch   = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_CHANNEL" % self.rb).value()  # channel reply
-        rx_len  = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_LEN" % self.rb).value()
-        rx_ad   = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_ADDRESS" % self.rb).value()
-        rx_ctrl = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_CONTROL" % self.rb).value()
+        self.kcu.toggle_dispatch()
+        rx_rec  = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_RECEIVED" % self.rb)  # flag pulse
+        rx_ch   = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_CHANNEL" % self.rb)  # channel reply
+        rx_len  = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_LEN" % self.rb)
+        rx_ad   = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_ADDRESS" % self.rb)
+        rx_ctrl = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_CONTROL" % self.rb)
+        self.kcu.dispatch()
+
+        # dispatch and get the read values
+        rx_rec  = rx_rec.value()  # flag pulse
+        rx_ch   = rx_ch.value()  # channel reply
+        rx_len  = rx_len.value()
+        rx_ad   = rx_ad.value()
+        rx_ctrl = rx_ctrl.value()
 
         if verbose:
             print(f"Received: {err=}, {rx_rec=}, {rx_ch=}, {rx_len=}, {rx_ad=}, {rx_ctrl=}")
