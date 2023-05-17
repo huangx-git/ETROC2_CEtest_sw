@@ -3,7 +3,7 @@ For ETROC control
 """
 
 from tamalero.utils import load_yaml, ffs, bit_count
-from tamalero.colors import red, green
+from tamalero.colors import red, green, yellow
 import os
 
 here = os.path.dirname(os.path.abspath(__file__))
@@ -124,13 +124,15 @@ class ETROC():
                     for col in range(16):
                         self.wr_reg(reg, val, row=row, col=col, broadcast=False)
 
+        n_bits_total = 0
         for i, a in enumerate(adr):
             read = self.rd_adr(a)
-            value = (((val >> n_bits[i]) << shifts[i]) & masks[i]) | (read & ~masks[i])
+            value = (((val >> (n_bits[i] + n_bits_total)) << shifts[i]) & masks[i]) | (read & ~masks[i])
+            n_bits_total += n_bits[i]
             self.wr_adr(a, value)
 
 
-    def rd_reg(self, reg, row=0, col=0):
+    def rd_reg(self, reg, row=0, col=0, verbose=False):
         '''
         reg - Register name
         val - value to write
@@ -140,16 +142,66 @@ class ETROC():
         masks    = self.regs[reg]['mask']
         shifts   = list(map(ffs, masks))
         n_bits   = [0] + list(map(bit_count, masks))
+        if verbose:
+            print("Found masks", masks)
+            print("Found shifts", shifts)
+            print("Found n_bits", n_bits)
 
         adr = self.get_adr(reg, row=row, col=col)
         tmp = 0
+        n_bits_total = 0
         for i, a in enumerate(adr):
+            if verbose: print(i, a, masks[i], shifts[i])
             read = (self.rd_adr(a) & masks[i]) >> shifts[i]
-            tmp |= (read << n_bits[i])
+            tmp |= (read << (n_bits[i]+n_bits_total))
+            n_bits_total += n_bits[i]
         return tmp
 
     def print_reg_doc(self, reg):
         print(self.regs[reg]['doc'])
+
+    def print_perif_stat(self):
+        for reg in self.regs:
+            if self.regs[reg]['stat'] == 1 and self.regs[reg]['pixel'] == 0:
+                ret = self.rd_reg(reg)
+                print(yellow(f"Perif status {reg=}: {ret=}"))
+
+    def print_pixel_stat(self, row=0, col=0):
+        for reg in self.regs:
+            if self.regs[reg]['stat'] == 1 and self.regs[reg]['pixel'] == 1:
+                ret = self.rd_reg(reg)
+                print(yellow(f"Pixel ({row=}, {col=}) status {reg=}: {ret=}"))
+
+    def print_perif_conf(self):
+        for reg in self.regs:
+            if self.regs[reg]['stat'] == 0 and self.regs[reg]['pixel'] == 0:
+                ret = self.rd_reg(reg)
+                exp = self.regs[reg]['default']
+                colored = green if ret == exp else red
+                print(colored(f"Perif config {reg=}: {ret=}, {exp=}"))
+
+    def print_pixel_conf(self, row=0, col=0):
+        for reg in self.regs:
+            if self.regs[reg]['stat'] == 0 and self.regs[reg]['pixel'] == 1:
+                ret = self.rd_reg(reg)
+                exp = self.regs[reg]['default']
+                colored = green if ret == exp else red
+                print(colored(f"Pixel ({row=}, {col=}) config {reg=}: {ret=}, {exp=}"))
+
+    def pixel_sanity_check(self, verbose=False):
+        all_pass = True
+        for row in range(16):
+            for col in range(16):
+                ret = self.rd_reg('PixelID', row=row, col=col)
+                exp = ((col << 4) | row)
+                comp = ret == exp
+                if verbose:
+                    if comp:
+                        print(green(f"Sanity check passed for {row=}, {col=}"))
+                    else:
+                        print(red(f"Sanity check failed for {row=}, {col=}, expected {exp} from PixelID register but got {ret}"))
+                all_pass &= comp
+        return all_pass
 
     # ============================
     # === MONITORING FUNCTIONS ===
