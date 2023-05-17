@@ -559,7 +559,7 @@ readoutClockWidthPixel:
     - 0x1F
   pixel:    0
   stat:     0
-  default:  0x20
+  default:  0x10
 
 readoutClockDelayGlobal:
   doc: "Phase delay of global readout clock, 780 ps a step."
@@ -579,7 +579,7 @@ readoutClockWidthGlobal:
     - 0x1F
   pixel:    0
   stat:     0
-  default:  0x20
+  default:  0x10
 
 serRateRight:
   doc: |-
