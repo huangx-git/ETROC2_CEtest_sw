@@ -187,13 +187,13 @@ SCA:
             default: 0
             direction: out
             flavor: small
-            comment: ADDR0 on module 1
+            comment: ADDR1 on module 1
         mod_d06:
             pin: 0x01
             default: 0
             direction: out
             flavor: small
-            comment: ADDR1 on module 1
+            comment: ADDR0 on module 1
         mod_d08:
             pin: 0x16
             default: 1
@@ -211,13 +211,13 @@ SCA:
             default: 0
             direction: out
             flavor: small
-            comment: ADDR0 on module 2
+            comment: ADDR1 on module 2
         mod_d14:
             pin: 0x07
             default: 0
             direction: out
             flavor: small
-            comment: ADDR1 on module 2
+            comment: ADDR0 on module 2
         mod_d16:
             pin: 0x0F
             default: 1
@@ -235,13 +235,13 @@ SCA:
             default: 0
             direction: out
             flavor: small
-            comment: ADDR0 on module 3
+            comment: ADDR1 on module 3
         mod_d22:
             pin: 0x06
             default: 0
             direction: out
             flavor: small
-            comment: ADDR1 on module 3
+            comment: ADDR0 on module 3
 LPGBT:
     adc:
     gpio:
