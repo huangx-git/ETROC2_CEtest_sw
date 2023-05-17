@@ -208,6 +208,18 @@ git clone https://gitlab.cern.ch/cms-etl-electronics/module_test_sw.git
 
 Setup the paths using `source setup.sh` inside the `module_test_sw` directory and check that ipbus is actually working with `python3 -i -c "import uhal"`.
 
+This docker image is not updated weekly so some python dependencies might be missing.
+Please install those via pip.
+
+Below is an example for setting up a RB using docker.
+We first need to start control hub (only needed to be done once), set up all the paths and run test_tamalero in power-up mode.
+``` shell
+/opt/cactus/bin/controlhub_start
+cd module_test_sw
+source setup.sh
+ipython -i test_tamalero.py -- --control_hub --kcu 192.168.0.10 --verbose --configuration modulev0 --power_up
+```
+
 
 ## Useful block diagrams for connectivity and data flow
 
