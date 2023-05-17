@@ -1,6 +1,9 @@
 from tamalero.ETROC import ETROC
 from tamalero.ETROC_Emulator import ETROC2_Emulator as software_ETROC2
 from tamalero.DataFrame import DataFrame
+from tamalero.utils import get_kcu
+from tamalero.ReadoutBoard import ReadoutBoard
+from tamalero.colors import red, green, yellow
 
 import numpy as np
 from scipy.optimize import curve_fit
@@ -97,6 +100,7 @@ if __name__ == '__main__':
     import argparse
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--test_readwrite', action='store_true', default=False, help="Test simple read/write functionality?")
+    argParser.add_argument('--test_chip', action='store_true', default=False, help="Test simple read/write functionality for real chip?")
     argParser.add_argument('--vth', action='store_true', default=False, help="Parse Vth scan plots?")
     argParser.add_argument('--rerun', action='store_true', default=False, help="Rerun Vth scan and overwrite data?")
     argParser.add_argument('--fitplots', action='store_true', default=False, help="Create individual vth fit plots for all pixels?")
@@ -141,6 +145,46 @@ if __name__ == '__main__':
         else:
             print(f"Threshold is currently set to {read_val=} mV")
             print("Test passed.\n")
+
+    elif args.test_chip:
+        # FIXME this is still hardcoded
+        kcu = get_kcu('192.168.0.10', control_hub=True, host='localhost', verbose=False)
+        if (kcu == 0):
+            # if not basic connection was established the get_kcu function returns 0
+            # this would cause the RB init to fail.
+            sys.exit(1)
+
+        rb_0 = ReadoutBoard(0, kcu=kcu, config='modulev0')
+        data = 0xabcd1234
+        kcu.write_node("LOOPBACK.LOOPBACK", data)
+        if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
+            print("No communications with KCU105... quitting")
+            sys.exit(1)
+
+        is_configured = rb_0.DAQ_LPGBT.is_configured()
+        if not is_configured:
+            print("RB is not configured, exiting.")
+            exit(0)
+
+        etroc = ETROC(rb=rb_0, i2c_adr=96, i2c_channel=1)
+
+        print("\n - Checking peripheral configuration:")
+        etroc.print_perif_conf()
+
+        print("\n - Checking peripheral status:")
+        etroc.print_perif_stat()
+
+        print("\n - Running pixel sanity check:")
+        res = etroc.pixel_sanity_check(verbose=False)
+        if res:
+            print("Passed!")
+
+        print("\n - Checking configuration for pixel (4,5):")
+        etroc.print_pixel_conf(row=4, col=5)
+
+        print("\n - Checking status for pixel (4,5):")
+        etroc.print_pixel_stat(row=4, col=5)
+
 
     elif args.vth:
         # ==============================
