@@ -274,9 +274,42 @@ class ETROC():
 
     def default_config(self):
         if self.connected:
-            self.wr_reg('singlePort', 0)
-            self.wr_reg('mergeTriggerData', 0)
-            self.wr_reg('disScrambler', 1)
+            self.set_singlePort('both')
+            self.set_mergeTriggerData('separate')
+            self.disable_Scrambler()
+
+    # =======================
+    # === HIGH-LEVEL FUNC ===
+    # =======================
+
+    def QInj_set(self, charge, delay, row=0, col=0, broadcast=True, reset=True):
+        """
+        High-level function to set the charge injection in the ETROC;
+        requires \'charge\' (in fC) and \'delay\' (in 781 ps steps).
+        Charge injection can be done at the pixel level (\'row\', \'col\') or globally (\'broadcast\'); default is global.
+        By default, the charge injection module is reset upon calling (\'reset\').
+        """
+        self.set_ChargeInjReset(reset=reset)                           # Reset charge injection module
+        self.enable_QInj(row=row, col=col, broadcast=broadcast)        # Enable charge injection
+        self.set_Qinj(charge, row=row, col=col, broadcast=broadcast)   # Set charge
+        self.set_chargeInjDelay(delay)                                 # Set time delay
+
+    def QInj_unset(self, row=0, col=0, broadcast=True):
+        """
+        High-level function to unset the charge injection in the ETROC.
+        Unset can be done at the pixel level (\'row\', \'col\') or globally (\'broadcast\'); default is global.
+        """
+        if broadcast:
+            self.set_ChargeInjReset(False)                             # Reset charge injection module
+        else:
+            self.disable_QInj(row=row, col=col, broadcast=broadcast)   # Only disable charge injection for specified pixel
+
+    def QInj_read(self, row=0, col=0, broadcast=True):
+        if broadcast:
+            qinj = [[self.get_Qinj(row=y, col=x) for x in range(16)] for y in range(16)]
+            return qinj
+        else:
+            return self.get_Qinj(row=row, col=col)
 
     # ***********************
     # *** IN-PIXEL CONFIG ***
@@ -416,11 +449,11 @@ class ETROC():
         return th*self.DAC_step + self.DAC_min
 
     # Threshold offset for calibrated baseline. TH = BL + TH_offset
-#    def set_THoffset(self, V, row=0, col=0, broadcast=True):
-#        self.wr_reg('TH_offset', V, row=row, col=col, broadcast=broadcast)
-#
-#    def get_THoffset(self, row=0, col=0):
-#        return self.rd_reg('TH_offset', row=row, col=col)
+    def set_THoffset(self, V, row=0, col=0, broadcast=True):
+        self.wr_reg('TH_offset', V, row=row, col=col, broadcast=broadcast)
+
+    def get_THoffset(self, row=0, col=0):
+        return self.rd_reg('TH_offset', row=row, col=col)
 
     # Reset of threshold calibration block, active low
     def reset_THCal(self, row=0, col=0, broadcast=True):
