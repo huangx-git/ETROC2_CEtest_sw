@@ -41,7 +41,7 @@ SCA:
             min: 0
             max: 1.0
             flavor: small
-            comment: pin 23 in ETROC 2 and 3
+            comment: VREF on module 1
         mod_a06:
             pin: 0x02
             conv: 1
@@ -97,7 +97,7 @@ SCA:
             min: 0
             max: 1.0
             flavor: small
-            comment: pin 23 in ETROC 6 and 7
+            comment: VREF on module 2
         mod_a14:
             pin: 0x08
             conv: 1
@@ -153,7 +153,7 @@ SCA:
             min: 0
             max: 1.0
             flavor: small
-            comment: pin 23 in ETROC 10 and 11
+            comment: VREF on module 3
         mod_a22:
             pin: 0x07
             conv: 1
@@ -182,6 +182,18 @@ SCA:
             direction: out
             flavor: small
             comment: enable FEAST on module 1
+        mod_d05:
+            pin: 0x02
+            default: 0
+            direction: out
+            flavor: small
+            comment: ADDR0 on module 1
+        mod_d06:
+            pin: 0x01
+            default: 0
+            direction: out
+            flavor: small
+            comment: ADDR1 on module 1
         mod_d08:
             pin: 0x16
             default: 1
@@ -194,6 +206,18 @@ SCA:
             direction: out
             flavor: small
             comment: enable FEAST on module 2
+        mod_d13:
+            pin: 0x04
+            default: 0
+            direction: out
+            flavor: small
+            comment: ADDR0 on module 2
+        mod_d14:
+            pin: 0x07
+            default: 0
+            direction: out
+            flavor: small
+            comment: ADDR1 on module 2
         mod_d16:
             pin: 0x0F
             default: 1
@@ -206,6 +230,18 @@ SCA:
             direction: out
             flavor: small
             comment: enable FEAST on module 3
+        mod_d21:
+            pin: 0x08
+            default: 0
+            direction: out
+            flavor: small
+            comment: ADDR0 on module 3
+        mod_d22:
+            pin: 0x06
+            default: 0
+            direction: out
+            flavor: small
+            comment: ADDR1 on module 3
 LPGBT:
     adc:
     gpio:
