@@ -190,7 +190,7 @@ SCA:
             comment: WS_WR_EN on module 1
         mod_d04:
             pin: 0x00
-            default: 0
+            default: 1
             direction: out
             flavor: small
             comment: WS_RSTN on module 1
@@ -208,7 +208,7 @@ SCA:
             comment: ADDR0 on module 1
         mod_d07:
             pin: 0x03
-            default: 0
+            default: 1
             direction: out
             flavor: small
             comment: RSTN on module 1
@@ -232,7 +232,7 @@ SCA:
             comment: WS_WR_EN on module 2
         mod_d12:
             pin: 0x0A
-            default: 0
+            default: 1
             direction: out
             flavor: small
             comment: WS_RSTN on module 2
@@ -250,7 +250,7 @@ SCA:
             comment: ADDR0 on module 2
         mod_d15:
             pin: 0x0D
-            default: 0
+            default: 1
             direction: out
             flavor: small
             comment: RSTN on module 2 
@@ -274,7 +274,7 @@ SCA:
             comment: WS_WR_EN on module 3
         mod_d20:
             pin: 0x09
-            default: 0
+            default: 1
             direction: out
             flavor: small
             comment: WS_RSTN on module 3
@@ -292,7 +292,7 @@ SCA:
             comment: ADDR0 on module 3
         mod_d23:
             pin: 0x05
-            default: 0
+            default: 1
             direction: out
             flavor: small
             comment: RSTN on module 3
