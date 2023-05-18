@@ -185,6 +185,44 @@ if __name__ == '__main__':
         print("\n - Checking status for pixel (4,5):")
         etroc.print_pixel_stat(row=4, col=5)
 
+        ## pixel broadcast
+        print("\n - Checking pixel broadcast.")
+        tmp = etroc.rd_reg('workMode', row=10, col=10)
+        etroc.wr_reg('workMode', 1, broadcast=True)
+        tmp2 = etroc.rd_reg('workMode', row=10, col=10)
+        tmp3 = etroc.rd_reg('workMode', row=3, col=12)
+        etroc.wr_reg('workMode', 0, broadcast=True)
+        tmp4 = etroc.rd_reg('workMode', row=10, col=10)
+        test1 = (tmp != tmp2)
+        test2 = (tmp2 == tmp3)
+        test3 = (tmp == tmp4)
+        if test1 and test2 and test3:
+            print("Passed!")
+
+
+        etroc.wr_reg('serRateLeft', 0)
+        etroc.wr_reg('serRateRight', 0)
+
+
+        # NOTE below is WIP code for tests of the actual data readout
+        from tamalero.FIFO import FIFO
+        from tamalero.DataFrame import DataFrame
+        df = DataFrame()
+        fifo = FIFO(rb=rb_0)
+
+        #etroc.wr_reg('onChipL1AConf', 1)  # turn on internal L1A generator
+        #etroc.wr_reg('workMode', 1, row=4, col=5)  # set to test pattern
+
+        # disable second elink
+        #rb_0.kcu.write_node("READOUT_BOARD_0.ETROC_DISABLE", 4)
+        # or
+        #etroc.wr_reg('singlePort', 1)
+        #fifo.disable_zero_surpress(only=2)
+
+        ### this does in theory reset the ETROC, but not sure if it comes back up properly
+        #rb_0.SCA.set_gpio_direction('mod_d07', 1)
+        #rb_0.SCA.set_gpio('mod_d07', 0)
+        #rb_0.SCA.set_gpio('mod_d07', 1)
 
     elif args.vth:
         # ==============================

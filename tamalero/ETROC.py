@@ -277,6 +277,9 @@ class ETROC():
             self.wr_reg('singlePort', 0)
             self.wr_reg('mergeTriggerData', 0)
             self.wr_reg('disScrambler', 1)
+            # set ETROC in 320Mbps mode
+            #self.wr_reg('serRateLeft', 0)
+            #self.wr_reg('serRateRight', 0)
 
     # ***********************
     # *** IN-PIXEL CONFIG ***
