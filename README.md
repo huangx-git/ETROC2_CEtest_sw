@@ -200,10 +200,12 @@ Setup the docker container with pre-built ipbus:
 docker run -it --name tamalero danbarto/ubuntu20.04-uhal-python38-tamalero:latest /bin/bash
 ```
 
-Inside docker, check out this repository with
+Inside docker, check out this repository and install any missing / updated python packages:
 
 ``` shell
 git clone https://gitlab.cern.ch/cms-etl-electronics/module_test_sw.git
+pip install --editable .
+pip install ipython
 ```
 
 Setup the paths using `source setup.sh` inside the `module_test_sw` directory and check that ipbus is actually working with `python3 -i -c "import uhal"`.
