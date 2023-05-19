@@ -168,7 +168,6 @@ SCA:
             max: 1.0
             flavor: small
             comment: NTC2 on module 3 
-
     gpio:
         mod_d00:
             pin: 0x1E
@@ -297,7 +296,7 @@ SCA:
             flavor: small
             comment: RSTN on module 3
 LPGBT:
-    dc:
+    adc:
     gpio:
 
 inversions:
