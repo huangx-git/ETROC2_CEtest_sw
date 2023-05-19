@@ -178,6 +178,15 @@ if __name__ == '__main__':
         res = etroc.pixel_sanity_check(verbose=False)
         if res:
             print("Passed!")
+        else:
+            print("Failed")
+
+        print("\n - Running pixel random check:")
+        res = etroc.pixel_random_check(verbose=False)
+        if res:
+            print("Passed!")
+        else:
+            print("Failed")
 
         print("\n - Checking configuration for pixel (4,5):")
         etroc.print_pixel_conf(row=4, col=5)
@@ -198,6 +207,8 @@ if __name__ == '__main__':
         test3 = (tmp == tmp4)
         if test1 and test2 and test3:
             print("Passed!")
+        else:
+            print("Failed")
 
 
         etroc.wr_reg('serRateLeft', 0)
@@ -223,6 +234,18 @@ if __name__ == '__main__':
         #rb_0.SCA.set_gpio_direction('mod_d07', 1)
         #rb_0.SCA.set_gpio('mod_d07', 0)
         #rb_0.SCA.set_gpio('mod_d07', 1)
+
+        #kcu.status()
+        print("\n - Checking elinks")
+        locked = kcu.read_node(f"READOUT_BOARD_0.ETROC_LOCKED").value()
+        if (locked & 0b101) == 5:
+            print(green('Both elinks (0 and 2) are locked.'))
+        elif (locked & 1) == 1:
+            print(yellow('Only elink 0 is locked.'))
+        elif (locked & 4) == 4:
+            print(yellow('Only elink 2 is locked.'))
+        else:
+            print(red('No elink is locked.'))
 
     elif args.vth:
         # ==============================
