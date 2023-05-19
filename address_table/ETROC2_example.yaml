@@ -1191,7 +1191,7 @@ disPowerSequence:
     - 0x1
   pixel:    0
   stat:     0
-  default:  0x1
+  default:  0x0  # manual says one, but it should be 0
 
 softBoot:
   doc: "Reset power sequencer controller, active high."
@@ -1250,7 +1250,7 @@ EFuse_Rstn:
     - 0x8
   pixel:    0
   stat:     0
-  default:  0x0
+  default:  0x1  # manual gives 0 but should be 1
 
 EFuse_Start:
   doc: "Start signal of the EFuse programming. A positive pulse will start the programming."
@@ -1666,4 +1666,23 @@ EFuseQ:
     - 0xFF
     - 0xFF
   pixel:    0
+  stat:     1
+
+PixelSanityConfig:
+  doc: "In-pixel config that's mirrored in in-pixel status, PixelSanityStat"
+  default: 0
+  address:
+    - 31
+  mask:
+    - 0xFF
+  pixel:    1
+  stat:     0
+
+PixelSanityStat:
+  doc: "In-pixel stats that's mirrored from in-pixel config, PixelSanityConfig"
+  address:
+    - 7
+  mask:
+    - 0xFF
+  pixel:    1
   stat:     1
