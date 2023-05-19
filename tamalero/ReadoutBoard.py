@@ -65,6 +65,13 @@ class ReadoutBoard:
         self.DAQ_LPGBT.connect_KCU(kcu)
         self.SCA.connect_KCU(kcu)
 
+    def set_elink_width(self, width=320):
+        widths = {320:1, 640:2, 1280:3}
+        self.kcu.write_node("READOUT_BOARD_%d.ELINK_WIDTH"%i, widths[width]+1)
+        for i in range(7):
+            # set banks to 320 Mbps (1) or 640 Mbps (2)
+            self.DAQ_LPGBT.wr_reg("LPGBT.RWF.EPORTRX.EPRX%dDATARATE" % i, widths[width])
+
     def sca_setup(self, verbose=False):
         # should this live here? I suppose so...
         for reg in self.DAQ_LPGBT.ec_config:
