@@ -592,7 +592,7 @@ class LPGBT(RegParser):
             self.wr_reg("LPGBT.RWF.EPORTRX.EPRX%s%sENABLE" % (group, link), 1)
 
         for i in range(7):
-            # set banks to 320 Mbps (1)
+            # set banks to 320 Mbps (1) or 640 Mbps (2)
             self.wr_reg("LPGBT.RWF.EPORTRX.EPRX%dDATARATE" % i, 1)
             # set banks to continuous phase tracking (2)
             self.wr_reg("LPGBT.RWF.EPORTRX.EPRX%dTRACKMODE" % i, 2)

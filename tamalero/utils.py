@@ -96,8 +96,12 @@ def temp_res_fit(thermistor="NTCG063JF103FTB", power=2):
         B_list = [3500, 3539, 3545, 3560]
         T_list = [50, 80, 85, 100]
         R_ref = 1e3
+    elif thermistor=="NTCS0603E3272FMT":
+        B_list = [3600, 3600]
+        T_list = [25, 85]
+        R_ref = 2.7e3
     else:
-        raise ValueError(f"Only thermistors NTCG063JF103FTB, NTCG063UH103HTBX or NCP03XM102E05RL are currently allowed, but {thermistor} was passed.")
+        raise ValueError(f"Only thermistors NTCG063JF103FTB, NTCG063UH103HTBX, NTCS0603E3272FMT or NCP03XM102E05RL are currently allowed, but {thermistor} was passed.")
 
     R_list = []
 
@@ -105,7 +109,7 @@ def temp_res_fit(thermistor="NTCG063JF103FTB", power=2):
         R = R_ref * math.exp(-B * ((1/298.15) - (1/(T+273.15))))
         R_list.append(R)
 
-    if thermistor=="NTCG063JF103FTB" or thermistor=="NTCG063UH103HTBX":
+    if thermistor=="NTCG063JF103FTB" or thermistor=="NTCG063UH103HTBX" or thermistor=='NTCS0603E3272FMT':
         T_list.insert(2, T_ref)     # Reference temperature of thermistor
         R_list.insert(2, R_ref)     # Reference resistance of NTC at reference temperature
     elif thermistor=="NCP03XM102E05RL":
