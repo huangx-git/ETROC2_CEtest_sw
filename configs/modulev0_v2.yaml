@@ -331,3 +331,26 @@ inversions:
       - 18
       - 20
       - 22
+
+modules:
+  1:
+    elinks: [[0, 2]]
+    addresses: [0x60]
+    i2c:
+      master: lpgbt
+      channel: 1
+    reset: mod_d07
+  2:
+    elinks: [[4, 6]]
+    addresses: [0x60]
+    i2c:
+      master: sca
+      channel: 3
+    reset: mod_d15
+  3:
+    elinks: [[8, 10]]
+    addresses: [0x60]
+    i2c:
+      master: sca
+      channel: 0
+    reset: mod_d23

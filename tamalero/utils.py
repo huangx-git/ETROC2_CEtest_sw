@@ -360,6 +360,8 @@ def get_config(config, version='v2', verbose=False):
                         default_cfg[chip][interface][k] = updated_cfg[chip][interface][k]
         for links in ['trigger', 'clocks', 'downlink', 'uplink']:
             default_cfg['inversions'][links] = updated_cfg['inversions'][links]
+        if 'modules' in updated_cfg:
+            default_cfg['modules'] = updated_cfg['modules']
     return default_cfg
 
 def majority_vote(values, majority=None):
