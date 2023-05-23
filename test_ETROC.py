@@ -104,6 +104,9 @@ if __name__ == '__main__':
     argParser.add_argument('--vth', action='store_true', default=False, help="Parse Vth scan plots?")
     argParser.add_argument('--rerun', action='store_true', default=False, help="Rerun Vth scan and overwrite data?")
     argParser.add_argument('--fitplots', action='store_true', default=False, help="Create individual vth fit plots for all pixels?")
+    argParser.add_argument('--kcu', action='store', default='192.168.0.10', help="IP Address of KCU105 board")
+    argParser.add_argument('--module', action='store', default=0, choices=['1','2','3'], help="Module to test")
+    argParser.add_argument('--host', action='store', default='localhost', help="Hostname for control hub")
     args = argParser.parse_args()
 
 
@@ -148,7 +151,7 @@ if __name__ == '__main__':
 
     elif args.test_chip:
         # FIXME this is still hardcoded
-        kcu = get_kcu('192.168.0.10', control_hub=True, host='localhost', verbose=False)
+        kcu = get_kcu(args.kcu, control_hub=True, host=args.host, verbose=False)
         if (kcu == 0):
             # if not basic connection was established the get_kcu function returns 0
             # this would cause the RB init to fail.
@@ -166,7 +169,28 @@ if __name__ == '__main__':
             print("RB is not configured, exiting.")
             exit(0)
 
-        etroc = ETROC(rb=rb_0, i2c_adr=96, i2c_channel=1)
+        from tamalero.Module import Module
+
+        # FIXME the below code is still pretty stupid
+        modules = []
+        for i in [1,2,3]:
+            m_tmp = Module(rb=rb_0, i=i)
+            if m_tmp.ETROCs[0].connected:  # NOTE assume that module is connected if first ETROC is connected
+                modules.append(m_tmp)
+
+        print(f"Found {len(modules)} connected modules")
+        if int(args.module) > 0:
+            module = int(args.module)
+        else:
+            module = 1
+
+        print(f"Will proceed with testing Module {module}")
+        print("Module status:")
+        modules[module-1].show_status()
+
+        etroc = modules[module-1].ETROCs[0]
+
+        #etroc = ETROC(rb=rb_0, i2c_adr=96, i2c_channel=1, elinks={0:[0,2]})
 
         print("\n - Checking peripheral configuration:")
         etroc.print_perif_conf()
@@ -246,6 +270,12 @@ if __name__ == '__main__':
             print(yellow('Only elink 2 is locked.'))
         else:
             print(red('No elink is locked.'))
+
+        fifo.reset()
+        print("\n - Sending two L1As")
+        fifo.send_l1a(2)
+        for x in fifo.pretty_read(df):
+            print(x)
 
     elif args.vth:
         # ==============================
