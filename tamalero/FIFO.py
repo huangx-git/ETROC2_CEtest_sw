@@ -26,7 +26,8 @@ def merge_words(res):
         # if we ever add more meta data this has to be revisited
         offset = 1 if (res[1] > res[0]) else 0
         res = res[offset:]
-        empty_frame_mask = np.array(res[0::2]) > (2**8)  # masking empty fifo entries
+        #empty_frame_mask = np.array(res[0::2]) > (2**8)  # masking empty fifo entries
+        empty_frame_mask = np.array(res[0::2]) > 0  # masking empty fifo entries
         len_cut = min(len(res[0::2]), len(res[1::2]))  # ensuring equal length of arrays downstream
         return list (np.array(res[0::2])[:len_cut][empty_frame_mask[:len_cut]] | (np.array(res[1::2]) << 32)[:len_cut][empty_frame_mask[:len_cut]])
     else:
@@ -102,17 +103,25 @@ class FIFO:
             print("uhal UDP error in FIFO.read_block")
             raise
 
-    def read(self):
+    def read(self, dispatch=False, verbose=False):
         try:
-            occupancy = self.get_occupancy()
+            occupancy = self.get_occupancy()*4  # FIXME don't know where factor of 4 comes from??
+            if verbose: print(f"{occupancy=}")
             num_blocks_to_read = occupancy // self.block
+            if verbose: print(f"{num_blocks_to_read=}")
             last_block = occupancy % self.block
+            if verbose: print(f"{last_block=}")
             data = []
-            if (num_blocks_to_read):
-                reads = num_blocks_to_read * [self.read_block(self.block)] + [self.read_block(last_block)]
-                self.rb.kcu.hw.dispatch()
-                for read in reads:
-                    data += read.value()
+            if (num_blocks_to_read or last_block):
+                for b in range(num_blocks_to_read):
+                    data += self.read_block(block, dispatch=dispatch).value()
+                data += self.read_block(last_block, dispatch=dispatch).value()
+                # FIXME the part below should be faster but is somehow broken now
+                #reads = num_blocks_to_read * [self.read_block(self.block, dispatch=dispatch)] + [self.read_block(last_block, dispatch=dispatch)]
+                #if not dispatch:
+                #    self.rb.kcu.hw.dispatch()
+                #for read in reads:
+                #    data += read.value()
             return data
 
         except uhal_exception:
@@ -135,8 +144,8 @@ class FIFO:
     def get_l1a_rate(self):
         return self.rb.kcu.read_node(f"SYSTEM.L1A_RATE_CNT").value()
 
-    def pretty_read(self, df):
-        merged = merge_words(self.read())
+    def pretty_read(self, df, dispatch=True):
+        merged = merge_words(self.read(dispatch=dispatch))
         return list(map(df.read, merged))
 
     def stream(self, f_out, timeout=10):
