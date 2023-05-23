@@ -484,7 +484,7 @@ LPGBT:
             comment: VTRX DIS
 
 inversions:
-   clocks:
-   downlink:
-   uplink:
-   trigger:
+   clocks: []
+   downlink: []
+   uplink: []
+   trigger: []
