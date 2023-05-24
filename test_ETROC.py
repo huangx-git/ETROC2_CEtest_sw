@@ -107,6 +107,7 @@ if __name__ == '__main__':
     argParser.add_argument('--kcu', action='store', default='192.168.0.10', help="IP Address of KCU105 board")
     argParser.add_argument('--module', action='store', default=0, choices=['1','2','3'], help="Module to test")
     argParser.add_argument('--host', action='store', default='localhost', help="Hostname for control hub")
+    argParser.add_argument('--partial', action='store_true', default=False, help="Only read data from corners and edges")
     args = argParser.parse_args()
 
 
@@ -220,8 +221,13 @@ if __name__ == '__main__':
 
         ## pixel broadcast
         print("\n - Checking pixel broadcast.")
+        etroc.wr_reg('workMode', 0, broadcast=True)
         tmp = etroc.rd_reg('workMode', row=10, col=10)
         etroc.wr_reg('workMode', 1, broadcast=True)
+        test0 = True
+        for row in range(16):
+            for col in range(16):
+                test0 &= (etroc.rd_reg('workMode', row=row, col=col) == 1)
         tmp2 = etroc.rd_reg('workMode', row=10, col=10)
         tmp3 = etroc.rd_reg('workMode', row=3, col=12)
         etroc.wr_reg('workMode', 0, broadcast=True)
@@ -229,10 +235,10 @@ if __name__ == '__main__':
         test1 = (tmp != tmp2)
         test2 = (tmp2 == tmp3)
         test3 = (tmp == tmp4)
-        if test1 and test2 and test3:
+        if test0 and test1 and test2 and test3:
             print("Passed!")
         else:
-            print("Failed")
+            print(f"Failed: {test0=}, {test1=}, {test2=}, {test3=}")
 
 
         etroc.wr_reg('serRateLeft', 0)
@@ -245,21 +251,11 @@ if __name__ == '__main__':
         df = DataFrame()
         fifo = FIFO(rb=rb_0)
 
-        #etroc.wr_reg('onChipL1AConf', 1)  # turn on internal L1A generator
-        #etroc.wr_reg('workMode', 1, row=4, col=5)  # set to test pattern
-
-        # disable second elink
-        #rb_0.kcu.write_node("READOUT_BOARD_0.ETROC_DISABLE", 4)
-        # or
-        #etroc.wr_reg('singlePort', 1)
-        #fifo.disable_zero_surpress(only=2)
-
         ### this does in theory reset the ETROC, but not sure if it comes back up properly
         #rb_0.SCA.set_gpio_direction('mod_d07', 1)
         #rb_0.SCA.set_gpio('mod_d07', 0)
         #rb_0.SCA.set_gpio('mod_d07', 1)
 
-        #kcu.status()
         print("\n - Checking elinks")
         locked = kcu.read_node(f"READOUT_BOARD_0.ETROC_LOCKED").value()
         if (locked & 0b101) == 5:
@@ -271,11 +267,100 @@ if __name__ == '__main__':
         else:
             print(red('No elink is locked.'))
 
+        print("\n - Getting internal test data")
+
         fifo.reset()
-        print("\n - Sending two L1As")
+        etroc.wr_reg("selfTestOccupancy", 2, broadcast=True)
+        etroc.wr_reg("singlePort", 0x0)
+        if not args.partial:
+            etroc.wr_reg("workMode", 0x1, broadcast=True)
+        else:
+            etroc.wr_reg("workMode", 0x0, broadcast=True)
+            # center pixels
+            etroc.wr_reg("workMode", 0x1, row=7, col=7)
+            etroc.wr_reg("workMode", 0x1, row=7, col=8)
+            etroc.wr_reg("workMode", 0x1, row=8, col=7)
+            etroc.wr_reg("workMode", 0x1, row=8, col=8)
+            # corner pixels
+            etroc.wr_reg("workMode", 0x1, row=0, col=0)
+            etroc.wr_reg("workMode", 0x1, row=15, col=15)
+            etroc.wr_reg("workMode", 0x1, row=0, col=15)
+            etroc.wr_reg("workMode", 0x1, row=15, col=0)
+            # edge pixels
+            etroc.wr_reg("workMode", 0x1, row=7, col=0)
+            etroc.wr_reg("workMode", 0x1, row=8, col=0)
+            etroc.wr_reg("workMode", 0x1, row=0, col=7)
+            etroc.wr_reg("workMode", 0x1, row=0, col=8)
+            etroc.wr_reg("workMode", 0x1, row=7, col=15)
+            etroc.wr_reg("workMode", 0x1, row=8, col=15)
+            etroc.wr_reg("workMode", 0x1, row=15, col=7)
+            etroc.wr_reg("workMode", 0x1, row=15, col=8)
+
+        etroc.wr_reg("onChipL1AConf", 0x2)  # NOTE: internal L1A is around 1MHz, so we're only turning this on for the shortest amount of time.
+        etroc.wr_reg("onChipL1AConf", 0x0)
+        test_data = fifo.pretty_read(df)
+
+        import hist
+        import matplotlib.pyplot as plt
+        import mplhep as hep
+        plt.style.use(hep.style.CMS)
+
+        hits_total = np.zeros((16,16))
+        row_axis = hist.axis.Regular(16, -0.5, 15.5, name="row", label="row")
+        col_axis = hist.axis.Regular(16, -0.5, 15.5, name="col", label="col")
+        hit_matrix = hist.Hist(col_axis,row_axis)
+        n_events_total = 0
+        n_events_hit   = 0
+        n_events_err   = 0
+        for d in test_data:
+            if d[0] == 'trailer':
+                n_events_total += 1
+                if d[1]['hits'] > 0:
+                    n_events_hit += 1
+            if d[0] == 'data':
+                hit_matrix.fill(row=d[1]['row_id'], col=d[1]['col_id'])
+                hits_total[d[1]['row_id']][d[1]['col_id']] += 1
+                if d[1]['row_id'] != d[1]['row_id2']:
+                    print("Unpacking error in row ID")
+                    n_events_err += 1
+                if d[1]['col_id'] != d[1]['col_id2']:
+                    print("Unpacking error in col ID")
+                    n_events_err += 1
+                if d[1]['test_pattern'] != 0xaa:
+                    print(f"Unpacking error in test pattern, expected 0xAA but got {d[1]['test_pattern']=}")
+                    n_events_err += 1
+
+        print(f"Got number of total events {n_events_total=}")
+        print(f"Events with at least one hit {n_events_hit=}")
+        print(f"Events with some error in data unpacking {n_events_err=}")
+
+        plot_dir = './output/'
+        fig, ax = plt.subplots(1,1,figsize=(7,7))
+        hit_matrix.plot2d(
+            ax=ax,
+        )
+        ax.set_ylabel(r'$Row$')
+        ax.set_xlabel(r'$Column$')
+        hep.cms.label(
+                "ETL Preliminary",
+                data=True,
+                lumi='0',
+                com=0,
+                loc=0,
+                ax=ax,
+                fontsize=15,
+            )
+        name = 'hit_matrix'
+        fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
+        fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
+
+        fifo.reset()
+        print("\n - Testing fast command communication - Sending two L1As")
         fifo.send_l1a(2)
         for x in fifo.pretty_read(df):
             print(x)
+
+
 
     elif args.vth:
         # ==============================
