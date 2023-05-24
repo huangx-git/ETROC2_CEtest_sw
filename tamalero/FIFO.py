@@ -114,7 +114,7 @@ class FIFO:
             data = []
             if (num_blocks_to_read or last_block):
                 for b in range(num_blocks_to_read):
-                    data += self.read_block(block, dispatch=dispatch).value()
+                    data += self.read_block(self.block, dispatch=dispatch).value()
                 data += self.read_block(last_block, dispatch=dispatch).value()
                 # FIXME the part below should be faster but is somehow broken now
                 #reads = num_blocks_to_read * [self.read_block(self.block, dispatch=dispatch)] + [self.read_block(last_block, dispatch=dispatch)]
