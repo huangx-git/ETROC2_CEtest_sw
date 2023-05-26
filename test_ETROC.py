@@ -269,9 +269,11 @@ if __name__ == '__main__':
 
         print("\n - Getting internal test data")
 
-        fifo.reset()
+        #fifo.reset()
         etroc.wr_reg("selfTestOccupancy", 2, broadcast=True)
         etroc.wr_reg("singlePort", 0x0)
+        etroc.wr_reg("mergeTriggerData", 0x1)
+        #etroc.wr_reg("")
         if not args.partial:
             etroc.wr_reg("workMode", 0x1, broadcast=True)
         else:
@@ -298,7 +300,9 @@ if __name__ == '__main__':
 
         etroc.wr_reg("onChipL1AConf", 0x2)  # NOTE: internal L1A is around 1MHz, so we're only turning this on for the shortest amount of time.
         etroc.wr_reg("onChipL1AConf", 0x0)
-        test_data = fifo.pretty_read(df)
+        test_data = []
+        while fifo.get_occupancy() > 0:
+            test_data += fifo.pretty_read(df)
 
         import hist
         import matplotlib.pyplot as plt
