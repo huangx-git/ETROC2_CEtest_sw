@@ -104,6 +104,10 @@ if __name__ == '__main__':
     argParser.add_argument('--vth', action='store_true', default=False, help="Parse Vth scan plots?")
     argParser.add_argument('--rerun', action='store_true', default=False, help="Rerun Vth scan and overwrite data?")
     argParser.add_argument('--fitplots', action='store_true', default=False, help="Create individual vth fit plots for all pixels?")
+    argParser.add_argument('--kcu', action='store', default='192.168.0.10', help="IP Address of KCU105 board")
+    argParser.add_argument('--module', action='store', default=0, choices=['1','2','3'], help="Module to test")
+    argParser.add_argument('--host', action='store', default='localhost', help="Hostname for control hub")
+    argParser.add_argument('--partial', action='store_true', default=False, help="Only read data from corners and edges")
     args = argParser.parse_args()
 
 
@@ -148,7 +152,7 @@ if __name__ == '__main__':
 
     elif args.test_chip:
         # FIXME this is still hardcoded
-        kcu = get_kcu('192.168.0.10', control_hub=True, host='localhost', verbose=False)
+        kcu = get_kcu(args.kcu, control_hub=True, host=args.host, verbose=False)
         if (kcu == 0):
             # if not basic connection was established the get_kcu function returns 0
             # this would cause the RB init to fail.
@@ -166,7 +170,28 @@ if __name__ == '__main__':
             print("RB is not configured, exiting.")
             exit(0)
 
-        etroc = ETROC(rb=rb_0, i2c_adr=96, i2c_channel=1)
+        from tamalero.Module import Module
+
+        # FIXME the below code is still pretty stupid
+        modules = []
+        for i in [1,2,3]:
+            m_tmp = Module(rb=rb_0, i=i)
+            if m_tmp.ETROCs[0].connected:  # NOTE assume that module is connected if first ETROC is connected
+                modules.append(m_tmp)
+
+        print(f"Found {len(modules)} connected modules")
+        if int(args.module) > 0:
+            module = int(args.module)
+        else:
+            module = 1
+
+        print(f"Will proceed with testing Module {module}")
+        print("Module status:")
+        modules[module-1].show_status()
+
+        etroc = modules[module-1].ETROCs[0]
+
+        #etroc = ETROC(rb=rb_0, i2c_adr=96, i2c_channel=1, elinks={0:[0,2]})
 
         print("\n - Checking peripheral configuration:")
         etroc.print_perif_conf()
@@ -178,12 +203,167 @@ if __name__ == '__main__':
         res = etroc.pixel_sanity_check(verbose=False)
         if res:
             print("Passed!")
+        else:
+            print("Failed")
+
+        print("\n - Running pixel random check:")
+        res = etroc.pixel_random_check(verbose=False)
+        if res:
+            print("Passed!")
+        else:
+            print("Failed")
 
         print("\n - Checking configuration for pixel (4,5):")
         etroc.print_pixel_conf(row=4, col=5)
 
         print("\n - Checking status for pixel (4,5):")
         etroc.print_pixel_stat(row=4, col=5)
+
+        ## pixel broadcast
+        print("\n - Checking pixel broadcast.")
+        etroc.wr_reg('workMode', 0, broadcast=True)
+        tmp = etroc.rd_reg('workMode', row=10, col=10)
+        etroc.wr_reg('workMode', 1, broadcast=True)
+        test0 = True
+        for row in range(16):
+            for col in range(16):
+                test0 &= (etroc.rd_reg('workMode', row=row, col=col) == 1)
+        tmp2 = etroc.rd_reg('workMode', row=10, col=10)
+        tmp3 = etroc.rd_reg('workMode', row=3, col=12)
+        etroc.wr_reg('workMode', 0, broadcast=True)
+        tmp4 = etroc.rd_reg('workMode', row=10, col=10)
+        test1 = (tmp != tmp2)
+        test2 = (tmp2 == tmp3)
+        test3 = (tmp == tmp4)
+        if test0 and test1 and test2 and test3:
+            print("Passed!")
+        else:
+            print(f"Failed: {test0=}, {test1=}, {test2=}, {test3=}")
+
+
+        etroc.wr_reg('serRateLeft', 0)
+        etroc.wr_reg('serRateRight', 0)
+
+
+        # NOTE below is WIP code for tests of the actual data readout
+        from tamalero.FIFO import FIFO
+        from tamalero.DataFrame import DataFrame
+        df = DataFrame()
+        fifo = FIFO(rb=rb_0)
+
+        ### this does in theory reset the ETROC, but not sure if it comes back up properly
+        #rb_0.SCA.set_gpio_direction('mod_d07', 1)
+        #rb_0.SCA.set_gpio('mod_d07', 0)
+        #rb_0.SCA.set_gpio('mod_d07', 1)
+
+        print("\n - Checking elinks")
+        locked = kcu.read_node(f"READOUT_BOARD_0.ETROC_LOCKED").value()
+        if (locked & 0b101) == 5:
+            print(green('Both elinks (0 and 2) are locked.'))
+        elif (locked & 1) == 1:
+            print(yellow('Only elink 0 is locked.'))
+        elif (locked & 4) == 4:
+            print(yellow('Only elink 2 is locked.'))
+        else:
+            print(red('No elink is locked.'))
+
+        print("\n - Getting internal test data")
+
+        #fifo.reset()
+        etroc.wr_reg("selfTestOccupancy", 2, broadcast=True)
+        etroc.wr_reg("singlePort", 0x0)
+        etroc.wr_reg("mergeTriggerData", 0x1)
+        #etroc.wr_reg("")
+        if not args.partial:
+            etroc.wr_reg("workMode", 0x1, broadcast=True)
+        else:
+            etroc.wr_reg("workMode", 0x0, broadcast=True)
+            # center pixels
+            etroc.wr_reg("workMode", 0x1, row=7, col=7)
+            etroc.wr_reg("workMode", 0x1, row=7, col=8)
+            etroc.wr_reg("workMode", 0x1, row=8, col=7)
+            etroc.wr_reg("workMode", 0x1, row=8, col=8)
+            # corner pixels
+            etroc.wr_reg("workMode", 0x1, row=0, col=0)
+            etroc.wr_reg("workMode", 0x1, row=15, col=15)
+            etroc.wr_reg("workMode", 0x1, row=0, col=15)
+            etroc.wr_reg("workMode", 0x1, row=15, col=0)
+            # edge pixels
+            etroc.wr_reg("workMode", 0x1, row=7, col=0)
+            etroc.wr_reg("workMode", 0x1, row=8, col=0)
+            etroc.wr_reg("workMode", 0x1, row=0, col=7)
+            etroc.wr_reg("workMode", 0x1, row=0, col=8)
+            etroc.wr_reg("workMode", 0x1, row=7, col=15)
+            etroc.wr_reg("workMode", 0x1, row=8, col=15)
+            etroc.wr_reg("workMode", 0x1, row=15, col=7)
+            etroc.wr_reg("workMode", 0x1, row=15, col=8)
+
+        etroc.wr_reg("onChipL1AConf", 0x2)  # NOTE: internal L1A is around 1MHz, so we're only turning this on for the shortest amount of time.
+        etroc.wr_reg("onChipL1AConf", 0x0)
+        test_data = []
+        while fifo.get_occupancy() > 0:
+            test_data += fifo.pretty_read(df)
+
+        import hist
+        import matplotlib.pyplot as plt
+        import mplhep as hep
+        plt.style.use(hep.style.CMS)
+
+        hits_total = np.zeros((16,16))
+        row_axis = hist.axis.Regular(16, -0.5, 15.5, name="row", label="row")
+        col_axis = hist.axis.Regular(16, -0.5, 15.5, name="col", label="col")
+        hit_matrix = hist.Hist(col_axis,row_axis)
+        n_events_total = 0
+        n_events_hit   = 0
+        n_events_err   = 0
+        for d in test_data:
+            if d[0] == 'trailer':
+                n_events_total += 1
+                if d[1]['hits'] > 0:
+                    n_events_hit += 1
+            if d[0] == 'data':
+                hit_matrix.fill(row=d[1]['row_id'], col=d[1]['col_id'])
+                hits_total[d[1]['row_id']][d[1]['col_id']] += 1
+                if d[1]['row_id'] != d[1]['row_id2']:
+                    print("Unpacking error in row ID")
+                    n_events_err += 1
+                if d[1]['col_id'] != d[1]['col_id2']:
+                    print("Unpacking error in col ID")
+                    n_events_err += 1
+                if d[1]['test_pattern'] != 0xaa:
+                    print(f"Unpacking error in test pattern, expected 0xAA but got {d[1]['test_pattern']=}")
+                    n_events_err += 1
+
+        print(f"Got number of total events {n_events_total=}")
+        print(f"Events with at least one hit {n_events_hit=}")
+        print(f"Events with some error in data unpacking {n_events_err=}")
+
+        plot_dir = './output/'
+        fig, ax = plt.subplots(1,1,figsize=(7,7))
+        hit_matrix.plot2d(
+            ax=ax,
+        )
+        ax.set_ylabel(r'$Row$')
+        ax.set_xlabel(r'$Column$')
+        hep.cms.label(
+                "ETL Preliminary",
+                data=True,
+                lumi='0',
+                com=0,
+                loc=0,
+                ax=ax,
+                fontsize=15,
+            )
+        name = 'hit_matrix'
+        fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
+        fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
+
+        fifo.reset()
+        print("\n - Testing fast command communication - Sending two L1As")
+        fifo.send_l1a(2)
+        for x in fifo.pretty_read(df):
+            print(x)
+
 
 
     elif args.vth:

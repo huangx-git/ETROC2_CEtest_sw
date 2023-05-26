@@ -80,7 +80,7 @@ ETROC2:
   types:
     0: [ea, col_id, row_id, toa, cal, tot]
     1: [ea, col_id, row_id, col_id2, row_id2, bcid, counter_a, elink, full, any_full, global_full]
-    2: [ea, col_id, row_id, col_id2, row_id2, counter_b]
+    2: [ea, col_id, row_id, col_id2, row_id2, counter_b, test_pattern]
   data:
     header: # Define the different masks here?
       elink:
@@ -150,6 +150,12 @@ ETROC2:
         shift: 9
       counter_a:
         mask: 0x00000001FF
+        shift: 0
+      counter_b:
+        mask: 0x1FFE00
+        shift: 9
+      test_pattern:
+        mask: 0xff  # should be 9 bits according to manual, but bit 9 is (almost) always 1
         shift: 0
       # generic portion of the data
       data:

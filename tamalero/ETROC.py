@@ -5,6 +5,7 @@ For ETROC control
 from tamalero.utils import load_yaml, ffs, bit_count
 from tamalero.colors import red, green, yellow
 import os
+from random import randrange
 
 here = os.path.dirname(os.path.abspath(__file__))
 
@@ -16,18 +17,18 @@ class ETROC():
             master='lpgbt',
             i2c_adr=0x72,
             i2c_channel=0,
-            elink=0,
+            elinks={0:[0]},
             verbose=False,
             strict=True,
     ):
         self.isfake = False
-        self.I2C_master = rb.DAQ_LPGBT if master == 'lpgbt' else rb.SCA
+        self.I2C_master = rb.DAQ_LPGBT if master.lower() == 'lpgbt' else rb.SCA
         self.master = master
         self.rb = rb
         # check if connected
         self.i2c_channel = i2c_channel
         self.i2c_adr = i2c_adr
-        self.elink = elink
+        self.elinks = elinks
         self.is_connected()
         if self.connected:
             self.ver = self.get_ver()
@@ -50,6 +51,7 @@ class ETROC():
         self.DAC_min  = 600  # in mV
         self.DAC_max  = 1000  # in mV
         self.DAC_step = 400/2**10
+        self.invalid_FC_counter = 0
 
 
     # =========================
@@ -78,13 +80,17 @@ class ETROC():
 
     def get_adr(self, reg, row=0, col=0, broadcast=False):
         tmp = []
-        for address in self.regs[reg]['address']:
-            tmp.append(address | \
-               row << 5 | \
-               col << 9 | \
-               broadcast << 13 | \
-               self.regs[reg]['stat'] << 14 | \
-               self.regs[reg]['pixel'] << 15 )
+        if self.regs[reg]['stat'] == 1 and self.regs[reg]['pixel'] == 0:
+            for address in self.regs[reg]['address']:
+                tmp.append(address | 0x100)
+        else:
+            for address in self.regs[reg]['address']:
+                tmp.append(address | \
+                row << 5 | \
+                col << 9 | \
+                broadcast << 13 | \
+                self.regs[reg]['stat'] << 14 | \
+                self.regs[reg]['pixel'] << 15 )
         return tmp
 
     def wr_adr(self, adr, val):
@@ -160,6 +166,16 @@ class ETROC():
     def print_reg_doc(self, reg):
         print(self.regs[reg]['doc'])
 
+    def reset_perif(self):
+        for reg in self.regs:
+            if self.regs[reg]['stat'] == 0 and self.regs[reg]['pixel'] == 0:
+                self.wr_reg(reg, self.regs[reg]['default'])
+
+    def reset_pixel(self):
+        for reg in self.regs:
+            if self.regs[reg]['stat'] == 0 and self.regs[reg]['pixel'] == 1:
+                self.wr_reg(reg, self.regs[reg]['default'], broadcast=True)
+
     def print_perif_stat(self):
         for reg in self.regs:
             if self.regs[reg]['stat'] == 1 and self.regs[reg]['pixel'] == 0:
@@ -188,10 +204,11 @@ class ETROC():
                 colored = green if ret == exp else red
                 print(colored(f"Pixel ({row=}, {col=}) config {reg=}: {ret=}, {exp=}"))
 
-    def pixel_sanity_check(self, verbose=False):
+    def pixel_sanity_check(self, full=True, verbose=False):
         all_pass = True
-        for row in range(16):
-            for col in range(16):
+        nmax = 16 if full else 4  # option to make this check a bit faster
+        for row in range(nmax):
+            for col in range(nmax):
                 ret = self.rd_reg('PixelID', row=row, col=col)
                 exp = ((col << 4) | row)
                 comp = ret == exp
@@ -201,6 +218,23 @@ class ETROC():
                     else:
                         print(red(f"Sanity check failed for {row=}, {col=}, expected {exp} from PixelID register but got {ret}"))
                 all_pass &= comp
+        return all_pass
+
+    def pixel_random_check(self, ntest=20, verbose=False):
+        all_pass = True
+        for i in range(ntest):
+            row = randrange(16)
+            col = randrange(16)
+            val = randrange(256)
+            self.wr_reg('PixelSanityConfig', val, row=row, col=col)
+            ret = self.rd_reg('PixelSanityStat', row=row, col=col)
+            comp = val == ret
+            if verbose:
+                if comp:
+                    print(green(f"Sanity check passed for {row=}, {col=}"))
+                else:
+                    print(red(f"Sanity check failed for {row=}, {col=}, expected {val} from PixelSanityStat register but got {ret}"))
+            all_pass &= comp
         return all_pass
 
     # ============================
@@ -213,14 +247,22 @@ class ETROC():
 
     def get_elink_status(self):
         if self.isfake:
-            self.trig_locked = True
-            self.daq_locked = True
+            for i in self.elinks:
+                self.links_locked = {i: [True for x in self.elinks[i]]}
+            #self.trig_locked = True
+            #self.daq_locked = True
         else:
+            # NOTE this is still old schema of DAQ and TRIG
             locked = self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.ETROC_LOCKED").value()
             locked_slave = self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.ETROC_LOCKED_SLAVE").value()
-            self.trig_locked = ((locked_slave >> self.elink) & 1) == True
-            self.daq_locked = ((locked >> self.elink) & 1) == True
-        return self.daq_locked, self.trig_locked
+            self.links_locked = {0: [((locked >> x) & 1)==1 for x in self.elinks[0]]}
+            if 1 in self.elinks:
+                # if any of the elinks run through the second lpGBT
+                self.links_locked.update({1: [((locked_slave >> x) & 1)==1 for x in self.elinks[1]]})
+
+            #self.trig_locked = ((locked_slave >> self.elink) & 1) == True
+            #self.daq_locked = ((locked >> self.elink) & 1) == True
+        return self.links_locked
 
     def get_ver(self):
         try:
@@ -232,12 +274,14 @@ class ETROC():
     def consistency(self, verbose=False):
         if self.isfake:
             return True
-        daq, trig = self.get_elink_status()
-        if daq:
+        locked = self.get_elink_status()
+        if locked:
+            if verbose: print("Lock status before:", locked)
             self.wr_reg('disScrambler', 0x0)
-            daq1, trig1 = self.get_elink_status()
+            locked1 = self.get_elink_status()
+            if verbose: print("Lock status after:", locked1)
             self.wr_reg('disScrambler', 0x1)
-            assert daq != daq1, "Links and I2C configuration are inconsistent, please check"
+            assert locked != locked1, "Links and I2C configuration are inconsistent, please check"
             self.get_elink_status()
         else:
             if verbose:
@@ -264,8 +308,8 @@ class ETROC():
         print("┃{:^31s}┃".format("version: "+self.ver))
         print("┃" + 31*" " + "┃")
         print("┃{:^31s}┃".format(f"Link: {self.elink}"))
-        print ('┃' + (green('{:^31s}'.format('DAQ')) if self.daq_locked else red('{:^31s}'.format('DAQ'))) + '┃' )
-        print ('┃' + (green('{:^31s}'.format('Trigger')) if self.trig_locked else red('{:^31s}'.format('Trigger'))) + '┃' )
+        print ('┃' + (green('{:^31s}'.format('lpGBT 1')) if self.links_locked else red('{:^31s}'.format('DAQ'))) + '┃' )
+        print ('┃' + (green('{:^31s}'.format('lpGBT 2')) if self.trig_locked else red('{:^31s}'.format('Trigger'))) + '┃' )
 
         print("┗" + 31*"━" + "┛")
     # =========================
@@ -273,10 +317,17 @@ class ETROC():
     # =========================
 
     def default_config(self):
+        # FIXME should use higher level functions for better readability
         if self.connected:
             self.set_singlePort('both')
             self.set_mergeTriggerData('separate')
             self.disable_Scrambler()
+            # set ETROC in 320Mbps mode
+            self.wr_reg('serRateLeft', 0)
+            self.wr_reg('serRateRight', 0)
+
+            # get the current number of invalid fast commands received
+            self.invalid_FC_counter = self.get_invalidFCCount()
 
     # =======================
     # === HIGH-LEVEL FUNC ===
@@ -310,6 +361,18 @@ class ETROC():
             return qinj
         else:
             return self.get_Qinj(row=row, col=col)
+
+    def auto_threshold_scan(self):
+        # FIXME not yet fully working
+        self.apply_THCal()
+        self.enable_THCal_buffer()
+        self.wr_reg('TH_offset', 2, broadcast=True)
+        self.reset_THCal()
+        self.init_THCal()
+        self.wr_reg('RSTn_THCal', 1, broadcast=True)
+        self.init_THCal()
+        return self.rd_reg('TH', row=2, col=2)
+
 
     # ***********************
     # *** IN-PIXEL CONFIG ***
@@ -1334,6 +1397,11 @@ class ETROC():
     # Count of invalid fast command received
     def get_invalidFCCount(self):
         return self.rd_reg('invalidFCCount')
+
+    def FC_status(self):
+        status = self.get_invalidFCCount() == self.invalid_FC_counter
+        self.invalid_FC_counter = self.get_invalidFCCount()
+        return status
 
     # Count of PLL unlock detected
     def get_PLLUnlockCount(self):

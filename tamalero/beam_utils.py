@@ -24,6 +24,7 @@ def generate_table(rows):
     table.add_column("RB RT1 Temp [°C]", justify="right", vertical="middle")
     table.add_column("RB RT2 Temp [°C]", justify="right", vertical="middle")
     table.add_column("RB SCA Temp [°C]", justify="right", vertical="middle")
+    table.add_column("RB VTRX Temp [°C]", justify="right", vertical="middle")
     table.add_column("FIFO Lost", justify="right", vertical="middle")
     table.add_column("Packet Rate [kHz]", justify="right", vertical="middle")
 
@@ -42,6 +43,7 @@ def generate_table(rows):
         table.add_column("RB RT1 Temp [°C]", justify="right", vertical="middle")
         table.add_column("RB RT2 Temp [°C]", justify="right", vertical="middle")
         table.add_column("RB SCA Temp [°C]", justify="right", vertical="middle")
+        table.add_column("RB VTRX Temp [°C]", justify="right", vertical="middle")
         table.add_column("FIFO Lost", justify="right", vertical="middle")
         table.add_column("Packet Rate [kHz]", justify="right", vertical="middle")
 
@@ -74,7 +76,7 @@ def generate_header() -> Panel:
     grid.add_column(justify="center", ratio=1)
     for i, line in enumerate(tamalero_header):
         grid.add_row(tamalero_header[i])
-    
+
     grid.add_row("[underline italic]Fermilab Test Beam Simulation")
 
     return Panel(grid, style="magenta")
@@ -84,7 +86,7 @@ def generate_static(l1as, l1a_rate, nmin) -> Panel:
     grid = Table.grid(expand=True)
     grid.add_column(justify="left", ratio=1)
     grid.add_column(justify="left", ratio=2)
-    
+
     grid.add_row("[bold]Current Directory:", Text(os.getcwd(), overflow="fold"))
     grid.add_row("[bold]Input Parameters:", f"l1a_rate = {l1a_rate} kHz  ;  nmin = {nmin}")
 
@@ -133,7 +135,7 @@ def read_etroc(beam, time_stamp, full=False):
     Reads ETROC registers and dumps them to a yaml file. Currently only implemented for peripheral registers (full=False)
     """
     etrocs = {"ETROC2":{}}
-    if full:    
+    if full:
         for register in beam.module.regs:
             etrocs["ETROC2"][register] = {}
             try:
