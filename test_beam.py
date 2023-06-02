@@ -15,11 +15,12 @@ if __name__ == '__main__':
     argParser.add_argument('--time', action='store', default=1, type=int, help='Time in minutes that the beam will run')
     argParser.add_argument('--verbosity', action='store_true', default=False)
     argParser.add_argument('--dashboard', action='store_true', default=True, help='Monitoring dashboard on?')
+    argParser.add_argument('--configuration', action='store', default='default', choices=['default', 'emulator', 'modulev0'], help="Specify a configuration of the RB, e.g. emulator or modulev0")
 
     args = argParser.parse_args()
 
     kcu  = get_kcu(args.kcu, control_hub=True, host=args.host)
-    rb   = ReadoutBoard(kcu=kcu)
+    rb   = ReadoutBoard(kcu=kcu, config=args.configuration)
     beam = Beam(rb)
 
     print(f"----------------------------------")
