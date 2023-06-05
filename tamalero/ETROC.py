@@ -342,7 +342,7 @@ class ETROC():
         """
         self.set_ChargeInjReset(reset=reset)                           # Reset charge injection module
         self.enable_QInj(row=row, col=col, broadcast=broadcast)        # Enable charge injection
-        self.set_Qinj(charge, row=row, col=col, broadcast=broadcast)   # Set charge
+        self.set_QInj(charge, row=row, col=col, broadcast=broadcast)   # Set charge
         self.set_chargeInjDelay(delay)                                 # Set time delay
 
     def QInj_unset(self, row=0, col=0, broadcast=True):
@@ -439,19 +439,19 @@ class ETROC():
 
     # (FOR ALL PIXELS) set/get injected charge
     # 1 ~ 32 fC, typical charge is 7fC
-    def set_Qinj(self, C, row=0, col=0, broadcast=True):
+    def set_QInj(self, C, row=0, col=0, broadcast=True):
         if C > 32:
             raise Exception('Injected charge should be < 32 fC.')
         self.wr_reg('QSel', C-1, row=row, col=col, broadcast=broadcast)
 
-    def get_Qinj(self, row=0, col=0):
+    def get_QInj(self, row=0, col=0):
         return self.rd_reg('QSel', row=row, col=col)
 
     # (FOR ALL PIXELS) enable/disable charge injection
-    def enable_Qinj(self, row=0, col=0, broadcast=True):
+    def enable_QInj(self, row=0, col=0, broadcast=True):
         self.wr_reg('QInjEn', 1, row=row, col=col, broadcast=broadcast)
 
-    def disable_Qinj(self, row=0, col=0, broadcast=True):
+    def disable_QInj(self, row=0, col=0, broadcast=True):
         self.wr_reg('QInjEn', 0, row=row, col=col, broadcast=broadcast)
 
     # (FOR ALL PIXELS) TDC control
