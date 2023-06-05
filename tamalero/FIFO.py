@@ -81,6 +81,11 @@ class FIFO:
         for i in range(count):
             self.rb.kcu.write_node("SYSTEM.L1A_PULSE", 1)
 
+    def send_QInj(self, count=1):
+        for i in range(count):
+            self.rb.kcu.write_node("READOUT_BOARD_%s.QINJ_PULSE" % self.rb.rb, 0x01)
+            self.rb.kcu.write_node("SYSTEM.L1A_PULSE", 1)
+
     def reset(self):
         self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_RESET" % self.rb.rb, 0x01)
 
