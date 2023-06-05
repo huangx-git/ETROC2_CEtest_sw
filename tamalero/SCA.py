@@ -411,13 +411,16 @@ class SCA:
             print("CRC wr=%02X, rd=%02X" % (crc, crc_rd))
             print("CRD wr=%02X, rd=%02X" % (crd, crd_rd))
 
-    def enable_adc_curr(self, pin):
+    def read_adc_curr(self, pin):
         # just do one at a time, does not need to run constantly
         self.enable_adc() #enable ADC
         tmp = 1 << pin
+        self.rw_reg(SCA_ADC.ADC_W_MUX, pin) #configure register we want to read
         self.rw_reg(SCA_ADC.ADC_W_CURR, tmp)
-        val = self.rw_reg(SCA_ADC.ADC_R_CURR).value()
-        return val == tmp
+        #val = self.rw_reg(SCA_ADC.ADC_R_CURR).value()
+        val = self.rw_reg(SCA_ADC.ADC_GO, 0x01).value() #execute and read ADC_GO command
+        self.rw_reg(SCA_ADC.ADC_W_MUX, 0x0) #reset register to default (0)
+        return val
 
     def disable_adc_curr(self):
         # disable current source for ALL channels
