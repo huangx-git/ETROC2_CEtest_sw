@@ -16,7 +16,7 @@ import uhal
 from emoji import emojize
 from flask import Flask
 
-def create_app(rb):
+def create_app(rb, modules=[]):
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
@@ -24,9 +24,16 @@ def create_app(rb):
         DATABASE=os.path.join(app.instance_path, 'flaskr.sqlite'),
     )
 
-    @app.route('/temperatures')
+    @app.route('/rb_temp')
     def temperatures():
         return rb.read_temp()
+
+    @app.route('/module_links')
+    def get_ink_status():
+        link_status = {}
+        for i, m in enumerate(modules):
+            link_status[i] = m.get_locked_links()
+        return link_status
 
     return app
 
@@ -178,9 +185,9 @@ if __name__ == '__main__':
     # Module Status
     #-------------------------------------------------------------------------------
 
+    modules = []
     if args.configuration == 'emulator':
         print("Configuring ETROCs")
-        modules = []
         for i in range(res['n_module']):
             modules.append(Module(rb_0, i+1))
 
@@ -200,7 +207,7 @@ if __name__ == '__main__':
                     monitoring_threads.append(module_mon(modules[i]))
 
     if args.server:
-        app = create_app(rb_0)
+        app = create_app(rb_0, modules=modules)
         app.run()
 
     #-------------------------------------------------------------------------------
