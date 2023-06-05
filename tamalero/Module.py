@@ -7,35 +7,37 @@ from tamalero.Monitoring import Lock
 from time import sleep
 
 class Module:
-    def __init__(self, rb, i=1):
+    def __init__(self, rb, i=1, strict=False):
         # don't like that this also needs a RB
         # think about a better solution
-        map_file = os.path.expandvars(f'$TAMALERO_BASE/configs/module_mapping_v{rb.ver}.yaml')
-        self.config = load_yaml(map_file)[f'm{i}']
+        self.config = rb.configuration['modules'][i]
+        #self.config = load_yaml(map_file)[f'm{i}']
         #self.regs = load_yaml(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC2.yaml'))
         #self.regs_em = ['disScrambler', 'singlePort', 'mergeTriggerData', 'triggerGranularity']
         self.i = i
         self.rb = rb
 
         self.ETROCs = []
-        for j in range(len(self.config['elinks'])):
+        for j in range(len(self.config['addresses'])):
             if self.config['i2c']['master']=='fake':
                 self.ETROCs.append(
                     ETROC(
-                        usefake=True,
+                        #usefake=,
                         master=self.config['i2c']['master'],
                         i2c_channel=self.config['i2c']['channel'],
-                        elink=self.config['elinks'][j],
+                        elinks={k: self.config['elinks'][j][k] for k in range(len(self.config['elinks'][j]))},
                         i2c_adr = self.config['addresses'][j],
                     ))
             else:
                 self.ETROCs.append(
                     ETROC(
-                        rb=rb,
-                        master=self.config['i2c']['master'],
-                        i2c_channel=self.config['i2c']['channel'],
-                        elink=self.config['elinks'][j],
-                        i2c_adr = self.config['addresses'][j],
+                        rb          = rb,
+                        master      = self.config['i2c']['master'],
+                        i2c_channel = self.config['i2c']['channel'],
+                        elinks={k: self.config['elinks'][j][k] for k in range(len(self.config['elinks'][j]))},
+                        #elinks      = self.config['elinks'][j],
+                        i2c_adr     = self.config['addresses'][j],
+                        strict      = strict,
                     ))
 
     #def configure(self):
@@ -76,14 +78,32 @@ class Module:
 
     #    return (self.I2C_read(adr)&mask) >> shift
 
+    def get_locked_links(self):
+        self.locked = {0:[], 1:[]}
+        self.unlocked = {0:[], 1:[]}
+        for etroc in self.ETROCs:
+            for i in [0,1]:
+                if i in etroc.links_locked:
+                    for j, link in enumerate(etroc.elinks[i]):
+                        if etroc.links_locked[i][j]:
+                            self.locked[i].append(link)
+                        else:
+                            self.unlocked[i].append(link)
+        return self.locked, self.unlocked
+
+    
     def show_status(self):
-        len_corrector = len(''.join([str(x) for x in self.config['elinks']]))
+        self.get_locked_links()
+        len_corrector_0 = len(' '.join([str(x) for x in self.locked[0] + self.unlocked[0]]))
+        len_corrector_1 = len(' '.join([str(x) for x in self.locked[1] + self.unlocked[1]]))
+        if len_corrector_0 == 0: len_corrector_0 = -1
+        if len_corrector_1 == 0: len_corrector_1 = -1
 
         print ('┏━┳━' + 25*'━' + '━┳━┓')
         print ('┃○┃ ' + 25*' ' + ' ┃○┃')
         print ('┃ ┃ ' + '{:10}{:<15}'.format("Module:", self.i) + ' ┃ ┃' )
-        ver = self.ETROCs[0].ver
-        print ('┃ ┃ ' + '{:16}{:9}'.format("Emulator FW ver.",ver) + ' ┃ ┃' )
+        ver = self.ETROCs[0].get_ver()
+        print ('┃ ┃ ' + '{:16}{:9}'.format("Firmware ver.",ver) + ' ┃ ┃' )
         #print ('┃ ┃ ' + 25*' ' + ' ┃ ┃')
         col = green if self.ETROCs[0].connected else red
         prefix = '' if self.ETROCs[0].connected else "Not "
@@ -91,13 +111,13 @@ class Module:
         print ('┃ ┃ ' + col(' {:12}{:12}'.format('i2c master:', self.ETROCs[0].master)) + ' ┃ ┃')
         print ('┃ ┃ ' + col(' {:12}{:<12}'.format('channel:', self.ETROCs[0].i2c_channel )) + ' ┃ ┃')
 
-        print ('┃ ┃ ' + '{:25}'.format("DAQ links:") + ' ┃ ┃' )
-        stats = [ green(str(etroc.elink)) if etroc.daq_locked else red(str(etroc.elink)) for etroc in self.ETROCs ]
-        print ('┃ ┃ ' + ' {} {} {} {}'.format(*stats) + (25-len_corrector - 4)*' ' + ' ┃ ┃' )
+        print ('┃ ┃ ' + '{:25}'.format("lpGBT 1 links:") + ' ┃ ┃' )
+        stats = [ green(str(l)) for l in self.locked[0] ] + [red(str(l)) for l in self.unlocked[0]]
+        print ('┃ ┃ ' + (' {}'*len(self.locked[0]+self.unlocked[0])).format(*stats) + (24-len_corrector_0)*' ' + ' ┃ ┃' )
 
-        print ('┃ ┃ ' + '{:25}'.format("Trigger links:") + ' ┃ ┃' )
-        stats = [ green(str(etroc.elink)) if etroc.trig_locked else red(str(etroc.elink)) for etroc in self.ETROCs ]
-        print ('┃ ┃ ' + ' {} {} {} {}'.format(*stats) + (25-len_corrector - 4)*' ' + ' ┃ ┃' )
+        print ('┃ ┃ ' + '{:25}'.format("lpGBT 2 links:") + ' ┃ ┃' )
+        stats = [ green(str(l)) for l in self.locked[1] ] + [red(str(l)) for l in self.unlocked[1]]
+        print ('┃ ┃ ' + (' {}'*len(self.locked[1]+self.unlocked[1])).format(*stats) + (24-len_corrector_1)*' ' + ' ┃ ┃' )
 
 
         print ('┃○┃ ' + 25*' ' + ' ┃○┃')
@@ -112,15 +132,15 @@ class Module:
                 if etroc.daq_locked:
                     status += 1
 
-            self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], to=0)
+            self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], 0)
             sleep(0.25)
             for i in range(status):
-                self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], to=1)
+                self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], 1)
                 sleep(0.25)
-                self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], to=0)
+                self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], 0)
                 sleep(0.25)
 
             if status > 0:
-                self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], to=1)
+                self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], 1)
             else:
-                self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], to=0)
+                self.rb.SCA.set_gpio(self.rb.SCA.gpio_mapping[self.config['status']]['pin'], 0)

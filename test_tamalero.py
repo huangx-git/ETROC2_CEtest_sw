@@ -13,6 +13,7 @@ import random
 import sys
 import os
 import uhal
+from emoji import emojize
 
 if __name__ == '__main__':
 
@@ -38,7 +39,10 @@ if __name__ == '__main__':
     argParser.add_argument('--recal_lpgbt', action='store_true', default=False, help="Recalibrate ADC in LPGBT? (instead of using saved values)")
     argParser.add_argument('--control_hub', action='store_true', default=False, help="Use control hub for communication?")
     argParser.add_argument('--host', action='store', default='localhost', help="Specify host for control hub")
+    argParser.add_argument('--configuration', action='store', default='default', choices=['default', 'emulator', 'modulev0'], help="Specify a configuration of the RB, e.g. emulator or modulev0")
     argParser.add_argument('--devel', action='store_true', default=False, help="Don't check repo status (not recommended)")
+    argParser.add_argument('--monitor', action='store_true', default=False, help="Start up montoring threads in the background")
+    argParser.add_argument('--strict', action='store_true', default=False, help="Enforce strict limits on ADC reads for SCA and LPGBT")
     args = argParser.parse_args()
 
 
@@ -55,37 +59,27 @@ if __name__ == '__main__':
     rb_0 = None
 
     # write to the loopback node of the KCU105 to check ethernet communication
-    trycnt = 0
-    while (True):
-        try:
-            kcu = get_kcu(args.kcu, control_hub=args.control_hub, host=args.host, verbose=args.verbose)
-            if (kcu == 0):
-                # if not basic connection was established the get_kcu function returns 0
-                # this would cause the RB init to fail.
-                sys.exit(0)
-            rb_0 = ReadoutBoard(0, trigger=(not args.force_no_trigger), kcu=kcu)
-            #rb_0.DAQ_LPGBT.configure()  # NOTE this can be removed
-            data = 0xabcd1234
-            kcu.write_node("LOOPBACK.LOOPBACK", data)
-            if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
-                print("No communications with KCU105... quitting")
-                sys.exit(0)
-            break
-        except uhal._core.exception:
-            print("uhal UDP error... trying again ")
-            trycnt += 1
-            time.sleep(1)
-            if (trycnt > 10):
-                sys.exit(0)
+    kcu = get_kcu(args.kcu, control_hub=args.control_hub, host=args.host, verbose=args.verbose)
+    if (kcu == 0):
+        # if not basic connection was established the get_kcu function returns 0
+        # this would cause the RB init to fail.
+        sys.exit(1)
+
+
+    rb_0 = ReadoutBoard(0, trigger=(not args.force_no_trigger), kcu=kcu, config=args.configuration)
+    data = 0xabcd1234
+    kcu.write_node("LOOPBACK.LOOPBACK", data)
+    if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
+        print("No communications with KCU105... quitting")
+        sys.exit(1)
 
     is_configured = rb_0.DAQ_LPGBT.is_configured()
     header(configured=is_configured)
 
     if args.recal_lpgbt:
         rb_0.DAQ_LPGBT.calibrate_adc(recalibrate=True)
-
-    if (verbose):
-        kcu.status()
+        if rb_0.trigger:
+            rb_0.TRIG_LPGBT.calibrate_adc(recalibrate=True)
 
     if not args.devel:
         check_repo_status(kcu_version=kcu.get_firmware_version(verbose=True))
@@ -98,7 +92,7 @@ if __name__ == '__main__':
 
         print("Power up init sequence for: DAQ")
 
-        rb_0.DAQ_LPGBT.power_up_init()
+        #rb_0.DAQ_LPGBT.power_up_init()
 
         rb_0.VTRX.get_version()
         if (verbose):
@@ -150,23 +144,25 @@ if __name__ == '__main__':
         if verbose:
             rb_0.status()
 
+    if (verbose):
+        kcu.status()
+
     rb_0.VTRX.get_version()
     if (verbose):
         _ = rb_0.VTRX.status()
 
-    rb_0.DAQ_LPGBT.set_dac(1.0)  # set the DAC / Vref to 1.0V.
 
     if args.power_up or args.reconfigure:
         print("Link inversions")
         rb_0.DAQ_LPGBT.invert_links()
-        if rb_0.trigger: 
+        if rb_0.trigger:
             rb_0.TRIG_LPGBT.invert_links(trigger=rb_0.trigger)
 
     #-------------------------------------------------------------------------------
     # Module Status
     #-------------------------------------------------------------------------------
 
-    if args.verbose:
+    if args.configuration == 'emulator':
         print("Configuring ETROCs")
         modules = []
         for i in range(res['n_module']):
@@ -179,12 +175,13 @@ if __name__ == '__main__':
             m.show_status()
 
         # Monitoring threads
-        from tamalero.Monitoring import Monitoring, module_mon
-        #mon1 = module_mon(modules[0])
-        monitoring_threads = []
-        for i in range(res['n_module']):
-            if modules[i].ETROCs[0].connected:
-                monitoring_threads.append(module_mon(modules[i]))
+        if args.monitor:
+            from tamalero.Monitoring import Monitoring, module_mon
+            #mon1 = module_mon(modules[0])
+            monitoring_threads = []
+            for i in range(res['n_module']):
+                if modules[i].ETROCs[0].connected:
+                    monitoring_threads.append(module_mon(modules[i]))
 
     #-------------------------------------------------------------------------------
     # Read ADCs
@@ -192,13 +189,13 @@ if __name__ == '__main__':
 
     if args.adcs:
         print("\n\nReading GBT-SCA ADC values:")
-        rb_0.SCA.read_adcs()
+        rb_0.SCA.read_adcs(check=True, strict_limits=args.strict)
 
         print("\n\nReading DAQ lpGBT ADC values:")
-        rb_0.DAQ_LPGBT.read_adcs()
+        rb_0.DAQ_LPGBT.read_adcs(check=True, strict_limits=args.strict)
 
         # High level reading of temperatures
-        temp = rb_0.read_temp(verbose=1)
+        temp = rb_0.read_temp(verbose=True)
 
     #-------------------------------------------------------------------------------
     # I2C Test
@@ -265,3 +262,18 @@ if __name__ == '__main__':
     all_tests_passed = True  # FIXME this should be properly defined
     if all_tests_passed:
         rb_0.DAQ_LPGBT.set_configured()
+
+    #-------------------------------------------------------------------------------
+    # Success LEDs
+    #-------------------------------------------------------------------------------
+    if rb_0.DAQ_LPGBT.ver == 1:
+        rb_0.DAQ_LPGBT.set_gpio("LED_1", 1) # Set LED1 after tamalero finishes succesfully
+        t_end = time.time() + 10
+        if args.power_up:
+            print("RB configured successfully. Rhett is happy " + emojize(":dog_face:"))
+            while time.time() < t_end:
+                rb_0.DAQ_LPGBT.set_gpio("LED_RHETT", 1) # Let Rhett LED blink for 10s
+                time.sleep(0.5)
+                rb_0.DAQ_LPGBT.set_gpio("LED_RHETT", 0)
+                time.sleep(0.5)
+        rb_0.DAQ_LPGBT.set_gpio("LED_RHETT", 1)

@@ -2,14 +2,12 @@
 For ETROC control
 """
 
-from ETROC_Emulator import software_ETROC2
-from tamalero.colors import red, green
+from tamalero.utils import load_yaml, ffs, bit_count
+from tamalero.colors import red, green, yellow
 import os
-from yaml import load, dump
-try:
-    from yaml import CLoader as Loader, CDumper as Dumper
-except ImportError:
-    from yaml import Loader, Dumper
+from random import randrange
+
+here = os.path.dirname(os.path.abspath(__file__))
 
 class ETROC():
 
@@ -19,45 +17,27 @@ class ETROC():
             master='lpgbt',
             i2c_adr=0x72,
             i2c_channel=0,
-            elink=0,
-            usefake=False,
+            elinks={0:[0]},
             verbose=False,
             strict=True,
     ):
-        self.usefake = usefake
-        if usefake:
-            self.fakeETROC = software_ETROC2(elink=elink)
-            self.connected = True
-            self.master = "software"
-            self.i2c_channel = "0"
-            self.elink = elink
-            self.ver = "23-2-23"  # yy-mm-dd
+        self.isfake = False
+        self.I2C_master = rb.DAQ_LPGBT if master.lower() == 'lpgbt' else rb.SCA
+        self.master = master
+        self.rb = rb
+        # check if connected
+        self.i2c_channel = i2c_channel
+        self.i2c_adr = i2c_adr
+        self.elinks = elinks
+        self.is_connected()
+        if self.connected:
+            self.ver = self.get_ver()
         else:
-            self.I2C_master = rb.DAQ_LPGBT if master == 'lpgbt' else rb.SCA
-            self.master = master
-            self.rb = rb
-            # check if connected
-            self.i2c_channel = i2c_channel
-            self.i2c_adr = i2c_adr
-            self.elink = elink
-            self.connected = self.I2C_read(0x13)
-            if self.connected:
-                self.ver = self.get_ver()
-            else:
-                self.ver = "X-X-X"
+            self.ver = "X-X-X"
 
-        with open(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC2.yaml'), 'r') as f:
-            self.regs = load(f, Loader=Loader)
+        self.regs = load_yaml(os.path.join(here, '../address_table/ETROC2_example.yaml'))
 
         self.get_elink_status()
-        if usefake:
-            for reg in self.regs:
-                if isinstance(self.regs[reg]['regadr'], list):
-                    for pix in self.regs[reg]['regadr']:
-                        self.fakeETROC.wr_reg(reg, self.regs[reg]['default'], pix)
-                else:
-                    self.fakeETROC.wr_reg(reg, self.regs[reg]['default'], pix=None)
-
         try:
             self.default_config()
         except TimeoutError:
@@ -68,11 +48,17 @@ class ETROC():
         if strict:
             self.consistency(verbose=verbose)
 
+        self.DAC_min  = 600  # in mV
+        self.DAC_max  = 1000  # in mV
+        self.DAC_step = 400/2**10
+        self.invalid_FC_counter = 0
+
+
     # =========================
     # === UTILITY FUNCTIONS ===
     # =========================
     def I2C_write(self, adr=0x0, val=0x0):
-        if self.usefake:
+        if self.isfake:
             raise NotImplementedError("I2C read not implemented for software ETROC")
         else:
             self.I2C_master.I2C_write(
@@ -83,7 +69,7 @@ class ETROC():
             )
 
     def I2C_read(self, adr=0x0):
-        if self.usefake:
+        if self.isfake:
             raise NotImplementedError("I2C read not implemented for software ETROC")
         else:
             return self.I2C_master.I2C_read(
@@ -92,84 +78,191 @@ class ETROC():
                 slave_addr=self.i2c_adr,
             )
 
+    def get_adr(self, reg, row=0, col=0, broadcast=False):
+        tmp = []
+        if self.regs[reg]['stat'] == 1 and self.regs[reg]['pixel'] == 0:
+            for address in self.regs[reg]['address']:
+                tmp.append(address | 0x100)
+        else:
+            for address in self.regs[reg]['address']:
+                tmp.append(address | \
+                row << 5 | \
+                col << 9 | \
+                broadcast << 13 | \
+                self.regs[reg]['stat'] << 14 | \
+                self.regs[reg]['pixel'] << 15 )
+        return tmp
+
+    def wr_adr(self, adr, val):
+        if self.isfake:
+            #print ("writing fake")
+            self.write_adr(adr, val)
+        else:
+            self.I2C_write(adr, val)
+
+    def rd_adr(self, adr):
+        if self.isfake:
+            #print ("reading fake")
+            return self.read_adr(adr)
+        else:
+            return self.I2C_read(adr)
+
     # read & write using register name & pix num
-    def wr_reg(self, reg, val, pix=None):
-        if self.usefake:
-            self.fakeETROC.wr_reg(reg, val)
-        else:
-            if pix is None:
-                adr = self.regs[reg]['regadr']
-            else:
-                adr = self.regs[reg]['regadr'][pix]
-            mask = self.regs[reg]['mask']
-            shift = self.regs[reg]['shift']
+    def wr_reg(self, reg, val, row=0, col=0, broadcast=False):
+        '''
+        reg - Register name
+        val - value to write
+        row - arbitrary value for periphery, 0..15 for in pixel
+        col - arbitrary value for periphery, 0..15 for in pixel
+        broadcast - True for broadcast to all pixels
+        '''
+        masks    = self.regs[reg]['mask']
+        shifts   = list(map(ffs, masks))
+        n_bits   = [0] + list(map(bit_count, masks))
+        adr      = self.get_adr(reg, row=row, col=col, broadcast=broadcast)
+        if val > 2**(sum(n_bits))-1:
+            raise RuntimeError(f"Value {val} is larger than the number of bits of register {reg} allow ({sum(n_bits)})")
+        if self.isfake:
+            #print(f"writing {adr=}, {value=}")
+            adr = self.get_adr(reg, row=row, col=col, broadcast=False)
+            if broadcast:
+                for row in range(16):
+                    for col in range(16):
+                        self.wr_reg(reg, val, row=row, col=col, broadcast=False)
 
-            # check for data overflow
-            if type(adr) is list:
-                # get the lengths of parts that we care about in each adr
-                lens = [bin(mask[i]).count("1") for i in range(len(adr))]
-                masklength = sum(lens)
-            else:
-                masklength = bin(mask).count("1")
-            vallength = len(bin(val)) - 2
-            if vallength > masklength:
-                print('Overflow warning! Trying to store %s in %d-bit long register %s'%(bin(val), masklength, reg))
+        n_bits_total = 0
+        for i, a in enumerate(adr):
+            read = self.rd_adr(a)
+            value = (((val >> (n_bits[i] + n_bits_total)) << shifts[i]) & masks[i]) | (read & ~masks[i])
+            n_bits_total += n_bits[i]
+            self.wr_adr(a, value)
 
-            # for some registers, data is stored in two adrs
-            if isinstance(adr, list):
-                # split val into two parts
-                vals = [val>>lens[1], val&(2**lens[0]-1)]
-                for i in range(len(adr)):
-                    orig_val = self.I2C_read(adr[i])
-                    new_val = ((vals[i]<<shift[i])&mask[i]) | (orig_val&(~mask[i]))
-                    self.I2C_write(adr[i], new_val)
-            else:
-                orig_val = self.I2C_read(adr)
-                new_val = ((val<<shift)&mask) | (orig_val&(~mask))
-                self.I2C_write(adr, new_val)
 
-    def rd_reg(self, reg, pix=None):
-        if self.usefake:
-            return self.fakeETROC.rd_reg(reg, pix=pix)
-        else:
-            if pix is None:
-                adr = self.regs[reg]['regadr']
-            else:
-                adr = self.regs[reg]['regadr'][pix]
-            mask = self.regs[reg]['mask']
-            shift = self.regs[reg]['shift']
-            # for some registers, data is stored in two adrs
-            if type(adr) is list:
-                lens = [bin(mask[i]).count("1") for i in range(len(adr))]
-                vals = [(self.I2C_read(adr[i])&mask[i]) >> shift[i] for i in range(len(adr))]
-                return (vals[0] << lens[1]) | vals[1]
-            else:
-                return (self.I2C_read(adr)&mask) >> shift
+    def rd_reg(self, reg, row=0, col=0, verbose=False):
+        '''
+        reg - Register name
+        val - value to write
+        row - arbitrary value for periphery, 0..15 for in pixel
+        col - arbitrary value for periphery, 0..15 for in pixel
+        '''
+        masks    = self.regs[reg]['mask']
+        shifts   = list(map(ffs, masks))
+        n_bits   = [0] + list(map(bit_count, masks))
+        if verbose:
+            print("Found masks", masks)
+            print("Found shifts", shifts)
+            print("Found n_bits", n_bits)
 
-    def runL1A(self):
-        if not self.usefake:
-            raise NotImplementedError("Can't send L1As for individual ETROCs / hardware emulators")
-        else:
-            return self.fakeETROC.runL1A()
+        adr = self.get_adr(reg, row=row, col=col)
+        tmp = 0
+        n_bits_total = 0
+        for i, a in enumerate(adr):
+            if verbose: print(i, a, masks[i], shifts[i])
+            read = (self.rd_adr(a) & masks[i]) >> shifts[i]
+            tmp |= (read << (n_bits[i]+n_bits_total))
+            n_bits_total += n_bits[i]
+        return tmp
+
+    def print_reg_doc(self, reg):
+        print(self.regs[reg]['doc'])
+
+    def reset_perif(self):
+        for reg in self.regs:
+            if self.regs[reg]['stat'] == 0 and self.regs[reg]['pixel'] == 0:
+                self.wr_reg(reg, self.regs[reg]['default'])
+
+    def reset_pixel(self):
+        for reg in self.regs:
+            if self.regs[reg]['stat'] == 0 and self.regs[reg]['pixel'] == 1:
+                self.wr_reg(reg, self.regs[reg]['default'], broadcast=True)
+
+    def print_perif_stat(self):
+        for reg in self.regs:
+            if self.regs[reg]['stat'] == 1 and self.regs[reg]['pixel'] == 0:
+                ret = self.rd_reg(reg)
+                print(yellow(f"Perif status {reg=}: {ret=}"))
+
+    def print_pixel_stat(self, row=0, col=0):
+        for reg in self.regs:
+            if self.regs[reg]['stat'] == 1 and self.regs[reg]['pixel'] == 1:
+                ret = self.rd_reg(reg)
+                print(yellow(f"Pixel ({row=}, {col=}) status {reg=}: {ret=}"))
+
+    def print_perif_conf(self):
+        for reg in self.regs:
+            if self.regs[reg]['stat'] == 0 and self.regs[reg]['pixel'] == 0:
+                ret = self.rd_reg(reg)
+                exp = self.regs[reg]['default']
+                colored = green if ret == exp else red
+                print(colored(f"Perif config {reg=}: {ret=}, {exp=}"))
+
+    def print_pixel_conf(self, row=0, col=0):
+        for reg in self.regs:
+            if self.regs[reg]['stat'] == 0 and self.regs[reg]['pixel'] == 1:
+                ret = self.rd_reg(reg)
+                exp = self.regs[reg]['default']
+                colored = green if ret == exp else red
+                print(colored(f"Pixel ({row=}, {col=}) config {reg=}: {ret=}, {exp=}"))
+
+    def pixel_sanity_check(self, full=True, verbose=False):
+        all_pass = True
+        nmax = 16 if full else 4  # option to make this check a bit faster
+        for row in range(nmax):
+            for col in range(nmax):
+                ret = self.rd_reg('PixelID', row=row, col=col)
+                exp = ((col << 4) | row)
+                comp = ret == exp
+                if verbose:
+                    if comp:
+                        print(green(f"Sanity check passed for {row=}, {col=}"))
+                    else:
+                        print(red(f"Sanity check failed for {row=}, {col=}, expected {exp} from PixelID register but got {ret}"))
+                all_pass &= comp
+        return all_pass
+
+    def pixel_random_check(self, ntest=20, verbose=False):
+        all_pass = True
+        for i in range(ntest):
+            row = randrange(16)
+            col = randrange(16)
+            val = randrange(256)
+            self.wr_reg('PixelSanityConfig', val, row=row, col=col)
+            ret = self.rd_reg('PixelSanityStat', row=row, col=col)
+            comp = val == ret
+            if verbose:
+                if comp:
+                    print(green(f"Sanity check passed for {row=}, {col=}"))
+                else:
+                    print(red(f"Sanity check failed for {row=}, {col=}, expected {val} from PixelSanityStat register but got {ret}"))
+            all_pass &= comp
+        return all_pass
 
     # ============================
     # === MONITORING FUNCTIONS ===
     # ============================
 
     def is_connected(self):
-        self.conected = self.I2C_read(0x13)
+        self.connected = self.I2C_read(0x0)  # read from first register (default value 0x2C)
         return self.connected
 
     def get_elink_status(self):
-        if self.usefake:
-            self.trig_locked = True
-            self.daq_locked = True
+        if self.isfake:
+            for i in self.elinks:
+                self.links_locked = {i: [True for x in self.elinks[i]]}
+            #self.trig_locked = True
+            #self.daq_locked = True
         else:
+            # NOTE this is still old schema of DAQ and TRIG
             locked = self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.ETROC_LOCKED").value()
             locked_slave = self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.ETROC_LOCKED_SLAVE").value()
-            self.trig_locked = ((locked_slave >> self.elink) & 1) == True
-            self.daq_locked = ((locked >> self.elink) & 1) == True
-        return self.daq_locked, self.trig_locked
+            self.links_locked = {0: [((locked >> x) & 1)==1 for x in self.elinks[0]]}
+            if 1 in self.elinks:
+                # if any of the elinks run through the second lpGBT
+                self.links_locked.update({1: [((locked_slave >> x) & 1)==1 for x in self.elinks[1]]})
+
+            #self.trig_locked = ((locked_slave >> self.elink) & 1) == True
+            #self.daq_locked = ((locked >> self.elink) & 1) == True
+        return self.links_locked
 
     def get_ver(self):
         try:
@@ -179,14 +272,16 @@ class ETROC():
             return "--"
 
     def consistency(self, verbose=False):
-        if self.usefake:
+        if self.isfake:
             return True
-        daq, trig = self.get_elink_status()
-        if daq:
+        locked = self.get_elink_status()
+        if locked:
+            if verbose: print("Lock status before:", locked)
             self.wr_reg('disScrambler', 0x0)
-            daq1, trig1 = self.get_elink_status()
+            locked1 = self.get_elink_status()
+            if verbose: print("Lock status after:", locked1)
             self.wr_reg('disScrambler', 0x1)
-            assert daq != daq1, "Links and I2C configuration are inconsistent, please check"
+            assert locked != locked1, "Links and I2C configuration are inconsistent, please check"
             self.get_elink_status()
         else:
             if verbose:
@@ -204,7 +299,7 @@ class ETROC():
     def show_status(self):
         self.get_elink_status()
         print("┏" + 31*'━' + "┓")
-        if self.usefake:
+        if self.isfake:
             print("┃{:^31s}┃".format("ETROC Software Emulator"))
         else:
             print("┃{:^31s}┃".format("ETROC Hardware Emulator"))
@@ -213,8 +308,8 @@ class ETROC():
         print("┃{:^31s}┃".format("version: "+self.ver))
         print("┃" + 31*" " + "┃")
         print("┃{:^31s}┃".format(f"Link: {self.elink}"))
-        print ('┃' + (green('{:^31s}'.format('DAQ')) if self.daq_locked else red('{:^31s}'.format('DAQ'))) + '┃' )
-        print ('┃' + (green('{:^31s}'.format('Trigger')) if self.trig_locked else red('{:^31s}'.format('Trigger'))) + '┃' )
+        print ('┃' + (green('{:^31s}'.format('lpGBT 1')) if self.links_locked else red('{:^31s}'.format('DAQ'))) + '┃' )
+        print ('┃' + (green('{:^31s}'.format('lpGBT 2')) if self.trig_locked else red('{:^31s}'.format('Trigger'))) + '┃' )
 
         print("┗" + 31*"━" + "┛")
     # =========================
@@ -222,287 +317,1096 @@ class ETROC():
     # =========================
 
     def default_config(self):
+        # FIXME should use higher level functions for better readability
         if self.connected:
-            self.wr_reg('singlePort', 0)
-            self.wr_reg('mergeTriggerData', 0)
-            self.wr_reg('disScrambler', 1)
+            self.set_singlePort('both')
+            self.set_mergeTriggerData('separate')
+            self.disable_Scrambler()
+            # set ETROC in 320Mbps mode
+            self.wr_reg('serRateLeft', 0)
+            self.wr_reg('serRateRight', 0)
 
+            # get the current number of invalid fast commands received
+            self.invalid_FC_counter = self.get_invalidFCCount()
+
+    # =======================
+    # === HIGH-LEVEL FUNC ===
+    # =======================
+
+    def QInj_set(self, charge, delay, row=0, col=0, broadcast=True, reset=True):
+        """
+        High-level function to set the charge injection in the ETROC;
+        requires \'charge\' (in fC) and \'delay\' (in 781 ps steps).
+        Charge injection can be done at the pixel level (\'row\', \'col\') or globally (\'broadcast\'); default is global.
+        By default, the charge injection module is reset upon calling (\'reset\').
+        """
+        self.set_ChargeInjReset(reset=reset)                           # Reset charge injection module
+        self.enable_QInj(row=row, col=col, broadcast=broadcast)        # Enable charge injection
+        self.set_Qinj(charge, row=row, col=col, broadcast=broadcast)   # Set charge
+        self.set_chargeInjDelay(delay)                                 # Set time delay
+
+    def QInj_unset(self, row=0, col=0, broadcast=True):
+        """
+        High-level function to unset the charge injection in the ETROC.
+        Unset can be done at the pixel level (\'row\', \'col\') or globally (\'broadcast\'); default is global.
+        """
+        if broadcast:
+            self.set_ChargeInjReset(False)                             # Reset charge injection module
+        else:
+            self.disable_QInj(row=row, col=col, broadcast=broadcast)   # Only disable charge injection for specified pixel
+
+    def QInj_read(self, row=0, col=0, broadcast=True):
+        if broadcast:
+            qinj = [[self.get_Qinj(row=y, col=x) for x in range(16)] for y in range(16)]
+            return qinj
+        else:
+            return self.get_Qinj(row=row, col=col)
+
+    def auto_threshold_scan(self):
+        # FIXME not yet fully working
+        self.apply_THCal()
+        self.enable_THCal_buffer()
+        self.wr_reg('TH_offset', 2, broadcast=True)
+        self.reset_THCal()
+        self.init_THCal()
+        self.wr_reg('RSTn_THCal', 1, broadcast=True)
+        self.init_THCal()
+        return self.rd_reg('TH', row=2, col=2)
+
+
+    # ***********************
     # *** IN-PIXEL CONFIG ***
+    # ***********************
 
     # (FOR ALL PIXELS) set/get load capacitance of preamp first stage
     # 0, 80, 80, or 160 fC FIXME typo? 80 appears twice in doc
-    def set_Cload(self, C):
+    def set_Cload(self, C, row=0, col=0, broadcast=True):
         val = {0:0b00, 40:0b01, 80:0b10, 160:0b11}
         try:
-            self.wr_reg('CLsel', val(C), 0)
+            self.wr_reg('CLsel', val(C), row=row, col=col, broadcast=broadcast)
         except KeyError:
             print('Capacitance should be 0, 80, 80, or 160 fC.')
 
-    def get_Cload(self):
+    def get_Cload(self, row=0, col=0):
         val = {0b00:0, 0b01:40, 0b10:80, 0b11:160}
-        return val[self.rd_reg('CLsel', 0)]
+        return val[self.rd_reg('CLsel', row=row, col=col)]
 
     # (FOR ALL PIXELS) set/get bias current
     # I1 > I2 > I3 > I4
-    def set_Ibias(self, i):
+    def set_Ibias(self, i, row=0, col=0, broadcast=True):
         val = {1:0b000, 2:0b001, 3:0b011, 4:0b111}
         try:
-            self.wr_reg('IBsel', 0, val[i])
+            self.wr_reg('IBsel', val[i], row=row, col=col, broadcast=broadcast)
         except KeyError:
             print('Select between 1 ~ 4.')
 
-    def get_Ibias(self):
+    def get_Ibias(self, row=0, col=0):
         val = {0b000:'I1', 0b001:'I2', 0b011:'I3', 0b111:'I4'}
-        return val[self.rd_reg('IBSel', 0)]
+        return val[self.rd_reg('IBSel', row=row, col=col)]
 
     # (FOR ALL PIXELS) set/get feedback resistance
     # 20, 10, 5.7 or 4.4 kOhm
-    def set_Rfeedback(self, R):
+    def set_Rfeedback(self, R, row=0, col=0, broadcast=True):
         val = {20:0b00, 10:0b00, 5.7:0b10, 4.4:0b11}
         try:
-            self.wr_reg('RfSel', 0, val(R))
+            self.wr_reg('RfSel', val(R), row=row, col=col, broadcast=broadcast)
         except KeyError:
             print('Resistance should be 20, 10, 5.7, or 4.4 kOhms')
 
-    def get_Rfeedback(self):
+    def get_Rfeedback(self, row=0, col=0):
         val = {0b00:20, 0b00:10, 0b10:5.7, 0b11:4.4}
-        return val[self.rd_reg('RfSel', 0)]
+        return val[self.rd_reg('RfSel', row=row, col=col)]
 
     # (FOR ALL PIXELS) set/get hysteresis voltage
     # Vhys1 > Vhys2 > Vhys3 > Vhys4 > Vhys5 = 0
-    def set_Vhys(self, i):
+    def set_Vhys(self, i, row=0, col=0, broadcast=True):
         val = [0b0000, 0b0001, 0b0011, 0b0111, 0b1111]
         try:
-            self.wr_reg('HysSel', 0, val(i))
+            self.wr_reg('HysSel', val(i), row=row, col=col, broadcast=broadcast)
         except IndexError:
             print('Select between 1 ~ 5.')
 
-    def get_Vhys(self):
+    def get_Vhys(self, row=0, col=0):
         val = {0b0000:1, 0b0001:2, 0b0011:3, 0b0111:4, 0b1111:5}
-        return val[self.rd_reg('HysSel', 0)]
+        return val[self.rd_reg('HysSel', row=row, col=col)]
 
     # (FOR ALL PIXELS) Power up/down DAC & discriminator
-    def power_up_DACDiscri(self):
-        self.wr_reg('PD_DACDiscri', 0, 0)
+    def power_up_DACDiscri(self, row=0, col=0, broadcast=True):
+        self.wr_reg('PD_DACDiscri', 0, row=row, col=col, broadcast=broadcast)
 
-    def power_down_DACDiscri(self):
-        self.wr_reg('PD_DACDiscri', 0, 1)
+    def power_down_DACDiscri(self, row=0, col=0):
+        self.wr_reg('PD_DACDiscri', 1, row=row, col=col)
 
     # (FOR ALL PIXELS) set/get injected charge
-    # 1 ~ 36 fC, typical charge is 7fC
-    def set_Qinj(self, C):
+    # 1 ~ 32 fC, typical charge is 7fC
+    def set_Qinj(self, C, row=0, col=0, broadcast=True):
         if C > 32:
             raise Exception('Injected charge should be < 32 fC.')
-        self.wr_reg('QSel', 0, C-1)
+        self.wr_reg('QSel', C-1, row=row, col=col, broadcast=broadcast)
 
-    def get_Qinj(self):
-        return self.rd_reg('QSel', 0)+1
+    def get_Qinj(self, row=0, col=0):
+        return self.rd_reg('QSel', row=row, col=col)
 
-    # enable/disable charge injection
-    def enable_Qinj(self, pix):
-        self.wr_reg('QInjEn', pix, 1)
+    # (FOR ALL PIXELS) enable/disable charge injection
+    def enable_Qinj(self, row=0, col=0, broadcast=True):
+        self.wr_reg('QInjEn', 1, row=row, col=col, broadcast=broadcast)
 
-    def disable_Qinj(self, pix):
-        self.wr_reg('QInjEn', pix, 0)
+    def disable_Qinj(self, row=0, col=0, broadcast=True):
+        self.wr_reg('QInjEn', 0, row=row, col=col, broadcast=broadcast)
 
-    # TDC control
-    def autoReset_TDC(self, pix):
-        self.wr_reg('autoReset_TDC', pix, 1)
+    # (FOR ALL PIXELS) TDC control
+    # TDC automatically reset controller for every clock period
+    def autoReset_TDC(self, row=0, col=0, broadcast=True):
+        self.wr_reg('autoReset_TDC', 1, row=row, col=col, broadcast=broadcast)
 
-    def enable_TDC(self, pix):
-        self.wr_reg('enable_TDC', pix, 1)
+    # enable/disable TDC conversion
+    def enable_TDC(self, row=0, col=0, broadcast=True):
+        self.wr_reg('enable_TDC', 1, row=row, col=col, broadcast=broadcast)
 
-    def disable_TDC(self, pix):
-        self.wr_reg('enable_TDC', pix, 0)
+    def disable_TDC(self, row=0, col=0, broadcast=True):
+        self.wr_reg('enable_TDC', 0, row=row, col=col, broadcast=broadcast)
 
-    def set_level_TDC(self, pix, w):
+    # Bit width of bubble tolerant in TDC encode
+    def set_level_TDC(self, w, row=0, col=0, broadcast=True):
         if w > 0b011:
             raise Exception('bit width can be up to 0b011.')
-        self.wr_reg('level_TDC', pix, w)
+        self.wr_reg('level_TDC', w, row=row, col=col, broadcast=broadcast)
 
-    def get_level_TDC(self, pix):
-        return self.rd_reg('level_TDC', pix)
+    def get_level_TDC(self, row=0, col=0):
+        return self.rd_reg('level_TDC', row=row, col=col)
 
-    def reset_TDC(self, pix):
-        self.wr_reg('resetn_TDC', pix, 1) #FIXME reg name has typo in doc?
+    # Reset TDC encoder, active low
+    def reset_TDC(self, row=0, col=0, broadcast=True):
+        self.wr_reg('resetn_TDC', 0, row=row, col=col, broadcast=broadcast) #FIXME reg name has typo in doc?
 
-    def enable_TDC_testMode(self, pix):
-        self.wr_reg('testMode_TDC', pix, 1)
+    # enable/disable test mode where TDC generates a fixed test pulse as input signal for test for every 25 ns
+    def enable_TDC_testMode(self, row=0, col=0, broadcast=True):
+        self.wr_reg('testMode_TDC', 1, row=row, col=col, broadcast=broadcast)
 
-    def disable_TDC_testMode(self, pix):
-        self.wr_reg('testMode_TDC', pix, 0)
+    def disable_TDC_testMode(self, row=0, col=0, broadcast=True):
+        self.wr_reg('testMode_TDC', 0, row=row, col=col, broadcast=broadcast)
 
-    # threshold callibration
-    def bypass_THCal(self, pix):
-        self.wr_reg('Bypass_THCal', pix, 1)
+    # (FOR ALL PIXELS) THCal control
+    # Bypass/apply in-pixel threshold calibration block
+    def bypass_THCal(self, row=0, col=0, broadcast=True):
+        self.wr_reg('Bypass_THCal', 1, row=row, col=col, broadcast=broadcast)
 
-    def apply_THCal(self, pix):
-        self.wr_reg('Bypass_THCal', pix, 0)
+    def apply_THCal(self, row=0, col=0, broadcast=True):
+        self.wr_reg('Bypass_THCal', 0, row=row, col=col, broadcast=broadcast)
 
-    def set_Vth_pix(self, pix, vth):
-        self.wr_reg('DAC', vth, pix)
+    # When Bypass_THCal = 1, TH = DAC
+#    def set_Vth_pix(self, vth, row=0, col=0, broadcast=True):
+#        self.wr_reg('DAC', vth, row=row, col=col, broadcast=broadcast)
+#
+#    def get_Vth_pix(self, row=0, col=0):
+#        return self.rd_reg('DAC', row=row, col=col)
+    def set_Vth_mV(self, vth, row=0, col=0, broadcast=True):
+        # From the Manual:
+        # DAC from 0.6-1.0V (400mV), step size 0.4mV (400mV/2**10)
+        assert self.DAC_min < vth < self.DAC_max, "vth out of range: 600-1000mV"
+        th = round((vth-self.DAC_min)/self.DAC_step)
+        self.wr_reg('DAC', th, row=row, col=col, broadcast=broadcast)
 
-    def set_Vth_pix_mV(self, pix, vth):
-        if self.usefake:
-            self.fakeETROC.data['vth'] = vth
-            print("Vth set to %f."%vth)
-        else:
-            v = vth # FIXME: convert from mV to bit representation
-            self.wr_reg('DAC', vth, pix)
+    def get_Vth_mV(self, row=0, col=0):
+        th = self.rd_reg('DAC', row=row, col=col)
+        return th*self.DAC_step + self.DAC_min
 
-    def get_Vth_pix(self, pix):
-        self.rd_reg('DAC', pix)
+    # Threshold offset for calibrated baseline. TH = BL + TH_offset
+    def set_THoffset(self, V, row=0, col=0, broadcast=True):
+        self.wr_reg('TH_offset', V, row=row, col=col, broadcast=broadcast)
 
-    def get_Vth_pix_mV(self, pix):
-        vth = self.rd_reg('DAC', pix)
-        # FIXME: convert from bit to mV representation
-        return vth
+    def get_THoffset(self, row=0, col=0):
+        return self.rd_reg('TH_offset', row=row, col=col)
 
-    def set_Vth(self, vth):
-        for pix in range(256):
-            self.set_Vth_pix(self, pix, vth)
+    # Reset of threshold calibration block, active low
+    def reset_THCal(self, row=0, col=0, broadcast=True):
+        self.wr_reg('RSTn_THCal', 0, row=row, col=col, broadcast=broadcast)
 
-    def set_Vth_mV(self, vth):
-        if self.usefake:
-            self.fakeETROC.data['vth'] = vth
-            print("Vth set to %f."%vth)
-        else:
-            for pix in range(256):
-                self.set_Vth_pix_mV(self, pix, vth)
+    # Initialize threshold calibration
+    def init_THCal(self, row=0, col=0, broadcast=True): #FIXME better name?
+        self.wr_reg('ScanStart_THCal', 1, row=row, col=col, broadcast=broadcast)
 
-    # return vth value if vth for all pixels are same;
-    # return None if they are not all the same
-    def get_Vth(self):
-        vth = self.rd_reg('DAC', 0)
-        for pix in range(1, 256):
-            vth2 = self.rd_reg('DAC', pix)
-            if not(vth == vth2):
-                return None
-        return vth
+    # Enable/disable threshold calibration buffer
+    def enable_THCal_buffer(self, row=0, col=0, broadcast=True):
+        self.wr_reg('BufEn_THCal', 1, row=row, col=col, broadcast=broadcast)
 
-    def get_Vth_mV(self):
-        vth = self.get_Vth
-        if vth == None:
-            return None
-        else:
-            return vth # FIXME: convert from bit to mV representation
+    def disable_THCal_buffer(self, row=0, col=0, broadcast=True):
+        self.wr_reg('BufEn_THCal', 0, row=row, col=col, broadcast=broadcast)
 
-    def set_THoffset(self, pix, V):
-        self.wr_reg('TH_offset', pix, V)
+    # Enable/disable threshold calibration clock. Only used when threshold calibration clock is bypassed.
+    def enable_THCal_clock(self, row=0, col=0, broadcast=True):
+        self.wr_reg('CLKEn_THCal', 1, row=row, col=col, broadcast=broadcast)
 
-    def reset_THCal(self, pix):
-        self.wr_reg('RSTn_THCal', pix, 1)
+    def disable_THCal_clock(self, row=0, col=0, broadcast=True):
+        self.wr_reg('CLKEn_THCal', 0, row=row, col=col, broadcast=broadcast)
 
-    def init_THCal(self, pix): #FIXME better name?
-        self.wr_reg('ScanStart_THCal', pix, 1)
-
-    def enable_THCal_buffer(self, pix):
-        self.wr_reg('BufEn_THCal', pix, 1)
-
-    def disable_THCal_buffer(self, pix):
-        self.wr_reg('BufEn_THCal', pix, 0)
-
-    def enable_THCal_clock(self, pix):
-        self.wr_reg('CLKEn_THCal', pix, 1)
-
-    def disable_THCal_clock(self, pix):
-        self.wr_reg('CLKEn_THCal', pix, 0)
-
-    def set_workMode(self, pix, mode):
+    # (FOR ALL PIXELS) Readout control
+    # Readout work mode selection
+    def set_workMode(self, mode, row=0, col=0, broadcast=True):
         val = {'normal': 0b00, 'self test fixed': 0b01, 'self test random': 0b10}
         try:
-            self.wr_reg('workMode', pix, val(mode))
+            self.wr_reg('workMode', val(mode), row=row, col=col, broadcast=broadcast)
         except KeyError:
             print('Choose between \'normal\', \'self test fixed\', \'self test random\'.')
 
-    def get_workMode(self, pix):
+    def get_workMode(self, row=0, col=0):
         val = {0b00:'normal', 0b01:'self test fixed', 0b10:'self test random'}
-        return val[self.wr_reg('workMod', pix)]
+        return val[self.wr_reg('workMode', row=row, col=col)]
 
-    def set_L1Adelay(self, pix, delay):
-        self.wr_reg('L1Adelay', pix, delay)
+    # L1A latency
+    def set_L1Adelay(self, delay, row=0, col=0, broadcast=True):
+        self.wr_reg('L1Adelay', delay, row=row, col=col, broadcast=broadcast)
 
-    def get_L1Adelay(self, pix):
-        return self.rd_reg('L1Adelay', pix)
+    def get_L1Adelay(self, row=0, col=0):
+        return self.rd_reg('L1Adelay', row=row, col=col)
 
-    def enable_data_readout(self, pix):
-        self.wr_reg('disDataReadout', pix, 0)
+    # Enable/disable TDC data readout of current pixel
+    def enable_data_readout(self, row=0, col=0, broadcast=True):
+        self.wr_reg('disDataReadout', 0, row=row, col=col, broadcast=broadcast)
 
-    def disable_data_readout(self, pix):
-        self.wr_reg('disDataReadout', pix, 1)
+    def disable_data_readout(self, row=0, col=0, broadcast=True):
+        self.wr_reg('disDataReadout', 1, row=row, col=col, broadcast=broadcast)
 
-    def enable_trigger_readout(self, pix):
-        self.wr_reg('disTrigPath', pix, 0)
+    # Enable/disable trigger readout of current pixel
+    def enable_trigger_readout(self, row=0, col=0, broadcast=True):
+        self.wr_reg('disTrigPath', 0, row=row, col=col, broadcast=broadcast)
 
-    def disable_trigger_readout(self, pix):
-        self.wr_reg('disTrigPath', pix, 1)
+    def disable_trigger_readout(self, row=0, col=0, broadcast=True):
+        self.wr_reg('disTrigPath', 1, row=row, col=col, broadcast=broadcast)
 
-    def set_trigger_TH(self, pix, datatype, upper=None, lower=None):
+    # Set upper/lower thresholds for trigger readout of TOA, TOT, Cal
+    def set_trigger_TH(self, datatype, upper=None, lower=None, row=0, col=0, broadcast=True):
         if datatype not in ['TOA', 'TOT', 'Cal']:
             raise Exception('type of data should be TOA, TOT or CAL.')
         if upper is not None:
-            self.wr_reg('upper'+data+'Trig', pix, upper)
+            self.wr_reg('upper'+data+'Trig', upper, row=row, col=col, broadcast=broadcast)
         if lower is not None:
-            self.wr_reg('lower'+data+'Trig', pix, lower)
+            self.wr_reg('lower'+data+'Trig', lower, row=row, col=col, broadcast=broadcast)
 
-    def get_trigger_TH(self, pix, datatype):
+    def get_trigger_TH(self, datatype, row=0, col=0):
         if datatype not in ['TOA', 'TOT', 'Cal']:
             raise Exception('type of data should be TOA, TOT or CAL.')
         upper = 'upper'+data+'Trig'
         lower = 'lower'+data+'Trig'
-        return self.rd_reg(upper, pix), self.rd_reg(lower, pix)
+        return self.rd_reg(upper, row=row, col=col), self.rd_reg(lower, row=row, col=col)
 
-    def set_data_TH(self, pix, datatype, upper=None, lower=None):
+    # Set upper/lower thresholds for TDC data readout of TOA, TOT, Cal
+    def set_data_TH(self, datatype, upper=None, lower=None, row=0, col=0, broadcast=True):
         if datatype not in ['TOA', 'TOT', 'Cal']:
             raise Exception('type of data should be TOA, TOT or CAL.')
         if upper is not None:
-            self.wr_reg('upper'+data, pix, upper)
+            self.wr_reg('upper'+data, upper, row=row, col=col, broadcast=broadcast)
         if lower is not None:
-            self.wr_reg('lower'+data, pix, lower)
+            self.wr_reg('lower'+data, lower, row=row, col=col, broadcast=broadcast)
 
-    def get_data_TH(self, pix, datatype):
+    def get_data_TH(self, datatype, row=0, col=0):
         if datatype not in ['TOA', 'TOT', 'Cal']:
             raise Exception('type of data should be TOA, TOT or CAL.')
         upper = 'upper'+data
         lower = 'lower'+data
-        return self.rd_reg(upper, pix), self.rd_reg(lower, pix)
+        return self.rd_reg(upper, row=row, col=col), self.rd_reg(lower, row=row, col=col)
 
-    def enable_adr_offset(self, pix):
-        self.wr_reg('addrOffset', pix, 1)
+    # Enable/disable circular buffer write address offset
+    def enable_adr_offset(self, row=0, col=0, broadcast=True):
+        self.wr_reg('addrOffset', 1, row=row, col=col, broadcast=broadcast)
 
-    def disable_adr_offset(self, pix):
-        self.wr_reg('addrOffset', pix, 0)
+    def disable_adr_offset(self, row=0, col=0, broadcast=True):
+        self.wr_reg('addrOffset', 0, row=row, col=col, broadcast=broadcast)
 
-    def set_selftest_occupancy(self, pix, occ):
-        self.wr_reg('selfTestOccupancy', pix, occ)
+    # Self-test data occupancy is selfTestOccupancy[6:0]/128
+    def set_selftest_occupancy(self, occ, row=0, col=0, broadcast=True):
+        self.wr_reg('selfTestOccupancy', occ, row=row, col=col, broadcast=broadcast)
 
-    def get_selftest_occupancy(self, pix):
-        return self.rd_reg('selfTestOccupancy', pix)
+    def get_selftest_occupancy(self, row=0, col=0):
+        return self.rd_reg('selfTestOccupancy', row=row, col=col)
 
 
+    # ***********************
     # *** IN-PIXEL STATUS ***
+    # ***********************
 
-    def get_ACC(self, pix):
-        return self.rd_reg('ACC', pix)
+    # (FOR ALL PIXELS) Accumulator of the threshold calibration
+    def get_ACC(self, row=0, col=0):
+        return self.rd_reg('ACC', row=row, col=col)
 
-    def is_scanDone(self, pix):
-        result = self.rd_reg('ScanDone', pix)
+    # (FOR ALL PIXELS) Scan done signal of the threshold calibration
+    def is_scanDone(self, row=0, col=0):
+        result = self.rd_reg('ScanDone', row=row, col=col)
         if result == 1:
             return True
         else:
             return False
 
-    def get_baseline(self, pix):
-        return self.rd_reg('BL', pix)
+    # (FOR ALL PIXELS) Baseline obtained from threshold calibration
+    def get_baseline(self, row=0, col=0):
+        return self.rd_reg('BL', row=row, col=col)
 
-    def get_noisewidth(self, pix):
-        return self.rd_reg('NW', pix)
+    # (FOR ALL PIXELS) Noise width from threshold calibration. Expect less than 10.
+    def get_noisewidth(self, row=0, col=0):
+        return self.rd_reg('NW', row=row, col=col)
 
-    def get_threshold(self, pix):
-        return self.rd_reg('TH', pix)
+    # (FOR ALL PIXELS) 10-bit threshold applied to the DAC input
+    def get_threshold(self, row=0, col=0):
+        return self.rd_reg('TH', row=row, col=col)
 
-    def get_THstate(self, pix):
-        return self.rd_reg('THstate', pix)
+    # (FOR ALL PIXELS) Threshold calibration state machine output
+    def get_THstate(self, row=0, col=0):
+        return self.rd_reg('THstate', row=row, col=col)
 
-    def get_pixelID(self, pix):
-        return self.rd_reg('PixelID', pix)
+    # (FOR ALL PIXELS) Col[3:0], Row[3:0]
+    def get_pixelID(self, row=0, col=0):
+        return self.rd_reg('PixelID', row=row, col=col)
+
+    # ***********************
+    # **** PERIPH CONFIG ****
+    # ***********************
+
+    # Phase delay of readout clock, 780 ps a step (Pixel or Global)
+    def set_readoutClkDelay(self, clk, delay):
+        if clk not in ['Pixel', 'Global']:
+            raise Exception('Clock should be either Pixel or Global')
+        self.wr_reg('readoutClockDelay'+clk, delay)
+
+    def get_readoutClkDelay(self, clk):
+        if clk not in ['Pixel', 'Global']:
+            raise Exception('Clock should be either Pixel or Global')
+        return self.rd_reg('readoutClockDelay'+clk)
+
+    # Positive pulse width of readout clock, 780 ps a step (Pixel or Global)
+    def set_readoutClkWidth(self, clk, width):
+        if clk not in ['Pixel', 'Global']:
+            raise Exception('Clock should be either Pixel or Global')
+        self.wr_reg('readoutClockWidth'+clk, width)
+
+    def get_readoutClkWidth(self, clk):
+        if clk not in ['Pixel', 'Global']:
+            raise Exception('Clock should be either Pixel or Global')
+        return self.rd_reg('readoutClockWidth'+clk)
+
+    # Data rate selection of Right or Left serial port
+    def set_dataRate(self, port, rate):
+        if port not in ['Left', 'Right']:
+            raise Exception('Choose between Left or Right serial port')
+        val = {320:0b00, 640:0b01, 1280:0b10}
+        try:
+            self.wr_reg('serRate'+port, val[rate])
+        except KeyError:
+            print('Choose between rates of 320 Mbps, 640 Mbps and 1280 Mbps')
+
+    def get_dataRate(self, port):
+        if port not in ['Left', 'Right']:
+            raise Exception('Choose between Left or Right serial port')
+        val = {0b00:320, 0b01:640, 0b10:1280}
+        return val[self.rd_reg('serRate'+port)]
+
+    # Link reset test pattern selection
+    def set_linkResetTestPattern(self, mode):
+        val = {'PRBS':0b0, 'Fixed pattern':0b1}
+        try:
+            self.wr_reg('linkResetTestPattern', val[mode])
+        except KeyError:
+            print('Choose between \'PRBS\' and \'Fixed pattern\' selections')
+
+    def get_linkResetTestPattern(self):
+        val = {0b0:'PRBS', 0b1:'Fixed pattern'}
+        return val[self.rd_reg('linkResetTestPattern')]
+
+    # User-specified pattern to be sent during link reset, LSB first
+    def set_linkResetFixedPattern(self, pattern):
+        self.wr_reg('linkResetFixedPattern', pattern)
+
+    def get_linkResetFixedPattern(self):
+        return self.rd_reg('linkResetFixedPattern')
+
+    # Empty BCID slot for synchronization
+    def set_BCID(self, bcid):
+        self.wr_reg('emptySlotBCID', bcid)
+
+    def get_BCID(self):
+        return self.rd_reg('emptySlotBCID')
+
+    # Trigger data size, can be 0, 1, 2, 4, 8, 16
+    def set_triggerGranularity(self, size):
+        val = {0:0, 1:1, 2:2, 4:3, 8:4, 16:5}
+        try:
+            self.wr_reg('triggerGranularity', val[size])
+        except KeyError:
+            print('Trigger data size can only be 0, 1, 2, 4, 8 or 16')
+
+    def get_triggerGranularity(self):
+        val = {0:0, 1:1, 2:2, 3:4, 4:8, 5:16, 6:0, 7:0}
+        return val[self.rd_reg('triggerGranularity')]
+
+    # Enable/disable scrambler
+    def enable_Scrambler(self):
+        self.wr_reg('disScrambler', 0)
+
+    def disable_Scrambler(self):
+        self.wr_reg('disScrambler', 1)
+
+    # Merge trigger and data in a port
+    def set_mergeTriggerData(self, mode):
+        val = {'separate':0, 'merge':1}
+        if (self.get_singlePort == 'right') and (mode == 'separate'):
+            raise Exception('Trigger and data in separate ports is only allowed when singlePort is set to \'both\'')
+        try:
+            self.wr_reg('mergeTriggerData', val[mode])
+        except KeyError:
+            print('Choose between \'merge\' and \'separate\' options')
+
+    def get_mergeTriggerData(self):
+        val = {0: 'separate', 1:'merge'}
+        return val[self.rd_reg('mergeTriggerData')]
+
+    # Enable single port (right) or both ports
+    def set_singlePort(self, mode):
+        val = {'both':0, 'right':1}
+        try:
+            self.wr_reg('singlePort', val[mode])
+        except KeyError:
+            print('Choose between \'both\' and \'right\' options')
+
+    def get_singlePort(self):
+        val = {0:'both', 1:'right'}
+        return val[self.rd_reg('singlePort')]
+
+    # On-chip L1A mode
+    def set_l1aMode(self, mode):
+        val = {'disable':0b00, 'periodic':0b10, 'random':0b11}
+        try:
+            self.wr_reg('onChipL1AConf', val[mode])
+        except KeyError:
+            print('Choose between \'disable\', \'periodic\' and \'random\' options')
+
+    def get_l1aMode(self):
+        val = {0b00:'disable', 0b10:'periodic', 0b11:'random', 0b01:'disable'}
+        return val[self.rd_reg('onChipL1AConf')]
+
+    # BCID when BCID is reset
+    def set_BCIDoffset(self, offset):
+        self.wr_reg('BCIDoffset', offset)
+
+    def get_BCIDoffset(self, offset):
+        self.rd_reg('BCIDoffset')
+
+    # Fast command decoder self-alignment or manual alignment
+    def set_fcAlign(self, mode):
+        val = {'manual':0, 'self':1}
+        try:
+            self.wr_reg('fcSelfAlignEn', val[mode])
+        except KeyError:
+            print('Choose between \'manual\' and \'self\' options')
+
+    def get_fcAlign(self):
+        val = {0:'manual', 1:'self'}
+        return val[self.rd_reg('fcSelfAlignEn')]
+
+    # Enable/disable clock delay in fast command manual alignment mode
+    def enable_fcClkDelay(self):
+        assert self.get_fcAlign() == 'manual'
+        self.wr_reg('fcClkDelayEn', 1)
+
+    def disable_fcClkDelay(self):
+        assert self.get_fcAlign() == 'manual'
+        self.wr_reg('fcClkDelayEn', 0)
+
+    # Enable/disable data delay in fast command manual alignment mode, active high
+    def enable_fcDataDelay(self):
+        assert self.get_fcAlign() == 'manual'
+        self.wr_reg('fcDataDelayEn', 1)
+
+    def disable_fcDataDelay(self):
+        assert self.get_fcAlign() == 'manual'
+        self.wr_reg('fcDataDelayEn', 0)
+
+    # The charge injection delay to the 40 MHz clock rising edge. Start from rising edge
+    # of 40 MHz clock, each step 781 ps. The pulse width is fixed of 50 ns.
+    def set_chargeInjDelay(self, delay):
+        self.wr_reg('chargeInjectionDelay', delay)
+
+    def get_chargeInjDelay(self):
+        return self.rd_reg('chargeInjectionDelay')
+
+    # TDC Reference strobe selection
+    def set_refStr(self, refStr):
+        self.wr_reg('RefStrSel', refStr)
+
+    def get_refStr(self):
+        return self.rd_reg('RefStrSel')
+
+    # Charge pump bias current selection, [0:8:120] uA. Debugging use only.
+    def set_PLLBiasGen(self, bias):
+        self.wr_reg('PLL_BIASGEN_CONFIG', bias)
+
+    def get_PLLBiasGen(self):
+        return self.rd_reg('PLL_BIASGEN_CONFIG')
+
+    # Bias current selection of the I-filter (0:1.1:8 uA) or P-filter (0:5.46:82 uA) unit cell in PLL mod. Debugging use only.
+    def set_PLLConfig(self, filt, bias):
+        if filt not in ['I', 'P']:
+            raise Exception('Choose between \'I\' or \'P\' filter')
+        self.wr_reg('PLL_CONFIG_'+filt+'_PLL', bias)
+
+    def get_PLLConfig(self, filt):
+        if filt not in ['I', 'P']:
+            raise Exception('Choose between \'I\' or \'P\' filter')
+        return self.rd_reg('PLL_CONFIG_'+filt+'_PLL')
+
+    # Resistor selection of the P-path in PLL mode [R=1/2*79.8k/CONFIG] Ohm. Debugging use only.
+    def set_PLLRes(self, R):
+        config = 1 / (2 * 79.8e3) / R
+        self.wr_reg('PLL_R_CONFIG', config)
+
+    def get_PLLRes(self):
+        config = self.rd_reg('PLL_R_CONFIG')
+        R = 1 / (2 * 79.8e3) / config
+        return R
+
+    # Bias current selection of the VCO core [0:0.470:7.1] mA. Debugging use only.
+    def set_PLLvco(self, bias):
+        self.wr_reg('PLL_vcoDAC', bias)
+
+    def get_PLLvco(self):
+        return self.rd_reg('PLL_vcoDAC')
+
+    # Output rail-to-rail mode selection of the VCO, active low. Debugging use only.
+    def set_PLLvcoRail(self, mode):
+        if mode not in ['rail', 'CML']:
+            raise Exception('Chose between \'rail\' and \'CML\' options')
+        val = {'rail':0, 'CML':1}
+        self.wr_reg('PLL_vcoRailMode', val[mode])
+
+    def get_PLLvcoRail(self):
+        val = {0:'rail', 'CML':1}
+        return val[self.rd_reg('PLL_vcoRailMode')]
+
+    # Enable/disable PLL mode, active high. Debugging use only.
+    def enable_PLL(self):
+        self.wr_reg('PLL_ENABLEPLL', 1)
+
+    def disable_PLL(self):
+        self.wr_reg('PLL_ENABLEPLL', 0)
+
+    # Adjusting the phase of the output clk1G28 of freqPrescaler in the feedback
+    # divider (N=64) by one skip from low to high. Debugging use only.
+    def set_PLLFBDiv(self, skip):
+        self.wr_reg('PLL_FBDiv_skip', skip)
+
+    def get_PLLFBDiv(self):
+        return self.rd_reg('PLL_FBDiv_skip')
+
+    # Enable/disable feedback divider
+    def enable_PLLFB(self):
+        self.wr_reg('PLL_FBDiv_clkTreeDisable', 0)
+
+    def disable_PLLFB(self):
+        self.wr_reg('PLL_FBDiv_clkTreeDisable', 1)
+
+    # Enable/disable output clocks for serializer
+    def enable_PLLclkSer(self):
+        self.wr_reg('PLLclkgen_disSER', 0)
+
+    def disable_PLLclkSer(self):
+        self.wr_reg('PLLclkgen_disSER', 1)
+
+    # Enable/disable VCO output buffer (associated with clk5g12lshp, clk5g12lshn), active high.
+    # clk5g12lsh is the output clock of the first input buffer in prescaler, and the source
+    # clock for all output clocks. Once disabled, all output clocks are disabled. Debugging use only.
+    def enable_PLLvcoBuff(self):
+        self.wr_reg('PLLclkgen_disVCO', 0)
+
+    def disable_PLLvcoBuff(self):
+        self.wr_reg('PLLclkgen_disVCO', 1)
+
+    # Enable/disable output clocks for EOM, active high. When PLLclkgen_disEOM is high, the following
+    # clocks are disabled: clk5g12EOMp, clk5g12EOMn. Debugging use only.
+    def enable_PLLEOM(self):
+        self.wr_reg('PLLclkgen_disEOM', 0)
+
+    def disable_PLLEOM(self):
+        self.wr_reg('PLLclkgen_disEOM', 1)
+
+    # Enable/disable the internal clock buffers and 1/2 clock divider in prescaler, active high. When
+    # PLLclkgen_disCLK is high, all output clocks are disabled. Debugging use only.
+    def enable_PLLclk(self):
+        self.wr_reg('PLLclkgen_disCLK', 0)
+
+    def disable_PLLclk(self):
+        self.wr_reg('PLLclkgen_disCLK', 1)
+
+    # Enable/disable output clocks for deserializer, active high. When PLLclkgen_disDES is high, the
+    # following clocks are disabled: clk2g56Qp, clk2g56Qn, clk2g56lp, clk2g56ln. clk2g56Q is
+    # the 2.56 GHz clock for test in ETROC_PLL. clk2g56Q is used as WS clock in ETROC2. Debugging use only.
+    def enable_PLLDes(self):
+        self.wr_reg('PLLclkgen_disDES', 0)
+
+    def disable_PLLDes(self):
+        self.wr_reg('PLLclkgen_disDES', 1)
+
+    # Selecting PLL clock or off-chip clock for TDC and readout. Debugging use only.
+    def set_CLKSel(self, clk):
+        if clk not in ['off-chip', 'PLL']:
+            raise Exception('Choose between \'off-chip\' and \'PLL\' options')
+        val = {'off-chip':0, 'PLL':1}
+        self.wr_reg('CLKSel', val[clk])
+
+    def get_CLKSel(self):
+        val = {0:'off-chip', 1:'PLL'}
+        return val[self.rd_reg('CLKSel')]
+
+    # Charge pump current control bits, range from 0 to 15uA for charge and discharge. Debugging use only.
+    def set_CPCurrent(self, current):
+        self.wr_reg('PS_CPCurrent', current)
+
+    def get_CPCurrent(self):
+        return self.rd_reg('PS_CPCurrent')
+
+    # Reset the control voltage of DLL to power supply, active high. Debugging use only.
+    def toggle_CapRst(self):
+        val = ~self.get_CapRst()
+        self.wr_reg('PS_CapRst', val)
+
+    def get_CapRst(self):
+        return self.rd_reg('PS_CapRst')
+
+    # Enable/disable DLL, active high. Debugging use only.
+    def enable_DLL(self):
+        self.wr_reg('PS_Enable', 1)
+
+    def disable_DLL(self):
+        self.wr_reg('PS_Enable', 0)
+
+    # Force to pull down the output of the phase detector, active high. Debugging use only.
+    def set_PSForceDown(self, boolean):
+        if not isinstance(boolean, bool):
+            raise TypeError('Argument must be a boolean')
+        val = 1 if boolean else 0
+        self.wr_reg('PS_ForceDown', val)
+
+    def get_PSForceDown(self):
+        val = self.rd_reg('PS_ForceDown')
+        return True if val == 1 else False
+
+    # Phase selecting control bits, PS_PhaseAdj[7:3] for coarse, PS_PhaseAdj[2:0] for fine.
+    def set_PhaseAdj(self, phase):
+        self.wr_reg('PS_PhaseAdj', phase)
+
+    def get_PhaseAdj(self):
+        return self.rd_reg('PS_PhaseAdj')
+
+    # Enable/disable the Rx for the 40 MHz, 1.28 GHz reference clock or the fast command, active high. Debugging use only
+    def set_Rx(self, mode, boolean):
+        if not isinstance(boolean, bool):
+            raise TypeError('Argument must be True (enable) or False (disable)')
+        val  = 1 if boolean else 0
+        regs = {40:'CLK40_EnRx', 1280:'CLK1280_EnRx', 'FC':'FC_EnRx'}
+        try:
+            self.wr_reg(regs[mode], val)
+        except KeyError:
+            print('Choose between 40 (40 MHz ref. clock), 1280 (1.28 GHz ref. clock) and \'FC\' (fast command) options')
+
+    def get_Rx(self, mode):
+        regs = {40:'CLK40_EnRx', 1280:'CLK1280_EnRx', 'FC':'FC_EnRx'}
+        try:
+            return self.rd_reg(regs[mode])
+        except KeyError:
+            print('Choose between 40 (40 MHz ref. clock), 1280 (1.28 GHz ref. clock) and \'FC\' (fast command) options')
+
+    # Enable/disable internal termination of the Rx for the 40 MHz, 1.28 GHz reference clock or the fast command, active high. Debugging use only.
+    def set_Ter(self, mode, boolean):
+        if not isinstance(boolean, bool):
+            raise TypeError('Argument must be True (enable) or False (disable)')
+        val  = 1 if boolean else 0
+        regs = {40:'CLK40_EnTer', 1280:'CLK1280_EnTer', 'FC':'FC_EnTer'}
+        try:
+            self.wr_reg(regs[mode], val)
+        except KeyError:
+            print('Choose between 40 (40 MHz ref. clock), 1280 (1.28 GHz ref. clock) and \'FC\' (fast command) options')
+
+    def get_Ter(self, mode):
+        regs = {40:'CLK40_EnTer', 1280:'CLK1280_EnTer', 'FC':'FC_EnTer'}
+        try:
+            return self.rd_reg(regs[mode])
+        except KeyError:
+            print('Choose between 40 (40 MHz ref. clock), 1280 (1.28 GHz ref. clock) and \'FC\' (fast command) options')
+
+    # Equalization strength of the Rx for the 40 MHz, 1.28 GHz reference clock or the fast command. Debugging use only.
+    # 2'b00: equalization is turned off; 2'b11: maximal equalization.
+    def set_Equ(self, mode, equalization):
+        regs = {40:'CLK40_Equ', 1280:'CLK1280_Equ', 'FC':'FC_Equ'}
+        try:
+            self.wr_reg(regs[mode], equalization)
+        except KeyError:
+            print('Choose between 40 (40 MHz ref. clock), 1280 (1.28 GHz ref. clock) and \'FC\' (fast command) options for \'mode\' arg.')
+
+    def get_Equ(self, mode):
+        regs = {40:'CLK40_Equ', 1280:'CLK1280_Equ', 'FC':'FC_Equ'}
+        try:
+            return self.rd_reg(regs[mode])
+        except KeyError:
+            print('Choose between 40 (40 MHz ref. clock), 1280 (1.28 GHz ref. clock) and \'FC\' (fast command) options')
+
+    # Inverting data of the Rx for the 40 MHz, 1.28 GHz reference clock or the fast command, active high. Debugging use only.
+    def set_Inv(self, mode, boolean):
+        if not isinstance(boolean, bool):
+            raise TypeError('Argument must be True (invert) or False (don\'t invert)')
+        val  = 1 if boolean else 0
+        regs = {40:'CLK40_InvData', 1280:'CLK1280_InvData', 'FC':'FC_InvData'}
+        try:
+            self.wr_reg(regs[mode], val)
+        except KeyError:
+            print('Choose between 40 (40 MHz ref. clock), 1280 (1.28 GHz ref. clock) and \'FC\' (fast command) options')
+
+    def get_Inv(self, mode):
+        regs = {40:'CLK40_InvData', 1280:'CLK1280_InvData', 'FC':'FC_InvData'}
+        try:
+            return self.rd_reg(regs[mode])
+        except KeyError:
+            print('Choose between 40 (40 MHz ref. clock), 1280 (1.28 GHz ref. clock) and \'FC\' (fast command) options')
+
+    # Set common voltage of the Rx for the 40 MHz, 1.28 GHz reference clock or the fast command to 1/2 vdd, active high. Debugging use only.
+    def set_commonV(self, mode, boolean):
+        if not isinstance(boolean, bool):
+            raise TypeError('Argument must be True (set) or False (don\'t set)')
+        val  = 1 if boolean else 0
+        regs = {40:'CLK40_SetCM', 1280:'CLK1280_SetCM', 'FC':'FC_SetCM'}
+        try:
+            self.wr_reg(regs[mode], val)
+        except KeyError:
+            print('Choose between 40 (40 MHz ref. clock), 1280 (1.28 GHz ref. clock) and \'FC\' (fast command) options')
+
+    def get_commonV(self, mode):
+        regs = {40:'CLK40_SetCM', 1280:'CLK1280_SetCM', 'FC':'FC_SetCM'}
+        try:
+            return self.rd_reg(regs[mode])
+        except KeyError:
+            print('Choose between 40 (40 MHz ref. clock), 1280 (1.28 GHz ref. clock) and \'FC\' (fast command) options')
+
+    # Enable/disable the power up sequence, active high
+    def enable_PowerUp(self):
+        self.wr_reg('disPowerSequence', 0)
+
+    def disable_PowerUp(self):
+        self.wr_reg('disPowerSequence', 1)
+
+    # Reset power sequencer controller, active high
+    def reset_Power(self):
+        self.wr_reg('softBoot', 1)
+
+    # The register controlling the SCLK pulse width, ranging ranges from 3 us to 10 us with step of 0.5 us.
+    # The default value is 4 corresponding to 5 us pulse width. Debugging use only.
+    def set_SCLKWidth(self, width):
+        self.wr_reg('EFuse_TCKHP', width)
+
+    def get_SCLKWidth(self):
+        return self.rd_reg('EFuse_TCKHP')
+
+    # Enable/disable EFuse clock
+    def enable_EFuseClk(self):
+        self.wr_reg('EFuse_EnClk', 1)
+
+    def disable_EFuseClk(self):
+        self.wr_reg('EFuse_EnClk', 0)
+
+    # Operation mode of EFuse.
+    # 2'b01: programming mode;
+    # 2'b10: reading mode.
+    def set_EFuseMode(self, mode):
+        val = {'programming':0b01, 'reading':0b10}
+        try:
+            self.wr_reg('EFuse_Mode', val[mode])
+        except KeyError:
+            print('Choose between \'programming\' and \'reading\' options')
+
+    def get_EFuseMode(self):
+        val = {0b01:'programming', 0b10:'reading'}
+        return val[self.rd_reg('EFuse_Mode')]
+
+    # Reset signal of the EFuse controller, active low
+    def reset_EFuse(self):
+        self.wr_reg('EFuse_Rstn', 0)
+
+    # Start signal of the EFuse programming. A positive pulse will start the programming
+    def start_EFuse(self):
+        self.wr_reg('EFuse_Start', 1)
+
+    # Data to be written into EFuse
+    def set_EFuseDat(self, data):
+        self.wr_reg('EFuse_Prog', data)
+
+    def get_EFuseDat(self):
+        return self.rd_reg('EFuse_Prog')
+
+    # Bypass EFuse.
+    # 1'b0: EFuse output Q[31:0] is output;
+    # 1'b1: EFuse raw data from I2C (EFuse_Prog[31:0]) is output
+    def bypass_EFuse(self, bypass):
+        if not isinstance(bypass, bool):
+            raise TypeError('Argument must be True (bypass) or False (don\'t bypass)')
+        val = 1 if bypass else 0
+        self.wr_reg('EFuse_Bypass', val)
+
+    # If the number of instantLock is true for 2^IfLockThrCounter in a row, the PLL is locked in the initial status
+    def set_IfLockThrCounter(self, counter):
+        self.wr_reg('IfLockThrCounter', counter)
+
+    def get_IfLockThrCounter(self):
+        return self.rd_reg('IfLockThrCounter')
+
+    # If the number of instantLock is true for 2^IfReLockThrCounter in a row, the PLL is relocked before the unlock status is confirmed
+    def set_IfReLockThrCounter(self, counter):
+        self.wr_reg('IfReLockThrCounter', counter)
+
+    def get_IfReLockThrCounter(self):
+        return self.rd_reg('IfReLockThrCounter')
+
+    # If the number of instantLock is false for 2^IfUnLockThrCounter in a row, the PLL is unlocked
+    def set_IfUnLockThrCounter(self, counter):
+        self.wr_reg('IfUnLockThrCounter', counter)
+
+    def get_IfUnLockThrCounter(self):
+        return self.rd_reg('IfUnLockThrCounter')
+
+    # The fast command bit clock alignment command is issued by I2C.
+    # Used in self-alignment only.
+    # Initializing the clock phase alignment process at its rising edge (synchronized by the 40 MHz PLL clock)
+    def enable_FCClkPhaseAlign(self):
+        assert self.get_fcAlign() == 'self'
+        self.wr_reg('asyAlignFastcommand', 1)
+
+    def disable_FCClkPhaseAlign(self):
+        assert self.get_fcAlign() == 'self'
+        self.wr_reg('asyAlignFastcommand', 0)
+
+    # Link reset signal from I2C, active high. If it is high, ETROC2 sends test pattern via link
+    def set_LinkReset(self, reset):
+        if not isinstance(reset, bool):
+            raise TypeError('Argument must be True (reset) or False (don\'t reset)')
+        val = 1 if reset else 0
+        self.wr_reg('asyLinkReset', val)
+
+    def get_LinkReset(self):
+        return self.rd_reg('asyLinkReset')
+
+    # Reset PLL AFC from I2C, active low
+    def set_PLLReset(self, reset):
+        if not isinstance(reset, bool):
+            raise TypeError('Argument must be True (reset) or False (don\'t reset)')
+        val = 0 if reset else 1
+        self.wr_reg('asyPLLReset', val)
+
+    def get_PLLReset(self):
+        return self.rd_reg('asyPLLReset')
+
+    # Reset charge injection module, active low
+    def set_ChargeInjReset(self, reset):
+        if not isinstance(reset, bool):
+            raise TypeError('Argument must be True (reset) or False (don\'t reset)')
+        val = 0 if reset else 1
+        self.wr_reg('asyResetChargeInj', val)
+
+    def get_ChargeInjReset(self):
+        return self.rd_reg('asyResetChargeInj')
+
+    # Reset fastcommand from I2C, active low
+    def set_FCReset(self, reset):
+        if not isinstance(reset, bool):
+            raise TypeError('Argument must be True (reset) or False (don\'t reset)')
+        val = 0 if reset else 1
+        self.wr_reg('asyResetFastcommand', val)
+
+    def get_FCReset(self):
+        return self.rd_reg('asyResetFastcommand')
+
+    # Reset globalReadout module, active low
+    def set_GlobalReadoutReset(self, reset):
+        if not isinstance(reset, bool):
+            raise TypeError('Argument must be True (reset) or False (don\'t reset)')
+        val = 0 if reset else 1
+        self.wr_reg('asyResetGlobalReadout', val)
+
+    def get_GlobalReadoutReset(self):
+        return self.rd_reg('asyResetGlobalReadout')
+
+    # Reset lock detect, active low (original lockDetect reset is active high, polarity changed)
+    def set_LockDetectReset(self, reset):
+        if not isinstance(reset, bool):
+            raise TypeError('Argument must be True (reset) or False (don\'t reset)')
+        val = 0 if reset else 1
+        self.wr_reg('asyResetLockDetect', val)
+
+    def get_LockDetectReset(self):
+        return self.rd_reg('asyResetLockDetect')
+
+    # Start PLL calibration process, active high
+    def start_PLLCal(self):
+        self.wr_reg('asyStartCalibration', 1)
+
+    def stop_PLLCal(self):
+        self.wr_reg('asyStartCalibration', 0)
+
+    # Power down voltage reference generator, active high.
+    # 1'b1: the voltage reference generator is down.
+    # 1'b0: the voltage reference generator is up.
+    def power_up_VRef(self):
+        self.wr_reg('VRefGen_PD', 0)
+
+    def power_down_VRef(self):
+        self.wr_reg('VRefGen_PD', 1)
+
+    # Power down the temperature sensor, active high.
+    # 1'b1: the temperature sensor is down;
+    # 1'b0: the temperature sensor is up.
+    def power_up_TempSen(self):
+        self.wr_reg('TS_PD', 0)
+
+    def power_down_TempSen(self):
+        self.wr_reg('TS_PD', 1)
+
+    # The TDC clock testing enable.
+    # 1'b1: sending TDC clock at the left serial port;
+    # 1'b0: sending left serializer data at the left port.
+    def enable_TDCClkTest(self):
+        self.wr_reg('TDCClockTest', 1)
+
+    def disable_TDCClkTest(self):
+        self.wr_reg('TDCClockTest', 0)
+
+    # The TDC reference strobe testing enable.
+    # 1'b1: sending TDC reference strobe at the right serial port;
+    # 1'b0: sending right serializer data at the right port.
+    def enable_TDCRefStrTest(self):
+        self.wr_reg('TDCStrobeTest', 1)
+
+    def disable_TDCRefStrTest(self):
+        self.wr_reg('TDCStrobeTest', 0)
+
+    # Left/Right Tx amplitude selection.
+    # 3'b000: min amplitude (50 mV)
+    # 3'b111: max amplitude (320 mV)
+    # Step size is about 40 mV.
+    def set_TxAmplSel(self, side, amp):
+        regs = {'left':'LTx_AmplSel', 'right':'RTx_AmplSel'}
+        try:
+            self.wr_reg(regs[side], amp)
+        except KeyError:
+            print('Choose between \'left\' or \'right\' side options')
+
+    def get_TxAmplSel(self, side):
+        regs = {'left':'LTx_AmplSel', 'right':'RTx_AmplSel'}
+        try:
+            return self.rd_reg(regs[side])
+        except KeyError:
+            print('Choose between \'left\' or \'right\' side options')
+
+    # Left/Right Tx disable, active high.
+    def enable_Tx(self, side):
+        regs = {'left':'disLTx', 'right':'disRTx'}
+        try:
+            self.wr_reg(regs[side], 0)
+        except KeyError:
+            print('Choose between \'left\' or \'right\' side options')
+
+    def disable_Tx(self, side):
+        regs = {'left':'disLTx', 'right':'disRTx'}
+        try:
+            self.wr_reg(regs[side], 1)
+        except KeyError:
+            print('Choose between \'left\' or \'right\' side options')
+
+    # GRO TOA reset, active low
+    def set_GROTOAReset(self, reset):
+        if not isinstance(reset, bool):
+            raise TypeError('Argument must be True (reset) or False (don\'t reset)')
+        val = 0 if reset else 1
+        self.wr_reg('GRO_TOARST_N', val)
+
+    def get_GROTOAReset(self):
+        return self.rd_reg('GRO_TOARST_N')
+
+    # GRO Start, active high.
+    def start_GRO(self):
+        self.wr_reg('GRO_Start', 1)
+
+    def stop_GRO(self):
+        self.wr_reg('GRO_Start', 0)
+
+    # GRO TOA latch clock. (Guessing this means enable/disable)
+    def enable_GROTOALatch(self):
+        self.wr_reg('GRO_TOA_Latch', 1)
+
+    def disable_GROTOALatch(self):
+        self.wr_reg('GRO_TOA_Latch', 0)
+
+    # GRO TOA clock.
+    def enable_GROTOAClk(self):
+        self.wr_reg('GRO_TOA_CK', 1)
+
+    def disable_GROTOAClk(self):
+        self.wr_reg('GRO_TOA_CK', 0)
+
+    # GRO TOT clock.
+    def enable_GROTOTClk(self):
+        self.wr_reg('GRO_TOT_CK', 1)
+
+    def disable_GROTOTClk(self):
+        self.wr_reg('GRO_TOT_CK', 0)
+
+    # GRO TOT reset, active low.
+    def set_GROTOTReset(self, reset):
+        if not isinstance(reset, bool):
+            raise TypeError('Argument must be True (reset) or False (don\'t reset)')
+        val = 0 if reset else 1
+        self.wr_reg('GRO_TOTRST_N', val)
+
+    def get_GROTOTReset(self):
+        return self.rd_reg('GRO_TOTRST_N')
+
+    # ***********************
+    # **** PERIPH STATUS ****
+    # ***********************
+
+    # Bit alignment error
+    def get_BitAlignErr(self):
+        return self.rd_reg('fcBitAlignError')
+
+    # Phase shifter late
+    def get_PhaseShiftLate(self):
+        return self.rd_reg('PS_Late')
+
+    # AFC capacitance
+    def get_AFCCap(self):
+        return self.rd_reg('AFCcalCap')
+
+    # AFC busy, 1: AFC is ongoing, 0: AFC is done
+    def get_AFCBusy(self):
+        return self.rd_reg('AFCBusy')
+
+    # Fast command alignment FSM state
+    def get_FSM_FCAlign(self):
+        return self.rd_reg('fcAlignFinalState')
+
+    # Global control FSM state
+    def get_FSM_GlobCtrl(self):
+        return self.rd_reg('controllerState')
+
+    # Fast command self-alignment error indicator, ed[3:0] in figure 53
+    def get_SelfAlignErr(self):
+        return self.rd_reg('fcAlignStatus')
+
+    # Count of invalid fast command received
+    def get_invalidFCCount(self):
+        return self.rd_reg('invalidFCCount')
+
+    def FC_status(self):
+        status = self.get_invalidFCCount() == self.invalid_FC_counter
+        self.invalid_FC_counter = self.get_invalidFCCount()
+        return status
+
+    # Count of PLL unlock detected
+    def get_PLLUnlockCount(self):
+        return self.rd_reg('pllUnlockCount')
+
+    # 32-bit EFuse output
+    def get_EFuseOut(self):
+        return self.rd_reg('EFuseQ')

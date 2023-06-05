@@ -1,5 +1,6 @@
 import math
 import numpy as np
+from itertools import combinations
 from time import sleep
 from yaml import load, dump
 import os
@@ -11,6 +12,7 @@ try:
 except ImportError:
     from yaml import Loader, Dumper
 
+here = os.path.dirname(os.path.abspath(__file__))
 
 def get_temp(v_out, v_ref, r_ref, t_1, r_1, b, celcius=True):
     """
@@ -31,12 +33,93 @@ def get_temp(v_out, v_ref, r_ref, t_1, r_1, b, celcius=True):
     delta_t = 273.15 if celcius else 0
     try:
         r_t = r_ref / (v_ref/v_out - 1)
+        # print(r_1, r_t, v_ref, v_out)
         t_2 = b/((b/(t_1+delta_t)) - math.log(r_1) + math.log(r_t))
     except ZeroDivisionError:
         print ("Temperature calculation failed!")
         return -999
+    except ValueError:
+        print("Negative resistance values not allowed in temperature calculation")
+        r_t = r_ref / (v_ref/v_out - 1)
+        print(f"""
+              \tr_1   (float) -- resistance of NTC at reference temperature: {r_1}\n
+              \tr_ref (float) -- volatge divider resistor:                   {r_ref}\n
+              \tv_out (float) -- voltage measured on the thermistor:         {v_out}\n
+              \tv_ref (float) -- reference voltage:                          {v_ref}\n
+              \tr_t = r_ref / (v_ref/v_out - 1)\n
+              \t    = {r_ref} / ({v_ref}/{v_out}-1)\n
+              \t    = {r_ref/(v_ref/v_out-1)}\n
+              """)
+        return -999
     return t_2-delta_t
 
+def get_temp_direct(v_out, curr_dac, thermistor="NTCG063JF103FTB", celcius=True, verbose=False):
+    """
+    Calculate the temperature of a thermistor, given the voltage measured on it.
+
+    Arguments:
+    v_out (float) -- voltage measured on the thermistor
+    curr_dac (float) -- current source value set on the DAC (in uA)
+    thermistor (str="NTCG063JF103FTB") -- thermistor used for temperature calculation
+
+    Keyword arguments:
+    celcius (bool) -- give and return the temperature in degree celcius. Kelvin scale used otherwise.
+    """
+
+    find_temp = temp_res_fit(thermistor=thermistor)
+
+    r_t = v_out / (curr_dac / 10**6)
+    t = find_temp(np.log10(r_t))
+
+    delta_t = 0 if celcius else 273.15
+
+    if verbose:
+        print(f"Thermistor: {thermistor}")
+        print(f"Voltage: {v_out} \t Current: {curr_dac} uA")
+        print(f"Resistance: {r_t}")
+        print(f"Temperature: {t}")
+
+    return t+delta_t
+
+def temp_res_fit(thermistor="NTCG063JF103FTB", power=2):
+
+    T_ref = 25
+    if thermistor=="NTCG063JF103FTB":
+        B_list = [3194, 3270, 3382, 3422]
+        T_list = [-25, 0, 50, 75]
+        R_ref = 10e3
+    elif thermistor=="NTCG063UH103HTBX":
+        B_list = [3770, 3822, 3900, 3926]
+        T_list = [-25, 0, 50, 75]
+        R_ref = 10e3
+    elif thermistor=="NCP03XM102E05RL":
+        B_list = [3500, 3539, 3545, 3560]
+        T_list = [50, 80, 85, 100]
+        R_ref = 1e3
+    elif thermistor=="NTCS0603E3272FMT":
+        B_list = [3600, 3600]
+        T_list = [25, 85]
+        R_ref = 2.7e3
+    else:
+        raise ValueError(f"Only thermistors NTCG063JF103FTB, NTCG063UH103HTBX, NTCS0603E3272FMT or NCP03XM102E05RL are currently allowed, but {thermistor} was passed.")
+
+    R_list = []
+
+    for B, T in zip(B_list, T_list):
+        R = R_ref * math.exp(-B * ((1/298.15) - (1/(T+273.15))))
+        R_list.append(R)
+
+    if thermistor=="NTCG063JF103FTB" or thermistor=="NTCG063UH103HTBX" or thermistor=='NTCS0603E3272FMT':
+        T_list.insert(2, T_ref)     # Reference temperature of thermistor
+        R_list.insert(2, R_ref)     # Reference resistance of NTC at reference temperature
+    elif thermistor=="NCP03XM102E05RL":
+        T_list = [T_ref] + T_list
+        R_list = [R_ref] + R_list
+    
+    poly_coeffs = np.polyfit(np.log10(R_list), T_list, power)
+    fit = np.poly1d(poly_coeffs)
+
+    return fit
 
 def read_mapping(f_in, selection='adc', flavor='small'):
     flavors = {'small':0, 'medium':1, 'large': 2}
@@ -59,6 +142,21 @@ def load_yaml(f_in):
     with open(f_in, 'r') as f:
         res = load(f, Loader=Loader)
     return res
+
+def ffs(x):
+    '''
+    Returns the index, counting from 0, of the
+    least significant set bit in `x`.
+    from https://stackoverflow.com/questions/5520655/return-index-of-least-significant-bit-in-python
+    There really is no better way!
+    '''
+    return (x&-x).bit_length()-1
+
+def bit_count(x):
+    '''
+    get number of bits from a mask. this is ugly, python 3.10 has `int .bit_count()`
+    '''
+    return bin(x).count('1')
 
 def prbs_phase_scan(lpgbt, f_out='phase_scan.txt'):
     with open(f_out, "w") as f:
@@ -117,16 +215,23 @@ def make_version_header(res):
 def chunk(in_list, n):
     return [in_list[i * n:(i + 1) * n] for i in range((len(in_list) + n - 1) // n )] 
 
+def get_last_commit_sha(version):
+    import requests
+    import json
+
+
+    r2 = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/commits?ref=devel")
+    log = json.loads(r2.content)
+    last_commit_sha = log[0]['id'][:7]
+    return last_commit_sha
+
 def download_address_table(version):
     import os
     import requests
     import json
     import urllib.parse
 
-
-    r2 = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/commits?ref=devel")
-    log = json.loads(r2.content)
-    last_commit_sha = log[0]['id'][:7]
+    last_commit_sha = get_last_commit_sha(version)
 
     r = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/tree?ref={version}&&path=address_tables&&recursive=True")
     tree = json.loads(r.content)
@@ -141,17 +246,18 @@ def download_address_table(version):
         tree = json.loads(r.content)
         print (f"Local firmware version detected. Will download address table corresponding to commit {version}.")
 
-    
-    os.makedirs(f"address_table/{version}")
-    for f in tree:
-        if f['type'] == 'tree':
-            os.makedirs(f"address_table/{version}/{f['name']}")
-        elif f['type'] == 'blob':
-            # needs URL encode: https://www.w3schools.com/tags/ref_urlencode.ASP
-            path = urllib.parse.quote_plus(f['path']).replace('.', '%2E')  # python thinks . is fine, so we replace it manually
-            res = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/files/{path}/raw?ref={version}")
-            local_path = f['path'].replace('address_tables/', '')
-            open(f"address_table/{version}/{local_path}", 'wb').write(res.content)
+    print(f"Making directory: address_table/{version}")
+    if not os.path.isdir(f"address_table/{version}"):
+        os.makedirs(f"address_table/{version}")
+        for f in tree:
+            if f['type'] == 'tree':
+                os.makedirs(f"address_table/{version}/{f['name']}")
+            elif f['type'] == 'blob':
+                # needs URL encode: https://www.w3schools.com/tags/ref_urlencode.ASP
+                path = urllib.parse.quote_plus(f['path']).replace('.', '%2E')  # python thinks . is fine, so we replace it manually
+                res = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/files/{path}/raw?ref={version}")
+                local_path = f['path'].replace('address_tables/', '')
+                open(f"address_table/{version}/{local_path}", 'wb').write(res.content)
 
     return version
 
@@ -169,7 +275,7 @@ def check_repo_status(kcu_version=None):
     last_commit_sha = log[0]['id']
 
     # get local log
-    working_tree_dir = os.path.expandvars("$TAMALERO_BASE")
+    working_tree_dir = '/' + os.path.join(*(here.split('/')[:-1]))
     repo = Repo(working_tree_dir)
     hashes = [ c.hexsha for c in repo.iter_commits(max_count=50) ]
     tags = [ t.name.strip('v') for t in repo.tags ]
@@ -197,28 +303,38 @@ def get_kcu(kcu_address, control_hub=True, host='localhost', verbose=False):
             print(f"NOT using control hub on {host=}, {kcu_address=}")
 
     import uhal
+    import time
     if control_hub:
         ipb_path = f"chtcp-2.0://{host}:10203?target={kcu_address}:50001"
     else:
         ipb_path = f"ipbusudp-2.0://{kcu_address}:50001"
     print (f"IPBus address: {ipb_path}")
 
-    try:
-        kcu_tmp = KCU(name="tmp_kcu",
-                    ipb_path=ipb_path,
-                    adr_table="address_table/generic/etl_test_fw.xml")
-    except uhal.exception:
-        print ("Could not establish connection with KCU. Exiting.")
-        return 0
+    trycnt = 0
+    while (True):
+        try:
+            kcu_tmp = KCU(name="tmp_kcu",
+                        ipb_path=ipb_path,
+                        adr_table="address_table/generic/etl_test_fw.xml")
+            break
+        except uhal.exception or uhal._core.exception:
+            trycnt += 1
+            time.sleep(1)
+            if (trycnt > 10):
+                print ("Could not establish connection with KCU. Exiting.")
+                return 0
 
         #raise
     xml_sha     = kcu_tmp.get_xml_sha()
     if verbose:
         print (f"Address table hash: {xml_sha}")
 
-    if not os.path.isdir(f"address_table/{xml_sha}"):
-        print ("Downloading latest firmware version address table.")
+    last_commit = get_last_commit_sha(xml_sha)
+    if not os.path.isdir(f"address_table/{last_commit}"):
+        print (f"Downloading latest firmware version address table to address_table/{last_commit}")
         xml_sha = download_address_table(xml_sha)
+    else:
+        xml_sha = last_commit
 
     kcu = KCU(name="my_device",
               ipb_path=ipb_path,
@@ -227,6 +343,38 @@ def get_kcu(kcu_address, control_hub=True, host='localhost', verbose=False):
     kcu.get_firmware_version(string=False)
 
     return kcu
+
+def get_config(config, version='v2', verbose=False):
+    default_cfg = load_yaml(os.path.join(here, f'../configs/rb_default_{version}.yaml'))
+    if config != 'default':
+        updated_cfg = load_yaml(os.path.join(here, f'../configs/{config}_{version}.yaml'))
+        for chip in ['SCA', 'LPGBT']:
+            for interface in ['adc', 'gpio']:
+                if updated_cfg[chip][interface] is not None:
+                    for k in updated_cfg[chip][interface]:
+                        if verbose:
+                            print(f"\n - Updating configuration for {chip}, {interface}, {k} to:")
+                            print(updated_cfg[chip][interface][k])
+                        default_cfg[chip][interface][k] = updated_cfg[chip][interface][k]
+        for links in ['trigger', 'clocks', 'downlink', 'uplink']:
+            default_cfg['inversions'][links] = updated_cfg['inversions'][links]
+        if 'modules' in updated_cfg:
+            default_cfg['modules'] = updated_cfg['modules']
+    return default_cfg
+
+def majority_vote(values, majority=None):
+    from functools import reduce
+    if majority is None:
+        majority = len(values)-1
+    combs = combinations(range(len(values)), majority)
+    votes = []
+    for comb in combs:
+        #print(comb)
+        tmp_list = [values[i] for i in comb]
+        votes.append(reduce(lambda x, y: x & y, tmp_list))
+
+    #print(votes)
+    return reduce(lambda x, y: x | y, votes)
 
 if __name__ == '__main__':
     print ("Temperature example:")

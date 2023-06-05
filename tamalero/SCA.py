@@ -1,6 +1,7 @@
 import os
 import random
-from tamalero.utils import read_mapping
+from tamalero.utils import read_mapping, get_config
+from functools import wraps
 import time
 try:
     from tabulate import tabulate
@@ -110,34 +111,43 @@ class SCA_I2C:
     I2C_R_DATA3 = 0x71 # read from data register 3
     I2C_RW_DATA_OFFSET = 16 # offset to access data register 1, 2, 3
 
+def gpio_byname(gpio_func):
+    @wraps(gpio_func)
+    def wrapper(lpgbt, pin, direction=1):
+        if isinstance(pin, str):
+            gpio_dict = lpgbt.gpio_mapping
+            pin = gpio_dict[pin]['pin']
+            return gpio_func(lpgbt, pin, direction)
+        elif isinstance(pin, int):
+            return gpio_func(lpgbt, pin, direction)
+        else:
+            invalid_type = type(pin)
+            raise TypeError(f"{gpio_func.__name__} can only take positional arguments of type int or str, but argument of type {invalid_type} was given.")
+
+    return wrapper
 
 class SCA:
 
-    def __init__(self, rb=0, flavor='small', ver=0):
+    def __init__(self, rb=0, flavor='small', ver=0, config='default'):
         self.rb = rb
         self.flavor = flavor
         self.err_count = 0
         self.ver = ver + 1  # NOTE don't particularly like this, but we're giving it the lpGBT version
+        self.config = config
+        self.locked = False
         self.set_adc_mapping()
         self.set_gpio_mapping()
-        self.locked = False
 
     def connect_KCU(self, kcu):
         self.kcu = kcu
 
     def set_adc_mapping(self):
         assert self.ver in [1, 2], f"Unrecognized version {self.ver}"
-        if self.ver == 1:
-            self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping.yaml'), 'adc')
-        elif self.ver == 2:
-            self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping_v2.yaml'), 'adc')
+        self.adc_mapping = get_config(self.config, version=f'v{self.ver}')['SCA']['adc']
 
     def set_gpio_mapping(self):
         assert self.ver in [1, 2], f"Unrecognized version {self.ver}"
-        if self.ver == 1:
-            self.gpio_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping.yaml'), 'gpio')
-        elif self.ver == 2:
-            self.gpio_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/SCA_mapping_v2.yaml'), 'gpio')
+        self.gpio_mapping = get_config(self.config, version=f'v{self.ver}')['SCA']['gpio']
 
     def update_ver(self, new_ver):
         assert new_ver in [1, 2], f"Unrecognized version {new_ver}"
@@ -185,6 +195,8 @@ class SCA:
             print(f"{transid=}, {channel=}, {cmd=}, {adr=}, {data=}")
 
 
+        self.kcu.toggle_dispatch()
+
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_CHANNEL" % self.rb, channel)
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_CMD" % self.rb, cmd)
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_ADDRESS" % self.rb, adr)
@@ -193,6 +205,8 @@ class SCA:
     
         self.kcu.write_node("READOUT_BOARD_%d.SC.TX_DATA" % self.rb, data)
         self.kcu.action("READOUT_BOARD_%d.SC.START_COMMAND" % self.rb)
+
+        self.kcu.dispatch()
     
         # reply packet structure
         # sof
@@ -226,11 +240,20 @@ class SCA:
             if (err & 0x40):
                 print("SCA Read Error :: Command In Treatment")
 
-        rx_rec  = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_RECEIVED" % self.rb).value()  # flag pulse
-        rx_ch   = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_CHANNEL" % self.rb).value()  # channel reply
-        rx_len  = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_LEN" % self.rb).value()
-        rx_ad   = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_ADDRESS" % self.rb).value()
-        rx_ctrl = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_CONTROL" % self.rb).value()
+        self.kcu.toggle_dispatch()
+        rx_rec  = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_RECEIVED" % self.rb)  # flag pulse
+        rx_ch   = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_CHANNEL" % self.rb)  # channel reply
+        rx_len  = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_LEN" % self.rb)
+        rx_ad   = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_ADDRESS" % self.rb)
+        rx_ctrl = self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_CONTROL" % self.rb)
+        self.kcu.dispatch()
+
+        # dispatch and get the read values
+        rx_rec  = rx_rec.value()  # flag pulse
+        rx_ch   = rx_ch.value()  # channel reply
+        rx_len  = rx_len.value()
+        rx_ad   = rx_ad.value()
+        rx_ctrl = rx_ctrl.value()
 
         if verbose:
             print(f"Received: {err=}, {rx_rec=}, {rx_ch=}, {rx_len=}, {rx_ad=}, {rx_ctrl=}")
@@ -401,6 +424,21 @@ class SCA:
             print("CRC wr=%02X, rd=%02X" % (crc, crc_rd))
             print("CRD wr=%02X, rd=%02X" % (crd, crd_rd))
 
+    def enable_adc_curr(self, pin):
+        # just do one at a time, does not need to run constantly
+        self.enable_adc() #enable ADC
+        tmp = 1 << pin
+        self.rw_reg(SCA_ADC.ADC_W_CURR, tmp)
+        val = self.rw_reg(SCA_ADC.ADC_R_CURR).value()
+        return val == tmp
+
+    def disable_adc_curr(self):
+        # disable current source for ALL channels
+        self.enable_adc() #enable ADC
+        self.rw_reg(SCA_ADC.ADC_W_CURR, 0)
+        val = self.rw_reg(SCA_ADC.ADC_R_CURR).value()
+        return val == 0
+
     def read_adc(self, MUX_reg = 0):
         self.enable_adc() #enable ADC
         self.rw_reg(SCA_ADC.ADC_W_MUX, MUX_reg) #configure register we want to read
@@ -408,17 +446,35 @@ class SCA:
         self.rw_reg(SCA_ADC.ADC_W_MUX, 0x0) #reset register to default (0)
         return val
 
-    def read_adcs(self): #read and print all adc values
+    def read_adcs(self, check=False, strict_limits=False): #read and print all adc values
         adc_dict = self.adc_mapping
         table=[]
+        will_fail = False
         for adc_reg in adc_dict.keys():
             pin = adc_dict[adc_reg]['pin']
             comment = adc_dict[adc_reg]['comment']
             value = self.read_adc(pin)
             input_voltage = value / (2**12 - 1) * adc_dict[adc_reg]['conv']
-            table.append([adc_reg, pin, value, input_voltage, comment])
+            if check:
+                try:
+                    min_v = adc_dict[adc_reg]['min']
+                    max_v = adc_dict[adc_reg]['max']
+                    status = "OK" if (input_voltage >= min_v) and (input_voltage <= max_v) else "ERR"
+                    if status == "ERR" and strict_limits:
+                        will_fail = True
+                except KeyError:
+                    status = "N/A"
+                table.append([adc_reg, pin, value, input_voltage, status, comment])
+            else:
+                table.append([adc_reg, pin, value, input_voltage, comment])
 
-        print(tabulate(table, headers=["Register","Pin", "Reading", "Voltage", "Comment"],  tablefmt="simple_outline"))
+        if check:
+            print(tabulate(table, headers=["Register","Pin", "Reading", "Voltage", "Status", "Comment"],  tablefmt="simple_outline"))
+        else:
+            print(tabulate(table, headers=["Register","Pin", "Reading", "Voltage", "Comment"],  tablefmt="simple_outline"))
+
+        if will_fail:
+            raise ValueError("At least one input voltage is out of bounds, with status ERR as seen in the table above")
 
     def read_temp(self):
         # not very precise (according to manual), but still useful.
@@ -429,6 +485,7 @@ class SCA:
         val = self.rw_reg(SCA_GPIO.GPIO_R_DATAIN).value()
         return int((val >> line) & 1)
 
+    @gpio_byname
     def set_gpio(self, line, to=1):
         self.enable_gpio()  # enable GPIO
         currently_set = self.rw_reg(SCA_GPIO.GPIO_R_DATAOUT).value()
@@ -440,6 +497,7 @@ class SCA:
         self.rw_reg(SCA_GPIO.GPIO_W_DATAOUT, currently_set)
         return self.read_gpio(line)  # in order to check it is actually set
 
+    @gpio_byname
     def set_gpio_direction(self, line, to=1):
         self.enable_gpio()  # enable GPIO
         currently_set = self.rw_reg(SCA_GPIO.GPIO_R_DIRECTION).value()
@@ -473,8 +531,9 @@ class SCA:
             default     = gpio_dict[gpio_reg]['default']
             if verbose:
                 print("Setting SCA GPIO pin %s (%s) to %s"%(pin, comment, gpio_dict[gpio_reg]['direction']))
+            self.set_gpio(pin, default)  # NOTE this is important because otherwise the GPIO pin can be set to a false default value when switched to output
             self.set_gpio_direction(pin, direction)
-            self.set_gpio(pin, default)
+            self.set_gpio(pin, default)  # redundant but keep it
 
     def get_I2C_channel(self, channel):
         channel_str = hex(channel).upper()[-1]

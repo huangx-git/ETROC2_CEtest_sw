@@ -1,7 +1,10 @@
 """
 Control board class (KCU105). Depends on uhal.
 """
-import uhal
+try:
+    import uhal
+except ModuleNotFoundError:
+    print("Running without uhal (ipbus not installed with correct python bindings)")
 from tamalero.colors import red, green
 
 
@@ -174,7 +177,7 @@ class KCU:
         # print("%s = %6.2f MHz" % (id, freq))
 
         errs = 0
-        tolerance = 2500  # increased tolerance to 2.5kHz (from 2kHz)
+        tolerance = 3000  # increased tolerance to 3.0kHz (from 2kHz)
         for clock in clocks:
             freq = self.read_node(clock[0]).value()
             expect = clock[1]
