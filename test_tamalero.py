@@ -162,7 +162,7 @@ if __name__ == '__main__':
     # Module Status
     #-------------------------------------------------------------------------------
 
-    if args.verbose and args.configuration == 'emulator':
+    if args.configuration == 'emulator':
         print("Configuring ETROCs")
         modules = []
         for i in range(res['n_module']):

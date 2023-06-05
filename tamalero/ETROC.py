@@ -17,18 +17,18 @@ class ETROC():
             master='lpgbt',
             i2c_adr=0x72,
             i2c_channel=0,
-            elink=0,
+            elinks={0:[0]},
             verbose=False,
             strict=True,
     ):
         self.isfake = False
-        self.I2C_master = rb.DAQ_LPGBT if master == 'lpgbt' else rb.SCA
+        self.I2C_master = rb.DAQ_LPGBT if master.lower() == 'lpgbt' else rb.SCA
         self.master = master
         self.rb = rb
         # check if connected
         self.i2c_channel = i2c_channel
         self.i2c_adr = i2c_adr
-        self.elink = elink
+        self.elinks = elinks
         self.is_connected()
         if self.connected:
             self.ver = self.get_ver()
@@ -51,6 +51,7 @@ class ETROC():
         self.DAC_min  = 600  # in mV
         self.DAC_max  = 1000  # in mV
         self.DAC_step = 400/2**10
+        self.invalid_FC_counter = 0
 
 
     # =========================
@@ -246,14 +247,22 @@ class ETROC():
 
     def get_elink_status(self):
         if self.isfake:
-            self.trig_locked = True
-            self.daq_locked = True
+            for i in self.elinks:
+                self.links_locked = {i: [True for x in self.elinks[i]]}
+            #self.trig_locked = True
+            #self.daq_locked = True
         else:
+            # NOTE this is still old schema of DAQ and TRIG
             locked = self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.ETROC_LOCKED").value()
             locked_slave = self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.ETROC_LOCKED_SLAVE").value()
-            self.trig_locked = ((locked_slave >> self.elink) & 1) == True
-            self.daq_locked = ((locked >> self.elink) & 1) == True
-        return self.daq_locked, self.trig_locked
+            self.links_locked = {0: [((locked >> x) & 1)==1 for x in self.elinks[0]]}
+            if 1 in self.elinks:
+                # if any of the elinks run through the second lpGBT
+                self.links_locked.update({1: [((locked_slave >> x) & 1)==1 for x in self.elinks[1]]})
+
+            #self.trig_locked = ((locked_slave >> self.elink) & 1) == True
+            #self.daq_locked = ((locked >> self.elink) & 1) == True
+        return self.links_locked
 
     def get_ver(self):
         try:
@@ -265,12 +274,14 @@ class ETROC():
     def consistency(self, verbose=False):
         if self.isfake:
             return True
-        daq, trig = self.get_elink_status()
-        if daq:
+        locked = self.get_elink_status()
+        if locked:
+            if verbose: print("Lock status before:", locked)
             self.wr_reg('disScrambler', 0x0)
-            daq1, trig1 = self.get_elink_status()
+            locked1 = self.get_elink_status()
+            if verbose: print("Lock status after:", locked1)
             self.wr_reg('disScrambler', 0x1)
-            assert daq != daq1, "Links and I2C configuration are inconsistent, please check"
+            assert locked != locked1, "Links and I2C configuration are inconsistent, please check"
             self.get_elink_status()
         else:
             if verbose:
@@ -297,8 +308,8 @@ class ETROC():
         print("┃{:^31s}┃".format("version: "+self.ver))
         print("┃" + 31*" " + "┃")
         print("┃{:^31s}┃".format(f"Link: {self.elink}"))
-        print ('┃' + (green('{:^31s}'.format('DAQ')) if self.daq_locked else red('{:^31s}'.format('DAQ'))) + '┃' )
-        print ('┃' + (green('{:^31s}'.format('Trigger')) if self.trig_locked else red('{:^31s}'.format('Trigger'))) + '┃' )
+        print ('┃' + (green('{:^31s}'.format('lpGBT 1')) if self.links_locked else red('{:^31s}'.format('DAQ'))) + '┃' )
+        print ('┃' + (green('{:^31s}'.format('lpGBT 2')) if self.trig_locked else red('{:^31s}'.format('Trigger'))) + '┃' )
 
         print("┗" + 31*"━" + "┛")
     # =========================
@@ -308,12 +319,48 @@ class ETROC():
     def default_config(self):
         # FIXME should use higher level functions for better readability
         if self.connected:
-            self.wr_reg('singlePort', 0)
-            self.wr_reg('mergeTriggerData', 0)
-            self.wr_reg('disScrambler', 1)
+            self.set_singlePort('both')
+            self.set_mergeTriggerData('separate')
+            self.disable_Scrambler()
             # set ETROC in 320Mbps mode
             self.wr_reg('serRateLeft', 0)
             self.wr_reg('serRateRight', 0)
+
+            # get the current number of invalid fast commands received
+            self.invalid_FC_counter = self.get_invalidFCCount()
+
+    # =======================
+    # === HIGH-LEVEL FUNC ===
+    # =======================
+
+    def QInj_set(self, charge, delay, row=0, col=0, broadcast=True, reset=True):
+        """
+        High-level function to set the charge injection in the ETROC;
+        requires \'charge\' (in fC) and \'delay\' (in 781 ps steps).
+        Charge injection can be done at the pixel level (\'row\', \'col\') or globally (\'broadcast\'); default is global.
+        By default, the charge injection module is reset upon calling (\'reset\').
+        """
+        self.set_ChargeInjReset(reset=reset)                           # Reset charge injection module
+        self.enable_QInj(row=row, col=col, broadcast=broadcast)        # Enable charge injection
+        self.set_Qinj(charge, row=row, col=col, broadcast=broadcast)   # Set charge
+        self.set_chargeInjDelay(delay)                                 # Set time delay
+
+    def QInj_unset(self, row=0, col=0, broadcast=True):
+        """
+        High-level function to unset the charge injection in the ETROC.
+        Unset can be done at the pixel level (\'row\', \'col\') or globally (\'broadcast\'); default is global.
+        """
+        if broadcast:
+            self.set_ChargeInjReset(False)                             # Reset charge injection module
+        else:
+            self.disable_QInj(row=row, col=col, broadcast=broadcast)   # Only disable charge injection for specified pixel
+
+    def QInj_read(self, row=0, col=0, broadcast=True):
+        if broadcast:
+            qinj = [[self.get_Qinj(row=y, col=x) for x in range(16)] for y in range(16)]
+            return qinj
+        else:
+            return self.get_Qinj(row=row, col=col)
 
     def auto_threshold_scan(self):
         # FIXME not yet fully working
@@ -325,7 +372,6 @@ class ETROC():
         self.wr_reg('RSTn_THCal', 1, broadcast=True)
         self.init_THCal()
         return self.rd_reg('TH', row=2, col=2)
-
 
 
     # ***********************
@@ -466,11 +512,11 @@ class ETROC():
         return th*self.DAC_step + self.DAC_min
 
     # Threshold offset for calibrated baseline. TH = BL + TH_offset
-#    def set_THoffset(self, V, row=0, col=0, broadcast=True):
-#        self.wr_reg('TH_offset', V, row=row, col=col, broadcast=broadcast)
-#
-#    def get_THoffset(self, row=0, col=0):
-#        return self.rd_reg('TH_offset', row=row, col=col)
+    def set_THoffset(self, V, row=0, col=0, broadcast=True):
+        self.wr_reg('TH_offset', V, row=row, col=col, broadcast=broadcast)
+
+    def get_THoffset(self, row=0, col=0):
+        return self.rd_reg('TH_offset', row=row, col=col)
 
     # Reset of threshold calibration block, active low
     def reset_THCal(self, row=0, col=0, broadcast=True):
@@ -1351,6 +1397,11 @@ class ETROC():
     # Count of invalid fast command received
     def get_invalidFCCount(self):
         return self.rd_reg('invalidFCCount')
+
+    def FC_status(self):
+        status = self.get_invalidFCCount() == self.invalid_FC_counter
+        self.invalid_FC_counter = self.get_invalidFCCount()
+        return status
 
     # Count of PLL unlock detected
     def get_PLLUnlockCount(self):

@@ -648,7 +648,7 @@ emptySlotBCID:
     - 0xFF
   pixel:    0
   stat:     0
-  default:  0x7
+  default:  0x1
 
 triggerGranularity:
   doc: |-
@@ -730,7 +730,7 @@ BCIDoffset:
     - 0xF
   pixel:    0
   stat:     0
-  default:  0x0
+  default:  0x0D
 
 fcSelfAlignEn:
   doc: |-
@@ -1191,7 +1191,7 @@ disPowerSequence:
     - 0x1
   pixel:    0
   stat:     0
-  default:  0x0  # manual says one, but it should be 0
+  default:  0x0  # Confirmed
 
 softBoot:
   doc: "Reset power sequencer controller, active high."
@@ -1250,7 +1250,7 @@ EFuse_Rstn:
     - 0x8
   pixel:    0
   stat:     0
-  default:  0x1  # manual gives 0 but should be 1
+  default:  0x1  # Confirmed
 
 EFuse_Start:
   doc: "Start signal of the EFuse programming. A positive pulse will start the programming."

@@ -41,7 +41,7 @@ class ETROC2_Emulator(ETROC):
                 'crc'       : 0,
                 'vth'       : 198,
                 }
-        
+
         # data from most recent L1A (list of formatted words)
         self.L1Adata = []
 
@@ -78,7 +78,7 @@ class ETROC2_Emulator(ETROC):
                 'cal'    : np.random.randint(0,500),
                 'tot'    : np.random.randint(0,500),
                 }
-        # format data 
+        # format data
         word = self.format['identifiers']['data']['frame']
         for datatype in data:
             word = ( word +
@@ -109,10 +109,10 @@ class ETROC2_Emulator(ETROC):
                 # if we have a hit
                 if val > self.get_Vth_mV():
                     self.add_hit(row, col)
-        
+
         data = self.get_data()
         return data
-    
+
 
     # run N L1As and return all data from them
     def run(self, N):

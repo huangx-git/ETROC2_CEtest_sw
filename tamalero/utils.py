@@ -231,9 +231,6 @@ def download_address_table(version):
     import json
     import urllib.parse
 
-
-    r2 = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/commits?ref=devel")
-    log = json.loads(r2.content)
     last_commit_sha = get_last_commit_sha(version)
 
     r = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/tree?ref={version}&&path=address_tables&&recursive=True")
@@ -249,17 +246,18 @@ def download_address_table(version):
         tree = json.loads(r.content)
         print (f"Local firmware version detected. Will download address table corresponding to commit {version}.")
 
-    print("Making directory: address_table/{version}")
-    os.makedirs(f"address_table/{version}")
-    for f in tree:
-        if f['type'] == 'tree':
-            os.makedirs(f"address_table/{version}/{f['name']}")
-        elif f['type'] == 'blob':
-            # needs URL encode: https://www.w3schools.com/tags/ref_urlencode.ASP
-            path = urllib.parse.quote_plus(f['path']).replace('.', '%2E')  # python thinks . is fine, so we replace it manually
-            res = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/files/{path}/raw?ref={version}")
-            local_path = f['path'].replace('address_tables/', '')
-            open(f"address_table/{version}/{local_path}", 'wb').write(res.content)
+    print(f"Making directory: address_table/{version}")
+    if not os.path.isdir(f"address_table/{version}"):
+        os.makedirs(f"address_table/{version}")
+        for f in tree:
+            if f['type'] == 'tree':
+                os.makedirs(f"address_table/{version}/{f['name']}")
+            elif f['type'] == 'blob':
+                # needs URL encode: https://www.w3schools.com/tags/ref_urlencode.ASP
+                path = urllib.parse.quote_plus(f['path']).replace('.', '%2E')  # python thinks . is fine, so we replace it manually
+                res = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/files/{path}/raw?ref={version}")
+                local_path = f['path'].replace('address_tables/', '')
+                open(f"address_table/{version}/{local_path}", 'wb').write(res.content)
 
     return version
 
@@ -360,6 +358,8 @@ def get_config(config, version='v2', verbose=False):
                         default_cfg[chip][interface][k] = updated_cfg[chip][interface][k]
         for links in ['trigger', 'clocks', 'downlink', 'uplink']:
             default_cfg['inversions'][links] = updated_cfg['inversions'][links]
+        if 'modules' in updated_cfg:
+            default_cfg['modules'] = updated_cfg['modules']
     return default_cfg
 
 def majority_vote(values, majority=None):

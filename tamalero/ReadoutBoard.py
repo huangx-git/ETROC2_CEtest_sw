@@ -1,7 +1,7 @@
 import os
 from tamalero.LPGBT import LPGBT
 from tamalero.SCA import SCA
-from tamalero.utils import get_temp, chunk, get_temp_direct
+from tamalero.utils import get_temp, chunk, get_temp_direct, get_config
 from tamalero.VTRX import VTRX
 
 from time import sleep
@@ -39,6 +39,8 @@ class ReadoutBoard:
                 self.SCA.update_ver(self.ver)
                 self.DAQ_LPGBT.update_ver(self.ver-1)  # FIXME we need to disentangle lpGBT version from RB version
             self.SCA.connect_KCU(kcu)
+
+        self.configuration = get_config(self.config, version=f'v{self.ver}')
 
     def get_trigger(self):
         # Self-check if a trigger lpGBT is present, if trigger is not explicitely set to False

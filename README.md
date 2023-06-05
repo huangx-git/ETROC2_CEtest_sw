@@ -119,7 +119,7 @@ We can then configure the RB and get a status of the lpGBT:
 ```
 rb_0.configure()
 rb_0.DAQ_LPGBT.status()
-``` 
+```
 
 Now we're all set! Some high level functions are currently being implemented.
 An example is the following:
@@ -164,9 +164,9 @@ adc:
 
 While developing software for `tamalero`, it is necessary to test new features with the `tests/startup.sh` script before opening a merge request. Both `tamalero` (`setup.sh`) and Vivado must be sourced first. To use `startup.sh`, source the script and pass the appropriate options:
 ```
-Usage: 
+Usage:
 	startup
-       Options:	
+       Options:
 	[-i | --id ID]              Unique ID of CI KCU
 	[-f | --firmware FIRMWARE]  Firmware version of KCU
 	[-p | --psu PSU:CH]         IP address and channel(s) of Power Supply Unit (will trigger power cycle)
@@ -178,6 +178,31 @@ It is generally recommended to power cycle the Power Supply Units when testing a
 ```
 source tests/startup.sh -i 210308B0B4F5 -k 192.168.0.12 -p 192.168.2.3:ch2
 ```
+
+## Fermilab test beam simulation
+
+To use the Fermilab test beam simulation, we rely on the `Beam.py` class and the `beam_utils.py` auxiliary functions. A simple script `test_beam.py` is available for quick testing. In addition to the simulation, the Beam class implements a UI monitoring dashboard for real-time checks of useful RB parameters. To use `test_beam.py`, pass the appropriate options:
+```
+Usage:
+        test_beam
+       Options:
+        [--kcu KCU]              Specify the IP address of KCU. Default: 192.168.0.11
+        [--host HOST]		 Specify host for control hub. Default: localhost
+        [--l1a_rate L1A_RATE]    Level-1 Accept rate in kHz. Default: 1000
+        [--time TIME]            Time in minutes that the beam will run. Default: 1
+        [--verbosity]            Verbosity information
+        [--dashboard]            UI Monitoring dashboard on?
+        [--configuration]        Specify the readout board config file from "default, emulator, modulev0". Default: default
+```
+`test_beam.py` will simulate Fermilab's test beam of 4s on-time and 56s off-time spills, at the specified L1A rate and number of spills. The simulation will produce a compressed zip file after each spill and save it in the `outputs` directory with a time stamp. The dashboard currently monitors the number of cycles (i.e. spills), L1A rate count, FIFO occupancy, thermistor temperatures (RT1, RT2, SCA and VTRX), lost FIFO words and packet rate. The dashboard heavily relies on the [Rich Python library](https://github.com/Textualize/rich); for development of the dashboard see [docs](https://rich.readthedocs.io/en/stable/introduction.html).
+
+### Test beam output
+
+![](output/TestBeamVerbosity.png)
+
+### UI monitoring dashboard output
+
+![](output/TestBeamDashboard.png)
 
 ## Notebook
 
