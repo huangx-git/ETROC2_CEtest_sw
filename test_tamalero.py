@@ -16,7 +16,7 @@ import uhal
 from emoji import emojize
 from flask import Flask
 
-def create_app(rb=rb):
+def create_app(rb):
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
@@ -200,7 +200,7 @@ if __name__ == '__main__':
                     monitoring_threads.append(module_mon(modules[i]))
 
     if args.server:
-        app = create_app()
+        app = create_app(rb_0)
         app.run()
 
     #-------------------------------------------------------------------------------
