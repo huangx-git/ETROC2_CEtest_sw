@@ -4,6 +4,7 @@
 
 import numpy as np
 import os
+from crcETROC import mod2div, binstr40
 from yaml import load, dump
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -35,7 +36,7 @@ class software_ETROC2():
                 'chipid'    : chipid,
                 'status'    : 0,
                 'hits'      : 0,
-                'crc'       : 0,
+                'crc' : 0,
                 'vth'       : 198,
                 }
         
@@ -153,4 +154,12 @@ class software_ETROC2():
                 ((self.data[datatype]<<self.format['data']['trailer'][datatype]['shift'])
                 &self.format['data']['trailer'][datatype]['mask']) )
 
-        return [header] + self.L1Adata + [trailer]
+        frame= [header] + self.L1Adata + [trailer]
+
+        #Computing CRC and adding it to the trailer
+        poly='100101111' #crc generator polynomial
+        merged_frames = "".join(binstr40(frame)) #joining the event frames into 1 string of bits
+        crc_val = mod2div(merged_frames,poly) #compute CRC value
+        frame[-1] = trailer +int(crc_val,2) #Overwrite the trailer content adding the CRC 
+        
+        return frame

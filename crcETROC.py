@@ -31,10 +31,9 @@ def xor(a, b):
 
 # Performs Modulo-2 division
 def mod2div(dividend, divisor):
-    # Number of bits to be XORed at a time.
-    pick = len(divisor)
-    # Slicing the dividend to appropriate length for particular step
-    tmp = dividend[0: pick]
+    
+    pick = len(divisor) # Number of bits to be XORed at a time.
+    tmp = dividend[0: pick] # Slicing the dividend to appropriate length 
 
     while pick < len(dividend):
         if tmp[0] == '1':
@@ -82,12 +81,7 @@ if __name__ == '__main__':
     header_idx.append(len(words))
     dataframes = ak.unflatten(words,np.diff(header_idx))
     bitframes = ak.unflatten(bitwords,np.diff(header_idx))
-
-    merged_frames = ["".join(x) for x in bitframes]
-
-    poly = '100101111'
-
-    crc_checks = np.array([mod2div(frame,poly) for frame in merged_frames])
-    # print (merged_data)
     
-    # print (unpacked_data)
+    merged_frames = ["".join(x) for x in bitframes]
+    poly = '100101111'
+    crc_checks = np.array([mod2div(frame,poly) for frame in merged_frames])
