@@ -208,7 +208,7 @@ if __name__ == '__main__':
 
     if args.server:
         app = create_app(rb_0, modules=modules)
-        app.run()
+        app.run(port=5000)
 
     #-------------------------------------------------------------------------------
     # Read ADCs
