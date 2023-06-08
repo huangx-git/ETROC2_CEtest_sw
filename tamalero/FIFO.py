@@ -39,6 +39,27 @@ class FIFO:
         self.block = block
         if rb != None:
             self.reset()
+        self.ready()
+
+    def ready(self):
+        self.rb.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 0x1)
+        tmp_err_cnt = self.rb.kcu.read_node("READOUT_BOARD_%s.ERROR_CNT"%self.rb.rb).value()
+        while tmp_err_cnt != self.rb.kcu.read_node("READOUT_BOARD_%s.ERROR_CNT"%self.rb.rb).value():
+            print("Redoing bitslip")
+            self.reset()
+            self.enable_bitslip()
+            time.sleep(0.1)
+            self.disable_bitslip()
+            self.rb.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 0x1)
+            tmp_err_cnt = self.rb.kcu.read_node("READOUT_BOARD_%s.ERROR_CNT"%self.rb.rb).value()
+
+        return True
+
+    def enable_bitslip(self):
+        self.rb.kcu.write_node("READOUT_BOARD_%s.BITSLIP_AUTO_EN"%self.rb.rb, 0x1)
+
+    def disable_bitslip(self):
+        self.rb.kcu.write_node("READOUT_BOARD_%s.BITSLIP_AUTO_EN"%self.rb.rb, 0x0)
 
     def get_zero_suppress_status(self):
         return self.rb.kcu.read_node("READOUT_BOARD_%s.ZERO_SUPRESS"%self.rb.rb).value()
