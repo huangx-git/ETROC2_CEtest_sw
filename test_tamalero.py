@@ -14,6 +14,28 @@ import sys
 import os
 import uhal
 from emoji import emojize
+from flask import Flask
+
+def create_app(rb, modules=[]):
+    # create and configure the app
+    app = Flask(__name__, instance_relative_config=True)
+    app.config.from_mapping(
+        SECRET_KEY='dev',
+        DATABASE=os.path.join(app.instance_path, 'flaskr.sqlite'),
+    )
+
+    @app.route('/rb_temp')
+    def temperatures():
+        return rb.read_temp()
+
+    @app.route('/module_links')
+    def get_ink_status():
+        link_status = {}
+        for i, m in enumerate(modules):
+            link_status[i] = m.get_locked_links()
+        return link_status
+
+    return app
 
 if __name__ == '__main__':
 
@@ -43,6 +65,7 @@ if __name__ == '__main__':
     argParser.add_argument('--devel', action='store_true', default=False, help="Don't check repo status (not recommended)")
     argParser.add_argument('--monitor', action='store_true', default=False, help="Start up montoring threads in the background")
     argParser.add_argument('--strict', action='store_true', default=False, help="Enforce strict limits on ADC reads for SCA and LPGBT")
+    argParser.add_argument('--server', action='store_true', default=False, help="Start server")
     args = argParser.parse_args()
 
 
@@ -162,9 +185,9 @@ if __name__ == '__main__':
     # Module Status
     #-------------------------------------------------------------------------------
 
+    modules = []
     if args.configuration == 'emulator':
         print("Configuring ETROCs")
-        modules = []
         for i in range(res['n_module']):
             modules.append(Module(rb_0, i+1))
 
@@ -182,6 +205,10 @@ if __name__ == '__main__':
             for i in range(res['n_module']):
                 if modules[i].ETROCs[0].connected:
                     monitoring_threads.append(module_mon(modules[i]))
+
+    if args.server:
+        app = create_app(rb_0, modules=modules)
+        app.run()
 
     #-------------------------------------------------------------------------------
     # Read ADCs

@@ -342,14 +342,14 @@ modules:
     reset: mod_d07
   2:
     elinks: [[[4, 6],[]]]
-    addresses: [0x60]
+    addresses: [0x64]
     i2c:
       master: sca
       channel: 3
     reset: mod_d15
   3:
     elinks: [[[8, 10],[]]]
-    addresses: [0x60]
+    addresses: [0x68]
     i2c:
       master: sca
       channel: 0

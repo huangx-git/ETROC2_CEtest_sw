@@ -89,7 +89,7 @@ class Module:
                             self.locked[i].append(link)
                         else:
                             self.unlocked[i].append(link)
-        return self.locked, self.unlocked
+        return {'locked': self.locked, 'unlocked': self.unlocked}
 
     
     def show_status(self):
