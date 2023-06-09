@@ -243,7 +243,7 @@ SCA:
             comment: ADDR1 on module 2
         mod_d14:
             pin: 0x07
-            default: 0
+            default: 1
             direction: out
             flavor: small
             comment: ADDR0 on module 2
@@ -279,7 +279,7 @@ SCA:
             comment: WS_RSTN on module 3
         mod_d21:
             pin: 0x08
-            default: 0
+            default: 1
             direction: out
             flavor: small
             comment: ADDR1 on module 3
@@ -342,14 +342,14 @@ modules:
     reset: mod_d07
   2:
     elinks: [[[4, 6],[]]]
-    addresses: [0x60]
+    addresses: [0x61]
     i2c:
       master: sca
       channel: 3
     reset: mod_d15
   3:
     elinks: [[[8, 10],[]]]
-    addresses: [0x60]
+    addresses: [0x62]
     i2c:
       master: sca
       channel: 0
