@@ -27,7 +27,8 @@ def merge_words(res):
         offset = 1 if (res[1] > res[0]) else 0
         res = res[offset:]
         #empty_frame_mask = np.array(res[0::2]) > (2**8)  # masking empty fifo entries
-        empty_frame_mask = np.array(res[0::2]) > 0  # masking empty fifo entries
+        #print(res)
+        empty_frame_mask = np.array(res[0::2]) > 0  # masking empty fifo entries FIXME verify that this does not cause troubles! remove mask if possible
         len_cut = min(len(res[0::2]), len(res[1::2]))  # ensuring equal length of arrays downstream
         return list (np.array(res[0::2])[:len_cut][empty_frame_mask[:len_cut]] | (np.array(res[1::2]) << 32)[:len_cut][empty_frame_mask[:len_cut]])
     else:
@@ -39,11 +40,11 @@ class FIFO:
         self.block = block
         if rb != None:
             self.reset()
-        self.ready()
 
     def ready(self):
         self.rb.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 0x1)
         tmp_err_cnt = self.rb.kcu.read_node("READOUT_BOARD_%s.ERROR_CNT"%self.rb.rb).value()
+        start_time = time.time()
         while tmp_err_cnt != self.rb.kcu.read_node("READOUT_BOARD_%s.ERROR_CNT"%self.rb.rb).value():
             print("Redoing bitslip")
             self.reset()
@@ -52,6 +53,10 @@ class FIFO:
             self.disable_bitslip()
             self.rb.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 0x1)
             tmp_err_cnt = self.rb.kcu.read_node("READOUT_BOARD_%s.ERROR_CNT"%self.rb.rb).value()
+
+            if time.time() > start_time + 2:
+                print("Time out, FIFO might not work as expected.")
+                break
 
         return True
 
@@ -118,41 +123,47 @@ class FIFO:
         self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_LPGBT_SEL0" % self.rb.rb, lpgbt)
 
     def read_block(self, block, dispatch=False):
-        try:
-            if dispatch:
-                reads = self.rb.kcu.hw.getNode("DAQ_RB0").readBlock(block)
-                self.rb.kcu.dispatch()
-                return reads
-            else:
-                return self.rb.kcu.hw.getNode("DAQ_RB0").readBlock(block)
-        except uhal_exception:
-            print("uhal UDP error in FIFO.read_block")
-            raise
+        success = False
+        while success == False:
+            try:
+                if dispatch:
+                    reads = self.rb.kcu.hw.getNode("DAQ_RB0").readBlock(block)
+                    self.rb.kcu.dispatch()
+                    return reads
+                else:
+                    return self.rb.kcu.hw.getNode("DAQ_RB0").readBlock(block)
+            except uhal_exception:
+                print("uhal UDP error in FIFO.read_block")
+                #raise
 
     def read(self, dispatch=False, verbose=False):
-        try:
-            occupancy = self.get_occupancy()*4  # FIXME don't know where factor of 4 comes from??
-            if verbose: print(f"{occupancy=}")
-            num_blocks_to_read = occupancy // self.block
-            if verbose: print(f"{num_blocks_to_read=}")
-            last_block = occupancy % self.block
-            if verbose: print(f"{last_block=}")
-            data = []
-            if (num_blocks_to_read or last_block):
-                for b in range(num_blocks_to_read):
+        occupancy = self.get_occupancy()*4 + 2  # FIXME don't know where factor of 4 comes from??
+        if verbose: print(f"{occupancy=}")
+        num_blocks_to_read = occupancy // self.block
+        if verbose: print(f"{num_blocks_to_read=}")
+        last_block = occupancy % self.block
+        if verbose: print(f"{last_block=}")
+        data = []
+        if (num_blocks_to_read or last_block):
+            for b in range(num_blocks_to_read):
+                try:
                     data += self.read_block(self.block, dispatch=dispatch).value()
+                except uhal_exception:
+                    print("uhal UDP error in daq")
+                    return data
+            try:
                 data += self.read_block(last_block, dispatch=dispatch).value()
+            except uhal_exception:
+                print("uhal UDP error in daq")
+                return data
                 # FIXME the part below should be faster but is somehow broken now
                 #reads = num_blocks_to_read * [self.read_block(self.block, dispatch=dispatch)] + [self.read_block(last_block, dispatch=dispatch)]
                 #if not dispatch:
                 #    self.rb.kcu.hw.dispatch()
                 #for read in reads:
                 #    data += read.value()
-            return data
+        return data
 
-        except uhal_exception:
-            print("uhal UDP error in daq")
-            return []
 
     def get_occupancy(self):
         try:

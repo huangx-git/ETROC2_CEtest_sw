@@ -190,6 +190,8 @@ if __name__ == '__main__':
         modules[module-1].show_status()
 
         etroc = modules[module-1].ETROCs[0]
+        print(f"Setting the ETROC in single port mode ('right')")
+        etroc.set_singlePort("right")
 
         #etroc = ETROC(rb=rb_0, i2c_adr=96, i2c_channel=1, elinks={0:[0,2]})
 
@@ -249,7 +251,10 @@ if __name__ == '__main__':
         from tamalero.FIFO import FIFO
         from tamalero.DataFrame import DataFrame
         df = DataFrame()
+        # NOTE this is for single port tests right now, where we only get elink 2
         fifo = FIFO(rb=rb_0)
+        fifo.select_elink(2)
+        fifo.ready()
 
         ### this does in theory reset the ETROC, but not sure if it comes back up properly
         #rb_0.SCA.set_gpio_direction('mod_d07', 1)
