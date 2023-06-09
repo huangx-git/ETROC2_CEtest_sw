@@ -8,6 +8,7 @@ from tamalero.colors import red, green, yellow
 import numpy as np
 from scipy.optimize import curve_fit
 from matplotlib import pyplot as plt
+from tqdm import tqdm
 
 import os
 import sys
@@ -276,7 +277,7 @@ if __name__ == '__main__':
 
         #fifo.reset()
         etroc.wr_reg("selfTestOccupancy", 2, broadcast=True)
-        etroc.wr_reg("singlePort", 0x0)
+        #etroc.wr_reg("singlePort", 0x0)
         etroc.wr_reg("mergeTriggerData", 0x1)
         #etroc.wr_reg("")
         if not args.partial:
@@ -359,7 +360,7 @@ if __name__ == '__main__':
                 ax=ax,
                 fontsize=15,
             )
-        name = 'hit_matrix'
+        name = 'hit_matrix_internal_test_pattern'
         fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
         fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
 
@@ -369,6 +370,59 @@ if __name__ == '__main__':
         for x in fifo.pretty_read(df):
             print(x)
 
+        ### Using noise hits for another occupancy map
+        i = 0
+        occupancy = 0
+        print("\n - Will send L1As until FIFO is full.")
+        occupancy = 0
+        with tqdm(total=65536) as pbar:
+            while not fifo.is_full():
+                fifo.send_l1a()
+                i +=1
+                if i%100 == 0:
+                    tmp = fifo.get_occupancy()
+                    pbar.update(tmp-occupancy)
+                    occupancy = tmp
+
+        test_data = []
+        while fifo.get_occupancy() > 0:
+            test_data += fifo.pretty_read(df)
+
+        hits_total = np.zeros((16,16))
+        hit_matrix = hist.Hist(col_axis,row_axis)
+        n_events_total = 0
+        n_events_hit   = 0
+        for d in test_data:
+            if d[0] == 'trailer':
+                n_events_total += 1
+                if d[1]['hits'] > 0:
+                    n_events_hit += 1
+            if d[0] == 'data':
+                hit_matrix.fill(row=d[1]['row_id'], col=d[1]['col_id'])
+                hits_total[d[1]['row_id']][d[1]['col_id']] += 1
+                # NOTE could do some CRC check.
+
+        print(f"Got number of total events {n_events_total=}")
+        print(f"Events with at least one hit {n_events_hit=}")
+
+        fig, ax = plt.subplots(1,1,figsize=(7,7))
+        hit_matrix.plot2d(
+            ax=ax,
+        )
+        ax.set_ylabel(r'$Row$')
+        ax.set_xlabel(r'$Column$')
+        hep.cms.label(
+                "ETL Preliminary",
+                data=True,
+                lumi='0',
+                com=0,
+                loc=0,
+                ax=ax,
+                fontsize=15,
+            )
+        name = 'hit_matrix_external_L1A'
+        fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
+        fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
 
 
     elif args.vth:

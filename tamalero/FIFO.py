@@ -172,6 +172,9 @@ class FIFO:
             print("uhal UDP error in FIFO.get_occupancy")
             raise
 
+    def is_full(self):
+        return self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.RX_FIFO_FULL").value()
+
     def get_lost_word_count(self):
         return self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.RX_FIFO_LOST_WORD_CNT").value()
 
