@@ -17,6 +17,7 @@ from emoji import emojize
 from flask import Flask
 
 def create_app(rb, modules=[]):
+    # FIXME this should live somewhere else in the future
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
@@ -34,6 +35,20 @@ def create_app(rb, modules=[]):
         for i, m in enumerate(modules):
             link_status[i] = m.get_locked_links()
         return link_status
+
+    @app.route('/etroc_status')
+    def get_etroc_status():
+        etroc_status = {}
+        for i, m in enumerate(modules):
+            for j in range(4):  # 4 ETROCs expected per module
+                etroc_status[i*4+j] = {}
+                # NOTE here we should get the actual status
+                # below is just a placeholder
+                for k in range(16):
+                    etroc_status[i*4+j][k] = {}
+                    for l in range(16):
+                        etroc_status[i*4+j][k][l] = 1
+        return etroc_status
 
     return app
 
