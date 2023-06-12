@@ -357,10 +357,10 @@ class ETROC():
 
     def QInj_read(self, row=0, col=0, broadcast=True):
         if broadcast:
-            qinj = [[self.get_Qinj(row=y, col=x) for x in range(16)] for y in range(16)]
+            qinj = [[self.get_QInj(row=y, col=x) for x in range(16)] for y in range(16)]
             return qinj
         else:
-            return self.get_Qinj(row=row, col=col)
+            return self.get_QInj(row=row, col=col)
 
     def auto_threshold_scan(self):
         # FIXME not yet fully working
