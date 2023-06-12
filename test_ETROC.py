@@ -425,6 +425,11 @@ if __name__ == '__main__':
         fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
 
 
+        print("\nOccupancy vs column:")
+        hit_matrix[{"row":sum}].show(columns=100)
+        print("\nOccupancy vs row:")
+        hit_matrix[{"col":sum}].show(columns=100)
+
     elif args.vth:
         # ==============================
         # ======= Test Vth scan ========
