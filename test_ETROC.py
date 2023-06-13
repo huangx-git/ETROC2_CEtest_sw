@@ -446,6 +446,68 @@ if __name__ == '__main__':
                 print("\nOccupancy vs row:")
                 hit_matrix[{"col":sum}].show(columns=100)
 
+        fifo.reset()
+        q = 30
+        delay = 6
+        i = 4
+        j = 3
+        print(f"\n - Will send L1a/QInj pulse with delay of {delay} cycles and charge of {q} fC")
+        print(f"\n - to pixel at Row {i}, Col {j}.")
+        etroc.QInj_set(q, delay, row=row, col=col, broadcast = False)
+        with tqdm(total=65536) as pbar:
+            while not fifo.is_full():
+                try:
+                    kcu.write_node('READOUT_BOARD_0.L1A_QINJ_PULSE', 1)
+                except:
+                    println('uhal._core.exception: Failed to pulse', file)
+        etroc.QInj_unset(broadcast = True)
+        test_data = []
+        while fifo.get_occupancy() > 0:
+            test_data += fifo.pretty_read(df)
+
+        hits_total = np.zeros((16,16))
+        hit_matrix = hist.Hist(col_axis,row_axis)
+        n_events_total = 0
+        n_events_hit   = 0
+        for d in test_data:
+            if d[0] == 'trailer':
+                n_events_total += 1
+                if d[1]['hits'] > 0:
+                    n_events_hit += 1
+            if d[0] == 'data':
+                hit_matrix.fill(row=d[1]['row_id'], col=d[1]['col_id'])
+                hits_total[d[1]['row_id']][d[1]['col_id']] += 1
+                # NOTE could do some CRC check.
+
+        print(f"Got number of total events {n_events_total=}")
+        print(f"Events with at least one hit {n_events_hit=}")
+
+        fig, ax = plt.subplots(1,1,figsize=(7,7))
+        hit_matrix.plot2d(
+            ax=ax,
+        )
+        ax.set_ylabel(r'$Row$')
+        ax.set_xlabel(r'$Column$')
+        hep.cms.label(
+                "ETL Preliminary",
+                data=True,
+                lumi='0',
+                com=0,
+                loc=0,
+                ax=ax,
+                fontsize=15,
+            )
+        name = 'hit_matrix_external_L1A_QInj_Pulse'
+        fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
+        fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
+
+        print("\nOccupancy vs column:")
+        hit_matrix[{"row":sum}].show(columns=100)
+        print("\nOccupancy vs row:")
+        hit_matrix[{"col":sum}].show(columns=100)
+
+
+
     elif args.vth:
         # ==============================
         # ======= Test Vth scan ========
