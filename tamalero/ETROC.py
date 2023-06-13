@@ -334,6 +334,7 @@ class ETROC():
     # =======================
 
     def QInj_set(self, charge, delay, row=0, col=0, broadcast=True, reset=True):
+        # FIXME this is a bad name, given that set_QInj also exists
         """
         High-level function to set the charge injection in the ETROC;
         requires \'charge\' (in fC) and \'delay\' (in 781 ps steps).
@@ -352,6 +353,7 @@ class ETROC():
         """
         if broadcast:
             self.set_ChargeInjReset(False)                             # Reset charge injection module
+            self.disable_QInj(broadcast=broadcast)   # Only disable charge injection for specified pixel
         else:
             self.disable_QInj(row=row, col=col, broadcast=broadcast)   # Only disable charge injection for specified pixel
 

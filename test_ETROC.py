@@ -13,6 +13,7 @@ from tqdm import tqdm
 import os
 import sys
 import json
+import time
 from yaml import load, dump
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -284,7 +285,8 @@ if __name__ == '__main__':
             etroc.wr_reg("workMode", 0x1, broadcast=True)
         else:
             etroc.wr_reg("workMode", 0x0, broadcast=True)
-            # center pixels
+            ## center pixels
+            #etroc.wr_reg("workMode", 0x1, row=15, col=7)
             etroc.wr_reg("workMode", 0x1, row=7, col=7)
             etroc.wr_reg("workMode", 0x1, row=7, col=8)
             etroc.wr_reg("workMode", 0x1, row=8, col=7)
@@ -370,65 +372,79 @@ if __name__ == '__main__':
         for x in fifo.pretty_read(df):
             print(x)
 
-        ### Using noise hits for another occupancy map
-        i = 0
-        occupancy = 0
-        print("\n - Will send L1As until FIFO is full.")
-        occupancy = 0
-        with tqdm(total=65536) as pbar:
-            while not fifo.is_full():
-                fifo.send_l1a()
-                i +=1
-                if i%100 == 0:
-                    tmp = fifo.get_occupancy()
-                    pbar.update(tmp-occupancy)
-                    occupancy = tmp
+        #etroc.QInj_unset(broadcast=True)
+        fifo.reset()
+        print("Will use workMode 1 to get some occupancy (no noise or charge injection)")
+        etroc.wr_reg("workMode", 0x1, broadcast=True)  # this was missing
+        if not args.partial:
+            for j in range(5):
+                print(j)
+                ### Another occupancy map
+                i = 0
+                occupancy = 0
+                print("\n - Will send L1As until FIFO is full.")
 
-        test_data = []
-        while fifo.get_occupancy() > 0:
-            test_data += fifo.pretty_read(df)
+                #etroc.QInj_set(30, 0, row=3, col=3, broadcast=False)
+                start_time = time.time()
+                with tqdm(total=65536) as pbar:
+                    while not fifo.is_full():
+                        fifo.send_l1a()
+                        #fifo.send_QInj(delay=j)
+                        #fifo.send_QInj()
+                        i +=1
+                        if i%100 == 0:
+                            tmp = fifo.get_occupancy()
+                            pbar.update(tmp-occupancy)
+                            occupancy = tmp
+                        #if time.time()-start_time>5:
+                        #    print("Time out")
+                        #    break
 
-        hits_total = np.zeros((16,16))
-        hit_matrix = hist.Hist(col_axis,row_axis)
-        n_events_total = 0
-        n_events_hit   = 0
-        for d in test_data:
-            if d[0] == 'trailer':
-                n_events_total += 1
-                if d[1]['hits'] > 0:
-                    n_events_hit += 1
-            if d[0] == 'data':
-                hit_matrix.fill(row=d[1]['row_id'], col=d[1]['col_id'])
-                hits_total[d[1]['row_id']][d[1]['col_id']] += 1
-                # NOTE could do some CRC check.
+                test_data = []
+                while fifo.get_occupancy() > 0:
+                    test_data += fifo.pretty_read(df)
 
-        print(f"Got number of total events {n_events_total=}")
-        print(f"Events with at least one hit {n_events_hit=}")
+                hits_total = np.zeros((16,16))
+                hit_matrix = hist.Hist(col_axis,row_axis)
+                n_events_total = 0
+                n_events_hit   = 0
+                for d in test_data:
+                    if d[0] == 'trailer':
+                        n_events_total += 1
+                        if d[1]['hits'] > 0:
+                            n_events_hit += 1
+                    if d[0] == 'data':
+                        hit_matrix.fill(row=d[1]['row_id'], col=d[1]['col_id'])
+                        hits_total[d[1]['row_id']][d[1]['col_id']] += 1
+                        # NOTE could do some CRC check.
 
-        fig, ax = plt.subplots(1,1,figsize=(7,7))
-        hit_matrix.plot2d(
-            ax=ax,
-        )
-        ax.set_ylabel(r'$Row$')
-        ax.set_xlabel(r'$Column$')
-        hep.cms.label(
-                "ETL Preliminary",
-                data=True,
-                lumi='0',
-                com=0,
-                loc=0,
-                ax=ax,
-                fontsize=15,
-            )
-        name = 'hit_matrix_external_L1A'
-        fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
-        fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
+                print(f"Got number of total events {n_events_total=}")
+                print(f"Events with at least one hit {n_events_hit=}")
+
+                fig, ax = plt.subplots(1,1,figsize=(7,7))
+                hit_matrix.plot2d(
+                    ax=ax,
+                )
+                ax.set_ylabel(r'$Row$')
+                ax.set_xlabel(r'$Column$')
+                hep.cms.label(
+                        "ETL Preliminary",
+                        data=True,
+                        lumi='0',
+                        com=0,
+                        loc=0,
+                        ax=ax,
+                        fontsize=15,
+                    )
+                name = 'hit_matrix_external_L1A'
+                fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
+                fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
 
 
-        print("\nOccupancy vs column:")
-        hit_matrix[{"row":sum}].show(columns=100)
-        print("\nOccupancy vs row:")
-        hit_matrix[{"col":sum}].show(columns=100)
+                print("\nOccupancy vs column:")
+                hit_matrix[{"row":sum}].show(columns=100)
+                print("\nOccupancy vs row:")
+                hit_matrix[{"col":sum}].show(columns=100)
 
     elif args.vth:
         # ==============================

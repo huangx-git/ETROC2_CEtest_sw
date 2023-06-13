@@ -24,7 +24,10 @@ def merge_words(res):
         # offset is only needed when zero suppression is turned off, and packet boundaries are not defined
         # it relies on the fact that the second 32 bit word is half empty (8 bit ETROC data + 12 bits meta data)
         # if we ever add more meta data this has to be revisited
-        offset = 1 if (res[1] > res[0]) else 0
+        #offset = 1 if (res[1] > res[0]) else 0
+        offset = 0
+        print(f"## Offset is {offset=}")
+        #offset = 0
         res = res[offset:]
         #empty_frame_mask = np.array(res[0::2]) > (2**8)  # masking empty fifo entries
         #print(res)
@@ -105,12 +108,18 @@ class FIFO:
 
     def send_l1a(self, count=1):
         for i in range(count):
-            self.rb.kcu.write_node("SYSTEM.L1A_PULSE", 1)
+            try:
+                self.rb.kcu.write_node("SYSTEM.L1A_PULSE", 1)
+            except:
+                print("Couldn't send pulse.")
 
     def send_QInj(self, count=1, delay=0):
         self.rb.kcu.write_node("READOUT_BOARD_%s.L1A_INJ_DLY"%self.rb.rb, delay)
         for i in range(count):
-            self.rb.kcu.write_node("READOUT_BOARD_%s.L1A_QINJ_PULSE" % self.rb.rb, 0x01)
+            try:
+                self.rb.kcu.write_node("READOUT_BOARD_%s.L1A_QINJ_PULSE" % self.rb.rb, 0x01)
+            except:
+                print("Couldn't send pulse.")
 
     def reset(self):
         self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_RESET" % self.rb.rb, 0x01)
@@ -169,11 +178,16 @@ class FIFO:
         try:
             return self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.RX_FIFO_OCCUPANCY").value()
         except uhal_exception:
-            print("uhal UDP error in FIFO.get_occupancy")
-            raise
+            print("uhal UDP error in FIFO.get_occupancy, trying again")
+            return self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.RX_FIFO_OCCUPANCY").value()
+            #raise
 
     def is_full(self):
-        return self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.RX_FIFO_FULL").value()
+        try:
+            return self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.RX_FIFO_FULL").value()
+        except uhal_exception:
+            print("uhal UDP error in FIFO.is_full, trying again")
+            return self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.RX_FIFO_FULL").value()
 
     def get_lost_word_count(self):
         return self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.RX_FIFO_LOST_WORD_CNT").value()
