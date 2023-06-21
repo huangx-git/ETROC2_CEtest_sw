@@ -1,6 +1,7 @@
 """
 For ETROC control
 """
+import time
 
 from tamalero.utils import load_yaml, ffs, bit_count
 from tamalero.colors import red, green, yellow
@@ -20,6 +21,7 @@ class ETROC():
             elinks={0:[0]},
             verbose=False,
             strict=True,
+            reset=None,
     ):
         self.isfake = False
         self.I2C_master = rb.DAQ_LPGBT if master.lower() == 'lpgbt' else rb.SCA
@@ -29,6 +31,7 @@ class ETROC():
         self.i2c_channel = i2c_channel
         self.i2c_adr = i2c_adr
         self.elinks = elinks
+        self.reset_pin = reset
         self.is_connected()
         if self.connected:
             self.ver = self.get_ver()
@@ -237,6 +240,16 @@ class ETROC():
             all_pass &= comp
         return all_pass
 
+    def reset(self, hard=False):
+        if hard:
+            self.rb.SCA.set_gpio(self.reset_pin, 0)
+            time.sleep(0.1)
+            self.rb.SCA.set_gpio(self.reset_pin, 1)
+        else:
+            self.wr_reg("asyResetGlobalReadout", 0)
+            time.sleep(0.1)
+            self.wr_reg("asyResetGlobalReadout", 1)
+
     # ============================
     # === MONITORING FUNCTIONS ===
     # ============================
@@ -319,6 +332,7 @@ class ETROC():
     def default_config(self):
         # FIXME should use higher level functions for better readability
         if self.connected:
+            self.reset()  # soft reset of the global readout
             self.set_singlePort('both')
             self.set_mergeTriggerData('separate')
             self.disable_Scrambler()
@@ -547,7 +561,7 @@ class ETROC():
     def set_workMode(self, mode, row=0, col=0, broadcast=True):
         val = {'normal': 0b00, 'self test fixed': 0b01, 'self test random': 0b10}
         try:
-            self.wr_reg('workMode', val(mode), row=row, col=col, broadcast=broadcast)
+            self.wr_reg('workMode', val[mode], row=row, col=col, broadcast=broadcast)
         except KeyError:
             print('Choose between \'normal\', \'self test fixed\', \'self test random\'.')
 

@@ -38,6 +38,7 @@ class Module:
                         #elinks      = self.config['elinks'][j],
                         i2c_adr     = self.config['addresses'][j],
                         strict      = strict,
+                        reset = self.config['reset'],
                     ))
 
     #def configure(self):
