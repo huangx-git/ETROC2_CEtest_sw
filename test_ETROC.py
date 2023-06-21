@@ -192,8 +192,8 @@ if __name__ == '__main__':
         modules[module-1].show_status()
 
         etroc = modules[module-1].ETROCs[0]
-        print(f"Setting the ETROC in single port mode ('right')")
-        etroc.set_singlePort("right")
+        #print(f"Setting the ETROC in single port mode ('right')")
+        #etroc.set_singlePort("right")
 
         #etroc = ETROC(rb=rb_0, i2c_adr=96, i2c_channel=1, elinks={0:[0,2]})
 
@@ -245,10 +245,6 @@ if __name__ == '__main__':
             print(f"Failed: {test0=}, {test1=}, {test2=}, {test3=}")
 
 
-        etroc.wr_reg('serRateLeft', 0)
-        etroc.wr_reg('serRateRight', 0)
-
-
         # NOTE below is WIP code for tests of the actual data readout
         from tamalero.FIFO import FIFO
         from tamalero.DataFrame import DataFrame
@@ -257,11 +253,6 @@ if __name__ == '__main__':
         fifo = FIFO(rb=rb_0)
         fifo.select_elink(2)
         fifo.ready()
-
-        ### this does in theory reset the ETROC, but not sure if it comes back up properly
-        #rb_0.SCA.set_gpio_direction('mod_d07', 1)
-        #rb_0.SCA.set_gpio('mod_d07', 0)
-        #rb_0.SCA.set_gpio('mod_d07', 1)
 
         print("\n - Checking elinks")
         locked = kcu.read_node(f"READOUT_BOARD_0.ETROC_LOCKED").value()
@@ -274,13 +265,13 @@ if __name__ == '__main__':
         else:
             print(red('No elink is locked.'))
 
+        fifo.send_l1a(10)
+        _ = fifo.pretty_read(df)
+        etroc.reset()
+
         print("\n - Getting internal test data")
 
-        #fifo.reset()
         etroc.wr_reg("selfTestOccupancy", 2, broadcast=True)
-        #etroc.wr_reg("singlePort", 0x0)
-        etroc.wr_reg("mergeTriggerData", 0x1)
-        #etroc.wr_reg("")
         if not args.partial:
             etroc.wr_reg("workMode", 0x1, broadcast=True)
         else:
@@ -374,9 +365,9 @@ if __name__ == '__main__':
 
         #etroc.QInj_unset(broadcast=True)
         fifo.reset()
-        print("Will use workMode 1 to get some occupancy (no noise or charge injection)")
-        etroc.wr_reg("workMode", 0x1, broadcast=True)  # this was missing
         if not args.partial:
+            print("Will use workMode 1 to get some occupancy (no noise or charge injection)")
+            etroc.wr_reg("workMode", 0x1, broadcast=True)  # this was missing
             for j in range(5):
                 print(j)
                 ### Another occupancy map
