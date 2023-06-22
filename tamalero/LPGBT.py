@@ -428,7 +428,10 @@ class LPGBT(RegParser):
             read_reg = 'LPGBT.RO.ECLK.PIOINH'
             pin -= 8
 
-        currently_set = self.rd_reg(read_reg)
+        if self.ver == 1:
+            currently_set = self.rd_reg(read_reg)
+        else:
+            currently_set = self.rd_reg(out_reg)
 
         if (currently_set & (1 << pin)) and direction==0:
             currently_set ^= (1 << pin)
