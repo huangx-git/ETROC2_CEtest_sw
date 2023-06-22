@@ -111,6 +111,8 @@ if __name__ == '__main__':
     argParser.add_argument('--host', action='store', default='localhost', help="Hostname for control hub")
     argParser.add_argument('--partial', action='store_true', default=False, help="Only read data from corners and edges")
     argParser.add_argument('--qinj', action='store_true', default=False, help="Run some charge injection tests")
+    argParser.add_argument('--hard_reset', action='store_true', default=False, help="Hard reset of selected ETROC2 chip")
+    argParser.add_argument('--mode', action='store', default=['dual'], choices=['dual', 'single'] help="Port mode for ETROC2")
     args = argParser.parse_args()
 
 
@@ -192,8 +194,14 @@ if __name__ == '__main__':
         modules[module-1].show_status()
 
         etroc = modules[module-1].ETROCs[0]
-        #print(f"Setting the ETROC in single port mode ('right')")
-        #etroc.set_singlePort("right")
+        if args.hard_reset:
+            etroc.reset(hard=True)
+        if args.mode == 'single':
+            print(f"Setting the ETROC in single port mode ('right')")
+            etroc.set_singlePort("right")
+        elif args.mode == 'dual':
+            print(f"Setting the ETROC in dual port mode ('both')")
+            etroc.set_singlePort("both")
 
         #etroc = ETROC(rb=rb_0, i2c_adr=96, i2c_channel=1, elinks={0:[0,2]})
         
