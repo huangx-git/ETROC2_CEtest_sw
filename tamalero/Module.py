@@ -83,6 +83,7 @@ class Module:
         self.locked = {0:[], 1:[]}
         self.unlocked = {0:[], 1:[]}
         for etroc in self.ETROCs:
+            etroc.get_elink_status()
             for i in [0,1]:
                 if i in etroc.links_locked:
                     for j, link in enumerate(etroc.elinks[i]):
