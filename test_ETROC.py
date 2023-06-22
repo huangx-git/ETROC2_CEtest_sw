@@ -196,6 +196,8 @@ if __name__ == '__main__':
         etroc = modules[module-1].ETROCs[0]
         if args.hard_reset:
             etroc.reset(hard=True)
+            etroc.default_config()
+
         if args.mode == 'single':
             print(f"Setting the ETROC in single port mode ('right')")
             etroc.set_singlePort("right")
