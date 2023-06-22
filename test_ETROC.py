@@ -112,7 +112,7 @@ if __name__ == '__main__':
     argParser.add_argument('--partial', action='store_true', default=False, help="Only read data from corners and edges")
     argParser.add_argument('--qinj', action='store_true', default=False, help="Run some charge injection tests")
     argParser.add_argument('--hard_reset', action='store_true', default=False, help="Hard reset of selected ETROC2 chip")
-    argParser.add_argument('--mode', action='store', default=['dual'], choices=['dual', 'single'] help="Port mode for ETROC2")
+    argParser.add_argument('--mode', action='store', default=['dual'], choices=['dual', 'single'], help="Port mode for ETROC2")
     args = argParser.parse_args()
 
 
