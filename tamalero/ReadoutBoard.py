@@ -367,12 +367,16 @@ class ReadoutBoard:
     def read_vtrx_temp(self):
 
         # vtrx thermistors
-        current_vtrx    = self.DAQ_LPGBT.set_current_dac_uA(600)
-        rt_vtrx_voltage = self.DAQ_LPGBT.read_adc(0)/(2**10-1) # FIXME: 0 should not be hardcoded
 
+        v_ref = self.DAQ_LPGBT.read_dac()
         if self.ver == 1:
-            return -1.0
+            #current_rt1 = self.DAQ_LPGBT.set_current_dac_uA(0)  # make sure the current source is turned OFF in ver 1
+            rt_vtrx_voltage = self.DAQ_LPGBT.read_adc(0)/(2**10-1) # FIXME: 0 should not be hardcoded
+            return get_temp(rt_vtrx_voltage, v_ref, 10000, 25, 10000, 3900)  # FIXME this uses the wrong thermistor, ignore value.
+            #return -1.0
         elif self.ver == 2:
+            current_vtrx    = self.DAQ_LPGBT.set_current_dac_uA(600)
+            rt_vtrx_voltage = self.DAQ_LPGBT.read_adc(0)/(2**10-1) # FIXME: 0 should not be hardcoded
             return get_temp_direct(rt_vtrx_voltage, current_vtrx, thermistor="NCP03XM102E05RL")  # this comes from the lpGBT ADC (VTRX TH)
         else:
             raise Exception("Unknown lpgbt version")
@@ -388,6 +392,7 @@ class ReadoutBoard:
 
             if self.ver == 1:
                 # This uses the DAC output for current so just read the voltage
+                #current_rt1 = self.DAQ_LPGBT.set_current_dac_uA(0)  # make sure the current source is turned OFF in ver 1
                 rt1_voltage = self.DAQ_LPGBT.read_adc(7)/(2**10-1) # FIXME: 7 should not be hardcoded
                 return get_temp(rt1_voltage, v_ref, 10000, 25, 10000, 3900)  # this comes from the lpGBT ADC
             elif self.ver == 2:
@@ -431,6 +436,7 @@ class ReadoutBoard:
             print ("\nTemperature on RB RT1 is: %.1f C" % t_rt1)
             print ("Temperature on RB RT2 is: %.1f C" % t_rt2)
             print ("Temperature on RB SCA is: %.1f C" % t_sca)
-            print ("Temperature on RB VTRX is: %.1f C" % t_vtrx)
+            if self.ver==2:
+                print ("Temperature on RB VTRX is: %.1f C" % t_vtrx)
 
         return {'t1': t_rt1, 't2': t_rt2, 't_SCA': t_sca, 't_VTRX': t_vtrx}
