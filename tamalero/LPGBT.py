@@ -1149,7 +1149,7 @@ class LPGBT(RegParser):
             status = self.rd_adr(i2cm0status+OFFSET_RD)
             retries = 0
             while (status != self.LPGBT_CONST.I2CM_SR_SUCC_bm):
-                status = self.rd_adr(i2cm0status+OFFSET_RD)
+                status = self.rd_adr(i2cm0status+OFFSET_RD).value()
                 retries += 1
                 if retries > 50:
                     raise TimeoutError(f"I2C write failed after 50 retries, {status=}")
@@ -1227,7 +1227,7 @@ class LPGBT(RegParser):
 
         retries = 0
         while (status != self.LPGBT_CONST.I2CM_SR_SUCC_bm):
-            status = self.rd_adr(i2cm0status+OFFSET_RD)
+            status = self.rd_adr(i2cm0status+OFFSET_RD).value()
             # debugging
             #print(f"Updating status: {status}, retries: {retries}")
             retries += 1
@@ -1257,7 +1257,7 @@ class LPGBT(RegParser):
 
         retries = 0
         while (status != self.LPGBT_CONST.I2CM_SR_SUCC_bm):
-            status = self.rd_adr(i2cm0status+OFFSET_RD)
+            status = self.rd_adr(i2cm0status+OFFSET_RD).value()
             retries += 1
             if retries > 50:
                 raise TimeoutError(f"I2C transaction failed after 50 retries because of an issue in reading back the data, {status=}")
