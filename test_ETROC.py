@@ -284,6 +284,7 @@ if __name__ == '__main__':
         if not args.partial:
             etroc.wr_reg("workMode", 0x1, broadcast=True)
         else:
+            etroc.wr_reg("selfTestOccupancy", 70, broadcast=True)
             etroc.wr_reg("workMode", 0x0, broadcast=True)
             ## center pixels
             #etroc.wr_reg("workMode", 0x1, row=15, col=7)
