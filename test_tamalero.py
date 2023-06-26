@@ -33,19 +33,22 @@ def create_app(rb, modules=[]):
     def get_link_status():
         link_status = {}
         for i, m in enumerate(modules):
+            any_connected = False
             etrocs = {}
             for j, etroc in enumerate(m.ETROCs):
                 links = {}
                 elinks = etroc.elinks
                 status = etroc.get_elink_status()
                 ilink = 0
+                any_connected |= etroc.is_connected() > 0
                 for lpgbt in elinks:
                     for k, link in enumerate(elinks[lpgbt]):
                         links[ilink] = {'lpGBT': lpgbt, 'elink': elinks[lpgbt][k], 'locked': status[lpgbt][k]}
                         ilink += 1
-                etrocs[j] = links
+                etrocs[str(j)] = links
 
             link_status[i] = etrocs
+            link_status[i]['connected'] = any_connected
         return link_status
 
     @app.route('/etroc_status')
