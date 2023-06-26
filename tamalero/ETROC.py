@@ -334,7 +334,7 @@ class ETROC():
         if self.connected:
             self.reset()  # soft reset of the global readout
             self.set_singlePort('both')
-            self.set_mergeTriggerData('separate')
+            self.set_mergeTriggerData('merge')
             self.disable_Scrambler()
             # set ETROC in 320Mbps mode
             self.wr_reg('serRateLeft', 0)
