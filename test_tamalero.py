@@ -54,12 +54,13 @@ def create_app(rb, modules=[]):
         for i, module in enumerate(modules):
             etroc_status[i] = {}
             for j, etroc in enumerate(module.ETROCs):  # 4 ETROCs expected per module
-                stat = etroc.pixel_sanity_check(return_matrix=True)
-                etroc_status[i][j] = {}
-                for k in range(16):
-                    etroc_status[i][j][k] = {}
-                    for l in range(16):
-                        etroc_status[i][j][k][l] = int(stat[k][l])
+                if etroc.is_connected():
+                    stat = etroc.pixel_sanity_check(return_matrix=True)
+                    etroc_status[i][j] = {}
+                    for k in range(16):
+                        etroc_status[i][j][k] = {}
+                        for l in range(16):
+                            etroc_status[i][j][k][l] = int(stat[k][l])
             #for j in range(4):
             #    etroc_status[i*4+j] = {}
             #    # NOTE here we should get the actual status
