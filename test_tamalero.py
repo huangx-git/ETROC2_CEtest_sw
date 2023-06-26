@@ -40,10 +40,11 @@ def create_app(rb, modules=[]):
                 status = etroc.get_elink_status()
                 ilink = 0
                 for lpgbt in elinks:
-                    for j, link in enumerate(elinks[lpgbt]):
-                        links[ilink] = {'lpGBT': lpgbt, 'elink': elinks[lpgbt][j], 'locked': status[lpgbt][j]}
+                    for k, link in enumerate(elinks[lpgbt]):
+                        links[ilink] = {'lpGBT': lpgbt, 'elink': elinks[lpgbt][k], 'locked': status[lpgbt][k]}
                         ilink += 1
                 etrocs[j] = links
+
             link_status[i] = etrocs
         return link_status
 
