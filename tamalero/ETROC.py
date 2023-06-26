@@ -192,20 +192,26 @@ class ETROC():
                 print(yellow(f"Pixel ({row=}, {col=}) status {reg=}: {ret=}"))
 
     def print_perif_conf(self):
+        df = []
         for reg in self.regs:
             if self.regs[reg]['stat'] == 0 and self.regs[reg]['pixel'] == 0:
                 ret = self.rd_reg(reg)
                 exp = self.regs[reg]['default']
                 colored = green if ret == exp else red
                 print(colored(f"Perif config {reg=}: {ret=}, {exp=}"))
+                df.append({'register': reg, 'value': ret, 'default': exp})
+        return df
 
     def print_pixel_conf(self, row=0, col=0):
+        df = []
         for reg in self.regs:
             if self.regs[reg]['stat'] == 0 and self.regs[reg]['pixel'] == 1:
                 ret = self.rd_reg(reg)
                 exp = self.regs[reg]['default']
                 colored = green if ret == exp else red
                 print(colored(f"Pixel ({row=}, {col=}) config {reg=}: {ret=}, {exp=}"))
+                df.append({'register': reg, 'value': ret, 'default': exp})
+        return df
 
     def pixel_sanity_check(self, full=True, verbose=False):
         all_pass = True
