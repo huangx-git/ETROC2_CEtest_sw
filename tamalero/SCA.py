@@ -428,11 +428,12 @@ class SCA:
         # just do one at a time, does not need to run constantly
         self.enable_adc() #enable ADC
         tmp = 1 << pin
-        self.rw_reg(SCA_ADC.ADC_W_MUX, pin) #configure register we want to read
         self.rw_reg(SCA_ADC.ADC_W_CURR, tmp)
+        self.rw_reg(SCA_ADC.ADC_W_MUX, pin) #configure register we want to read
         #val = self.rw_reg(SCA_ADC.ADC_R_CURR).value()
         val = self.rw_reg(SCA_ADC.ADC_GO, 0x01).value() #execute and read ADC_GO command
         self.rw_reg(SCA_ADC.ADC_W_MUX, 0x0) #reset register to default (0)
+        self.rw_reg(SCA_ADC.ADC_W_CURR, 0x0) #reset register to default (0)
         return val
 
     def disable_adc_curr(self):
