@@ -30,10 +30,20 @@ def create_app(rb, modules=[]):
         return rb.read_temp()
 
     @app.route('/module_links')
-    def get_ink_status():
-        link_status = {}
+    def get_link_status():
+        link_status = []
         for i, m in enumerate(modules):
-            link_status[i] = m.get_locked_links()
+            etrocs = []
+            for etroc in m.ETROCs:
+                links = []
+                elinks = etroc.elinks
+                status = etroc.get_elink_status()
+                for lpgbt in elinks:
+                    for j, link in enumerate(elinks[lpgbt]):
+                        links.append((lpgbt, elinks[lpgbt][j], status[lpgbt][j]))
+                etrocs.append(links)
+            link_status.append(etrocs)
+            #link_status[i] = m.get_locked_links()
         return link_status
 
     @app.route('/etroc_status')
@@ -48,6 +58,7 @@ def create_app(rb, modules=[]):
                     etroc_status[i*4+j][k] = {}
                     for l in range(16):
                         etroc_status[i*4+j][k][l] = 1
+
         return etroc_status
 
     return app
@@ -81,6 +92,7 @@ if __name__ == '__main__':
     argParser.add_argument('--monitor', action='store_true', default=False, help="Start up montoring threads in the background")
     argParser.add_argument('--strict', action='store_true', default=False, help="Enforce strict limits on ADC reads for SCA and LPGBT")
     argParser.add_argument('--server', action='store_true', default=False, help="Start server")
+    argParser.add_argument('--port', action='store', default=5000, type=int, help="Port to use for server")
     args = argParser.parse_args()
 
 
@@ -201,7 +213,7 @@ if __name__ == '__main__':
     #-------------------------------------------------------------------------------
 
     modules = []
-    if args.configuration == 'emulator':
+    if args.configuration == 'emulator' or args.configuration == 'modulev0':
         print("Configuring ETROCs")
         for i in range(res['n_module']):
             modules.append(Module(rb_0, i+1))
@@ -223,7 +235,7 @@ if __name__ == '__main__':
 
     if args.server:
         app = create_app(rb_0, modules=modules)
-        app.run(port=5000)
+        app.run(port=args.port)
 
     #-------------------------------------------------------------------------------
     # Read ADCs
