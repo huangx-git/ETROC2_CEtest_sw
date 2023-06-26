@@ -2,6 +2,7 @@
 For ETROC control
 """
 import time
+import numpy as np
 
 from tamalero.utils import load_yaml, ffs, bit_count
 from tamalero.colors import red, green, yellow
@@ -213,9 +214,10 @@ class ETROC():
                 df.append({'register': reg, 'value': ret, 'default': exp})
         return df
 
-    def pixel_sanity_check(self, full=True, verbose=False):
+    def pixel_sanity_check(self, full=True, verbose=False, return_matrix=False):
         all_pass = True
         nmax = 16 if full else 4  # option to make this check a bit faster
+        status_matrix = np.zeros((16,16))
         for row in range(nmax):
             for col in range(nmax):
                 ret = self.rd_reg('PixelID', row=row, col=col)
@@ -227,7 +229,12 @@ class ETROC():
                     else:
                         print(red(f"Sanity check failed for {row=}, {col=}, expected {exp} from PixelID register but got {ret}"))
                 all_pass &= comp
-        return all_pass
+                if comp:
+                    status_matrix[row][col] = 1
+        if return_matrix:
+            return status_matrix
+        else:
+            return all_pass
 
     def pixel_random_check(self, ntest=20, verbose=False):
         all_pass = True
