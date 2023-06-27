@@ -23,9 +23,13 @@ except ImportError:
 # ====== HELPER FUNCTIONS ======
 
 # run N L1A's and return packaged ETROC2 dataformat
-def run(N):
+def run(ETROC, N, fifo=None):
     # currently uses the software ETROC to produce fake data
-    return ETROC2.run(N)
+    if ETROC.isfake:
+        return ETROC2.run(N)
+    else:
+        fifo.send_l1a(N)
+        return fifo.pretty_read(None, raw=True)
 
 
 def toPixNum(row, col, w):
@@ -69,11 +73,14 @@ def parse_data(data, N_pix):
     return results
 
 
-def vth_scan(ETROC2):
+def vth_scan(ETROC2, vth_min=693, vth_max=709, vth_step=1, decimal=False, fifo=None, absolute=False):
     N_l1a    =  3200 # how many L1As to send
-    vth_min  =   693 # scan range
-    vth_max  =   709
-    vth_step =   ETROC2.DAC_step # step size
+    vth_min  =   vth_min # scan range
+    vth_max  =   vth_max
+    if not decimal:
+        vth_step =   ETROC2.DAC_step # step size
+    else:
+        vth_step = vth_step
     N_steps  = int((vth_max-vth_min)/vth_step)+1 # number of steps
     N_pix    = 16*16 # total number of pixels
 
@@ -82,12 +89,18 @@ def vth_scan(ETROC2):
 
     for vth in vth_axis:
         print(f"Working on threshold {vth=}")
-        ETROC2.set_Vth_mV(vth)
+        if decimal:
+            ETROC2.wr_reg('DAC', int(vth), broadcast=True)
+        else:
+            ETROC2.set_Vth_mV(vth)
         i = int((vth-vth_min)/vth_step)
-        run_results[i] = parse_data(run(N_l1a), N_pix)
+        run_results[i] = parse_data(run(ETROC2, N_l1a, fifo=fifo), N_pix)
 
     # transpose so each 1d list is for a pixel & normalize
-    run_results = run_results.transpose()/N_l1a
+    if absolute:
+        run_results = run_results.transpose()
+    else:
+        run_results = run_results.transpose()/N_l1a
     return [vth_axis.tolist(), run_results.tolist()]
 
 
@@ -201,9 +214,11 @@ if __name__ == '__main__':
         if args.mode == 'single':
             print(f"Setting the ETROC in single port mode ('right')")
             etroc.set_singlePort("right")
+            etroc.set_mergeTriggerData("separate")
         elif args.mode == 'dual':
             print(f"Setting the ETROC in dual port mode ('both')")
             etroc.set_singlePort("both")
+            etroc.set_mergeTriggerData("merge")
 
         #etroc = ETROC(rb=rb_0, i2c_adr=96, i2c_channel=1, elinks={0:[0,2]})
         
@@ -447,8 +462,72 @@ if __name__ == '__main__':
                 print("\nOccupancy vs row:")
                 hit_matrix[{"col":sum}].show(columns=100)
 
+        etroc.wr_reg("workMode", 0x0, broadcast=True)
+
+        ### threshold scan draft
+        vth_scan_data = vth_scan(
+            etroc,
+            vth_min = 800,
+            vth_max = 880,
+            decimal = True,
+            fifo = fifo,
+            absolute = True,
+        )
+        vth_axis    = np.array(vth_scan_data[0])
+        hit_rate    = np.array(vth_scan_data[1])
+        N_pix       = len(hit_rate) # total # of pixels
+        N_pix_w     = int(round(np.sqrt(N_pix))) # N_pix in NxN layout
+        max_indices = np.argmax(hit_rate, axis=1)
+        maximums    = vth_axis[max_indices]
+        max_matrix  = np.empty([N_pix_w, N_pix_w])
+
+        for pix in range(N_pix):
+            r, c = fromPixNum(pix, N_pix_w)
+            max_matrix[r][c] = maximums[pix]
+
+        # 2D histogram of the mean
+        # this is based on the code for automatic sigmoid fits
+        # for software emulator data below
+        fig, ax = plt.subplots()
+        plt.title("Peak values of threshold scan")
+        cax = ax.matshow(max_matrix)
+
+        fig.colorbar(cax)
+        ax.set_xticks(np.arange(N_pix_w))
+        ax.set_yticks(np.arange(N_pix_w))
+
+        for i in range(N_pix_w):
+            for j in range(N_pix_w):
+                text = ax.text(j, i, int(max_matrix[i,j]),
+                        ha="center", va="center", color="w", fontsize="xx-small")
+
+        fig.savefig(f'results/peak_thresholds.png')
+        plt.show()
+
+        plt.close(fig)
+        del fig, ax
+
+        fig, ax = plt.subplots()
+        plt.title("Peak values of threshold scan")
+        cax = ax.matshow(max_matrix)
+
+        fig.colorbar(cax)
+        ax.set_xticks(np.arange(N_pix_w))
+        ax.set_yticks(np.arange(N_pix_w))
+
+        for i in range(N_pix_w):
+            for j in range(N_pix_w):
+                text = ax.text(j, i, int(max_matrix[i,j]),
+                        ha="center", va="center", color="w", fontsize="xx-small")
+
+        fig.savefig(f'results/peak_thresholds.png')
+        plt.show()
+
+        plt.close(fig)
+        del fig, ax
+
+
         if args.qinj:
-            etroc.wr_reg("workMode", 0x0, broadcast=True)
             fifo.reset()
             q = 30
             delay = 3
