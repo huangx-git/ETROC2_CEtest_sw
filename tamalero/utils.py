@@ -298,9 +298,9 @@ def get_kcu(kcu_address, control_hub=True, host='localhost', verbose=False):
     # Get the current firmware version number
     if verbose:
         if control_hub:
-            print(f"Using control hub on {host=}, {kcu_address=}")
+            print(f"Using control hub on host={host}, kcu_address={kcu_address}")
         else:
-            print(f"NOT using control hub on {host=}, {kcu_address=}")
+            print(f"NOT using control hub on host={host}, kcu_address={kcu_address}")
 
     import uhal
     import time
