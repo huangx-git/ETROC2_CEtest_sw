@@ -602,8 +602,7 @@ class SCA:
         if success:
             return True
         else:
-            #print("write not successful: status = {}".format(status))
-            return False
+            raise RuntimeError(f"I2C write not successful, {status=}")
 
     def I2C_write_ctrl(self, channel, data):
         #enable channel

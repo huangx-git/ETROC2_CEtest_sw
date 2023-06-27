@@ -261,7 +261,14 @@ class ETROC():
     # ============================
 
     def is_connected(self):
-        self.connected = self.I2C_read(0x0)  # read from first register (default value 0x2C)
+        try:
+            self.connected = self.I2C_read(0x0)  # read from first register (default value 0x2C)
+        except TimeoutError:
+            # this comes from lpGBT read fails
+            self.connected = False
+        except RuntimeError:
+            # this comes from SCA read fails
+            self.connected = False
         return self.connected
 
     def get_elink_status(self):

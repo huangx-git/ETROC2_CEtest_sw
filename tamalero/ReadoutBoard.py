@@ -333,7 +333,8 @@ class ReadoutBoard:
             if self.VTRX.ver == 'production':
                 self.VTRX.reset()
             elif self.VTRX.ver == 'prototype':
-                self.VTRX.reset(toggle_channels=[0])
+                #self.VTRX.reset(toggle_channels=[0])
+                self.VTRX.reset()
             else:
                 print ("Don't know how to reset VTRX version", self.VTRX.ver)
             self.VTRX.configure(trigger=trigger)

@@ -1112,7 +1112,7 @@ class LPGBT(RegParser):
         elif type(val == list):
             data_bytes = val
         else:
-            raise("data must be an int or list of ints")
+            raise RuntimeError("Data must be an int or list of ints")
 
         nbytes = len(adr_bytes+data_bytes)
 
@@ -1149,12 +1149,10 @@ class LPGBT(RegParser):
             status = self.rd_adr(i2cm0status+OFFSET_RD)
             retries = 0
             while (status != self.LPGBT_CONST.I2CM_SR_SUCC_bm):
-                status = self.rd_adr(i2cm0status+OFFSET_RD)
+                status = self.rd_adr(i2cm0status+OFFSET_RD).value()
                 retries += 1
                 if retries > 50:
-                    if verbose:
-                        print ("Write not successfull!")
-                    break
+                    raise TimeoutError(f"I2C write failed after 50 retries, {status=}")
 
     def I2C_read(self, reg=0x0, master=2, slave_addr=0x70, nbytes=1, adr_nbytes=2, freq=2, verbose=False):
         #https://gitlab.cern.ch/lpgbt/pigbt/-/blob/master/backend/apiapp/lpgbtLib/lowLevelDrivers/MASTERI2C.py#L83
@@ -1229,14 +1227,12 @@ class LPGBT(RegParser):
 
         retries = 0
         while (status != self.LPGBT_CONST.I2CM_SR_SUCC_bm):
-            status = self.rd_adr(i2cm0status+OFFSET_RD)
+            status = self.rd_adr(i2cm0status+OFFSET_RD).value()
             # debugging
             #print(f"Updating status: {status}, retries: {retries}")
             retries += 1
             if retries > 50:
-                if verbose:
-                    print ("Write not successfull!")
-                return None
+                raise TimeoutError(f"I2C transaction failed after 50 retries because of an issue in writing the register address, {status=}")
 
         ################################################################################
         # Write the data
@@ -1261,12 +1257,10 @@ class LPGBT(RegParser):
 
         retries = 0
         while (status != self.LPGBT_CONST.I2CM_SR_SUCC_bm):
-            status = self.rd_adr(i2cm0status+OFFSET_RD)
+            status = self.rd_adr(i2cm0status+OFFSET_RD).value()
             retries += 1
             if retries > 50:
-                if verbose:
-                    print ("Read not successfull!")
-                return None
+                raise TimeoutError(f"I2C transaction failed after 50 retries because of an issue in reading back the data, {status=}")
 
         read_values = []
 
