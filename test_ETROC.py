@@ -125,6 +125,7 @@ if __name__ == '__main__':
     argParser.add_argument('--partial', action='store_true', default=False, help="Only read data from corners and edges")
     argParser.add_argument('--qinj', action='store_true', default=False, help="Run some charge injection tests")
     argParser.add_argument('--hard_reset', action='store_true', default=False, help="Hard reset of selected ETROC2 chip")
+    argParser.add_argument('--scan', action='store', default=['full'], choices=['none', 'full', 'simple'], help="Which threshold scan to run with ETROC2")
     argParser.add_argument('--mode', action='store', default=['dual'], choices=['dual', 'single'], help="Port mode for ETROC2")
     args = argParser.parse_args()
 
@@ -464,68 +465,87 @@ if __name__ == '__main__':
 
         etroc.wr_reg("workMode", 0x0, broadcast=True)
 
-        ### threshold scan draft
-        vth_scan_data = vth_scan(
-            etroc,
-            vth_min = 800,
-            vth_max = 880,
-            decimal = True,
-            fifo = fifo,
-            absolute = True,
-        )
-        vth_axis    = np.array(vth_scan_data[0])
-        hit_rate    = np.array(vth_scan_data[1])
-        N_pix       = len(hit_rate) # total # of pixels
-        N_pix_w     = int(round(np.sqrt(N_pix))) # N_pix in NxN layout
-        max_indices = np.argmax(hit_rate, axis=1)
-        maximums    = vth_axis[max_indices]
-        max_matrix  = np.empty([N_pix_w, N_pix_w])
+        if args.scan == 'full':
+            ### threshold scan draft
+            vth_scan_data = vth_scan(
+                etroc,
+                vth_min = 800,
+                vth_max = 880,
+                decimal = True,
+                fifo = fifo,
+                absolute = True,
+            )
+            vth_axis    = np.array(vth_scan_data[0])
+            hit_rate    = np.array(vth_scan_data[1])
+            N_pix       = len(hit_rate) # total # of pixels
+            N_pix_w     = int(round(np.sqrt(N_pix))) # N_pix in NxN layout
+            max_indices = np.argmax(hit_rate, axis=1)
+            maximums    = vth_axis[max_indices]
+            max_matrix  = np.empty([N_pix_w, N_pix_w])
 
-        for pix in range(N_pix):
-            r, c = fromPixNum(pix, N_pix_w)
-            max_matrix[r][c] = maximums[pix]
+            for pix in range(N_pix):
+                r, c = fromPixNum(pix, N_pix_w)
+                max_matrix[r][c] = maximums[pix]
 
-        # 2D histogram of the mean
-        # this is based on the code for automatic sigmoid fits
-        # for software emulator data below
-        fig, ax = plt.subplots()
-        plt.title("Peak values of threshold scan")
-        cax = ax.matshow(max_matrix)
+            # 2D histogram of the mean
+            # this is based on the code for automatic sigmoid fits
+            # for software emulator data below
+            fig, ax = plt.subplots()
+            plt.title("Peak values of threshold scan")
+            cax = ax.matshow(max_matrix)
 
-        fig.colorbar(cax)
-        ax.set_xticks(np.arange(N_pix_w))
-        ax.set_yticks(np.arange(N_pix_w))
+            fig.colorbar(cax)
+            ax.set_xticks(np.arange(N_pix_w))
+            ax.set_yticks(np.arange(N_pix_w))
 
-        for i in range(N_pix_w):
-            for j in range(N_pix_w):
-                text = ax.text(j, i, int(max_matrix[i,j]),
-                        ha="center", va="center", color="w", fontsize="xx-small")
+            for i in range(N_pix_w):
+                for j in range(N_pix_w):
+                    text = ax.text(j, i, int(max_matrix[i,j]),
+                            ha="center", va="center", color="w", fontsize="xx-small")
 
-        fig.savefig(f'results/peak_thresholds.png')
-        plt.show()
+            fig.savefig(f'results/peak_thresholds.png')
+            plt.show()
 
-        plt.close(fig)
-        del fig, ax
+            plt.close(fig)
+            del fig, ax
 
-        fig, ax = plt.subplots()
-        plt.title("Peak values of threshold scan")
-        cax = ax.matshow(max_matrix)
+        elif args.scan == 'simple':
+            rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
+            print("\n - Running simple threshold scan on single pixel")
+            vth     = []
+            count   = []
+            etroc.reset(hard=True)
+            etroc.default_config()
+            print("Coarse scan to find the peak location")
+            for i in range(0, 1000, 5):
+                # this could use a tqdm
+                etroc.wr_reg("DAC", i, row=3, col=4)
+                fifo.send_l1a(2000)
+                vth.append(i)
+                count.append(rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value())
+                print(i, rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value())
+                rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
 
-        fig.colorbar(cax)
-        ax.set_xticks(np.arange(N_pix_w))
-        ax.set_yticks(np.arange(N_pix_w))
+            vth_a = np.array(vth)
+            count_a = np.array(count)
+            vth_max = vth_a[np.argmax(count_a)]
+            print(f"Found maximum count at DAC setting vth_max={vth_max}")
 
-        for i in range(N_pix_w):
-            for j in range(N_pix_w):
-                text = ax.text(j, i, int(max_matrix[i,j]),
-                        ha="center", va="center", color="w", fontsize="xx-small")
+            vth     = []
+            count   = []
+            print("Fine scanning around this DAC value now")
+            for i in range(vth_max-10, vth_max+10):
+                etroc.wr_reg("DAC", i, row=3, col=4)
+                fifo.send_l1a(5000)
+                vth.append(i)
+                count.append(rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value())
+                print(i, rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value())
+                rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
 
-        fig.savefig(f'results/peak_thresholds.png')
-        plt.show()
+            print(vth)
+            print(count)
 
-        plt.close(fig)
-        del fig, ax
-
+            # FIXME add some plotting here
 
         if args.qinj:
             fifo.reset()
