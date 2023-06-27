@@ -26,7 +26,7 @@ def merge_words(res):
         # if we ever add more meta data this has to be revisited
         #offset = 1 if (res[1] > res[0]) else 0
         offset = 0
-        print(f"## Offset is {offset=}")
+        #print(f"## Offset is {offset=}")
         #offset = 0
         res = res[offset:]
         #empty_frame_mask = np.array(res[0::2]) > (2**8)  # masking empty fifo entries
@@ -154,23 +154,28 @@ class FIFO:
         if verbose: print(f"{last_block=}")
         data = []
         if (num_blocks_to_read or last_block):
-            for b in range(num_blocks_to_read):
+            if dispatch:
+                for b in range(num_blocks_to_read):
+                    try:
+                        data += self.read_block(self.block, dispatch=dispatch).value()
+                    except uhal_exception:
+                        print("uhal UDP error in daq")
+                        return data
                 try:
-                    data += self.read_block(self.block, dispatch=dispatch).value()
+                    data += self.read_block(last_block, dispatch=dispatch).value()
                 except uhal_exception:
                     print("uhal UDP error in daq")
                     return data
-            try:
-                data += self.read_block(last_block, dispatch=dispatch).value()
-            except uhal_exception:
-                print("uhal UDP error in daq")
-                return data
+            else:
                 # FIXME the part below should be faster but is somehow broken now
-                #reads = num_blocks_to_read * [self.read_block(self.block, dispatch=dispatch)] + [self.read_block(last_block, dispatch=dispatch)]
-                #if not dispatch:
-                #    self.rb.kcu.hw.dispatch()
-                #for read in reads:
-                #    data += read.value()
+                reads = num_blocks_to_read * [self.read_block(self.block, dispatch=dispatch)] + [self.read_block(last_block, dispatch=dispatch)]
+                try:
+                    self.rb.kcu.hw.dispatch()
+                except:
+                    print("uhal UDP error in daq")
+
+                for read in reads:
+                    data += read.value()
         return data
 
 
@@ -198,9 +203,12 @@ class FIFO:
     def get_l1a_rate(self):
         return self.rb.kcu.read_node(f"SYSTEM.L1A_RATE_CNT").value()
 
-    def pretty_read(self, df, dispatch=True):
+    def pretty_read(self, df, dispatch=True, raw=False):
         merged = merge_words(self.read(dispatch=dispatch))
-        return list(map(df.read, merged))
+        if raw:
+            return merged
+        else:
+            return list(map(df.read, merged))
 
     def stream(self, f_out, timeout=10):
         # FIXME this is WIP
