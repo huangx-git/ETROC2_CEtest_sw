@@ -1152,7 +1152,7 @@ class LPGBT(RegParser):
                 status = self.rd_adr(i2cm0status+OFFSET_RD).value()
                 retries += 1
                 if retries > 50:
-                    raise TimeoutError(f"I2C write failed after 50 retries, {status=}")
+                    raise TimeoutError(f"I2C write failed after 50 retries, status={status}")
 
     def I2C_read(self, reg=0x0, master=2, slave_addr=0x70, nbytes=1, adr_nbytes=2, freq=2, verbose=False):
         #https://gitlab.cern.ch/lpgbt/pigbt/-/blob/master/backend/apiapp/lpgbtLib/lowLevelDrivers/MASTERI2C.py#L83
@@ -1232,7 +1232,7 @@ class LPGBT(RegParser):
             #print(f"Updating status: {status}, retries: {retries}")
             retries += 1
             if retries > 50:
-                raise TimeoutError(f"I2C transaction failed after 50 retries because of an issue in writing the register address, {status=}")
+                raise TimeoutError(f"I2C transaction failed after 50 retries because of an issue in writing the register address, status={status}")
 
         ################################################################################
         # Write the data
@@ -1260,7 +1260,7 @@ class LPGBT(RegParser):
             status = self.rd_adr(i2cm0status+OFFSET_RD).value()
             retries += 1
             if retries > 50:
-                raise TimeoutError(f"I2C transaction failed after 50 retries because of an issue in reading back the data, {status=}")
+                raise TimeoutError(f"I2C transaction failed after 50 retries because of an issue in reading back the data, status={status}")
 
         read_values = []
 
