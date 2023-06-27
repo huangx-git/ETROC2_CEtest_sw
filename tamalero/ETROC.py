@@ -183,13 +183,13 @@ class ETROC():
         for reg in self.regs:
             if self.regs[reg]['stat'] == 1 and self.regs[reg]['pixel'] == 0:
                 ret = self.rd_reg(reg)
-                print(yellow(f"Perif status {reg=}: {ret=}"))
+                print(yellow(f"Perif status reg={reg}: ret={ret}"))
 
     def print_pixel_stat(self, row=0, col=0):
         for reg in self.regs:
             if self.regs[reg]['stat'] == 1 and self.regs[reg]['pixel'] == 1:
                 ret = self.rd_reg(reg)
-                print(yellow(f"Pixel ({row=}, {col=}) status {reg=}: {ret=}"))
+                print(yellow(f"Pixel (row={row}, col={col}) status reg={reg}: ret={ret}"))
 
     def print_perif_conf(self):
         df = []
@@ -198,7 +198,7 @@ class ETROC():
                 ret = self.rd_reg(reg)
                 exp = self.regs[reg]['default']
                 colored = green if ret == exp else red
-                print(colored(f"Perif config {reg=}: {ret=}, {exp=}"))
+                print(colored(f"Perif config reg={reg}: ret={ret}, exp={exp}"))
                 df.append({'register': reg, 'value': ret, 'default': exp})
         return df
 
@@ -209,7 +209,7 @@ class ETROC():
                 ret = self.rd_reg(reg)
                 exp = self.regs[reg]['default']
                 colored = green if ret == exp else red
-                print(colored(f"Pixel ({row=}, {col=}) config {reg=}: {ret=}, {exp=}"))
+                print(colored(f"Pixel (row={row}, col={col}) config reg={reg}: ret={ret}, exp={exp}"))
                 df.append({'register': reg, 'value': ret, 'default': exp})
         return df
 
@@ -223,9 +223,9 @@ class ETROC():
                 comp = ret == exp
                 if verbose:
                     if comp:
-                        print(green(f"Sanity check passed for {row=}, {col=}"))
+                        print(green(f"Sanity check passed for row={row}, col={col}"))
                     else:
-                        print(red(f"Sanity check failed for {row=}, {col=}, expected {exp} from PixelID register but got {ret}"))
+                        print(red(f"Sanity check failed for row={row}, col={col}, expected {exp} from PixelID register but got {ret}"))
                 all_pass &= comp
         return all_pass
 
@@ -240,9 +240,9 @@ class ETROC():
             comp = val == ret
             if verbose:
                 if comp:
-                    print(green(f"Sanity check passed for {row=}, {col=}"))
+                    print(green(f"Sanity check passed for row={row}, col={col}"))
                 else:
-                    print(red(f"Sanity check failed for {row=}, {col=}, expected {val} from PixelSanityStat register but got {ret}"))
+                    print(red(f"Sanity check failed for row={row}, col={col}, expected {val} from PixelSanityStat register but got {ret}"))
             all_pass &= comp
         return all_pass
 

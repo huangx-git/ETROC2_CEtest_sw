@@ -419,7 +419,7 @@ class ReadoutBoard:
 
         else:
 
-            raise Exception(f"Attempt to read unknown thermistor {rt=}")
+            raise Exception(f"Attempt to read unknown thermistor rt={rt}")
 
     def read_temp(self, verbose=False):
 

@@ -147,11 +147,11 @@ class FIFO:
 
     def read(self, dispatch=False, verbose=False):
         occupancy = self.get_occupancy()*4 + 2  # FIXME don't know where factor of 4 comes from??
-        if verbose: print(f"{occupancy=}")
+        if verbose: print(f"occupancy={occupancy}")
         num_blocks_to_read = occupancy // self.block
-        if verbose: print(f"{num_blocks_to_read=}")
+        if verbose: print(f"num_blocks_to_read={num_blocks_to_read}")
         last_block = occupancy % self.block
-        if verbose: print(f"{last_block=}")
+        if verbose: print(f"last_block={last_block}")
         data = []
         if (num_blocks_to_read or last_block):
             if dispatch:

@@ -192,7 +192,7 @@ class SCA:
 
         if verbose:
             print("SCA r/w:")
-            print(f"{transid=}, {channel=}, {cmd=}, {adr=}, {data=}")
+            print(f"transid={transid}, channel={channel}, cmd={cmd}, adr={adr}, data={data}")
 
 
         self.kcu.toggle_dispatch()
@@ -256,7 +256,7 @@ class SCA:
         rx_ctrl = rx_ctrl.value()
 
         if verbose:
-            print(f"Received: {err=}, {rx_rec=}, {rx_ch=}, {rx_len=}, {rx_ad=}, {rx_ctrl=}")
+            print(f"Received: err={err}, rx_rec={rx_rec}, rx_ch={rx_ch}, rx_len={rx_len}, rx_ad={rx_ad}, rx_ctrl={rx_ctrl}")
 
         # NOTE I2C transaction can be slow, so try reading the transid several times before it times out
         start_time = time.time()
@@ -281,8 +281,8 @@ class SCA:
         en_spi = (crb_rd >> SCA_CRB.ENSPI) & 1
         #en_i2c = (crb_rd >> )
         if verbose:
-            print(f"SCA control registers: {en_gpio=}")
-            print(f"SCA control registers: {en_spi=}")
+            print(f"SCA control registers: en_gpio={en_gpio}")
+            print(f"SCA control registers: en_spi={en_spi}")
             print (crb_rd, crc_rd, crd_rd)
         return crb_rd, crc_rd, crd_rd
 
@@ -602,7 +602,7 @@ class SCA:
         if success:
             return True
         else:
-            raise RuntimeError(f"I2C write not successful, {status=}")
+            raise RuntimeError(f"I2C write not successful, status={status}")
 
     def I2C_write_ctrl(self, channel, data):
         #enable channel
