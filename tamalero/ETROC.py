@@ -2,6 +2,7 @@
 For ETROC control
 """
 import time
+import numpy as np
 
 from tamalero.utils import load_yaml, ffs, bit_count
 from tamalero.colors import red, green, yellow
@@ -22,6 +23,7 @@ class ETROC():
             verbose=False,
             strict=True,
             reset=None,
+            breed='emulator',
     ):
         self.isfake = False
         self.I2C_master = rb.DAQ_LPGBT if master.lower() == 'lpgbt' else rb.SCA
@@ -32,6 +34,7 @@ class ETROC():
         self.i2c_adr = i2c_adr
         self.elinks = elinks
         self.reset_pin = reset
+        self.breed = breed
         self.is_connected()
         if self.connected:
             self.ver = self.get_ver()
@@ -213,21 +216,33 @@ class ETROC():
                 df.append({'register': reg, 'value': ret, 'default': exp})
         return df
 
-    def pixel_sanity_check(self, full=True, verbose=False):
+    def pixel_sanity_check(self, full=True, verbose=False, return_matrix=False):
         all_pass = True
         nmax = 16 if full else 4  # option to make this check a bit faster
-        for row in range(nmax):
-            for col in range(nmax):
-                ret = self.rd_reg('PixelID', row=row, col=col)
-                exp = ((col << 4) | row)
-                comp = ret == exp
-                if verbose:
+        status_matrix = np.zeros((16,16))
+        if self.breed in ['emulator', 'software']:
+            for row in range(nmax):
+                for col in range(nmax):
+                    status_matrix[row][col] = 1
+        else:
+            for row in range(nmax):
+                for col in range(nmax):
+                    ret = self.rd_reg('PixelID', row=row, col=col)
+                    exp = ((col << 4) | row)
+                    comp = ret == exp
+                    if verbose:
+                        if comp:
+                            print(green(f"Sanity check passed for {row=}, {col=}"))
+                        else:
+                            print(red(f"Sanity check failed for {row=}, {col=}, expected {exp} from PixelID register but got {ret}"))
+                    all_pass &= comp
                     if comp:
-                        print(green(f"Sanity check passed for {row=}, {col=}"))
-                    else:
-                        print(red(f"Sanity check failed for {row=}, {col=}, expected {exp} from PixelID register but got {ret}"))
-                all_pass &= comp
-        return all_pass
+                        status_matrix[row][col] = 1
+
+        if return_matrix:
+            return status_matrix
+        else:
+            return all_pass
 
     def pixel_random_check(self, ntest=20, verbose=False):
         all_pass = True
