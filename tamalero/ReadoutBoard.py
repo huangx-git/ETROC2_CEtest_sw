@@ -45,7 +45,10 @@ class ReadoutBoard:
     def get_trigger(self):
         # Self-check if a trigger lpGBT is present, if trigger is not explicitely set to False
         sleep(0.5)
-        test_read = self.DAQ_LPGBT.I2C_read(reg=0x0, master=2, slave_addr=0x70, verbose=False)
+        try:
+            test_read = self.DAQ_LPGBT.I2C_read(reg=0x0, master=2, slave_addr=0x70, verbose=False)
+        except TimeoutError:
+            test_read = None
         if test_read is not None and self.trigger:
             print ("Found trigger lpGBT, will configure it now.")
             self.trigger = True
