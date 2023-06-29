@@ -232,9 +232,9 @@ class ETROC():
                     comp = ret == exp
                     if verbose:
                         if comp:
-                            print(green(f"Sanity check passed for {row=}, {col=}"))
+                            print(green(f"Sanity check passed for row={row}, col={col}"))
                         else:
-                            print(red(f"Sanity check failed for {row=}, {col=}, expected {exp} from PixelID register but got {ret}"))
+                            print(red(f"Sanity check failed for row={row}, col={col}, expected {exp} from PixelID register but got {ret}"))
                     all_pass &= comp
                     if comp:
                         status_matrix[row][col] = 1
