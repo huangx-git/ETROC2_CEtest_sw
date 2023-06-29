@@ -6,6 +6,10 @@ from tamalero.DataFrame import DataFrame
 from tamalero.ETROC import ETROC
 from tamalero.Module import Module
 
+# Import vth_scan function for threshold test endpoint
+from test_ETROC import vth_scan
+
+
 from tamalero.SCA import SCA_CONTROL
 
 import time
@@ -61,6 +65,31 @@ def create_app(rb, modules=[]):
                     stat = etroc.pixel_sanity_check(return_matrix=True)
                     etroc_status[i][j] = stat.astype(int).tolist()
         return etroc_status
+
+    @app.route('/threshold_test')
+    def get_threshold_test():
+        # These are the default arguments pass when running test_ETROC with --scan full, which runs
+        # a threshold scan for entire chip
+
+        # vth_scan_data = vth_scan(
+        #     etroc,
+        #     vth_min = 800,
+        #     vth_max = 880,
+        #     decimal = True,
+        #     fifo = fifo,
+        #     absolute = True,
+        # )
+        # vth_axis    = np.array(vth_scan_data[0])
+        # hit_rate    = np.array(vth_scan_data[1])
+        # N_pix       = len(hit_rate) # total # of pixels
+        # N_pix_w     = int(round(np.sqrt(N_pix))) # N_pix in NxN layout
+        # max_indices = np.argmax(hit_rate, axis=1)
+        # maximums    = vth_axis[max_indices]
+        # max_matrix  = np.empty([N_pix_w, N_pix_w])
+
+
+        result = "\n You Made Request to Threshold Endpoint \n"
+        return result
 
     return app
 
