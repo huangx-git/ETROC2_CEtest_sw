@@ -17,6 +17,7 @@ from emoji import emojize
 from flask import Flask
 
 def create_app(rb, modules=[]):
+    # FIXME this should live somewhere else in the future
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
@@ -29,11 +30,50 @@ def create_app(rb, modules=[]):
         return rb.read_temp()
 
     @app.route('/module_links')
-    def get_ink_status():
+    def get_link_status():
         link_status = {}
         for i, m in enumerate(modules):
-            link_status[i] = m.get_locked_links()
+            any_connected = False
+            etrocs = {}
+            for j, etroc in enumerate(m.ETROCs):
+                links = {}
+                elinks = etroc.elinks
+                status = etroc.get_elink_status()
+                ilink = 0
+                any_connected |= etroc.is_connected() > 0
+                for lpgbt in elinks:
+                    for k, link in enumerate(elinks[lpgbt]):
+                        links[ilink] = {'lpGBT': lpgbt, 'elink': elinks[lpgbt][k], 'locked': status[lpgbt][k]}
+                        ilink += 1
+                etrocs[str(j)] = links
+
+            link_status[i] = etrocs
+            link_status[i]['connected'] = any_connected
         return link_status
+
+    @app.route('/etroc_status')
+    def get_etroc_status():
+        etroc_status = {}
+        for i, module in enumerate(modules):
+            etroc_status[i] = {}
+            for j, etroc in enumerate(module.ETROCs):  # 4 ETROCs expected per module
+                if etroc.is_connected():
+                    stat = etroc.pixel_sanity_check(return_matrix=True)
+                    etroc_status[i][j] = {}
+                    for k in range(16):
+                        etroc_status[i][j][k] = {}
+                        for l in range(16):
+                            etroc_status[i][j][k][l] = int(stat[k][l])
+            #for j in range(4):
+            #    etroc_status[i*4+j] = {}
+            #    # NOTE here we should get the actual status
+            #    # below is just a placeholder
+            #    for k in range(16):
+            #        etroc_status[i*4+j][k] = {}
+            #        for l in range(16):
+            #            etroc_status[i*4+j][k][l] = 1
+
+        return etroc_status
 
     return app
 
@@ -66,6 +106,7 @@ if __name__ == '__main__':
     argParser.add_argument('--monitor', action='store_true', default=False, help="Start up montoring threads in the background")
     argParser.add_argument('--strict', action='store_true', default=False, help="Enforce strict limits on ADC reads for SCA and LPGBT")
     argParser.add_argument('--server', action='store_true', default=False, help="Start server")
+    argParser.add_argument('--port', action='store', default=5000, type=int, help="Port to use for server")
     args = argParser.parse_args()
 
 
@@ -186,7 +227,7 @@ if __name__ == '__main__':
     #-------------------------------------------------------------------------------
 
     modules = []
-    if args.configuration == 'emulator':
+    if args.configuration == 'emulator' or args.configuration == 'modulev0':
         print("Configuring ETROCs")
         for i in range(res['n_module']):
             modules.append(Module(rb_0, i+1))
@@ -208,7 +249,7 @@ if __name__ == '__main__':
 
     if args.server:
         app = create_app(rb_0, modules=modules)
-        app.run()
+        app.run(port=args.port)
 
     #-------------------------------------------------------------------------------
     # Read ADCs

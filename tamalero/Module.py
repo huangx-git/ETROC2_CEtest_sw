@@ -11,6 +11,7 @@ class Module:
         # don't like that this also needs a RB
         # think about a better solution
         self.config = rb.configuration['modules'][i]
+        self.breed = rb.config
         #self.config = load_yaml(map_file)[f'm{i}']
         #self.regs = load_yaml(os.path.expandvars('$TAMALERO_BASE/address_table/ETROC2.yaml'))
         #self.regs_em = ['disScrambler', 'singlePort', 'mergeTriggerData', 'triggerGranularity']
@@ -27,6 +28,8 @@ class Module:
                         i2c_channel=self.config['i2c']['channel'],
                         elinks={k: self.config['elinks'][j][k] for k in range(len(self.config['elinks'][j]))},
                         i2c_adr = self.config['addresses'][j],
+                        reset = None,
+                        breed = 'software'
                     ))
             else:
                 self.ETROCs.append(
@@ -39,6 +42,7 @@ class Module:
                         i2c_adr     = self.config['addresses'][j],
                         strict      = strict,
                         reset = self.config['reset'],
+                        breed = self.breed,
                     ))
 
     #def configure(self):
