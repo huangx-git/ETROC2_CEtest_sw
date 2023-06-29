@@ -510,6 +510,16 @@ if __name__ == '__main__':
             del fig, ax
 
         elif args.scan == 'simple':
+            row = 4
+            col = 3
+            # FIXME the elink selector is still hard coded
+            # but should not be
+            # this also only works in the dual port mode right now
+            # otherwise everything should be coming through link 2(?)
+            if col > 7:
+                fifo.select_elink(0)
+            else:
+                fifo.select_elink(2)
             rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
             print("\n - Running simple threshold scan on single pixel")
             vth     = []
@@ -519,7 +529,7 @@ if __name__ == '__main__':
             print("Coarse scan to find the peak location")
             for i in range(0, 1000, 5):
                 # this could use a tqdm
-                etroc.wr_reg("DAC", i, row=3, col=4)
+                etroc.wr_reg("DAC", i, row=row, col=col)
                 fifo.send_l1a(2000)
                 vth.append(i)
                 count.append(rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value())
@@ -534,8 +544,9 @@ if __name__ == '__main__':
             vth     = []
             count   = []
             print("Fine scanning around this DAC value now")
-            for i in range(vth_max-10, vth_max+10):
-                etroc.wr_reg("DAC", i, row=3, col=4)
+            for i in range(vth_max-15, vth_max+15):
+                #etroc.wr_reg("DAC", i, row=3, col=4)
+                etroc.wr_reg("DAC", i, row=row, col=col)
                 fifo.send_l1a(5000)
                 vth.append(i)
                 count.append(rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value())

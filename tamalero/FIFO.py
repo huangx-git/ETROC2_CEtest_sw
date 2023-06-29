@@ -142,40 +142,47 @@ class FIFO:
                 else:
                     return self.rb.kcu.hw.getNode("DAQ_RB0").readBlock(block)
             except uhal_exception:
-                print("uhal UDP error in FIFO.read_block")
-                #raise
+                print(f"uhal UDP error in FIFO.read_block, block size is {block}")
+                raise
 
     def read(self, dispatch=False, verbose=False):
-        occupancy = self.get_occupancy()*4 + 2  # FIXME don't know where factor of 4 comes from??
-        if verbose: print(f"{occupancy=}")
-        num_blocks_to_read = occupancy // self.block
-        if verbose: print(f"{num_blocks_to_read=}")
-        last_block = occupancy % self.block
-        if verbose: print(f"{last_block=}")
+        #occupancy = self.get_occupancy()*4 + 2  # FIXME don't know where factor of 4 comes from??
+        #if verbose: print(f"{occupancy=}")
+        #num_blocks_to_read = occupancy // self.block
+        #if verbose: print(f"{num_blocks_to_read=}")
+        #last_block = occupancy % self.block
+        #if verbose: print(f"{last_block=}")
         data = []
-        if (num_blocks_to_read or last_block):
-            if dispatch:
-                for b in range(num_blocks_to_read):
-                    try:
-                        data += self.read_block(self.block, dispatch=dispatch).value()
-                    except uhal_exception:
-                        print("uhal UDP error in daq")
-                        return data
-                try:
-                    data += self.read_block(last_block, dispatch=dispatch).value()
-                except uhal_exception:
-                    print("uhal UDP error in daq")
-                    return data
-            else:
-                # FIXME the part below should be faster but is somehow broken now
-                reads = num_blocks_to_read * [self.read_block(self.block, dispatch=dispatch)] + [self.read_block(last_block, dispatch=dispatch)]
-                try:
-                    self.rb.kcu.hw.dispatch()
-                except:
-                    print("uhal UDP error in daq")
+        while self.get_occupancy()>0:
+            # FIXME checking get_occupancy all the time is slow, but this is at least not broken.
+            data += self.read_block(250, dispatch=dispatch).value()
 
-                for read in reads:
-                    data += read.value()
+        #if (num_blocks_to_read or last_block):
+        #    if dispatch:
+        #        #while self.get_occupancy()>0:
+        #        #    data += self.read_block(255, dispatch=dispatch).value()
+        #        for b in range(num_blocks_to_read):
+        #            #print(b)
+        #            try:
+        #                data += self.read_block(self.block, dispatch=dispatch).value()
+        #            except uhal_exception:
+        #                print("uhal UDP error in daq, full blocks")
+        #                return data
+        #        try:
+        #            data += self.read_block(last_block, dispatch=dispatch).value()
+        #        except uhal_exception:
+        #            print("uhal UDP error in daq, last block")
+        #            return data
+        #    else:
+        #        # FIXME the part below should be faster but is somehow broken now
+        #        reads = num_blocks_to_read * [self.read_block(self.block, dispatch=dispatch)] + [self.read_block(last_block, dispatch=dispatch)]
+        #        try:
+        #            self.rb.kcu.hw.dispatch()
+        #        except:
+        #            print("uhal UDP error in daq")
+
+        #        for read in reads:
+        #            data += read.value()
         return data
 
 
