@@ -218,9 +218,11 @@ if __name__ == '__main__':
         make_version_header(res)
 
     if args.power_up or args.reconfigure:
-        rb_0.reset_problematic_links(
-            max_retries=10,
-            allow_bad_links=args.allow_bad_links)
+        # FIXME this is taken out because it sometimes sends the RB into the Nirvana.
+        # Daniel will fix it when he has time.
+        #rb_0.reset_problematic_links(
+        #    max_retries=10,
+        #    allow_bad_links=args.allow_bad_links)
         if verbose:
             rb_0.status()
 

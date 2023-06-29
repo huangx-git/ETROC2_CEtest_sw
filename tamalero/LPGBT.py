@@ -13,8 +13,10 @@ from time import sleep
 from datetime import datetime
 try:
     from tabulate import tabulate
+    has_tabulate = True
 except ModuleNotFoundError:
     print ("Package `tabulate` not found.")
+    has_tabulate = False
 
 from tamalero.lpgbt_constants import LpgbtConstants
 
@@ -668,9 +670,20 @@ class LPGBT(RegParser):
                 table.append([adc_reg, pin, value, input_voltage, comment])
 
         if check:
-            print(tabulate(table, headers=["Register","Pin", "Reading", "Voltage", "Status", "Comment"],  tablefmt="simple_outline"))
+            headers = ["Register","Pin", "Reading", "Voltage", "Status", "Comment"]
         else:
-            print(tabulate(table, headers=["Register","Pin", "Reading", "Voltage", "Comment"],  tablefmt="simple_outline"))
+            headers = ["Register","Pin", "Reading", "Voltage", "Comment"]
+
+        if has_tabulate:
+            print(tabulate(table, headers=headers,  tablefmt="simple_outline"))
+        else:
+            header_string = "{:<20}"*len(headers)
+            data_string = "{:<20}{:<20}{:<20.0f}{:<20.3f}{:<20}"
+            if check:
+                data_string += "{:<20}"
+            print(header_string.format(*headers))
+            for line in table:
+                print(data_string.format(*line))
 
         if will_fail:
             raise ValueError("At least one input voltage is out of bounds, with status ERR as seen in the table above")
@@ -1152,7 +1165,7 @@ class LPGBT(RegParser):
                 status = self.rd_adr(i2cm0status+OFFSET_RD).value()
                 retries += 1
                 if retries > 50:
-                    raise TimeoutError(f"I2C write failed after 50 retries, {status=}")
+                    raise TimeoutError(f"I2C write failed after 50 retries, status={status}")
 
     def I2C_read(self, reg=0x0, master=2, slave_addr=0x70, nbytes=1, adr_nbytes=2, freq=2, verbose=False):
         #https://gitlab.cern.ch/lpgbt/pigbt/-/blob/master/backend/apiapp/lpgbtLib/lowLevelDrivers/MASTERI2C.py#L83
@@ -1232,7 +1245,7 @@ class LPGBT(RegParser):
             #print(f"Updating status: {status}, retries: {retries}")
             retries += 1
             if retries > 50:
-                raise TimeoutError(f"I2C transaction failed after 50 retries because of an issue in writing the register address, {status=}")
+                raise TimeoutError(f"I2C transaction failed after 50 retries because of an issue in writing the register address, status={status}")
 
         ################################################################################
         # Write the data
@@ -1260,7 +1273,7 @@ class LPGBT(RegParser):
             status = self.rd_adr(i2cm0status+OFFSET_RD).value()
             retries += 1
             if retries > 50:
-                raise TimeoutError(f"I2C transaction failed after 50 retries because of an issue in reading back the data, {status=}")
+                raise TimeoutError(f"I2C transaction failed after 50 retries because of an issue in reading back the data, status={status}")
 
         read_values = []
 
