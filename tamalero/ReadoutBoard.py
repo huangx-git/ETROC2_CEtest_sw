@@ -197,11 +197,11 @@ class ReadoutBoard:
 
     def status(self):
         nodes = list(map (lambda x : "READOUT_BOARD_%s.LPGBT." % self.rb + x,
-                          ("DAQ.DOWNLINK.READY",
-                      "DAQ.UPLINK.READY",
-                      "DAQ.UPLINK.FEC_ERR_CNT",
-                      "TRIGGER.UPLINK.READY",
-                      "TRIGGER.UPLINK.FEC_ERR_CNT",)))
+                          ("DOWNLINK.READY",
+                      "UPLINK_0.READY",
+                      "UPLINK_0.FEC_ERR_CNT",
+                      "UPLINK_1.READY",
+                      "UPLINK_1.FEC_ERR_CNT",)))
         for node in nodes:
             val = self.kcu.read_node(node)
             err = 0
@@ -247,11 +247,11 @@ class ReadoutBoard:
     def get_FEC_error_count(self, quiet=False):
         if not quiet:
             print("{:<8}{:<8}{:<50}{:<8}".format("Address", "Perm.", "Name", "Value"))
-            self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.UPLINK.FEC_ERR_CNT" % self.rb), use_color=True, invert=True)
-            self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT" % self.rb), use_color=True, invert=True)
+            self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.UPLINK_0.FEC_ERR_CNT" % self.rb), use_color=True, invert=True)
+            self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.UPLINK_1.FEC_ERR_CNT" % self.rb), use_color=True, invert=True)
         return {
-            'DAQ': self.kcu.read_node("READOUT_BOARD_%s.LPGBT.DAQ.UPLINK.FEC_ERR_CNT" % self.rb).value(),
-            'TRIGGER': self.kcu.read_node("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT" % self.rb).value()
+            'DAQ': self.kcu.read_node("READOUT_BOARD_%s.LPGBT.UPLINK_0.FEC_ERR_CNT" % self.rb).value(),
+            'TRIGGER': self.kcu.read_node("READOUT_BOARD_%s.LPGBT.UPLINK_1.FEC_ERR_CNT" % self.rb).value()
         }
 
     def reset_FEC_error_count(self, quiet=False):
