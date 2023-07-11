@@ -68,6 +68,15 @@ class KCU:
         reg = self.hw.getNode(id)
         self.action_reg(reg)
 
+    def print_regs(self):
+
+        for id in self.hw.getNodes():
+            reg = self.hw.getNode(id)
+            # if (reg.getModule() == ""):
+            if (reg.getMode() != uhal.BlockReadWriteMode.HIERARCHICAL):
+                print(self.format_reg(reg.getAddress(), reg.getPath()[4:], -1,
+                                self.format_permission(reg.getPermission())))
+
     def get_firmware_version(self, verbose=False, string=True):
 
         nodes = ("FW_INFO.HOG_INFO.GLOBAL_DATE",
