@@ -48,7 +48,10 @@ class KCU:
                 self.dispatch()
 
     def read_node(self, id):
-        reg = self.hw.getNode(id)
+        try:
+            reg = self.hw.getNode(id)
+        except:
+            raise Exception(f"Failed finding node {id} in read_node")
         ret = reg.read()
         if self.auto_dispatch:
             self.dispatch()
