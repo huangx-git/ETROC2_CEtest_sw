@@ -91,6 +91,7 @@ def vth_scan(ETROC2, vth_min=693, vth_max=709, vth_step=1, decimal=False, fifo=N
         print(f"Working on threshold {vth=}")
         if decimal:
             ETROC2.wr_reg('DAC', int(vth), broadcast=True)
+            #print("Acc value", ETROC2.get_ACC(row=0, col=0)) #doesn't work here
         else:
             ETROC2.set_Vth_mV(vth)
         i = int((vth-vth_min)/vth_step)
@@ -469,12 +470,13 @@ if __name__ == '__main__':
             ### threshold scan draft
             vth_scan_data = vth_scan(
                 etroc,
-                vth_min = 800,
-                vth_max = 880,
+                vth_min = 400,
+                vth_max = 500,
                 decimal = True,
                 fifo = fifo,
                 absolute = True,
             )
+
             vth_axis    = np.array(vth_scan_data[0])
             hit_rate    = np.array(vth_scan_data[1])
             N_pix       = len(hit_rate) # total # of pixels
@@ -482,28 +484,39 @@ if __name__ == '__main__':
             max_indices = np.argmax(hit_rate, axis=1)
             maximums    = vth_axis[max_indices]
             max_matrix  = np.empty([N_pix_w, N_pix_w])
+            noise_matrix  = np.empty([N_pix_w, N_pix_w])
 
             for pix in range(N_pix):
                 r, c = fromPixNum(pix, N_pix_w)
                 max_matrix[r][c] = maximums[pix]
-
+                noise_matrix[r][c] = np.size(np.nonzero(hit_rate[pix]))
             # 2D histogram of the mean
             # this is based on the code for automatic sigmoid fits
             # for software emulator data below
-            fig, ax = plt.subplots()
-            plt.title("Peak values of threshold scan")
-            cax = ax.matshow(max_matrix)
+            fig, ax = plt.subplots(2,1, figsize=(15,15))
+            ax[0].set_title("Peak values of threshold scan")
+            ax[1].set_title("Noise width of threshold scan")
+            cax1 = ax[0].matshow(max_matrix)
+            cax2 = ax[1].matshow(noise_matrix)
+            fig.colorbar(cax1,ax=ax[0])
+            fig.colorbar(cax2,ax=ax[1])
+            
+            ax[0].set_xticks(np.arange(N_pix_w))
+            ax[0].set_yticks(np.arange(N_pix_w))
 
-            fig.colorbar(cax)
-            ax.set_xticks(np.arange(N_pix_w))
-            ax.set_yticks(np.arange(N_pix_w))
-
+            ax[1].set_xticks(np.arange(N_pix_w))
+            ax[1].set_yticks(np.arange(N_pix_w))
+            
             for i in range(N_pix_w):
                 for j in range(N_pix_w):
-                    text = ax.text(j, i, int(max_matrix[i,j]),
+                    text = ax[0].text(j, i, int(max_matrix[i,j]),
                             ha="center", va="center", color="w", fontsize="xx-small")
 
-            fig.savefig(f'results/peak_thresholds.png')
+                    text1 = ax[1].text(j, i, int(noise_matrix[i,j]),
+                            ha="center", va="center", color="w", fontsize="xx-small")
+                    
+            #fig.savefig(f'results/peak_thresholds.png')
+            fig.savefig(f'results/peak_and_noiseWidth_thresholds.png')
             plt.show()
 
             plt.close(fig)
@@ -564,10 +577,11 @@ if __name__ == '__main__':
             delay = 3
             i = 4
             j = 3
+            L1Adelay = 500
             print(f"\n - Will send L1a/QInj pulse with delay of {delay} cycles and charge of {q} fC")
             print(f"\n - to pixel at Row {i}, Col {j}.")
             for m in range(5):
-                etroc.QInj_set(q, delay, row=i, col=j, broadcast = False)
+                etroc.QInj_set(q, delay, L1Adelay, row=i, col=j, broadcast = False)
                 with tqdm(total=65536) as pbar:
                     while not fifo.is_full():
                         try:
