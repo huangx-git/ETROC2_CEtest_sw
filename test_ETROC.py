@@ -104,13 +104,12 @@ def vth_scan(ETROC2, vth_min=693, vth_max=709, vth_step=1, decimal=False, fifo=N
     return [vth_axis.tolist(), run_results.tolist()]
 
 
+# initiate
+ETROC2 = software_ETROC2()  # currently using Software ETROC2 (fake)
+print("ETROC2 emulator instantiated, base configuration successful")
+DF = DataFrame('ETROC2')
+
 if __name__ == '__main__':
-
-    # initiate
-    ETROC2 = software_ETROC2()  # currently using Software ETROC2 (fake)
-    print("ETROC2 emulator instantiated, base configuration successful")
-    DF = DataFrame('ETROC2')
-
     # argsparser
     import argparse
     argParser = argparse.ArgumentParser(description = "Argument parser")
