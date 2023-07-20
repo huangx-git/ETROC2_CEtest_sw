@@ -6,19 +6,19 @@ from tamalero.DataFrame import DataFrame
 from tamalero.ETROC import ETROC
 from tamalero.Module import Module
 
-# Import vth_scan function for threshold test endpoint
-from test_ETROC import vth_scan
-
-
 from tamalero.SCA import SCA_CONTROL
+from test_ETROC import vth_scan, fromPixNum
 
 import time
 import random
 import sys
 import os
 import uhal
+import json
+import datetime
+import numpy as np
 from emoji import emojize
-from flask import Flask
+from flask import Flask, request
 
 def create_app(rb, modules=[]):
     # FIXME this should live somewhere else in the future
@@ -31,7 +31,9 @@ def create_app(rb, modules=[]):
 
     @app.route('/rb_temp')
     def temperatures():
-        return rb.read_temp()
+        temp = rb.read_temp()
+        temp['time'] = datetime.datetime.now().isoformat()
+        return temp
 
     @app.route('/module_links')
     def get_link_status():
@@ -66,30 +68,42 @@ def create_app(rb, modules=[]):
                     etroc_status[i][j] = stat.astype(int).tolist()
         return etroc_status
 
-    @app.route('/threshold_test')
-    def get_threshold_test():
-        # These are the default arguments pass when running test_ETROC with --scan full, which runs
-        # a threshold scan for entire chip
+    @app.route('/threshold_scan', methods=['POST'])
+    def run_threshold_scan():
+        payload = json.loads(request.data)
+        print(f"Threshold Scan on module {payload['module']}, etroc {payload['etroc']}")
 
-        # vth_scan_data = vth_scan(
-        #     etroc,
-        #     vth_min = 800,
-        #     vth_max = 880,
-        #     decimal = True,
-        #     fifo = fifo,
-        #     absolute = True,
-        # )
-        # vth_axis    = np.array(vth_scan_data[0])
-        # hit_rate    = np.array(vth_scan_data[1])
-        # N_pix       = len(hit_rate) # total # of pixels
-        # N_pix_w     = int(round(np.sqrt(N_pix))) # N_pix in NxN layout
-        # max_indices = np.argmax(hit_rate, axis=1)
-        # maximums    = vth_axis[max_indices]
-        # max_matrix  = np.empty([N_pix_w, N_pix_w])
+        module = modules[int(payload['module'])]
+        etroc = module.ETROCs[int(payload['etroc'])]
+        fifo = FIFO(rb=rb_0)
 
+        vth_scan_data = vth_scan(
+            etroc,
+            vth_min = 180,
+            vth_max = 260,
+            decimal = True,
+            fifo = fifo,
+            absolute = True,
+        )
 
-        result = "\n You Made Request to Threshold Endpoint \n"
-        return result
+        vth_axis    = np.array(vth_scan_data[0])
+        hit_rate    = np.array(vth_scan_data[1])
+        N_pix       = len(hit_rate) # total # of pixels
+        N_pix_w     = int(round(np.sqrt(N_pix))) # N_pix in NxN layout
+        max_indices = np.argmax(hit_rate, axis=1)
+        maximums    = vth_axis[max_indices]
+        max_matrix  = np.empty([N_pix_w, N_pix_w])
+
+        for pix in range(N_pix):
+            r, c = fromPixNum(pix, N_pix_w)
+            max_matrix[r][c] = maximums[pix]
+
+        threshold_status  = {}
+        threshold_status['vth_axis'] = vth_axis.tolist()
+        threshold_status['hit_rate'] = hit_rate.tolist()
+        threshold_status['max_matrix'] = max_matrix.tolist()
+
+        return threshold_status
 
     return app
 
