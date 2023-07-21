@@ -79,8 +79,8 @@ def create_app(rb, modules=[]):
 
         vth_scan_data = vth_scan(
             etroc,
-            vth_min = 180,
-            vth_max = 260,
+            vth_min = 220,
+            vth_max = 290,
             decimal = True,
             fifo = fifo,
             absolute = True,
@@ -281,7 +281,7 @@ if __name__ == '__main__':
 
     if args.server:
         app = create_app(rb_0, modules=modules)
-        app.run(port=args.port)
+        app.run(port=args.port, threaded=False)
 
     #-------------------------------------------------------------------------------
     # Read ADCs
