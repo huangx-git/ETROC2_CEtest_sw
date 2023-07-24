@@ -131,20 +131,22 @@ class KCU:
             self.print_reg(self.hw.getNode(id), use_color=True, threshold=1, invert=True)
 
         self.check_clock_frequencies()
+        
+        for rb in self.readout_boards:
+            print('Checking Readout Board {rb.rb}')
+            locked = self.read_node(f"READOUT_BOARD_{rb.rb}.ETROC_LOCKED").value()
+            locked_slave = self.read_node(f"READOUT_BOARD_{rb.rb}.ETROC_LOCKED_SLAVE").value()
 
-        locked = self.read_node(f"READOUT_BOARD_0.ETROC_LOCKED").value()
-        locked_slave = self.read_node(f"READOUT_BOARD_0.ETROC_LOCKED_SLAVE").value()
+            for l in range(28):
+                if (locked >> l) & 1:
+                    print(green(f'Master elink {l} is locked.'))
+            for l in range(28):
+                if (locked_slave >> l) & 1:
+                    print(green(f'Slave elink {l} is locked.'))
 
-        for l in range(28):
-            if (locked >> l) & 1:
-                print(green(f'Master elink {l} is locked.'))
-        for l in range(28):
-            if (locked_slave >> l) & 1:
-                print(green(f'Slave elink {l} is locked.'))
-
-        if locked | locked_slave == 0:
-            print(red('Warning: No elink is locked.'))
-
+            if locked | locked_slave == 0:
+                print(red('Warning: No elink is locked.'))
+            print()
 
     def print_reg(self, reg, threshold=1, maxval=0xFFFFFFFF, use_color=False, invert=False):
         from tamalero.colors import green, red, dummy
