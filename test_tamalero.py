@@ -75,7 +75,7 @@ def create_app(rb, modules=[]):
 
         module = modules[int(payload['module'])]
         etroc = module.ETROCs[int(payload['etroc'])]
-        fifo = FIFO(rb=rb_0)
+        fifo = FIFO(rb=rb)
 
         vth_scan_data = vth_scan(
             etroc,
@@ -137,6 +137,7 @@ if __name__ == '__main__':
     argParser.add_argument('--strict', action='store_true', default=False, help="Enforce strict limits on ADC reads for SCA and LPGBT")
     argParser.add_argument('--server', action='store_true', default=False, help="Start server")
     argParser.add_argument('--port', action='store', default=5000, type=int, help="Port to use for server")
+    argParser.add_argument('--rb', action='store', default=0, type=int, help="Specify Readout Board")
     args = argParser.parse_args()
 
 
@@ -150,7 +151,7 @@ if __name__ == '__main__':
     print ("Using KCU at address: %s"%args.kcu)
 
     kcu = None
-    rb_0 = None
+    rb = None
 
     # write to the loopback node of the KCU105 to check ethernet communication
     kcu = get_kcu(args.kcu, control_hub=args.control_hub, host=args.host, verbose=args.verbose)
@@ -159,21 +160,25 @@ if __name__ == '__main__':
         # this would cause the RB init to fail.
         sys.exit(1)
 
+    print(f'Utilizing ReadoutBoard {args.rb}')
+    rb = ReadoutBoard(args.rb, trigger=(not args.force_no_trigger), kcu=kcu, config=args.configuration)
 
-    rb_0 = ReadoutBoard(0, trigger=(not args.force_no_trigger), kcu=kcu, config=args.configuration)
+    # IDEA Loop over boards for configuration?
+    print(kcu.readout_boards)
+
     data = 0xabcd1234
     kcu.write_node("LOOPBACK.LOOPBACK", data)
     if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
         print("No communications with KCU105... quitting")
         sys.exit(1)
 
-    is_configured = rb_0.DAQ_LPGBT.is_configured()
+    is_configured = rb.DAQ_LPGBT.is_configured()
     header(configured=is_configured)
 
     if args.recal_lpgbt:
-        rb_0.DAQ_LPGBT.calibrate_adc(recalibrate=True)
-        if rb_0.trigger:
-            rb_0.TRIG_LPGBT.calibrate_adc(recalibrate=True)
+        rb.DAQ_LPGBT.calibrate_adc(recalibrate=True)
+        if rb.trigger:
+            rb.TRIG_LPGBT.calibrate_adc(recalibrate=True)
 
     if not args.devel:
         check_repo_status(kcu_version=kcu.get_firmware_version(verbose=True))
@@ -186,27 +191,27 @@ if __name__ == '__main__':
 
         print("Power up init sequence for: DAQ")
 
-        #rb_0.DAQ_LPGBT.power_up_init()
+        #rb.DAQ_LPGBT.power_up_init()
 
-        rb_0.VTRX.get_version()
+        rb.VTRX.get_version()
         if (verbose):
             print ("VTRX status at power up:")
-            _ = rb_0.VTRX.status()
-            print (rb_0.VTRX.ver)
+            _ = rb.VTRX.status()
+            print (rb.VTRX.ver)
 
-        rb_0.get_trigger()
+        rb.get_trigger()
 
-        if rb_0.trigger:
+        if rb.trigger:
             #print("Configuring Trigger lpGBT")
             print (" > Power up init sequence for: Trigger")
-            rb_0.TRIG_LPGBT.power_up_init()
+            rb.TRIG_LPGBT.power_up_init()
             print("Done Configuring Trigger lpGBT")
     else:
-        rb_0.VTRX.get_version()
+        rb.VTRX.get_version()
 
 
-    if not hasattr(rb_0, "TRIG_LPGBT"):
-        rb_0.get_trigger()
+    if not hasattr(rb, "TRIG_LPGBT"):
+        rb.get_trigger()
 
     if args.power_up or args.reconfigure:
 
@@ -220,13 +225,13 @@ if __name__ == '__main__':
         else:
             alignment = False
 
-        #if rb_0.trigger:
-        #    rb_0.TRIG_LPGBT.power_up_init()
+        #if rb.trigger:
+        #    rb.TRIG_LPGBT.power_up_init()
         print("Configuring readout board")
-        rb_0.configure(alignment=alignment, data_mode=data_mode, etroc=args.etroc, verbose=args.verbose)
+        rb.configure(alignment=alignment, data_mode=data_mode, etroc=args.etroc, verbose=args.verbose)
 
-    res = rb_0.DAQ_LPGBT.get_board_id()
-    res['trigger'] = 'yes' if rb_0.trigger else 'no'
+    res = rb.DAQ_LPGBT.get_board_id()
+    res['trigger'] = 'yes' if rb.trigger else 'no'
 
     if (verbose):
         make_version_header(res)
@@ -234,25 +239,25 @@ if __name__ == '__main__':
     if args.power_up or args.reconfigure:
         # FIXME this is taken out because it sometimes sends the RB into the Nirvana.
         # Daniel will fix it when he has time.
-        #rb_0.reset_problematic_links(
+        #rb.reset_problematic_links(
         #    max_retries=10,
         #    allow_bad_links=args.allow_bad_links)
         if verbose:
-            rb_0.status()
+            rb.status()
 
     if (verbose):
         kcu.status()
 
-    rb_0.VTRX.get_version()
+    rb.VTRX.get_version()
     if (verbose):
-        _ = rb_0.VTRX.status()
+        _ = rb.VTRX.status()
 
 
     if args.power_up or args.reconfigure:
         print("Link inversions")
-        rb_0.DAQ_LPGBT.invert_links()
-        if rb_0.trigger:
-            rb_0.TRIG_LPGBT.invert_links(trigger=rb_0.trigger)
+        rb.DAQ_LPGBT.invert_links()
+        if rb.trigger:
+            rb.TRIG_LPGBT.invert_links(trigger=rb.trigger)
 
     #-------------------------------------------------------------------------------
     # Module Status
@@ -262,7 +267,7 @@ if __name__ == '__main__':
     if args.configuration == 'emulator' or args.configuration == 'modulev0':
         print("Configuring ETROCs")
         for i in range(res['n_module']):
-            modules.append(Module(rb_0, i+1))
+            modules.append(Module(rb, i+1))
 
         print()
         print("Querying module status")
@@ -280,7 +285,7 @@ if __name__ == '__main__':
                     monitoring_threads.append(module_mon(modules[i]))
 
     if args.server:
-        app = create_app(rb_0, modules=modules)
+        app = create_app(rb, modules=modules)
         app.run(port=args.port, threaded=False)
 
     #-------------------------------------------------------------------------------
@@ -289,13 +294,13 @@ if __name__ == '__main__':
 
     if args.adcs:
         print("\n\nReading GBT-SCA ADC values:")
-        rb_0.SCA.read_adcs(check=True, strict_limits=args.strict)
+        rb.SCA.read_adcs(check=True, strict_limits=args.strict)
 
         print("\n\nReading DAQ lpGBT ADC values:")
-        rb_0.DAQ_LPGBT.read_adcs(check=True, strict_limits=args.strict)
+        rb.DAQ_LPGBT.read_adcs(check=True, strict_limits=args.strict)
 
         # High level reading of temperatures
-        temp = rb_0.read_temp(verbose=True)
+        temp = rb.read_temp(verbose=True)
 
     #-------------------------------------------------------------------------------
     # I2C Test
@@ -304,7 +309,7 @@ if __name__ == '__main__':
     if args.i2c_temp:
 
         for i in range(100):
-            print ( rb_0.DAQ_LPGBT.read_temp_i2c() )
+            print ( rb.DAQ_LPGBT.read_temp_i2c() )
             time.sleep(1)
 
     #-------------------------------------------------------------------------------
@@ -316,24 +321,24 @@ if __name__ == '__main__':
         print("Writing and Reading I2C_ctrl register:")
         for n in range(10):
             wr = random.randint(0, 100)
-            rb_0.SCA.I2C_write_ctrl(channel=3, data=wr)
-            rd = rb_0.SCA.I2C_read_ctrl(channel=3)
+            rb.SCA.I2C_write_ctrl(channel=3, data=wr)
+            rd = rb.SCA.I2C_read_ctrl(channel=3)
             print("write: {} \t read: {}".format(wr, rd))
 
         print("Testing multi-byte read:")
-        multi_out = rb_0.SCA.I2C_read_multi(channel=3, servant = 0x48, nbytes=2)
+        multi_out = rb.SCA.I2C_read_multi(channel=3, servant = 0x48, nbytes=2)
         print("servant: 0x48, channel: 3, nbytes: 2, output = {}".format(multi_out))
 
         print("Testing multi-byte write:")
 
         write_value = [0x2, 25, (27&240)]
         print("servant: 0x48, channel: 3, nbytes: 2, data:{}".format(write_value))
-        rb_0.SCA.I2C_write_multi(write_value, channel=3, servant=0x48)
-        read_value = rb_0.SCA.I2C_read_multi(channel=3, servant=0x48, nbytes = 2, reg=0x2)
+        rb.SCA.I2C_write_multi(write_value, channel=3, servant=0x48)
+        read_value = rb.SCA.I2C_read_multi(channel=3, servant=0x48, nbytes = 2, reg=0x2)
 
         if read_value == write_value[1:]:
             print ("write/read successful!")
-        print("read value = {}".format(rb_0.SCA.I2C_read_multi(channel=3, servant=0x48, nbytes = 2, reg=0x2)))
+        print("read value = {}".format(rb.SCA.I2C_read_multi(channel=3, servant=0x48, nbytes = 2, reg=0x2)))
 
     #-------------------------------------------------------------------------------
     # Pattern Checkers
@@ -341,39 +346,39 @@ if __name__ == '__main__':
 
     if args.reset_pattern_checker:
         print ("\nResetting the pattern checker.")
-        rb_0.DAQ_LPGBT.set_uplink_group_data_source("normal")
-        rb_0.DAQ_LPGBT.set_downlink_data_src(args.reset_pattern_checker)
+        rb.DAQ_LPGBT.set_uplink_group_data_source("normal")
+        rb.DAQ_LPGBT.set_downlink_data_src(args.reset_pattern_checker)
         time.sleep(0.1)
-        rb_0.DAQ_LPGBT.reset_pattern_checkers()
+        rb.DAQ_LPGBT.reset_pattern_checkers()
         time.sleep(0.1)
 
     if args.run_pattern_checker:
         print ("\nReading the pattern checker counter. Waiting 1 sec.")
         time.sleep(1)
-        rb_0.DAQ_LPGBT.read_pattern_checkers()
+        rb.DAQ_LPGBT.read_pattern_checkers()
 
     #-------------------------------------------------------------------------------
     # Eyescan
     #-------------------------------------------------------------------------------
 
     if args.eyescan:
-        rb_0.DAQ_LPGBT.eyescan()
+        rb.DAQ_LPGBT.eyescan()
 
     all_tests_passed = True  # FIXME this should be properly defined
     if all_tests_passed:
-        rb_0.DAQ_LPGBT.set_configured()
+        rb.DAQ_LPGBT.set_configured()
 
     #-------------------------------------------------------------------------------
     # Success LEDs
     #-------------------------------------------------------------------------------
-    if rb_0.DAQ_LPGBT.ver == 1:
-        rb_0.DAQ_LPGBT.set_gpio("LED_1", 1) # Set LED1 after tamalero finishes succesfully
+    if rb.DAQ_LPGBT.ver == 1:
+        rb.DAQ_LPGBT.set_gpio("LED_1", 1) # Set LED1 after tamalero finishes succesfully
         t_end = time.time() + 10
         if args.power_up:
             print("RB configured successfully. Rhett is happy " + emojize(":dog_face:"))
             while time.time() < t_end:
-                rb_0.DAQ_LPGBT.set_gpio("LED_RHETT", 1) # Let Rhett LED blink for 10s
+                rb.DAQ_LPGBT.set_gpio("LED_RHETT", 1) # Let Rhett LED blink for 10s
                 time.sleep(0.5)
-                rb_0.DAQ_LPGBT.set_gpio("LED_RHETT", 0)
+                rb.DAQ_LPGBT.set_gpio("LED_RHETT", 0)
                 time.sleep(0.5)
-        rb_0.DAQ_LPGBT.set_gpio("LED_RHETT", 1)
+        rb.DAQ_LPGBT.set_gpio("LED_RHETT", 1)
