@@ -138,7 +138,7 @@ if __name__ == '__main__':
     argParser.add_argument('--server', action='store_true', default=False, help="Start server")
     argParser.add_argument('--port', action='store', default=5000, type=int, help="Port to use for server")
     argParser.add_argument('--rb', action='store', default=0, type=int, help="Specify Readout Board")
-    argParser.add_argument('--multiboard', action = 'store_true')
+    argParser.add_argument('--multi_board', action = 'store_true')
     args = argParser.parse_args()
 
 
@@ -154,24 +154,17 @@ if __name__ == '__main__':
     kcu = None
     rb = None
 
-    # write to the loopback node of the KCU105 to check ethernet communication
-    kcu = get_kcu(args.kcu, control_hub=args.control_hub, host=args.host, verbose=args.verbose)
-    if (kcu == 0):
-        # if not basic connection was established the get_kcu function returns 1
-        # this would cause the RB init to fail.
-        sys.exit(1)
-
     if args.multi_board:
         temp = get_kcu(args.kcu, control_hub=args.control_hub, host=args.host, verbose=args.verbose)
-        if kcu == 0:
+        if temp == 0:
             sys.exit(1)
         for i in range(3):
             try:
                 print(f'Checking ReadoutBoard {i}')
-                rb = ReadoutBoard(args.rb, trigger=(not args.force_no_trigger), kcu=kcu, config=args.configuration)
-
-                kcu.write_node("LOOPBACK.LOOPBACK", data)
-                if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
+                rb = ReadoutBoard(i, trigger=(not args.force_no_trigger), kcu=temp, config=args.configuration)
+                print(f'Checking data loopback')
+                temp.write_node("LOOPBACK.LOOPBACK", data)
+                if (data != temp.read_node("LOOPBACK.LOOPBACK")):
                     print(f"No communications with KCU105 for board {i}")
                 else:
                     print(f'Successfully connected to ReadoutBoard {i}')
@@ -180,7 +173,7 @@ if __name__ == '__main__':
             except:
                 print(f'Connecting to ReadoutBoard {i} failed')
 
-        kcu.status()
+        temp.status()
     # write to the loopback node of the KCU105 to check ethernet communication
     kcu = get_kcu(args.kcu, control_hub=args.control_hub, host=args.host, verbose=args.verbose)
     if (kcu == 0):
