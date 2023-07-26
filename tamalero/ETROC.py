@@ -25,6 +25,7 @@ class ETROC():
             reset=None,
             breed='emulator',
     ):
+        self.QINJ_delay = 504  # this is a fixed value for the default settings of ETROC2
         self.isfake = False
         self.I2C_master = rb.DAQ_LPGBT if master.lower() == 'lpgbt' else rb.SCA
         self.master = master
