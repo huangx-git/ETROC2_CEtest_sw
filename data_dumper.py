@@ -3,6 +3,7 @@ import struct
 import argparse
 import numpy as np
 import awkward as ak
+import json
 from tamalero.DataFrame import DataFrame
 
 def merge_words(res):
@@ -50,7 +51,7 @@ if __name__ == '__main__':
 
     df = DataFrame('ETROC2')
 
-    f_in = 'output/output_test2.dat'
+    f_in = 'output/output_test.dat'
 
     with open(f_in, 'rb') as f:
         print("Reading from {}".format(f_in))
@@ -129,3 +130,6 @@ if __name__ == '__main__':
         'nhits': nhits,
         'nhits_trail': nhits_trail,
     })
+
+    with open("output/qinj_data.json", "w") as f:
+        json.dump(ak.to_json(events), f)
