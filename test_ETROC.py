@@ -55,6 +55,7 @@ def sigmoid_fit(x_axis, y_axis):
         x_axis-x_axis[0],
         y_axis,
         maxfev=10000,
+        bounds=([-np.inf,-np.inf],[0,np.inf])
     )
     return res[0][0], res[0][1]+x_axis[0]
 
