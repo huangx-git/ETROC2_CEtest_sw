@@ -137,7 +137,7 @@ class FIFO:
             try:
                 if dispatch:
                     reads = self.rb.kcu.hw.getNode("DAQ_RB0").readBlock(block)
-                    self.rb.kcu.dispatch()
+                    self.rb.kcu.hw.dispatch()
                     return reads
                 else:
                     return self.rb.kcu.hw.getNode("DAQ_RB0").readBlock(block)
