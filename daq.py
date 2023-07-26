@@ -71,10 +71,17 @@ def stream_daq(rb=0, l1a_rate=1000, loops=1000, superblock=100, block=255):
         # write to disk
         f.write(struct.pack('<{}I'.format(len(data)), *data))
 
+    hw.getNode("SYSTEM.L1A_RATE").write(0)
+    hw.dispatch()
+
+    hw.getClient().write(hw.getNode(f"READOUT_BOARD_{rb}.FIFO_RESET").getAddress(), 0x1)
+    hw.dispatch()
+
 if __name__ == '__main__':
 
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--l1a_rate', action='store', default=1000, type=int, help="L1A rate in Hz")
+    argParser.add_argument('--loops', action='store', default=1000, type=int, help="Number of loops")
     args = argParser.parse_args()
 
-    stream_daq(l1a_rate=args.l1a_rate)
+    stream_daq(l1a_rate=args.l1a_rate, loops=args.loops)

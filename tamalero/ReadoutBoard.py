@@ -361,7 +361,10 @@ class ReadoutBoard:
                         print (f"No FEC errors detected on {link} link")
                     break
                 else:
-                    self.reset_link(trigger = (link=='Trigger'))
+                    if self.ver == 1:
+                        pass
+                    else:
+                        self.reset_link(trigger = (link=='Trigger'))
                 if i+2 > max_retries:
                     if allow_bad_links:
                         print (f"{link} link does not have a stable connection. Ignoring.")
