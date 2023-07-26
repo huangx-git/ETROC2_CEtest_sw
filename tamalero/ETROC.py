@@ -25,6 +25,7 @@ class ETROC():
             reset=None,
             breed='emulator',
     ):
+        self.QINJ_delay = 504  # this is a fixed value for the default settings of ETROC2
         self.isfake = False
         self.I2C_master = rb.DAQ_LPGBT if master.lower() == 'lpgbt' else rb.SCA
         self.master = master
@@ -376,6 +377,26 @@ class ETROC():
             # get the current number of invalid fast commands received
             self.invalid_FC_counter = self.get_invalidFCCount()
 
+            # give some number to the ETROC
+            self.wr_reg("EFuse_Prog", 1234)  # gives a chip ID of 308.
+
+            # configuration as per discussion with ETROC2 developers
+            self.wr_reg("onChipL1AConf", 0)  # this should be default anyway
+            self.wr_reg("PLL_ENABLEPLL", 1)
+            self.wr_reg("chargeInjectionDelay", 0xa)
+            self.wr_reg("L1Adelay", 0x01f5)
+            self.wr_reg("disTrigPath", 1, broadcast=True)
+            self.wr_reg("QInjEn", 0, broadcast=True)
+
+            # opening TOA / TOT / Cal windows
+            self.wr_reg("upperTOA", 0x3ff, broadcast=True)
+            self.wr_reg("lowerTOA", 0, broadcast=True)
+            self.wr_reg("upperTOT", 0x1ff, broadcast=True)
+            self.wr_reg("lowerTOT", 0, broadcast=True)
+            self.wr_reg("upperCal", 0x3ff, broadcast=True)
+            self.wr_reg("lowerCal", 0, broadcast=True)
+
+
     # =======================
     # === HIGH-LEVEL FUNC ===
     # =======================
@@ -432,6 +453,21 @@ class ETROC():
         self.init_THCal()
         return self.rd_reg('TH', row=2, col=2)
 
+    def setup_accumulator(self, row=0, col=0):
+        self.wr_reg("CLKEn_THCal", 1, row=row, col=col, broadcast=False)
+        self.wr_reg("BufEn_THCal", 1, row=row, col=col, broadcast=False)
+        self.wr_reg("Bypass_THCal", 1, row=row, col=col, broadcast=False)
+
+    def check_accumulator(self, DAC, row=0, col=0):
+        self.wr_reg("DAC", DAC, row=row, col=col, broadcast=False)
+        self.wr_reg("RSTn_THCal", 0, row=row, col=col, broadcast=False)
+        self.wr_reg("RSTn_THCal", 1, row=row, col=col, broadcast=False)
+        self.wr_reg("ScanStart_THCal", 1, row=row, col=col, broadcast=False)
+        self.wr_reg("ScanStart_THCal", 0, row=row, col=col, broadcast=False)
+        if self.rd_reg("ScanDone", row=row, col=col):
+            return self.rd_reg("ACC", row=row, col=col)
+        else:
+            return -1
 
     # ***********************
     # *** IN-PIXEL CONFIG ***
