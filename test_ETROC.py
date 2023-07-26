@@ -117,13 +117,12 @@ def vth_scan_internal(ETROC2, row=0, col=0, dac_min=0, dac_max=500, dac_step=1):
     return [dac_axis, run_results]
 
 
+# initiate
+ETROC2 = software_ETROC2()  # currently using Software ETROC2 (fake)
+print("ETROC2 emulator instantiated, base configuration successful")
+DF = DataFrame('ETROC2')
+
 if __name__ == '__main__':
-
-    # initiate
-    ETROC2 = software_ETROC2()  # currently using Software ETROC2 (fake)
-    print("ETROC2 emulator instantiated, base configuration successful")
-    DF = DataFrame('ETROC2')
-
     # argsparser
     import argparse
     argParser = argparse.ArgumentParser(description = "Argument parser")
