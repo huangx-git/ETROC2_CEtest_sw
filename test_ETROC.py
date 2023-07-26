@@ -9,7 +9,7 @@ import numpy as np
 from scipy.optimize import curve_fit
 from matplotlib import pyplot as plt
 from tqdm import tqdm
-
+import pandas as pd
 import os
 import sys
 import json
@@ -125,6 +125,7 @@ if __name__ == '__main__':
     argParser.add_argument('--host', action='store', default='localhost', help="Hostname for control hub")
     argParser.add_argument('--partial', action='store_true', default=False, help="Only read data from corners and edges")
     argParser.add_argument('--qinj', action='store_true', default=False, help="Run some charge injection tests")
+    argParser.add_argument('--qinj_vth_scan', action='store_true', default=False, help="Run some charge injection tests")
     argParser.add_argument('--hard_reset', action='store_true', default=False, help="Hard reset of selected ETROC2 chip")
     argParser.add_argument('--scan', action='store', default=['full'], choices=['none', 'full', 'simple'], help="Which threshold scan to run with ETROC2")
     argParser.add_argument('--mode', action='store', default=['dual'], choices=['dual', 'single'], help="Port mode for ETROC2")
@@ -571,6 +572,73 @@ if __name__ == '__main__':
 
             # FIXME add some plotting here
 
+        if args.qinj_vth_scan:
+            fifo.reset()
+            delay = 10
+            i = 4
+            j = 3
+            L1Adelay = 501
+            
+            vth_axis    = np.linspace(415, 820, 406)
+            charges = [1,5,10,15,20,25,30,32]
+            results =[[] for i in range(0,len(charges))]
+            TOA = [[] for i in range(0,len(charges))]
+            TOT =  [[] for i in range(0,len(charges))]
+            CAL = [[] for i in range(0,len(charges))]
+            for q in charges:
+                k=0
+                print(f"\n - Will send L1a/QInj pulse with delay of {delay} cycles and charge of {q} fC")
+                print(f"\n - to pixel at Row {i}, Col {j}.")
+
+                for vth in vth_axis:
+                    
+                    etroc.QInj_set(q, delay, L1Adelay, row=i, col=j, broadcast = False) #set reg on ETROC
+                    etroc.wr_reg('DAC', int(vth), row=i, col=j, broadcast=False) #set vth on ETROC
+                
+                    fifo.send_QInj(count=3200, delay=506) #send Qinj pulses with L1Adelay
+                    result = fifo.pretty_read(df)
+                    hits=0
+                    toa=[]
+                    tot=[]
+                    cal=[]
+                    for word in result:
+                        if(word[0] == 'data'):
+                          toa.append(word[1]['toa'])
+                          tot.append(word[1]['tot'])
+                          cal.append(word[1]['cal'])
+                          
+                        if(word[0] == 'trailer'):
+                            hits+=word[1]['hits']
+                    results[k].append(hits)
+                    TOT[k].append(tot)
+                    TOA[k].append(toa)
+                    CAL[k].append(cal)
+                k+=1
+                
+                scan_df = pd.DataFrame({'vth': vth_axis,
+                                        'hits': results,
+                                        'toa' : TOA,
+                                        'tot' : TOT,
+                                        'cal' : CAL})
+                #print(scan_df.info())
+                df.to_pickle(f"Qinj_scan_L1A_506_{q}.pkl")
+            fig, ax = plt.subplots()
+
+            plt.title("S curve for Qinj")
+            plt.xlabel("Vth")
+            plt.ylabel("hit rate")
+            for i in range(0,len(charges)):
+                plt.plot(vth_axis, results[i], '.-')
+            
+            plt.xlim(410,820)
+            plt.grid(True)
+            plt.legend(loc='best')
+            
+            fig.savefig(f'results/Scurve_Qinj.png')
+            plt.close(fig)
+            del fig, ax
+
+            
         if args.qinj:
             fifo.reset()
             q = 30
