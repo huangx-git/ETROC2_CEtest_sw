@@ -570,6 +570,7 @@ if __name__ == '__main__':
             else:
                 fifo.select_elink(2)
             rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
+            rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
             print("\n - Running simple threshold scan on single pixel")
             vth     = []
             count   = []
@@ -584,6 +585,7 @@ if __name__ == '__main__':
                 count.append(rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value())
                 print(i, rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value())
                 rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
+                rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
 
             vth_a = np.array(vth)
             count_a = np.array(count)
@@ -601,6 +603,7 @@ if __name__ == '__main__':
                 count.append(rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value())
                 print(i, rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value())
                 rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
+                rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
 
             print(vth)
             print(count)
@@ -701,6 +704,7 @@ if __name__ == '__main__':
 
             # reset the counter
             rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
+            rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
 
             # turn off data readout for all pixels
             etroc.wr_reg("disDataReadout", 1, broadcast=True)
@@ -723,6 +727,7 @@ if __name__ == '__main__':
             hits = rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value()
             print(f"Found {hits} hits when sitting mid-slope and sending 5000 L1As")
             rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
+            rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
 
             # set threshold to threshold
             print(f"Using found threshold at {dac[res==0][0]}, using value {dac[res==0][2]} for DAC.")
@@ -736,6 +741,7 @@ if __name__ == '__main__':
             counts = []
             for i in range(500, 510, 1):
                 rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
+                rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
                 fifo.send_QInj(5000, delay=i)
                 hits = rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value()
                 print(i, hits)
@@ -804,6 +810,7 @@ if __name__ == '__main__':
 
             # reset the counter
             rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
+            rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
 
             # turn off data readout for all pixels
             etroc.wr_reg("disDataReadout", 1, broadcast=True)
