@@ -119,21 +119,21 @@ class KCU:
 
     def status(self):
         print("LPGBT Link Status from KCU:")
-        for id in self.hw.getNodes(".*LPGBT.*DAQ.*DOWNLINK.*READY"):
+        for id in self.hw.getNodes(".*LPGBT.*DOWNLINK.*READY"):
             self.print_reg(self.hw.getNode(id), use_color=True, threshold=1)
-        for id in self.hw.getNodes(".*LPGBT.*DAQ.*UPLINK.*READY"):
+        for id in self.hw.getNodes(".*LPGBT.*UPLINK_0.*READY"):
             self.print_reg(self.hw.getNode(id), use_color=True, threshold=1)
-        for id in self.hw.getNodes(".*LPGBT.*DAQ.*UPLINK.*FEC_ERR_CNT"):
+        for id in self.hw.getNodes(".*LPGBT.*UPLINK_0.*FEC_ERR_CNT"):
             self.print_reg(self.hw.getNode(id), use_color=True, threshold=1, invert=True)
-        for id in self.hw.getNodes(".*LPGBT.*TRIGGER.*UPLINK.*READY"):
+        for id in self.hw.getNodes(".*LPGBT.*UPLINK_1.*READY"):
             self.print_reg(self.hw.getNode(id), use_color=True, threshold=1)
-        for id in self.hw.getNodes(".*LPGBT.*TRIGGER.*UPLINK.*FEC_ERR_CNT"):
+        for id in self.hw.getNodes(".*LPGBT.*UPLINK_1.*FEC_ERR_CNT"):
             self.print_reg(self.hw.getNode(id), use_color=True, threshold=1, invert=True)
 
         self.check_clock_frequencies()
         
         for rb in self.readout_boards:
-            print('Checking Readout Board {rb.rb}')
+            print(f'Checking Readout Board {rb.rb}')
             locked = self.read_node(f"READOUT_BOARD_{rb.rb}.ETROC_LOCKED").value()
             locked_slave = self.read_node(f"READOUT_BOARD_{rb.rb}.ETROC_LOCKED_SLAVE").value()
 
