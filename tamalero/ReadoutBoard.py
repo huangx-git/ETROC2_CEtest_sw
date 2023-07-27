@@ -3,6 +3,11 @@ from tamalero.LPGBT import LPGBT
 from tamalero.SCA import SCA
 from tamalero.utils import get_temp, chunk, get_temp_direct
 from tamalero.VTRX import VTRX
+from tamalero.utils import read_mapping
+try:
+    from tabulate import tabulate
+except ModuleNotFoundError:
+    print ("Package `tabulate` not found.")
 
 from time import sleep
 
@@ -348,6 +353,63 @@ class ReadoutBoard:
                         print (f"{link} link does not have a stable connection. Ignoring.")
                     else:
                         raise RuntimeError(f"{link} link does not have a stable connection after {max_retries} retries")
+    
+    #creates dict for mux64 testboard pins
+    def init_mux_tb_dict(self):
+        self.mux64_tb_dict = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/MUX64_testboard_mapping.yaml'), 'mux64_testboard')
+        return
+
+    # Uses MUX64-testboard dictionary to convert integar to voltage
+    def volt_conver_mux64(self,num,ch):
+        voltage = (num / (2**12 - 1) ) * self.mux64_tb_dict[ch]['conv']
+        return voltage
+    
+    def read_mux_test_board(self, ch):
+        #checks to see SCA version
+        assert self.SCA.ver in [2], f"Incompatibale mapping SCA verrsion {self.SCA.ver}"
+
+        #checks to see if MUX64 testboard dict has already been initialized
+        if not self.mux64_tb_dict:
+            self.init_mux_tb_dict()
+
+        #channel select
+        s0 = (ch & 0x01)
+        s1 = (ch & 0x02) >> 1
+        s2 = (ch & 0x04) >> 2
+        s3 = (ch & 0x08) >> 3
+        s4 = (ch & 0x10) >> 4
+        s5 = (ch & 0x20) >> 5
+
+        self.SCA.set_gpio(0x16, s0) #mod_d08
+        self.SCA.set_gpio(0x19, s1) #mod_d09
+        self.SCA.set_gpio(0x13, s2) #mod_d10
+        self.SCA.set_gpio(0x10, s3) #mod_d11
+        self.SCA.set_gpio(0x0A, s4) #mod_d12
+        self.SCA.set_gpio(0x04, s5) #mod_d13
+
+        #read integar value and covert it to a voltge
+        integer_volt = self.SCA.read_adc(0x12)
+        volt = self.volt_conver_mux64(integer_volt,ch)
+
+        return volt
+    
+    def read_all_mux64_data(self, show = False):
+        table=[]
+        v_data=[]
+        for i in self.mux64_tb_dict.keys():
+            if self.mux64_tb_dict[i]['terminal_input']:
+                volt=self.read_mux_test_board(i)
+                v_data.append(volt)
+            else:
+                volt=None
+                v_data.append(volt)
+            sig_name=self.mux64_tb_dict[i]['sig_name']
+            table.append([i, volt, sig_name])
+        
+        if (show):
+            print(tabulate(table, headers=["Channel","Voltage", "Sig_Name"],  tablefmt="simple_outline"))
+            
+        return table
 
     def read_vtrx_temp(self):
 
