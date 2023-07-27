@@ -481,9 +481,42 @@ if __name__ == '__main__':
         etroc.wr_reg("workMode", 0x0, broadcast=True)
 
         if args.scan == 'full':
+
+            # Prescanning a random pixel to get an idea of the threshold
+            row = 4
+            col = 3
+            if col > 7:
+                fifo.select_elink(0)
+            else:
+                fifo.select_elink(2)
+            rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
+            rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
+            print("\n - Running simple threshold scan on single pixel")
+            vth     = []
+            count   = []
+            etroc.reset(hard=True)
+            etroc.default_config()
+            print("Coarse scan to find the peak location")
+            for i in range(0, 1000, 5):
+                etroc.wr_reg("DAC", i, row=row, col=col)
+                fifo.send_l1a(2000)
+                vth.append(i)
+                data_cnt = rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value()
+                count.append(data_cnt)
+                if data_cnt > 0:
+                    print(i, data_cnt)
+                rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
+                rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
+
+            vth_a = np.array(vth)
+            count_a = np.array(count)
+            vth_max = vth_a[np.argmax(count_a)]
+            print(f"Found maximum count at DAC setting vth_max={vth_max}")
+
             ### threshold scan draft
-            dac_min = 230
-            dac_max = 310
+            dac_min = vth_max - 75
+            dac_max = vth_max + 75
+
             vth_scan_data = vth_scan(
                 etroc,
                 vth_min = dac_min,
@@ -714,7 +747,7 @@ if __name__ == '__main__':
             # using internal accumulator
             # NOTE: add a nice threshold histogram here?
             print("Running internal threshold scan for pixel under test")
-            dac, res = vth_scan_internal(etroc, row=row, col=col, dac_min=0, dac_max=350)
+            dac, res = vth_scan_internal(etroc, row=row, col=col, dac_min=0, dac_max=750)
             slope = dac[((res>0) & (res<max(res)))]
             slope_vals = res[((res>0) & (res<max(res)))]
             ten_percent_occupancy = dac[(res/max(res)<0.1)][0]
