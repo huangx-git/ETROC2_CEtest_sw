@@ -1,0 +1,322 @@
+mux64_testboard:
+    0:
+        conv: -1
+        sig_name: unsed
+        comment: "" 
+        terminal_input: false
+    1:
+        conv: -1
+        sig_name: unsed 
+        comment: ""
+        terminal_input: false
+    2:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin 
+        terminal_input: true
+    3:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin  
+        terminal_input: true
+    4:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin  
+        terminal_input: true
+    5:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin  
+        terminal_input: true
+    6:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin  
+        terminal_input: true
+    7:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin  
+        terminal_input: true
+    8:
+        conv: 1250
+        sig_name: 1/1250 Vin
+        comment: 1/1250 Vin  
+        terminal_input: true
+    9:
+        conv: 1250
+        sig_name: 1/1250 Vin
+        comment: 1/1250 Vin  
+        terminal_input: true
+    10:
+        conv: 1250
+        sig_name: 1/1250 Vin
+        comment: 1/1250 Vin  
+        terminal_input: true
+    11:
+        conv: -1
+        sig_name: unsed
+        comment: "" 
+        terminal_input: false
+    12:
+        conv: -1
+        sig_name: unsed 
+        comment: ""
+        terminal_input: false
+    13:
+        conv: -1
+        sig_name: unsed 
+        comment: ""
+        terminal_input: false
+    14:
+        conv: -1
+        sig_name: unsed 
+        comment: ""
+        terminal_input: false
+    15:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin 
+        terminal_input: true
+    16:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin 
+        terminal_input: true
+    17:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin 
+        terminal_input: true
+    18:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin 
+        terminal_input: true
+    19:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin 
+        terminal_input: true
+    20:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin 
+        terminal_input: true
+    21:
+        conv: 12.5
+        sig_name: 2/25 Vin
+        comment: 2/25 Vin
+        terminal_input: true
+    22:
+        conv: 12.5
+        sig_name: 2/25 Vin
+        comment: 2/25 Vin
+        terminal_input: true
+    23:
+        conv: 12.5
+        sig_name: 2/25 Vin
+        comment: 2/25 Vin
+        terminal_input: true
+    24:
+        conv: 12.5
+        sig_name: 2/25 Vin
+        comment: 2/25 Vin
+        terminal_input: true
+    25:
+        conv: 12.5
+        sig_name: 2/25 Vin
+        comment: 2/25 Vin
+        terminal_input: true
+    26:
+        conv: 12.5
+        sig_name: 2/25 Vin
+        comment: 2/25 Vin
+        terminal_input: true
+    27:
+        conv: -1
+        sig_name: unsed
+        comment: "" 
+        terminal_input: false
+    28:
+        conv: -1
+        sig_name: unsed 
+        comment: "" 
+        terminal_input: false
+    29:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin 
+        terminal_input: true
+    30:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin 
+        terminal_input: true
+    31:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin 
+        terminal_input: true
+    32:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin 
+        terminal_input: true
+    33:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin 
+        terminal_input: true
+    34:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin 
+        terminal_input: true
+    35:
+        conv: 4
+        sig_name: 1/4 Vin
+        comment: 1/4 Vin 
+        terminal_input: true
+    36:
+        conv: 4
+        sig_name: 1/4 Vin
+        comment: 1/4 Vin 
+        terminal_input: true
+    37:
+        conv: 4
+        sig_name: 1/4 Vin
+        comment: 1/4 Vin 
+        terminal_input: true
+    38:
+        conv: 4
+        sig_name: 1/4 Vin
+        comment: 1/4 Vin 
+        terminal_input: true
+    39:
+        conv: 4
+        sig_name: 1/4 Vin
+        comment: 1/4 Vin 
+        terminal_input: true
+    40:
+        conv: 4
+        sig_name: 1/4 Vin
+        comment: 1/4 Vin 
+        terminal_input: true
+    41:
+        conv: 4
+        sig_name: 1/4 Vin
+        comment: 1/4 Vin 
+        terminal_input: true
+    42:
+        conv: -1
+        sig_name: unsed 
+        comment: ""
+        terminal_input: false
+    43:
+        conv: -1
+        sig_name: unsed 
+        comment: ""
+        terminal_input: false
+    44:
+        conv: -1
+        sig_name: unsed 
+        comment: ""
+        terminal_input: false
+    45:
+        conv: -1
+        sig_name: unsed 
+        comment: ""
+        terminal_input: false
+    46:
+        conv: -1
+        sig_name: unsed 
+        comment: ""
+        terminal_input: false
+    47:
+        conv: -1
+        sig_name: unsed 
+        comment: ""
+        terminal_input: false
+    48:
+        conv: -1
+        sig_name: unsed 
+        comment: ""
+        terminal_input: false
+    49:
+        conv: -1
+        sig_name: unsed 
+        comment: ""
+        terminal_input: false
+    50:
+        conv: -1
+        sig_name: unsed 
+        comment: ""
+        terminal_input: false
+    51:
+        conv: -1
+        sig_name: unsed 
+        comment: ""
+        terminal_input: false
+    52:
+        conv: -1
+        sig_name: unsed 
+        terminal_input: false
+    53:
+        conv: -1
+        sig_name: unsed 
+        comment: ""
+        terminal_input: false
+    54:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin 
+        terminal_input: true
+    55:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin 
+        terminal_input: true
+    56:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin 
+        terminal_input: true
+    57:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin 
+        terminal_input: true
+    58:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin 
+        terminal_input: true
+    59:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin 
+        terminal_input: true
+    60:
+        conv: 2
+        sig_name: 1/2 Vin
+        comment: 1/2 Vin 
+        terminal_input: true
+    61:
+        conv: -1
+        sig_name: unsed 
+        comment: ""
+        terminal_input: false
+    62:
+        conv: -1
+        sig_name: unsed 
+        comment: ""
+        terminal_input: false
+    63:
+        conv: -1
+        sig_name: unsed 
+        comment: ""
+        terminal_input: false
+    
+ 
