@@ -717,7 +717,7 @@ if __name__ == '__main__':
             import struct
             fifo.reset()
             with open(f"output/output_qinj_{args.charge}fC.dat", mode="wb") as f:
-                for i in range(5):
+                for i in range(50):
                     fifo.send_QInj(1000, delay=etroc.QINJ_delay)
                     data = fifo.read(dispatch=True)
                     f.write(struct.pack('<{}I'.format(len(data)), *data))
