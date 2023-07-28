@@ -56,7 +56,6 @@ inversions:
       - 18
       - 20
       - 22
-
 modules:
   1:
    elinks: [[[0],[0]], [[2],[2]], [[20],[20]], [[22],[22]]]
@@ -65,7 +64,6 @@ modules:
      master: lpgbt
      channel: 1
    status: mod_d01
-   reset: None
   2:
    elinks: [[[4],[4]], [[6],[6]], [[16],[16]], [[18],[18]]]
    addresses: [0x72, 0x72, 0x72, 0x72]
@@ -73,12 +71,10 @@ modules:
      master: sca
      channel: 3
    status: mod_d09
-   reset: None
   3:
-   elinks: [[[8],[8]], [[10],[10]], [[12],[12]], [[14],[14]]]
-   addresses: [0x72, 0x72, 0x72, 0x72]
-   i2c:
-     master: sca
-     channel: 0
-   status: mod_d17
-   reset: None
+    elinks: [[[8],[8]], [[10],[10]], [[12],[12]], [[14],[14]]]
+    addresses: [0x72, 0x72, 0x72, 0x72]
+    i2c:
+      master: sca
+      channel: 0
+    status: mod_d17

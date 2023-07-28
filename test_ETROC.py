@@ -8,10 +8,12 @@ from tamalero.colors import red, green, yellow
 import numpy as np
 from scipy.optimize import curve_fit
 from matplotlib import pyplot as plt
+from tqdm import tqdm
 
 import os
 import sys
 import json
+import time
 from yaml import load, dump
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -21,9 +23,13 @@ except ImportError:
 # ====== HELPER FUNCTIONS ======
 
 # run N L1A's and return packaged ETROC2 dataformat
-def run(N):
+def run(ETROC, N, fifo=None):
     # currently uses the software ETROC to produce fake data
-    return ETROC2.run(N)
+    if ETROC.isfake:
+        return ETROC2.run(N)
+    else:
+        fifo.send_l1a(N)
+        return fifo.pretty_read(None, raw=True)
 
 
 def toPixNum(row, col, w):
@@ -67,11 +73,14 @@ def parse_data(data, N_pix):
     return results
 
 
-def vth_scan(ETROC2):
+def vth_scan(ETROC2, vth_min=693, vth_max=709, vth_step=1, decimal=False, fifo=None, absolute=False):
     N_l1a    =  3200 # how many L1As to send
-    vth_min  =   693 # scan range
-    vth_max  =   709
-    vth_step =   ETROC2.DAC_step # step size
+    vth_min  =   vth_min # scan range
+    vth_max  =   vth_max
+    if not decimal:
+        vth_step =   ETROC2.DAC_step # step size
+    else:
+        vth_step = vth_step
     N_steps  = int((vth_max-vth_min)/vth_step)+1 # number of steps
     N_pix    = 16*16 # total number of pixels
 
@@ -80,22 +89,39 @@ def vth_scan(ETROC2):
 
     for vth in vth_axis:
         print(f"Working on threshold {vth=}")
-        ETROC2.set_Vth_mV(vth)
+        if decimal:
+            ETROC2.wr_reg('DAC', int(vth), broadcast=True)
+        else:
+            ETROC2.set_Vth_mV(vth)
         i = int((vth-vth_min)/vth_step)
-        run_results[i] = parse_data(run(N_l1a), N_pix)
+        run_results[i] = parse_data(run(ETROC2, N_l1a, fifo=fifo), N_pix)
 
     # transpose so each 1d list is for a pixel & normalize
-    run_results = run_results.transpose()/N_l1a
+    if absolute:
+        run_results = run_results.transpose()
+    else:
+        run_results = run_results.transpose()/N_l1a
     return [vth_axis.tolist(), run_results.tolist()]
 
+def vth_scan_internal(ETROC2, row=0, col=0, dac_min=0, dac_max=500, dac_step=1):
+    N_steps  = int((dac_max-dac_min)/dac_step)+1 # number of steps
+    dac_axis = np.linspace(dac_min, dac_max, N_steps)
+
+    ETROC2.setup_accumulator(row, col)
+    results = []
+    for i in range(dac_min, dac_max+1, dac_step):
+        results.append(
+            etroc.check_accumulator(DAC=i, row=row, col=col)
+        )
+    run_results = np.array(results)
+    return [dac_axis, run_results]
+
+# initiate
+ETROC2 = software_ETROC2()  # currently using Software ETROC2 (fake)
+print("ETROC2 emulator instantiated, base configuration successful")
+DF = DataFrame('ETROC2')
 
 if __name__ == '__main__':
-
-    # initiate
-    ETROC2 = software_ETROC2()  # currently using Software ETROC2 (fake)
-    print("ETROC2 emulator instantiated, base configuration successful")
-    DF = DataFrame('ETROC2')
-
     # argsparser
     import argparse
     argParser = argparse.ArgumentParser(description = "Argument parser")
@@ -108,6 +134,12 @@ if __name__ == '__main__':
     argParser.add_argument('--module', action='store', default=0, choices=['1','2','3'], help="Module to test")
     argParser.add_argument('--host', action='store', default='localhost', help="Hostname for control hub")
     argParser.add_argument('--partial', action='store_true', default=False, help="Only read data from corners and edges")
+    argParser.add_argument('--qinj_scan', action='store_true', default=False, help="Run the phase scan for Qinj")
+    argParser.add_argument('--qinj', action='store_true', default=False, help="Run some charge injection tests")
+    argParser.add_argument('--hard_reset', action='store_true', default=False, help="Hard reset of selected ETROC2 chip")
+    argParser.add_argument('--skip_sanity_checks', action='store_true', default=False, help="Don't run sanity checks of ETROC2 chip")
+    argParser.add_argument('--scan', action='store', default=['full'], choices=['none', 'full', 'simple'], help="Which threshold scan to run with ETROC2")
+    argParser.add_argument('--mode', action='store', default=['dual'], choices=['dual', 'single'], help="Port mode for ETROC2")
     args = argParser.parse_args()
 
 
@@ -151,7 +183,6 @@ if __name__ == '__main__':
             print("Test passed.\n")
 
     elif args.test_chip:
-        # FIXME this is still hardcoded
         kcu = get_kcu(args.kcu, control_hub=True, host=args.host, verbose=False)
         if (kcu == 0):
             # if not basic connection was established the get_kcu function returns 0
@@ -190,71 +221,78 @@ if __name__ == '__main__':
         modules[module-1].show_status()
 
         etroc = modules[module-1].ETROCs[0]
+        if args.hard_reset:
+            etroc.reset(hard=True)
+            etroc.default_config()
+
+        if args.mode == 'single':
+            print(f"Setting the ETROC in single port mode ('right')")
+            etroc.set_singlePort("right")
+            etroc.set_mergeTriggerData("separate")
+        elif args.mode == 'dual':
+            print(f"Setting the ETROC in dual port mode ('both')")
+            etroc.set_singlePort("both")
+            etroc.set_mergeTriggerData("merge")
 
         #etroc = ETROC(rb=rb_0, i2c_adr=96, i2c_channel=1, elinks={0:[0,2]})
 
-        print("\n - Checking peripheral configuration:")
-        etroc.print_perif_conf()
+        if not args.skip_sanity_checks:
 
-        print("\n - Checking peripheral status:")
-        etroc.print_perif_stat()
+            print("\n - Checking peripheral configuration:")
+            etroc.print_perif_conf()
 
-        print("\n - Running pixel sanity check:")
-        res = etroc.pixel_sanity_check(verbose=False)
-        if res:
-            print("Passed!")
-        else:
-            print("Failed")
+            print("\n - Checking peripheral status:")
+            etroc.print_perif_stat()
 
-        print("\n - Running pixel random check:")
-        res = etroc.pixel_random_check(verbose=False)
-        if res:
-            print("Passed!")
-        else:
-            print("Failed")
+            print("\n - Running pixel sanity check:")
+            res = etroc.pixel_sanity_check(verbose=False)
+            if res:
+                print("Passed!")
+            else:
+                print("Failed")
 
-        print("\n - Checking configuration for pixel (4,5):")
-        etroc.print_pixel_conf(row=4, col=5)
+            print("\n - Running pixel random check:")
+            res = etroc.pixel_random_check(verbose=False)
+            if res:
+                print("Passed!")
+            else:
+                print("Failed")
 
-        print("\n - Checking status for pixel (4,5):")
-        etroc.print_pixel_stat(row=4, col=5)
+            print("\n - Checking configuration for pixel (4,5):")
+            etroc.print_pixel_conf(row=4, col=5)
 
-        ## pixel broadcast
-        print("\n - Checking pixel broadcast.")
-        etroc.wr_reg('workMode', 0, broadcast=True)
-        tmp = etroc.rd_reg('workMode', row=10, col=10)
-        etroc.wr_reg('workMode', 1, broadcast=True)
-        test0 = True
-        for row in range(16):
-            for col in range(16):
-                test0 &= (etroc.rd_reg('workMode', row=row, col=col) == 1)
-        tmp2 = etroc.rd_reg('workMode', row=10, col=10)
-        tmp3 = etroc.rd_reg('workMode', row=3, col=12)
-        etroc.wr_reg('workMode', 0, broadcast=True)
-        tmp4 = etroc.rd_reg('workMode', row=10, col=10)
-        test1 = (tmp != tmp2)
-        test2 = (tmp2 == tmp3)
-        test3 = (tmp == tmp4)
-        if test0 and test1 and test2 and test3:
-            print("Passed!")
-        else:
-            print(f"Failed: {test0=}, {test1=}, {test2=}, {test3=}")
+            print("\n - Checking status for pixel (4,5):")
+            etroc.print_pixel_stat(row=4, col=5)
 
-
-        etroc.wr_reg('serRateLeft', 0)
-        etroc.wr_reg('serRateRight', 0)
-
+            ## pixel broadcast
+            print("\n - Checking pixel broadcast.")
+            etroc.wr_reg('workMode', 0, broadcast=True)
+            tmp = etroc.rd_reg('workMode', row=10, col=10)
+            etroc.wr_reg('workMode', 1, broadcast=True)
+            test0 = True
+            for row in range(16):
+                for col in range(16):
+                    test0 &= (etroc.rd_reg('workMode', row=row, col=col) == 1)
+            tmp2 = etroc.rd_reg('workMode', row=10, col=10)
+            tmp3 = etroc.rd_reg('workMode', row=3, col=12)
+            etroc.wr_reg('workMode', 0, broadcast=True)
+            tmp4 = etroc.rd_reg('workMode', row=10, col=10)
+            test1 = (tmp != tmp2)
+            test2 = (tmp2 == tmp3)
+            test3 = (tmp == tmp4)
+            if test0 and test1 and test2 and test3:
+                print("Passed!")
+            else:
+                print(f"Failed: {test0=}, {test1=}, {test2=}, {test3=}")
 
         # NOTE below is WIP code for tests of the actual data readout
         from tamalero.FIFO import FIFO
         from tamalero.DataFrame import DataFrame
         df = DataFrame()
+        # NOTE this is for single port tests right now, where we only get elink 2
         fifo = FIFO(rb=rb_0)
-
-        ### this does in theory reset the ETROC, but not sure if it comes back up properly
-        #rb_0.SCA.set_gpio_direction('mod_d07', 1)
-        #rb_0.SCA.set_gpio('mod_d07', 0)
-        #rb_0.SCA.set_gpio('mod_d07', 1)
+        fifo.select_elink(2)
+        fifo.ready()
 
         print("\n - Checking elinks")
         locked = kcu.read_node(f"READOUT_BOARD_0.ETROC_LOCKED").value()
@@ -267,18 +305,20 @@ if __name__ == '__main__':
         else:
             print(red('No elink is locked.'))
 
+        fifo.send_l1a(10)
+        _ = fifo.pretty_read(df)
+        etroc.reset()
+
         print("\n - Getting internal test data")
 
-        #fifo.reset()
         etroc.wr_reg("selfTestOccupancy", 2, broadcast=True)
-        etroc.wr_reg("singlePort", 0x0)
-        etroc.wr_reg("mergeTriggerData", 0x1)
-        #etroc.wr_reg("")
         if not args.partial:
             etroc.wr_reg("workMode", 0x1, broadcast=True)
         else:
+            etroc.wr_reg("selfTestOccupancy", 70, broadcast=True)
             etroc.wr_reg("workMode", 0x0, broadcast=True)
-            # center pixels
+            ## center pixels
+            #etroc.wr_reg("workMode", 0x1, row=15, col=7)
             etroc.wr_reg("workMode", 0x1, row=7, col=7)
             etroc.wr_reg("workMode", 0x1, row=7, col=8)
             etroc.wr_reg("workMode", 0x1, row=8, col=7)
@@ -354,7 +394,7 @@ if __name__ == '__main__':
                 ax=ax,
                 fontsize=15,
             )
-        name = 'hit_matrix'
+        name = 'hit_matrix_internal_test_pattern'
         fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
         fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
 
@@ -363,6 +403,539 @@ if __name__ == '__main__':
         fifo.send_l1a(2)
         for x in fifo.pretty_read(df):
             print(x)
+
+        #etroc.QInj_unset(broadcast=True)
+        fifo.reset()
+        if not args.partial:
+            print("Will use workMode 1 to get some occupancy (no noise or charge injection)")
+            etroc.wr_reg("workMode", 0x1, broadcast=True)  # this was missing
+            for j in range(5):
+                print(j)
+                ### Another occupancy map
+                i = 0
+                occupancy = 0
+                print("\n - Will send L1As until FIFO is full.")
+
+                #etroc.QInj_set(30, 0, row=3, col=3, broadcast=False)
+                start_time = time.time()
+                with tqdm(total=65536) as pbar:
+                    while not fifo.is_full():
+                        fifo.send_l1a()
+                        #fifo.send_QInj(delay=j)
+                        #fifo.send_QInj()
+                        i +=1
+                        if i%100 == 0:
+                            tmp = fifo.get_occupancy()
+                            pbar.update(tmp-occupancy)
+                            occupancy = tmp
+                        #if time.time()-start_time>5:
+                        #    print("Time out")
+                        #    break
+
+                test_data = []
+                while fifo.get_occupancy() > 0:
+                    test_data += fifo.pretty_read(df)
+
+                hits_total = np.zeros((16,16))
+                hit_matrix = hist.Hist(col_axis,row_axis)
+                n_events_total = 0
+                n_events_hit   = 0
+                for d in test_data:
+                    if d[0] == 'trailer':
+                        n_events_total += 1
+                        if d[1]['hits'] > 0:
+                            n_events_hit += 1
+                    if d[0] == 'data':
+                        hit_matrix.fill(row=d[1]['row_id'], col=d[1]['col_id'])
+                        hits_total[d[1]['row_id']][d[1]['col_id']] += 1
+                        # NOTE could do some CRC check.
+
+                print(f"Got number of total events {n_events_total=}")
+                print(f"Events with at least one hit {n_events_hit=}")
+
+                fig, ax = plt.subplots(1,1,figsize=(7,7))
+                hit_matrix.plot2d(
+                    ax=ax,
+                )
+                ax.set_ylabel(r'$Row$')
+                ax.set_xlabel(r'$Column$')
+                hep.cms.label(
+                        "ETL Preliminary",
+                        data=True,
+                        lumi='0',
+                        com=0,
+                        loc=0,
+                        ax=ax,
+                        fontsize=15,
+                    )
+                name = 'hit_matrix_external_L1A'
+                fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
+                fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
+
+
+                print("\nOccupancy vs column:")
+                hit_matrix[{"row":sum}].show(columns=100)
+                print("\nOccupancy vs row:")
+                hit_matrix[{"col":sum}].show(columns=100)
+
+        etroc.wr_reg("workMode", 0x0, broadcast=True)
+
+        if args.scan == 'full':
+
+            # Prescanning a random pixel to get an idea of the threshold
+            row = 4
+            col = 3
+            if col > 7:
+                fifo.select_elink(0)
+            else:
+                fifo.select_elink(2)
+            rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
+            rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
+            print("\n - Running simple threshold scan on single pixel")
+            vth     = []
+            count   = []
+            etroc.reset(hard=True)
+            etroc.default_config()
+            print("Coarse scan to find the peak location")
+            for i in range(0, 1000, 5):
+                etroc.wr_reg("DAC", i, row=row, col=col)
+                fifo.send_l1a(2000)
+                vth.append(i)
+                data_cnt = rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value()
+                count.append(data_cnt)
+                if data_cnt > 0:
+                    print(i, data_cnt)
+                rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
+                rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
+
+            vth_a = np.array(vth)
+            count_a = np.array(count)
+            vth_max = vth_a[np.argmax(count_a)]
+            print(f"Found maximum count at DAC setting vth_max={vth_max}")
+
+            ### threshold scan draft
+            dac_min = vth_max - 75
+            dac_max = vth_max + 75
+
+            vth_scan_data = vth_scan(
+                etroc,
+                vth_min = dac_min,
+                vth_max = dac_max,
+                decimal = True,
+                fifo = fifo,
+                absolute = True,
+            )
+            vth_axis    = np.array(vth_scan_data[0])
+            hit_rate    = np.array(vth_scan_data[1])
+            N_pix       = len(hit_rate) # total # of pixels
+            N_pix_w     = int(round(np.sqrt(N_pix))) # N_pix in NxN layout
+            max_indices = np.argmax(hit_rate, axis=1)
+            maximums    = vth_axis[max_indices]
+            max_matrix  = np.empty([N_pix_w, N_pix_w])
+            threshold_matrix = np.empty([N_pix_w, N_pix_w])
+
+            for pix in range(N_pix):
+                r, c = fromPixNum(pix, N_pix_w)
+                max_matrix[r][c] = maximums[pix]
+                max_value = vth_axis[hit_rate[pix]==max(hit_rate[pix])]
+                if isinstance(max_value, np.ndarray):
+                    max_value = max_value[-1]
+                zero_dac_values = vth_axis[((vth_axis>(max_value)) & (hit_rate[pix]==0))]
+                if len(zero_dac_values)>0:
+                    threshold_matrix[r][c] = zero_dac_values[0] + 2
+                else:
+                    threshold_matrix[r][c] = dac_max + 2
+
+
+            # 2D histogram of the mean
+            # this is based on the code for automatic sigmoid fits
+            # for software emulator data below
+            fig, ax = plt.subplots()
+            plt.title("Peak values of threshold scan")
+            cax = ax.matshow(max_matrix)
+
+            fig.colorbar(cax)
+            ax.set_xticks(np.arange(N_pix_w))
+            ax.set_yticks(np.arange(N_pix_w))
+
+            for i in range(N_pix_w):
+                for j in range(N_pix_w):
+                    text = ax.text(j, i, int(max_matrix[i,j]),
+                            ha="center", va="center", color="w", fontsize="xx-small")
+
+            fig.savefig(f'results/peak_thresholds.png')
+            plt.show()
+
+            plt.close(fig)
+            del fig, ax
+
+            fig, ax = plt.subplots()
+            plt.title("Thresholds from manual scan")
+            cax = ax.matshow(threshold_matrix)
+
+            fig.colorbar(cax)
+            ax.set_xticks(np.arange(N_pix_w))
+            ax.set_yticks(np.arange(N_pix_w))
+
+            for i in range(N_pix_w):
+                for j in range(N_pix_w):
+                    text = ax.text(j, i, int(threshold_matrix[i,j]),
+                            ha="center", va="center", color="w", fontsize="xx-small")
+
+            fig.savefig(f'results/thresholds.png')
+            plt.show()
+
+            plt.close(fig)
+            del fig, ax
+
+            with open('results/thresholds.yaml', 'w') as f:
+                dump(threshold_matrix.tolist(), f)
+
+        elif args.scan == 'simple':
+            row = 4
+            col = 3
+            # FIXME the elink selector is still hard coded
+            # but should not be
+            # this also only works in the dual port mode right now
+            # otherwise everything should be coming through link 2(?)
+            if col > 7:
+                fifo.select_elink(0)
+            else:
+                fifo.select_elink(2)
+            rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
+            rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
+            print("\n - Running simple threshold scan on single pixel")
+            vth     = []
+            count   = []
+            etroc.reset(hard=True)
+            etroc.default_config()
+            print("Coarse scan to find the peak location")
+            for i in range(0, 1000, 5):
+                # this could use a tqdm
+                etroc.wr_reg("DAC", i, row=row, col=col)
+                fifo.send_l1a(2000)
+                vth.append(i)
+                count.append(rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value())
+                print(i, rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value())
+                rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
+                rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
+
+            vth_a = np.array(vth)
+            count_a = np.array(count)
+            vth_max = vth_a[np.argmax(count_a)]
+            print(f"Found maximum count at DAC setting vth_max={vth_max}")
+
+            vth     = []
+            count   = []
+            print("Fine scanning around this DAC value now")
+            for i in range(vth_max-15, vth_max+15):
+                #etroc.wr_reg("DAC", i, row=3, col=4)
+                etroc.wr_reg("DAC", i, row=row, col=col)
+                fifo.send_l1a(5000)
+                vth.append(i)
+                count.append(rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value())
+                print(i, rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value())
+                rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
+                rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
+
+            print(vth)
+            print(count)
+
+            # FIXME add some plotting here
+
+
+        if args.qinj:
+            etroc.reset()
+            with open('results/thresholds.yaml', 'r') as f:
+                threshold_matrix = load(f, Loader)
+
+            N_pix   = 16*16 # total # of pixels
+            N_pix_w = 16 # N_pix in NxN layout
+            pixels = [
+                (0,0),
+                (15,15),
+                (15,0),
+                (0,15),
+                (6,6),
+                (6,9),
+                (9,9),
+                (9,6),
+                (3,3),
+                (3,12),
+                (12,3),
+                (12,12),
+                (7,0),
+                (8,0),
+                (7,15),
+                (8,15),
+                (0,7),
+                (0,8),
+                (15,7),
+                (15,8),
+                (7,11),
+                (3,15),
+                (9,14),
+            ]
+
+            for row, col in pixels:
+                etroc.wr_reg("DAC", int(threshold_matrix[row][col]), row=row, col=col)
+                etroc.wr_reg("QSel", 0xe, row=row, col=col)
+                etroc.wr_reg("QInjEn", 1, row=row, col=col)
+
+            fifo.reset()
+            fifo.send_QInj(5000, delay=etroc.QINJ_delay)
+            data = fifo.pretty_read(df)
+
+            hit_matrix = np.zeros([N_pix_w, N_pix_w])
+            for x in data:
+                if x[0] == 'data':
+                    hit_matrix[x[1]['row_id']][x[1]['col_id']] += 1
+
+            fig, ax = plt.subplots()
+            plt.title("Hits from charge injection")
+            cax = ax.matshow(hit_matrix)
+
+            fig.colorbar(cax)
+            ax.set_xticks(np.arange(N_pix_w))
+            ax.set_yticks(np.arange(N_pix_w))
+
+            for i in range(N_pix_w):
+                for j in range(N_pix_w):
+                    text = ax.text(j, i, int(hit_matrix[i,j]),
+                            ha="center", va="center", color="w", fontsize="xx-small")
+
+            fig.savefig(f'results/hit_matrix.png')
+            plt.show()
+
+            plt.close(fig)
+            del fig, ax
+
+
+            import struct
+            fifo.reset()
+            with open("output/output_test2.dat", mode="wb") as f:
+                for i in range(5):
+                    fifo.send_QInj(1000, delay=etroc.QINJ_delay)
+                    data = fifo.read(dispatch=True)
+                    f.write(struct.pack('<{}I'.format(len(data)), *data))
+
+        if args.qinj_scan:
+
+            print("\n - Running scan for charge injection test now.")
+
+            # counter based charge injection
+            #q = 30
+            #delay = 10
+            row = 1
+            col = 1
+
+            # select the correct elink for the counter
+            if col > 7:
+                fifo.select_elink(0)
+            else:
+                fifo.select_elink(2)
+
+            # reset the counter
+            rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
+            rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
+
+            # turn off data readout for all pixels
+            etroc.wr_reg("disDataReadout", 1, broadcast=True)
+            etroc.wr_reg("disDataReadout", 0, row=row, col=col, broadcast=True)
+
+            # test the settings and get the proper threshold for the pixel,
+            # using internal accumulator
+            # NOTE: add a nice threshold histogram here?
+            print("Running internal threshold scan for pixel under test")
+            dac, res = vth_scan_internal(etroc, row=row, col=col, dac_min=0, dac_max=750)
+            slope = dac[((res>0) & (res<max(res)))]
+            slope_vals = res[((res>0) & (res<max(res)))]
+            ten_percent_occupancy = dac[(res/max(res)<0.1)][0]
+            mid_slope = int(slope[int(len(slope)/2)])
+            threshold = dac[res==0][2]  # take a DAC value a bit above the threshold
+
+            # check that everything actually works
+            etroc.wr_reg("DAC", mid_slope, row=row, col=col)
+            fifo.send_l1a(5000)
+            hits = rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value()
+            print(f"Found {hits} hits when sitting mid-slope and sending 5000 L1As")
+            rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
+            rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
+
+            # set threshold to threshold
+            print(f"Using found threshold at {dac[res==0][0]}, using value {dac[res==0][2]} for DAC.")
+            etroc.wr_reg("DAC", int(threshold), row=row, col=col)
+
+            # enable Q injection like the ETROC people
+            etroc.wr_reg("QSel", 0x0e, row=row, col=col)
+            etroc.wr_reg("QInjEn", 1, row=row, col=col)
+
+            delays = []
+            counts = []
+            for i in range(500, 510, 1):
+                rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
+                rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
+                fifo.send_QInj(5000, delay=i)
+                hits = rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value()
+                print(i, hits)
+                delays.append(i)
+                counts.append(hits)
+
+            delays = np.array(delays)
+            counts = np.array(counts)
+
+            delay = delays[counts>1000][0]  # this should catch the rising edge
+
+            fifo.reset()
+            fifo.send_QInj(5000, delay=delay)
+            data = fifo.pretty_read(df)
+
+            cal_axis = hist.axis.Regular(2**10, 0, 2**10, name="cal", label="Cal code")
+            toa_axis = hist.axis.Regular(1000, 0, 25, name="toa", label="TOA")
+            toa_hist = hist.Hist(cal_axis)
+            tot_hist = hist.Hist(cal_axis)
+            cal_hist = hist.Hist(cal_axis)
+            toa_code = []
+            tot_code = []
+            cal_code = []
+            toa = []
+            tot = []
+            cal = []
+            for x in data:
+                if x[0] == 'data':
+                    bin = 3.125/x[1]['cal']
+                    toa_code.append(x[1]['toa'])
+                    tot_code.append(x[1]['tot'])
+                    cal_code.append(x[1]['cal'])
+                    toa.append(12.5-bin * x[1]['toa'])
+                    tot.append(x[1]['tot']*2 - np.floor(x[1]['tot']/32)*bin)
+
+            print("\n - TOA_code:")
+            toa_hist.fill(cal=toa_code)
+            toa_min = np.mean(toa_code) - 10
+            toa_max = np.mean(toa_code) + 10
+            toa_hist[complex(0,toa_min):complex(0,toa_max):1j].show(columns=100)
+
+            print("\n - TOT:")
+            tot_hist.fill(cal=tot_code)
+            tot_min = np.mean(tot_code) - 10
+            tot_max = np.mean(tot_code) + 10
+            tot_hist[complex(0,tot_min):complex(0,tot_max):1j].show(columns=100)
+
+            print("\n - Cal Code:")
+            cal_hist.fill(cal=cal_code)
+            cal_min = np.mean(cal_code) - 20
+            cal_max = np.mean(cal_code) + 20
+            cal_hist[complex(0,cal_min):complex(0,cal_max):1j].show(columns=100)
+
+        #if args.benchmark:
+        if False:
+            print("\n - Running scan for charge injection test now.")
+
+            row = 1
+            col = 1
+
+            # select the correct elink for the counter
+            if col > 7:
+                fifo.select_elink(0)
+            else:
+                fifo.select_elink(2)
+
+            # reset the counter
+            rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
+            rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
+
+            # turn off data readout for all pixels
+            etroc.wr_reg("disDataReadout", 1, broadcast=True)
+            etroc.wr_reg("disDataReadout", 0, row=row, col=col, broadcast=True)
+
+            # test the settings and get the proper threshold for the pixel,
+            # using internal accumulator
+            # NOTE: add a nice threshold histogram here?
+            print("Running internal threshold scan for pixel under test")
+            dac, res = vth_scan_internal(etroc, row=row, col=col, dac_min=0, dac_max=350)
+            slope = dac[((res>0) & (res<max(res)))]
+            slope_vals = res[((res>0) & (res<max(res)))]
+            ten_percent_occupancy = dac[(res/max(res)<0.1)][0]
+            mid_slope = int(slope[int(len(slope)/2)])
+            threshold = dac[res==0][2]  # take a DAC value a bit above the threshold
+
+            # check that everything actually works
+            etroc.wr_reg("DAC", int(ten_percent_occupancy), row=row, col=col)
+
+            fifo.reset()
+            data = []
+            fifo.set_trigger_rate(1000)
+
+            start_time = time.time()
+            while True:
+                data += fifo.pretty_read(df)
+                if time.time() - start_time > 5: break
+            fifo.set_trigger_rate(0)
+
+            print(f"Lost word count after running 5s: {fifo.get_lost_word_count()}")
+
+        if args.qinj and False:
+            fifo.reset()
+            q = 30
+            delay = 10
+            i = 4
+            j = 3
+            print(f"\n - Will send L1a/QInj pulse with delay of {delay} cycles and charge of {q} fC")
+            print(f"\n - to pixel at Row {i}, Col {j}.")
+            for m in range(5):
+                etroc.QInj_set(q, delay, row=i, col=j, broadcast = False)
+                with tqdm(total=65536) as pbar:
+                    while not fifo.is_full():
+                        try:
+                            kcu.write_node('READOUT_BOARD_0.L1A_QINJ_PULSE', 1)
+                        except:
+                            print('uhal._core.exception: Failed to pulse', file)
+                etroc.QInj_unset(broadcast = True)
+                test_data = []
+                while fifo.get_occupancy() > 0:
+                    test_data += fifo.pretty_read(df)
+
+                hits_total = np.zeros((16,16))
+                hit_matrix = hist.Hist(col_axis,row_axis)
+                n_events_total = 0
+                n_events_hit   = 0
+                for d in test_data:
+                    if d[0] == 'trailer':
+                        n_events_total += 1
+                        if d[1]['hits'] > 0:
+                            n_events_hit += 1
+                    if d[0] == 'data':
+                        hit_matrix.fill(row=d[1]['row_id'], col=d[1]['col_id'])
+                        hits_total[d[1]['row_id']][d[1]['col_id']] += 1
+                        # NOTE could do some CRC check.
+
+                print(f"Got number of total events {n_events_total=}")
+                print(f"Events with at least one hit {n_events_hit=}")
+
+                fig, ax = plt.subplots(1,1,figsize=(7,7))
+                hit_matrix.plot2d(
+                    ax=ax,
+                )
+                ax.set_ylabel(r'$Row$')
+                ax.set_xlabel(r'$Column$')
+                hep.cms.label(
+                        "ETL Preliminary",
+                        data=True,
+                        lumi='0',
+                        com=0,
+                        loc=0,
+                        ax=ax,
+                        fontsize=15,
+                    )
+                name = f'hit_matrix_external_L1A_QInj_Pulse_'+str(m)
+                fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
+                fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
+
+                print("\nOccupancy vs column:")
+                hit_matrix[{"row":sum}].show(columns=100)
+                print("\nOccupancy vs row:")
+                hit_matrix[{"col":sum}].show(columns=100)
 
 
 

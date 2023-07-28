@@ -24,10 +24,14 @@ def merge_words(res):
         # offset is only needed when zero suppression is turned off, and packet boundaries are not defined
         # it relies on the fact that the second 32 bit word is half empty (8 bit ETROC data + 12 bits meta data)
         # if we ever add more meta data this has to be revisited
-        offset = 1 if (res[1] > res[0]) else 0
+        #offset = 1 if (res[1] > res[0]) else 0
+        offset = 0
+        #print(f"## Offset is {offset=}")
+        #offset = 0
         res = res[offset:]
         #empty_frame_mask = np.array(res[0::2]) > (2**8)  # masking empty fifo entries
-        empty_frame_mask = np.array(res[0::2]) > 0  # masking empty fifo entries
+        #print(res)
+        empty_frame_mask = np.array(res[0::2]) > 0  # masking empty fifo entries FIXME verify that this does not cause troubles! remove mask if possible
         len_cut = min(len(res[0::2]), len(res[1::2]))  # ensuring equal length of arrays downstream
         return list (np.array(res[0::2])[:len_cut][empty_frame_mask[:len_cut]] | (np.array(res[1::2]) << 32)[:len_cut][empty_frame_mask[:len_cut]])
     else:
@@ -39,6 +43,31 @@ class FIFO:
         self.block = block
         if rb != None:
             self.reset()
+
+    def ready(self):
+        self.rb.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 0x1)
+        tmp_err_cnt = self.rb.kcu.read_node("READOUT_BOARD_%s.ERROR_CNT"%self.rb.rb).value()
+        start_time = time.time()
+        while tmp_err_cnt != self.rb.kcu.read_node("READOUT_BOARD_%s.ERROR_CNT"%self.rb.rb).value():
+            print("Redoing bitslip")
+            self.reset()
+            self.enable_bitslip()
+            time.sleep(0.1)
+            self.disable_bitslip()
+            self.rb.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 0x1)
+            tmp_err_cnt = self.rb.kcu.read_node("READOUT_BOARD_%s.ERROR_CNT"%self.rb.rb).value()
+
+            if time.time() > start_time + 2:
+                print("Time out, FIFO might not work as expected.")
+                break
+
+        return True
+
+    def enable_bitslip(self):
+        self.rb.kcu.write_node("READOUT_BOARD_%s.BITSLIP_AUTO_EN"%self.rb.rb, 0x1)
+
+    def disable_bitslip(self):
+        self.rb.kcu.write_node("READOUT_BOARD_%s.BITSLIP_AUTO_EN"%self.rb.rb, 0x0)
 
     def get_zero_suppress_status(self):
         return self.rb.kcu.read_node("READOUT_BOARD_%s.ZERO_SUPRESS"%self.rb.rb).value()
@@ -79,7 +108,18 @@ class FIFO:
 
     def send_l1a(self, count=1):
         for i in range(count):
-            self.rb.kcu.write_node("SYSTEM.L1A_PULSE", 1)
+            try:
+                self.rb.kcu.write_node("SYSTEM.L1A_PULSE", 1)
+            except:
+                print("Couldn't send pulse.")
+
+    def send_QInj(self, count=1, delay=0):
+        self.rb.kcu.write_node("READOUT_BOARD_%s.L1A_INJ_DLY"%self.rb.rb, delay)
+        for i in range(count):
+            try:
+                self.rb.kcu.write_node("READOUT_BOARD_%s.L1A_QINJ_PULSE" % self.rb.rb, 0x01)
+            except:
+                print("Couldn't send pulse.")
 
     def reset(self):
         self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_RESET" % self.rb.rb, 0x01)
@@ -92,48 +132,74 @@ class FIFO:
         self.rb.kcu.write_node("READOUT_BOARD_%s.FIFO_LPGBT_SEL0" % self.rb.rb, lpgbt)
 
     def read_block(self, block, dispatch=False):
-        try:
-            if dispatch:
-                reads = self.rb.kcu.hw.getNode("DAQ_RB0").readBlock(block)
-                self.rb.kcu.dispatch()
-                return reads
-            else:
-                return self.rb.kcu.hw.getNode("DAQ_RB0").readBlock(block)
-        except uhal_exception:
-            print("uhal UDP error in FIFO.read_block")
-            raise
+        success = False
+        while success == False:
+            try:
+                if dispatch:
+                    reads = self.rb.kcu.hw.getNode("DAQ_RB0").readBlock(block)
+                    self.rb.kcu.hw.dispatch()
+                    return reads
+                else:
+                    return self.rb.kcu.hw.getNode("DAQ_RB0").readBlock(block)
+            except uhal_exception:
+                print(f"uhal UDP error in FIFO.read_block, block size is {block}")
+                raise
 
     def read(self, dispatch=False, verbose=False):
-        try:
-            occupancy = self.get_occupancy()*4  # FIXME don't know where factor of 4 comes from??
-            if verbose: print(f"{occupancy=}")
-            num_blocks_to_read = occupancy // self.block
-            if verbose: print(f"{num_blocks_to_read=}")
-            last_block = occupancy % self.block
-            if verbose: print(f"{last_block=}")
-            data = []
-            if (num_blocks_to_read or last_block):
-                for b in range(num_blocks_to_read):
-                    data += self.read_block(self.block, dispatch=dispatch).value()
-                data += self.read_block(last_block, dispatch=dispatch).value()
-                # FIXME the part below should be faster but is somehow broken now
-                #reads = num_blocks_to_read * [self.read_block(self.block, dispatch=dispatch)] + [self.read_block(last_block, dispatch=dispatch)]
-                #if not dispatch:
-                #    self.rb.kcu.hw.dispatch()
-                #for read in reads:
-                #    data += read.value()
-            return data
+        #occupancy = self.get_occupancy()*4 + 2  # FIXME don't know where factor of 4 comes from??
+        #if verbose: print(f"{occupancy=}")
+        #num_blocks_to_read = occupancy // self.block
+        #if verbose: print(f"{num_blocks_to_read=}")
+        #last_block = occupancy % self.block
+        #if verbose: print(f"{last_block=}")
+        data = []
+        while self.get_occupancy()>0:
+            # FIXME checking get_occupancy all the time is slow, but this is at least not broken.
+            data += self.read_block(250, dispatch=dispatch).value()
 
-        except uhal_exception:
-            print("uhal UDP error in daq")
-            return []
+        #if (num_blocks_to_read or last_block):
+        #    if dispatch:
+        #        #while self.get_occupancy()>0:
+        #        #    data += self.read_block(255, dispatch=dispatch).value()
+        #        for b in range(num_blocks_to_read):
+        #            #print(b)
+        #            try:
+        #                data += self.read_block(self.block, dispatch=dispatch).value()
+        #            except uhal_exception:
+        #                print("uhal UDP error in daq, full blocks")
+        #                return data
+        #        try:
+        #            data += self.read_block(last_block, dispatch=dispatch).value()
+        #        except uhal_exception:
+        #            print("uhal UDP error in daq, last block")
+        #            return data
+        #    else:
+        #        # FIXME the part below should be faster but is somehow broken now
+        #        reads = num_blocks_to_read * [self.read_block(self.block, dispatch=dispatch)] + [self.read_block(last_block, dispatch=dispatch)]
+        #        try:
+        #            self.rb.kcu.hw.dispatch()
+        #        except:
+        #            print("uhal UDP error in daq")
+
+        #        for read in reads:
+        #            data += read.value()
+        return data
+
 
     def get_occupancy(self):
         try:
             return self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.RX_FIFO_OCCUPANCY").value()
         except uhal_exception:
-            print("uhal UDP error in FIFO.get_occupancy")
-            raise
+            print("uhal UDP error in FIFO.get_occupancy, trying again")
+            return self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.RX_FIFO_OCCUPANCY").value()
+            #raise
+
+    def is_full(self):
+        try:
+            return self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.RX_FIFO_FULL").value()
+        except uhal_exception:
+            print("uhal UDP error in FIFO.is_full, trying again")
+            return self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.RX_FIFO_FULL").value()
 
     def get_lost_word_count(self):
         return self.rb.kcu.read_node(f"READOUT_BOARD_{self.rb.rb}.RX_FIFO_LOST_WORD_CNT").value()
@@ -144,9 +210,12 @@ class FIFO:
     def get_l1a_rate(self):
         return self.rb.kcu.read_node(f"SYSTEM.L1A_RATE_CNT").value()
 
-    def pretty_read(self, df, dispatch=True):
+    def pretty_read(self, df, dispatch=True, raw=False):
         merged = merge_words(self.read(dispatch=dispatch))
-        return list(map(df.read, merged))
+        if raw:
+            return merged
+        else:
+            return list(map(df.read, merged))
 
     def stream(self, f_out, timeout=10):
         # FIXME this is WIP

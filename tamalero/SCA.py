@@ -5,8 +5,10 @@ from functools import wraps
 import time
 try:
     from tabulate import tabulate
+    has_tabulate = True
 except ModuleNotFoundError:
     print ("Package `tabulate` not found.")
+    has_tabulate = False
 
 class SCA_CRB:
     # 0 is reserved
@@ -192,7 +194,7 @@ class SCA:
 
         if verbose:
             print("SCA r/w:")
-            print(f"{transid=}, {channel=}, {cmd=}, {adr=}, {data=}")
+            print(f"transid={transid}, channel={channel}, cmd={cmd}, adr={adr}, data={data}")
 
 
         self.kcu.toggle_dispatch()
@@ -256,7 +258,7 @@ class SCA:
         rx_ctrl = rx_ctrl.value()
 
         if verbose:
-            print(f"Received: {err=}, {rx_rec=}, {rx_ch=}, {rx_len=}, {rx_ad=}, {rx_ctrl=}")
+            print(f"Received: err={err}, rx_rec={rx_rec}, rx_ch={rx_ch}, rx_len={rx_len}, rx_ad={rx_ad}, rx_ctrl={rx_ctrl}")
 
         # NOTE I2C transaction can be slow, so try reading the transid several times before it times out
         start_time = time.time()
@@ -281,8 +283,8 @@ class SCA:
         en_spi = (crb_rd >> SCA_CRB.ENSPI) & 1
         #en_i2c = (crb_rd >> )
         if verbose:
-            print(f"SCA control registers: {en_gpio=}")
-            print(f"SCA control registers: {en_spi=}")
+            print(f"SCA control registers: en_gpio={en_gpio}")
+            print(f"SCA control registers: en_spi={en_spi}")
             print (crb_rd, crc_rd, crd_rd)
         return crb_rd, crc_rd, crd_rd
 
@@ -424,13 +426,17 @@ class SCA:
             print("CRC wr=%02X, rd=%02X" % (crc, crc_rd))
             print("CRD wr=%02X, rd=%02X" % (crd, crd_rd))
 
-    def enable_adc_curr(self, pin):
+    def read_adc_curr(self, pin):
         # just do one at a time, does not need to run constantly
         self.enable_adc() #enable ADC
         tmp = 1 << pin
         self.rw_reg(SCA_ADC.ADC_W_CURR, tmp)
-        val = self.rw_reg(SCA_ADC.ADC_R_CURR).value()
-        return val == tmp
+        self.rw_reg(SCA_ADC.ADC_W_MUX, pin) #configure register we want to read
+        #val = self.rw_reg(SCA_ADC.ADC_R_CURR).value()
+        val = self.rw_reg(SCA_ADC.ADC_GO, 0x01).value() #execute and read ADC_GO command
+        self.rw_reg(SCA_ADC.ADC_W_MUX, 0x0) #reset register to default (0)
+        self.rw_reg(SCA_ADC.ADC_W_CURR, 0x0) #reset register to default (0)
+        return val
 
     def disable_adc_curr(self):
         # disable current source for ALL channels
@@ -469,9 +475,20 @@ class SCA:
                 table.append([adc_reg, pin, value, input_voltage, comment])
 
         if check:
-            print(tabulate(table, headers=["Register","Pin", "Reading", "Voltage", "Status", "Comment"],  tablefmt="simple_outline"))
+            headers = ["Register","Pin", "Reading", "Voltage", "Status", "Comment"]
         else:
-            print(tabulate(table, headers=["Register","Pin", "Reading", "Voltage", "Comment"],  tablefmt="simple_outline"))
+            headers = ["Register","Pin", "Reading", "Voltage", "Comment"]
+
+        if has_tabulate:
+            print(tabulate(table, headers=headers,  tablefmt="simple_outline"))
+        else:
+            header_string = "{:<20}"*len(headers)
+            data_string = "{:<20}{:<20}{:<20.0f}{:<20.3f}{:<20}"
+            if check:
+                data_string += "{:<20}"
+            print(header_string.format(*headers))
+            for line in table:
+                print(data_string.format(*line))
 
         if will_fail:
             raise ValueError("At least one input voltage is out of bounds, with status ERR as seen in the table above")
@@ -598,8 +615,7 @@ class SCA:
         if success:
             return True
         else:
-            #print("write not successful: status = {}".format(status))
-            return False
+            raise RuntimeError(f"I2C write not successful, status={status}")
 
     def I2C_write_ctrl(self, channel, data):
         #enable channel

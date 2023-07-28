@@ -48,7 +48,10 @@ class KCU:
                 self.dispatch()
 
     def read_node(self, id):
-        reg = self.hw.getNode(id)
+        try:
+            reg = self.hw.getNode(id)
+        except:
+            raise Exception(f"Failed finding node {id} in read_node")
         ret = reg.read()
         if self.auto_dispatch:
             self.dispatch()
@@ -64,6 +67,15 @@ class KCU:
     def action(self, id):
         reg = self.hw.getNode(id)
         self.action_reg(reg)
+
+    def print_regs(self):
+
+        for id in self.hw.getNodes():
+            reg = self.hw.getNode(id)
+            # if (reg.getModule() == ""):
+            if (reg.getMode() != uhal.BlockReadWriteMode.HIERARCHICAL):
+                print(self.format_reg(reg.getAddress(), reg.getPath()[4:], -1,
+                                self.format_permission(reg.getPermission())))
 
     def get_firmware_version(self, verbose=False, string=True):
 
@@ -107,32 +119,34 @@ class KCU:
 
     def status(self):
         print("LPGBT Link Status from KCU:")
-        for id in self.hw.getNodes(".*LPGBT.*DAQ.*DOWNLINK.*READY"):
+        for id in self.hw.getNodes(".*LPGBT.*DOWNLINK.*READY"):
             self.print_reg(self.hw.getNode(id), use_color=True, threshold=1)
-        for id in self.hw.getNodes(".*LPGBT.*DAQ.*UPLINK.*READY"):
+        for id in self.hw.getNodes(".*LPGBT.*UPLINK_0.*READY"):
             self.print_reg(self.hw.getNode(id), use_color=True, threshold=1)
-        for id in self.hw.getNodes(".*LPGBT.*DAQ.*UPLINK.*FEC_ERR_CNT"):
+        for id in self.hw.getNodes(".*LPGBT.*UPLINK_0.*FEC_ERR_CNT"):
             self.print_reg(self.hw.getNode(id), use_color=True, threshold=1, invert=True)
-        for id in self.hw.getNodes(".*LPGBT.*TRIGGER.*UPLINK.*READY"):
+        for id in self.hw.getNodes(".*LPGBT.*UPLINK_1.*READY"):
             self.print_reg(self.hw.getNode(id), use_color=True, threshold=1)
-        for id in self.hw.getNodes(".*LPGBT.*TRIGGER.*UPLINK.*FEC_ERR_CNT"):
+        for id in self.hw.getNodes(".*LPGBT.*UPLINK_1.*FEC_ERR_CNT"):
             self.print_reg(self.hw.getNode(id), use_color=True, threshold=1, invert=True)
 
         self.check_clock_frequencies()
+        
+        for rb in self.readout_boards:
+            print(f'Checking Readout Board {rb.rb}')
+            locked = self.read_node(f"READOUT_BOARD_{rb.rb}.ETROC_LOCKED").value()
+            locked_slave = self.read_node(f"READOUT_BOARD_{rb.rb}.ETROC_LOCKED_SLAVE").value()
 
-        locked = self.read_node(f"READOUT_BOARD_0.ETROC_LOCKED").value()
-        locked_slave = self.read_node(f"READOUT_BOARD_0.ETROC_LOCKED_SLAVE").value()
+            for l in range(28):
+                if (locked >> l) & 1:
+                    print(green(f'Master elink {l} is locked.'))
+            for l in range(28):
+                if (locked_slave >> l) & 1:
+                    print(green(f'Slave elink {l} is locked.'))
 
-        for l in range(28):
-            if (locked >> l) & 1:
-                print(green(f'Master elink {l} is locked.'))
-        for l in range(28):
-            if (locked_slave >> l) & 1:
-                print(green(f'Slave elink {l} is locked.'))
-
-        if locked | locked_slave == 0:
-            print(red('Warning: No elink is locked.'))
-
+            if locked | locked_slave == 0:
+                print(red('Warning: No elink is locked.'))
+            print()
 
     def print_reg(self, reg, threshold=1, maxval=0xFFFFFFFF, use_color=False, invert=False):
         from tamalero.colors import green, red, dummy

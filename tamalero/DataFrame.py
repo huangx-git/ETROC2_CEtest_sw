@@ -62,6 +62,8 @@ class DataFrame:
 
         if data_type == 'header':
             self.type = res['type']
+        res['raw'] = hex(val&0xFFFFFFFFFF)
+        res['meta'] = hex((val>>40)&0xFFFFFF)
 
         if not quiet:
             print (f"Found data of type {data_type}:", res)

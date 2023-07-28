@@ -1,6 +1,8 @@
 """
 For ETROC control
 """
+import time
+import numpy as np
 
 from tamalero.utils import load_yaml, ffs, bit_count
 from tamalero.colors import red, green, yellow
@@ -20,7 +22,10 @@ class ETROC():
             elinks={0:[0]},
             verbose=False,
             strict=True,
+            reset=None,
+            breed='emulator',
     ):
+        self.QINJ_delay = 504  # this is a fixed value for the default settings of ETROC2
         self.isfake = False
         self.I2C_master = rb.DAQ_LPGBT if master.lower() == 'lpgbt' else rb.SCA
         self.master = master
@@ -29,6 +34,8 @@ class ETROC():
         self.i2c_channel = i2c_channel
         self.i2c_adr = i2c_adr
         self.elinks = elinks
+        self.reset_pin = reset
+        self.breed = breed
         self.is_connected()
         if self.connected:
             self.ver = self.get_ver()
@@ -180,45 +187,63 @@ class ETROC():
         for reg in self.regs:
             if self.regs[reg]['stat'] == 1 and self.regs[reg]['pixel'] == 0:
                 ret = self.rd_reg(reg)
-                print(yellow(f"Perif status {reg=}: {ret=}"))
+                print(yellow(f"Perif status reg={reg}: ret={ret}"))
 
     def print_pixel_stat(self, row=0, col=0):
         for reg in self.regs:
             if self.regs[reg]['stat'] == 1 and self.regs[reg]['pixel'] == 1:
                 ret = self.rd_reg(reg)
-                print(yellow(f"Pixel ({row=}, {col=}) status {reg=}: {ret=}"))
+                print(yellow(f"Pixel (row={row}, col={col}) status reg={reg}: ret={ret}"))
 
     def print_perif_conf(self):
+        df = []
         for reg in self.regs:
             if self.regs[reg]['stat'] == 0 and self.regs[reg]['pixel'] == 0:
                 ret = self.rd_reg(reg)
                 exp = self.regs[reg]['default']
                 colored = green if ret == exp else red
-                print(colored(f"Perif config {reg=}: {ret=}, {exp=}"))
+                print(colored(f"Perif config reg={reg}: ret={ret}, exp={exp}"))
+                df.append({'register': reg, 'value': ret, 'default': exp})
+        return df
 
     def print_pixel_conf(self, row=0, col=0):
+        df = []
         for reg in self.regs:
             if self.regs[reg]['stat'] == 0 and self.regs[reg]['pixel'] == 1:
                 ret = self.rd_reg(reg)
                 exp = self.regs[reg]['default']
                 colored = green if ret == exp else red
-                print(colored(f"Pixel ({row=}, {col=}) config {reg=}: {ret=}, {exp=}"))
+                print(colored(f"Pixel (row={row}, col={col}) config reg={reg}: ret={ret}, exp={exp}"))
+                df.append({'register': reg, 'value': ret, 'default': exp})
+        return df
 
-    def pixel_sanity_check(self, full=True, verbose=False):
+    def pixel_sanity_check(self, full=True, verbose=False, return_matrix=False):
         all_pass = True
         nmax = 16 if full else 4  # option to make this check a bit faster
-        for row in range(nmax):
-            for col in range(nmax):
-                ret = self.rd_reg('PixelID', row=row, col=col)
-                exp = ((col << 4) | row)
-                comp = ret == exp
-                if verbose:
+        status_matrix = np.zeros((16,16))
+        if self.breed in ['emulator', 'software']:
+            for row in range(nmax):
+                for col in range(nmax):
+                    status_matrix[row][col] = 1
+        else:
+            for row in range(nmax):
+                for col in range(nmax):
+                    ret = self.rd_reg('PixelID', row=row, col=col)
+                    exp = ((col << 4) | row)
+                    comp = ret == exp
+                    if verbose:
+                        if comp:
+                            print(green(f"Sanity check passed for row={row}, col={col}"))
+                        else:
+                            print(red(f"Sanity check failed for row={row}, col={col}, expected {exp} from PixelID register but got {ret}"))
+                    all_pass &= comp
                     if comp:
-                        print(green(f"Sanity check passed for {row=}, {col=}"))
-                    else:
-                        print(red(f"Sanity check failed for {row=}, {col=}, expected {exp} from PixelID register but got {ret}"))
-                all_pass &= comp
-        return all_pass
+                        status_matrix[row][col] = 1
+
+        if return_matrix:
+            return status_matrix
+        else:
+            return all_pass
 
     def pixel_random_check(self, ntest=20, verbose=False):
         all_pass = True
@@ -231,18 +256,35 @@ class ETROC():
             comp = val == ret
             if verbose:
                 if comp:
-                    print(green(f"Sanity check passed for {row=}, {col=}"))
+                    print(green(f"Sanity check passed for row={row}, col={col}"))
                 else:
-                    print(red(f"Sanity check failed for {row=}, {col=}, expected {val} from PixelSanityStat register but got {ret}"))
+                    print(red(f"Sanity check failed for row={row}, col={col}, expected {val} from PixelSanityStat register but got {ret}"))
             all_pass &= comp
         return all_pass
+
+    def reset(self, hard=False):
+        if hard:
+            self.rb.SCA.set_gpio(self.reset_pin, 0)
+            time.sleep(0.1)
+            self.rb.SCA.set_gpio(self.reset_pin, 1)
+        else:
+            self.wr_reg("asyResetGlobalReadout", 0)
+            time.sleep(0.1)
+            self.wr_reg("asyResetGlobalReadout", 1)
 
     # ============================
     # === MONITORING FUNCTIONS ===
     # ============================
 
     def is_connected(self):
-        self.connected = self.I2C_read(0x0)  # read from first register (default value 0x2C)
+        try:
+            self.connected = self.I2C_read(0x0)  # read from first register (default value 0x2C)
+        except TimeoutError:
+            # this comes from lpGBT read fails
+            self.connected = False
+        except RuntimeError:
+            # this comes from SCA read fails
+            self.connected = False
         return self.connected
 
     def get_elink_status(self):
@@ -319,8 +361,9 @@ class ETROC():
     def default_config(self):
         # FIXME should use higher level functions for better readability
         if self.connected:
+            self.reset()  # soft reset of the global readout
             self.set_singlePort('both')
-            self.set_mergeTriggerData('separate')
+            self.set_mergeTriggerData('merge')
             self.disable_Scrambler()
             # set ETROC in 320Mbps mode
             self.wr_reg('serRateLeft', 0)
@@ -329,11 +372,32 @@ class ETROC():
             # get the current number of invalid fast commands received
             self.invalid_FC_counter = self.get_invalidFCCount()
 
+            # give some number to the ETROC
+            self.wr_reg("EFuse_Prog", 1234)  # gives a chip ID of 308.
+
+            # configuration as per discussion with ETROC2 developers
+            self.wr_reg("onChipL1AConf", 0)  # this should be default anyway
+            self.wr_reg("PLL_ENABLEPLL", 1)
+            self.wr_reg("chargeInjectionDelay", 0xa)
+            self.wr_reg("L1Adelay", 0x01f5)
+            self.wr_reg("disTrigPath", 1, broadcast=True)
+            self.wr_reg("QInjEn", 0, broadcast=True)
+
+            ## opening TOA / TOT / Cal windows
+            self.wr_reg("upperTOA", 0x3ff, broadcast=True)  # this also fixes the half-chip readout with internal test data
+            self.wr_reg("lowerTOA", 0, broadcast=True)
+            self.wr_reg("upperTOT", 0x1ff, broadcast=True)
+            self.wr_reg("lowerTOT", 0, broadcast=True)
+            self.wr_reg("upperCal", 0x3ff, broadcast=True)
+            self.wr_reg("lowerCal", 0, broadcast=True)
+
+
     # =======================
     # === HIGH-LEVEL FUNC ===
     # =======================
 
     def QInj_set(self, charge, delay, row=0, col=0, broadcast=True, reset=True):
+        # FIXME this is a bad name, given that set_QInj also exists
         """
         High-level function to set the charge injection in the ETROC;
         requires \'charge\' (in fC) and \'delay\' (in 781 ps steps).
@@ -342,7 +406,7 @@ class ETROC():
         """
         self.set_ChargeInjReset(reset=reset)                           # Reset charge injection module
         self.enable_QInj(row=row, col=col, broadcast=broadcast)        # Enable charge injection
-        self.set_Qinj(charge, row=row, col=col, broadcast=broadcast)   # Set charge
+        self.set_QInj(charge, row=row, col=col, broadcast=broadcast)   # Set charge
         self.set_chargeInjDelay(delay)                                 # Set time delay
 
     def QInj_unset(self, row=0, col=0, broadcast=True):
@@ -352,15 +416,16 @@ class ETROC():
         """
         if broadcast:
             self.set_ChargeInjReset(False)                             # Reset charge injection module
+            self.disable_QInj(broadcast=broadcast)   # Only disable charge injection for specified pixel
         else:
             self.disable_QInj(row=row, col=col, broadcast=broadcast)   # Only disable charge injection for specified pixel
 
     def QInj_read(self, row=0, col=0, broadcast=True):
         if broadcast:
-            qinj = [[self.get_Qinj(row=y, col=x) for x in range(16)] for y in range(16)]
+            qinj = [[self.get_QInj(row=y, col=x) for x in range(16)] for y in range(16)]
             return qinj
         else:
-            return self.get_Qinj(row=row, col=col)
+            return self.get_QInj(row=row, col=col)
 
     def auto_threshold_scan(self):
         # FIXME not yet fully working
@@ -373,6 +438,21 @@ class ETROC():
         self.init_THCal()
         return self.rd_reg('TH', row=2, col=2)
 
+    def setup_accumulator(self, row=0, col=0):
+        self.wr_reg("CLKEn_THCal", 1, row=row, col=col, broadcast=False)
+        self.wr_reg("BufEn_THCal", 1, row=row, col=col, broadcast=False)
+        self.wr_reg("Bypass_THCal", 1, row=row, col=col, broadcast=False)
+
+    def check_accumulator(self, DAC, row=0, col=0):
+        self.wr_reg("DAC", DAC, row=row, col=col, broadcast=False)
+        self.wr_reg("RSTn_THCal", 0, row=row, col=col, broadcast=False)
+        self.wr_reg("RSTn_THCal", 1, row=row, col=col, broadcast=False)
+        self.wr_reg("ScanStart_THCal", 1, row=row, col=col, broadcast=False)
+        self.wr_reg("ScanStart_THCal", 0, row=row, col=col, broadcast=False)
+        if self.rd_reg("ScanDone", row=row, col=col):
+            return self.rd_reg("ACC", row=row, col=col)
+        else:
+            return -1
 
     # ***********************
     # *** IN-PIXEL CONFIG ***
@@ -439,19 +519,19 @@ class ETROC():
 
     # (FOR ALL PIXELS) set/get injected charge
     # 1 ~ 32 fC, typical charge is 7fC
-    def set_Qinj(self, C, row=0, col=0, broadcast=True):
+    def set_QInj(self, C, row=0, col=0, broadcast=True):
         if C > 32:
             raise Exception('Injected charge should be < 32 fC.')
         self.wr_reg('QSel', C-1, row=row, col=col, broadcast=broadcast)
 
-    def get_Qinj(self, row=0, col=0):
+    def get_QInj(self, row=0, col=0):
         return self.rd_reg('QSel', row=row, col=col)
 
     # (FOR ALL PIXELS) enable/disable charge injection
-    def enable_Qinj(self, row=0, col=0, broadcast=True):
+    def enable_QInj(self, row=0, col=0, broadcast=True):
         self.wr_reg('QInjEn', 1, row=row, col=col, broadcast=broadcast)
 
-    def disable_Qinj(self, row=0, col=0, broadcast=True):
+    def disable_QInj(self, row=0, col=0, broadcast=True):
         self.wr_reg('QInjEn', 0, row=row, col=col, broadcast=broadcast)
 
     # (FOR ALL PIXELS) TDC control
@@ -545,7 +625,7 @@ class ETROC():
     def set_workMode(self, mode, row=0, col=0, broadcast=True):
         val = {'normal': 0b00, 'self test fixed': 0b01, 'self test random': 0b10}
         try:
-            self.wr_reg('workMode', val(mode), row=row, col=col, broadcast=broadcast)
+            self.wr_reg('workMode', val[mode], row=row, col=col, broadcast=broadcast)
         except KeyError:
             print('Choose between \'normal\', \'self test fixed\', \'self test random\'.')
 

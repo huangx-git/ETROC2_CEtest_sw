@@ -45,7 +45,10 @@ class ReadoutBoard:
     def get_trigger(self):
         # Self-check if a trigger lpGBT is present, if trigger is not explicitely set to False
         sleep(0.5)
-        test_read = self.DAQ_LPGBT.I2C_read(reg=0x0, master=2, slave_addr=0x70, verbose=False)
+        try:
+            test_read = self.DAQ_LPGBT.I2C_read(reg=0x0, master=2, slave_addr=0x70, verbose=False)
+        except TimeoutError:
+            test_read = None
         if test_read is not None and self.trigger:
             print ("Found trigger lpGBT, will configure it now.")
             self.trigger = True
@@ -194,11 +197,11 @@ class ReadoutBoard:
 
     def status(self):
         nodes = list(map (lambda x : "READOUT_BOARD_%s.LPGBT." % self.rb + x,
-                          ("DAQ.DOWNLINK.READY",
-                      "DAQ.UPLINK.READY",
-                      "DAQ.UPLINK.FEC_ERR_CNT",
-                      "TRIGGER.UPLINK.READY",
-                      "TRIGGER.UPLINK.FEC_ERR_CNT",)))
+                          ("DOWNLINK.READY",
+                      "UPLINK_0.READY",
+                      "UPLINK_0.FEC_ERR_CNT",
+                      "UPLINK_1.READY",
+                      "UPLINK_1.FEC_ERR_CNT",)))
         for node in nodes:
             val = self.kcu.read_node(node)
             err = 0
@@ -244,11 +247,11 @@ class ReadoutBoard:
     def get_FEC_error_count(self, quiet=False):
         if not quiet:
             print("{:<8}{:<8}{:<50}{:<8}".format("Address", "Perm.", "Name", "Value"))
-            self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.DAQ.UPLINK.FEC_ERR_CNT" % self.rb), use_color=True, invert=True)
-            self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT" % self.rb), use_color=True, invert=True)
+            self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.UPLINK_0.FEC_ERR_CNT" % self.rb), use_color=True, invert=True)
+            self.kcu.print_reg(self.kcu.hw.getNode("READOUT_BOARD_%s.LPGBT.UPLINK_1.FEC_ERR_CNT" % self.rb), use_color=True, invert=True)
         return {
-            'DAQ': self.kcu.read_node("READOUT_BOARD_%s.LPGBT.DAQ.UPLINK.FEC_ERR_CNT" % self.rb).value(),
-            'TRIGGER': self.kcu.read_node("READOUT_BOARD_%s.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT" % self.rb).value()
+            'DAQ': self.kcu.read_node("READOUT_BOARD_%s.LPGBT.UPLINK_0.FEC_ERR_CNT" % self.rb).value(),
+            'TRIGGER': self.kcu.read_node("READOUT_BOARD_%s.LPGBT.UPLINK_1.FEC_ERR_CNT" % self.rb).value()
         }
 
     def reset_FEC_error_count(self, quiet=False):
@@ -333,7 +336,8 @@ class ReadoutBoard:
             if self.VTRX.ver == 'production':
                 self.VTRX.reset()
             elif self.VTRX.ver == 'prototype':
-                self.VTRX.reset(toggle_channels=[0])
+                #self.VTRX.reset(toggle_channels=[0])
+                self.VTRX.reset()
             else:
                 print ("Don't know how to reset VTRX version", self.VTRX.ver)
             self.VTRX.configure(trigger=trigger)
@@ -357,7 +361,10 @@ class ReadoutBoard:
                         print (f"No FEC errors detected on {link} link")
                     break
                 else:
-                    self.reset_link(trigger = (link=='Trigger'))
+                    if self.ver == 1:
+                        pass
+                    else:
+                        self.reset_link(trigger = (link=='Trigger'))
                 if i+2 > max_retries:
                     if allow_bad_links:
                         print (f"{link} link does not have a stable connection. Ignoring.")
@@ -367,12 +374,16 @@ class ReadoutBoard:
     def read_vtrx_temp(self):
 
         # vtrx thermistors
-        current_vtrx    = self.DAQ_LPGBT.set_current_dac_uA(600)
-        rt_vtrx_voltage = self.DAQ_LPGBT.read_adc(0)/(2**10-1) # FIXME: 0 should not be hardcoded
 
+        v_ref = self.DAQ_LPGBT.read_dac()
         if self.ver == 1:
-            return -1.0
+            #current_rt1 = self.DAQ_LPGBT.set_current_dac_uA(0)  # make sure the current source is turned OFF in ver 1
+            rt_vtrx_voltage = self.DAQ_LPGBT.read_adc(0)/(2**10-1) # FIXME: 0 should not be hardcoded
+            return get_temp(rt_vtrx_voltage, v_ref, 10000, 25, 10000, 3900)  # FIXME this uses the wrong thermistor, ignore value.
+            #return -1.0
         elif self.ver == 2:
+            current_vtrx    = self.DAQ_LPGBT.set_current_dac_uA(600)
+            rt_vtrx_voltage = self.DAQ_LPGBT.read_adc(0)/(2**10-1) # FIXME: 0 should not be hardcoded
             return get_temp_direct(rt_vtrx_voltage, current_vtrx, thermistor="NCP03XM102E05RL")  # this comes from the lpGBT ADC (VTRX TH)
         else:
             raise Exception("Unknown lpgbt version")
@@ -388,6 +399,7 @@ class ReadoutBoard:
 
             if self.ver == 1:
                 # This uses the DAC output for current so just read the voltage
+                #current_rt1 = self.DAQ_LPGBT.set_current_dac_uA(0)  # make sure the current source is turned OFF in ver 1
                 rt1_voltage = self.DAQ_LPGBT.read_adc(7)/(2**10-1) # FIXME: 7 should not be hardcoded
                 return get_temp(rt1_voltage, v_ref, 10000, 25, 10000, 3900)  # this comes from the lpGBT ADC
             elif self.ver == 2:
@@ -413,7 +425,7 @@ class ReadoutBoard:
 
         else:
 
-            raise Exception(f"Attempt to read unknown thermistor {rt=}")
+            raise Exception(f"Attempt to read unknown thermistor rt={rt}")
 
     def read_temp(self, verbose=False):
 
@@ -431,6 +443,7 @@ class ReadoutBoard:
             print ("\nTemperature on RB RT1 is: %.1f C" % t_rt1)
             print ("Temperature on RB RT2 is: %.1f C" % t_rt2)
             print ("Temperature on RB SCA is: %.1f C" % t_sca)
-            print ("Temperature on RB VTRX is: %.1f C" % t_vtrx)
+            if self.ver==2:
+                print ("Temperature on RB VTRX is: %.1f C" % t_vtrx)
 
         return {'t1': t_rt1, 't2': t_rt2, 't_SCA': t_sca, 't_VTRX': t_vtrx}

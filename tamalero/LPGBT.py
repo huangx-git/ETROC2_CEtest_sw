@@ -13,8 +13,10 @@ from time import sleep
 from datetime import datetime
 try:
     from tabulate import tabulate
+    has_tabulate = True
 except ModuleNotFoundError:
     print ("Package `tabulate` not found.")
+    has_tabulate = False
 
 from tamalero.lpgbt_constants import LpgbtConstants
 
@@ -197,20 +199,20 @@ class LPGBT(RegParser):
         if self.trigger:
             if verbose:
                 print ("Checking trigger link status")
-                print ("Uplink ready:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.TRIGGER.UPLINK.READY"%self.rb).value()==1 )
-                print ("FEC count:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT"%self.rb).value())
+                print ("Uplink ready:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.UPLINK_1.READY"%self.rb).value()==1 )
+                print ("FEC count:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.UPLINK_1.FEC_ERR_CNT"%self.rb).value())
             return (
-                (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT"%self.rb).value() == 0) &
-                (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.TRIGGER.UPLINK.READY"%self.rb).value() == 1)
+                (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.UPLINK_1.FEC_ERR_CNT"%self.rb).value() == 0) &
+                (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.UPLINK_1.READY"%self.rb).value() == 1)
             )
         else:
             if verbose:
                 print ("Checking DAQ link status")
-                print ("Uplink ready:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.DAQ.UPLINK.READY"%self.rb).value()==1 )
-                print ("FEC count:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.DAQ.UPLINK.FEC_ERR_CNT"%self.rb).value())
+                print ("Uplink ready:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.UPLINK_0.READY"%self.rb).value()==1 )
+                print ("FEC count:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.UPLINK_0.FEC_ERR_CNT"%self.rb).value())
             return (
-                (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.DAQ.UPLINK.FEC_ERR_CNT"%self.rb).value() == 0) &
-                (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.DAQ.UPLINK.READY"%self.rb).value() == 1)
+                (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.UPLINK_0.FEC_ERR_CNT"%self.rb).value() == 0) &
+                (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.UPLINK_0.READY"%self.rb).value() == 1)
             )
 
     def get_version(self):
@@ -275,7 +277,7 @@ class LPGBT(RegParser):
             # needed for the mgt to lock
 
             if (not self.kcu.read_node(
-                    "READOUT_BOARD_%d.LPGBT.DAQ.UPLINK.READY" % self.rb)):
+                    "READOUT_BOARD_%d.LPGBT.UPLINK_0.READY" % self.rb)):
                 print("  > Performing LpGBT Magic...")
                 id = "LPGBT.RW.TESTING.ULECDATASOURCE"
                 self.wr_reg(id, 6)
@@ -317,7 +319,7 @@ class LPGBT(RegParser):
 
     def align_DAQ(self):
         for i in range(28):
-            id = "READOUT_BOARD_%d.LPGBT.DAQ.UPLINK.ALIGN_%d" % (self.rb, i)
+            id = "READOUT_BOARD_%d.LPGBT.UPLINK_0.ALIGN_%d" % (self.rb, i)
             self.kcu.write_node(id, 2)
 
     def wr_adr(self, adr, data):
@@ -428,7 +430,10 @@ class LPGBT(RegParser):
             read_reg = 'LPGBT.RO.ECLK.PIOINH'
             pin -= 8
 
-        currently_set = self.rd_reg(read_reg)
+        if self.ver == 1:
+            currently_set = self.rd_reg(read_reg)
+        else:
+            currently_set = self.rd_reg(out_reg)
 
         if (currently_set & (1 << pin)) and direction==0:
             currently_set ^= (1 << pin)
@@ -462,18 +467,18 @@ class LPGBT(RegParser):
         if self.trigger:
             if not quiet:
                 print ("Setting uplink alignment for trigger link %i to %i"%(link, val))
-            id = "READOUT_BOARD_%d.LPGBT.TRIGGER.UPLINK.ALIGN_%d" % (self.rb, link)
+            id = "READOUT_BOARD_%d.LPGBT.UPLINK_1.ALIGN_%d" % (self.rb, link)
         else:
             if not quiet:
                 print ("Setting uplink alignment for DAQ link %i to %i"%(link, val))
-            id = "READOUT_BOARD_%d.LPGBT.DAQ.UPLINK.ALIGN_%d" % (self.rb, link)
+            id = "READOUT_BOARD_%d.LPGBT.UPLINK_0.ALIGN_%d" % (self.rb, link)
         self.kcu.write_node(id, val)
 
     def get_uplink_alignment(self, link):
         if self.trigger:
-            return self.kcu.read_node("READOUT_BOARD_%d.LPGBT.TRIGGER.UPLINK.ALIGN_%d"%(self.rb, link)).value()
+            return self.kcu.read_node("READOUT_BOARD_%d.LPGBT.UPLINK_1.ALIGN_%d"%(self.rb, link)).value()
         else:
-            return self.kcu.read_node("READOUT_BOARD_%d.LPGBT.DAQ.UPLINK.ALIGN_%d"%(self.rb, link)).value()
+            return self.kcu.read_node("READOUT_BOARD_%d.LPGBT.UPLINK_0.ALIGN_%d"%(self.rb, link)).value()
 
     def set_uplink_invert(self, link, invert=True):
         self.wr_reg("LPGBT.RWF.EPORTRX.EPRX_CHN_CONTROL.EPRX%dINVERT" % link, invert)
@@ -665,9 +670,20 @@ class LPGBT(RegParser):
                 table.append([adc_reg, pin, value, input_voltage, comment])
 
         if check:
-            print(tabulate(table, headers=["Register","Pin", "Reading", "Voltage", "Status", "Comment"],  tablefmt="simple_outline"))
+            headers = ["Register","Pin", "Reading", "Voltage", "Status", "Comment"]
         else:
-            print(tabulate(table, headers=["Register","Pin", "Reading", "Voltage", "Comment"],  tablefmt="simple_outline"))
+            headers = ["Register","Pin", "Reading", "Voltage", "Comment"]
+
+        if has_tabulate:
+            print(tabulate(table, headers=headers,  tablefmt="simple_outline"))
+        else:
+            header_string = "{:<20}"*len(headers)
+            data_string = "{:<20}{:<20}{:<20.0f}{:<20.3f}{:<20}"
+            if check:
+                data_string += "{:<20}"
+            print(header_string.format(*headers))
+            for line in table:
+                print(data_string.format(*line))
 
         if will_fail:
             raise ValueError("At least one input voltage is out of bounds, with status ERR as seen in the table above")
@@ -1054,7 +1070,7 @@ class LPGBT(RegParser):
                 self.wr_reg("LPGBT.RW.TESTING.DPDATAPATTERN%d"%i, 0xff&(pattern >> (i*8)))
 
     def set_downlink_data_src(self, source):
-        id = "READOUT_BOARD_%d.LPGBT.DAQ.DOWNLINK.DL_SRC" % self.rb
+        id = "READOUT_BOARD_%d.LPGBT.DOWNLINK.DL_SRC" % self.rb
         if (source == "etroc"):
             self.kcu.write_node(id, 0)
         if (source == "upcnt"):
@@ -1109,7 +1125,7 @@ class LPGBT(RegParser):
         elif type(val == list):
             data_bytes = val
         else:
-            raise("data must be an int or list of ints")
+            raise RuntimeError("Data must be an int or list of ints")
 
         nbytes = len(adr_bytes+data_bytes)
 
@@ -1146,12 +1162,10 @@ class LPGBT(RegParser):
             status = self.rd_adr(i2cm0status+OFFSET_RD)
             retries = 0
             while (status != self.LPGBT_CONST.I2CM_SR_SUCC_bm):
-                status = self.rd_adr(i2cm0status+OFFSET_RD)
+                status = self.rd_adr(i2cm0status+OFFSET_RD).value()
                 retries += 1
                 if retries > 50:
-                    if verbose:
-                        print ("Write not successfull!")
-                    break
+                    raise TimeoutError(f"I2C write failed after 50 retries, status={status}")
 
     def I2C_read(self, reg=0x0, master=2, slave_addr=0x70, nbytes=1, adr_nbytes=2, freq=2, verbose=False):
         #https://gitlab.cern.ch/lpgbt/pigbt/-/blob/master/backend/apiapp/lpgbtLib/lowLevelDrivers/MASTERI2C.py#L83
@@ -1226,14 +1240,12 @@ class LPGBT(RegParser):
 
         retries = 0
         while (status != self.LPGBT_CONST.I2CM_SR_SUCC_bm):
-            status = self.rd_adr(i2cm0status+OFFSET_RD)
+            status = self.rd_adr(i2cm0status+OFFSET_RD).value()
             # debugging
             #print(f"Updating status: {status}, retries: {retries}")
             retries += 1
             if retries > 50:
-                if verbose:
-                    print ("Write not successfull!")
-                return None
+                raise TimeoutError(f"I2C transaction failed after 50 retries because of an issue in writing the register address, status={status}")
 
         ################################################################################
         # Write the data
@@ -1258,12 +1270,10 @@ class LPGBT(RegParser):
 
         retries = 0
         while (status != self.LPGBT_CONST.I2CM_SR_SUCC_bm):
-            status = self.rd_adr(i2cm0status+OFFSET_RD)
+            status = self.rd_adr(i2cm0status+OFFSET_RD).value()
             retries += 1
             if retries > 50:
-                if verbose:
-                    print ("Read not successfull!")
-                return None
+                raise TimeoutError(f"I2C transaction failed after 50 retries because of an issue in reading back the data, status={status}")
 
         read_values = []
 
