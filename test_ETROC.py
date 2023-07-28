@@ -137,6 +137,7 @@ if __name__ == '__main__':
     argParser.add_argument('--partial', action='store_true', default=False, help="Only read data from corners and edges")
     argParser.add_argument('--qinj_scan', action='store_true', default=False, help="Run the phase scan for Qinj")
     argParser.add_argument('--qinj', action='store_true', default=False, help="Run some charge injection tests")
+    argParser.add_argument('--charge', action='store', default=15, help="Charge to be injected")
     argParser.add_argument('--hard_reset', action='store_true', default=False, help="Hard reset of selected ETROC2 chip")
     argParser.add_argument('--skip_sanity_checks', action='store_true', default=False, help="Don't run sanity checks of ETROC2 chip")
     argParser.add_argument('--scan', action='store', default=['full'], choices=['none', 'full', 'simple'], help="Which threshold scan to run with ETROC2")
@@ -678,9 +679,10 @@ if __name__ == '__main__':
                 (9,14),
             ]
 
+            charge = int(args.charge) - 1
             for row, col in pixels:
                 etroc.wr_reg("DAC", int(threshold_matrix[row][col]), row=row, col=col)
-                etroc.wr_reg("QSel", 0xe, row=row, col=col)
+                etroc.wr_reg("QSel", charge, row=row, col=col)
                 etroc.wr_reg("QInjEn", 1, row=row, col=col)
 
             fifo.reset()
@@ -714,7 +716,7 @@ if __name__ == '__main__':
 
             import struct
             fifo.reset()
-            with open("output/output_test2.dat", mode="wb") as f:
+            with open(f"output/output_qinj_{args.charge}fC.dat", mode="wb") as f:
                 for i in range(5):
                     fifo.send_QInj(1000, delay=etroc.QINJ_delay)
                     data = fifo.read(dispatch=True)
