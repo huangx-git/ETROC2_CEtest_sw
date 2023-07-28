@@ -636,8 +636,8 @@ if __name__ == '__main__':
             TOA = [[] for i in range(0,len(charges))]
             TOT =  [[] for i in range(0,len(charges))]
             CAL = [[] for i in range(0,len(charges))]
+            k=0
             for q in charges:
-                k=0
                 print(f"\n - Will send L1a/QInj pulse with delay of {delay} cycles and charge of {q} fC")
                 print(f"\n - to pixel at Row {i}, Col {j}.")
 
@@ -667,12 +667,13 @@ if __name__ == '__main__':
                 k+=1
                 
                 scan_df = pd.DataFrame({'vth': vth_axis,
-                                        'hits': results,
-                                        'toa' : TOA,
-                                        'tot' : TOT,
-                                        'cal' : CAL})
+                                        'hits': results[k-1],
+                                        'toa' : TOA[k-1],
+                                        'tot' : TOT[k-1],
+                                        'cal' : CAL[k-1]})
                 #print(scan_df.info())
-                df.to_pickle(f"Qinj_scan_L1A_506_{q}.pkl")
+                scan_df.to_pickle(f"results/Qinj_scan_L1A_506_{q}.pkl")
+                
             fig, ax = plt.subplots()
 
             plt.title("S curve for Qinj")
