@@ -49,9 +49,13 @@ def merge_words(res):
 
 if __name__ == '__main__':
 
+    argParser = argparse.ArgumentParser(description = "Argument parser")
+    argParser.add_argument('--input', action='store', default='output_test2', help="Binary file to read from")
+    args = argParser.parse_args()
+
     df = DataFrame('ETROC2')
 
-    f_in = 'output/output_test.dat'
+    f_in = f'output/{args.input}.dat'
 
     with open(f_in, 'rb') as f:
         print("Reading from {}".format(f_in))
@@ -131,5 +135,5 @@ if __name__ == '__main__':
         'nhits_trail': nhits_trail,
     })
 
-    with open("output/qinj_data.json", "w") as f:
+    with open(f"output/{args.input}.json", "w") as f:
         json.dump(ak.to_json(events), f)
