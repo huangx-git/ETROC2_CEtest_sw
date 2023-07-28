@@ -17,11 +17,37 @@ if __name__ == '__main__':
     events['toa'] = 12.5 - events.bin * events.toa_code
     events['tot'] = (2*events.tot_code - np.floor(events.tot_code/32))*events.bin
 
-    mean = ak.mean(events['toa'])
+    toa_mean = ak.mean(events['toa'])
 
-    time_axis = hist.axis.Regular(100, mean-2, mean+2, name="time", label="time")
+    time_axis = hist.axis.Regular(100, toa_mean-2, toa_mean+2, name="time", label="time")
+    cal_axis = hist.axis.Regular(2**10, 0, 2**10, name="cal", label="cal")
 
     toa_hist = hist.Hist(time_axis)
+    cal_hist = hist.Hist(cal_axis)
+    toa_code_hist = hist.Hist(cal_axis)
+
+    # Making CAL plot
+    cal_hist.fill(cal=ak.flatten(events.cal_code))
+
+    fig, ax = plt.subplots()
+    cal_hist.plot1d(
+        ax=ax,
+    )
+
+    fig.savefig(f'../results/cal_code.png')
+
+    # Making TOA plots
+
+    toa_code_hist.fill(cal=ak.flatten(events.toa_code))
+
+    fig, ax = plt.subplots()
+    toa_code_hist.plot1d(
+        ax=ax,
+    )
+
+    fig.savefig(f'../results/toa_code.png')
+
+
     toa_hist.fill(time=ak.flatten(events.toa))
 
     fig, ax = plt.subplots()
