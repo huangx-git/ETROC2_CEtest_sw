@@ -388,8 +388,8 @@ class ETROC():
             self.wr_reg("disTrigPath", 1, broadcast=True)
             self.wr_reg("QInjEn", 0, broadcast=True)
 
-            # opening TOA / TOT / Cal windows
-            self.wr_reg("upperTOA", 0x3ff, broadcast=True)
+            ## opening TOA / TOT / Cal windows
+            self.wr_reg("upperTOA", 0x3ff, broadcast=True)  # this also fixes the half-chip readout with internal test data
             self.wr_reg("lowerTOA", 0, broadcast=True)
             self.wr_reg("upperTOT", 0x1ff, broadcast=True)
             self.wr_reg("lowerTOT", 0, broadcast=True)

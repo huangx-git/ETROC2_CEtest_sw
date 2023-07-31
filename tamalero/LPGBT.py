@@ -199,20 +199,20 @@ class LPGBT(RegParser):
         if self.trigger:
             if verbose:
                 print ("Checking trigger link status")
-                print ("Uplink ready:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.TRIGGER.UPLINK.READY"%self.rb).value()==1 )
-                print ("FEC count:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT"%self.rb).value())
+                print ("Uplink ready:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.UPLINK_1.READY"%self.rb).value()==1 )
+                print ("FEC count:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.UPLINK_1.FEC_ERR_CNT"%self.rb).value())
             return (
-                (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.TRIGGER.UPLINK.FEC_ERR_CNT"%self.rb).value() == 0) &
-                (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.TRIGGER.UPLINK.READY"%self.rb).value() == 1)
+                (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.UPLINK_1.FEC_ERR_CNT"%self.rb).value() == 0) &
+                (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.UPLINK_1.READY"%self.rb).value() == 1)
             )
         else:
             if verbose:
                 print ("Checking DAQ link status")
-                print ("Uplink ready:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.DAQ.UPLINK.READY"%self.rb).value()==1 )
-                print ("FEC count:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.DAQ.UPLINK.FEC_ERR_CNT"%self.rb).value())
+                print ("Uplink ready:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.UPLINK_0.READY"%self.rb).value()==1 )
+                print ("FEC count:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.UPLINK_0.FEC_ERR_CNT"%self.rb).value())
             return (
-                (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.DAQ.UPLINK.FEC_ERR_CNT"%self.rb).value() == 0) &
-                (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.DAQ.UPLINK.READY"%self.rb).value() == 1)
+                (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.UPLINK_0.FEC_ERR_CNT"%self.rb).value() == 0) &
+                (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.UPLINK_0.READY"%self.rb).value() == 1)
             )
 
     def get_version(self):
@@ -277,7 +277,7 @@ class LPGBT(RegParser):
             # needed for the mgt to lock
 
             if (not self.kcu.read_node(
-                    "READOUT_BOARD_%d.LPGBT.DAQ.UPLINK.READY" % self.rb)):
+                    "READOUT_BOARD_%d.LPGBT.UPLINK_0.READY" % self.rb)):
                 print("  > Performing LpGBT Magic...")
                 id = "LPGBT.RW.TESTING.ULECDATASOURCE"
                 self.wr_reg(id, 6)
@@ -319,7 +319,7 @@ class LPGBT(RegParser):
 
     def align_DAQ(self):
         for i in range(28):
-            id = "READOUT_BOARD_%d.LPGBT.DAQ.UPLINK.ALIGN_%d" % (self.rb, i)
+            id = "READOUT_BOARD_%d.LPGBT.UPLINK_0.ALIGN_%d" % (self.rb, i)
             self.kcu.write_node(id, 2)
 
     def wr_adr(self, adr, data):
@@ -467,18 +467,18 @@ class LPGBT(RegParser):
         if self.trigger:
             if not quiet:
                 print ("Setting uplink alignment for trigger link %i to %i"%(link, val))
-            id = "READOUT_BOARD_%d.LPGBT.TRIGGER.UPLINK.ALIGN_%d" % (self.rb, link)
+            id = "READOUT_BOARD_%d.LPGBT.UPLINK_1.ALIGN_%d" % (self.rb, link)
         else:
             if not quiet:
                 print ("Setting uplink alignment for DAQ link %i to %i"%(link, val))
-            id = "READOUT_BOARD_%d.LPGBT.DAQ.UPLINK.ALIGN_%d" % (self.rb, link)
+            id = "READOUT_BOARD_%d.LPGBT.UPLINK_0.ALIGN_%d" % (self.rb, link)
         self.kcu.write_node(id, val)
 
     def get_uplink_alignment(self, link):
         if self.trigger:
-            return self.kcu.read_node("READOUT_BOARD_%d.LPGBT.TRIGGER.UPLINK.ALIGN_%d"%(self.rb, link)).value()
+            return self.kcu.read_node("READOUT_BOARD_%d.LPGBT.UPLINK_1.ALIGN_%d"%(self.rb, link)).value()
         else:
-            return self.kcu.read_node("READOUT_BOARD_%d.LPGBT.DAQ.UPLINK.ALIGN_%d"%(self.rb, link)).value()
+            return self.kcu.read_node("READOUT_BOARD_%d.LPGBT.UPLINK_0.ALIGN_%d"%(self.rb, link)).value()
 
     def set_uplink_invert(self, link, invert=True):
         self.wr_reg("LPGBT.RWF.EPORTRX.EPRX_CHN_CONTROL.EPRX%dINVERT" % link, invert)
@@ -1070,7 +1070,7 @@ class LPGBT(RegParser):
                 self.wr_reg("LPGBT.RW.TESTING.DPDATAPATTERN%d"%i, 0xff&(pattern >> (i*8)))
 
     def set_downlink_data_src(self, source):
-        id = "READOUT_BOARD_%d.LPGBT.DAQ.DOWNLINK.DL_SRC" % self.rb
+        id = "READOUT_BOARD_%d.LPGBT.DOWNLINK.DL_SRC" % self.rb
         if (source == "etroc"):
             self.kcu.write_node(id, 0)
         if (source == "upcnt"):

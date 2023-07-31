@@ -4,8 +4,10 @@
 
 import numpy as np
 import os
+
 from tamalero.utils import load_yaml, ffs, bit_count
 from tamalero.ETROC import ETROC
+from crcETROC import mod2div
 
 here = os.path.dirname(os.path.abspath(__file__))
 maxpixel = 256
@@ -139,4 +141,13 @@ class ETROC2_Emulator(ETROC):
                 ((self.data[datatype]<<self.format['data']['trailer'][datatype]['shift'])
                 &self.format['data']['trailer'][datatype]['mask']) )
 
-        return [header] + self.L1Adata + [trailer]
+        frame = [header] + self.L1Adata + [trailer]
+
+        #Computing CRC and adding it to the trailer
+        poly ='100101111' #crc generator polynomial
+        binstr40 = np.vectorize(lambda x: f'{x:040b}') #joining event frames into a string of bits
+        merged_frames = "".join(binstr40(frame)) 
+        crc_val = mod2div(merged_frames,poly) #compute CRC value
+        frame[-1] = trailer +int(crc_val,2) 
+        
+        return frame
