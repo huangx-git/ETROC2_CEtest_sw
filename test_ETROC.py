@@ -631,7 +631,9 @@ if __name__ == '__main__':
             L1Adelay = 501
             
             vth_axis    = np.linspace(415, 820, 406)
-            charges = [1,5,10,15,20,25,30,32]
+            #charges = [1,5,10,15,20,25,30,32]
+            #charges = [5,10,15,20,25,30,32]
+            charges = [4,6,8,12]
             results =[[] for i in range(0,len(charges))]
             TOA = [[] for i in range(0,len(charges))]
             TOT =  [[] for i in range(0,len(charges))]
@@ -646,7 +648,7 @@ if __name__ == '__main__':
                     etroc.QInj_set(q, delay, L1Adelay, row=i, col=j, broadcast = False) #set reg on ETROC
                     etroc.wr_reg('DAC', int(vth), row=i, col=j, broadcast=False) #set vth on ETROC
                 
-                    fifo.send_QInj(count=3200, delay=506) #send Qinj pulses with L1Adelay
+                    fifo.send_QInj(count=3200, delay=504) #send Qinj pulses with L1Adelay
                     result = fifo.pretty_read(df)
                     hits=0
                     toa=[]
@@ -672,7 +674,7 @@ if __name__ == '__main__':
                                         'tot' : TOT[k-1],
                                         'cal' : CAL[k-1]})
                 #print(scan_df.info())
-                scan_df.to_pickle(f"results/Qinj_scan_L1A_506_{q}.pkl")
+                scan_df.to_pickle(f"results/Qinj_scan_L1A_504_{q}.pkl")
                 
             fig, ax = plt.subplots()
 
