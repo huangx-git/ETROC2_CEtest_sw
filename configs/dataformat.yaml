@@ -164,11 +164,11 @@ ETROC2:
       toa:
         mask: 0x1ff80000
         shift: 19
-      cal:
-        mask: 0x0007fe00
-        shift: 9
       tot:
-        mask: 0x000001ff
+        mask: 0x0007fc00
+        shift: 10
+      cal:
+        mask: 0x000003ff
         shift: 0
     trailer:
       elink:
