@@ -368,12 +368,6 @@ class ETROC():
             # set ETROC in 320Mbps mode
             self.wr_reg('serRateLeft', 0)
             self.wr_reg('serRateRight', 0)
-            self.wr_reg('upperTOA', 1023, broadcast = True)
-            self.wr_reg('lowerTOA', 0, broadcast = True)
-            self.wr_reg('upperTOT', 511, broadcast = True)
-            self.wr_reg('lowerTOT', 0, broadcast = True)
-            self.wr_reg('upperCal', 1023, broadcast = True)
-            self.wr_reg('lowerCal', 0, broadcast = True)
             # get the current number of invalid fast commands received
             self.invalid_FC_counter = self.get_invalidFCCount()
 
