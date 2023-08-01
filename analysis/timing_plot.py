@@ -9,7 +9,7 @@ plt.style.use(hep.style.CMS)
 
 if __name__ == '__main__':
 
-    with open("../output/qinj_data.json", "r") as f:
+    with open("../output/output_qinj_10fC.json", "r") as f:
         res = json.load(f)
     events = ak.from_json(res)
 
@@ -17,7 +17,9 @@ if __name__ == '__main__':
     events['toa'] = 12.5 - events.bin * events.toa_code
     events['tot'] = (2*events.tot_code - np.floor(events.tot_code/32))*events.bin
 
-    toa_mean = ak.mean(events['toa'])
+    toa = np.nan_to_num(ak.flatten(events.toa), nan=0, posinf=0, neginf=0)
+    toa = toa[((toa>7)&(toa<9))]
+    toa_mean = np.mean(toa)
 
     time_axis = hist.axis.Regular(100, toa_mean-2, toa_mean+2, name="time", label="time")
     cal_axis = hist.axis.Regular(2**10, 0, 2**10, name="cal", label="cal")
@@ -57,6 +59,26 @@ if __name__ == '__main__':
 
     fig.savefig(f'../results/toa.png')
 
+
+    # there are some nasty outliers that we remove
+    # more studies are needed to understand them
+    pix_selector = ((events.row==0)&(events.col==0)&(events.cal_code>150)&(events.cal_code<210))
+    cal_code_0_0 = events.cal_code[pix_selector]
+    bin_0_0 = 3.125/cal_code_0_0
+    bin_0_0_avg = np.mean(ak.flatten(bin_0_0))
+    toa_0_0 = 12.5 - bin_0_0 * events.toa_code[pix_selector]
+    toa_0_0 = toa_0_0[((toa_0_0>7) & (toa_0_0<9))]
+
+    toa_0_0_avg = 12.5 - bin_0_0_avg * events.toa_code[pix_selector]
+    toa_0_0_avg = toa_0_0_avg[((toa_0_0_avg>7) & (toa_0_0_avg<9))]
+
+    toa_0_0_mean = np.mean(toa_0_0)
+    toa_0_0_std = np.std(toa_0_0)
+
+    toa_0_0_avg_mean = np.mean(toa_0_0_avg)
+    toa_0_0_avg_std = np.std(toa_0_0_avg)
+
+    print(f"Found mean time of {round(toa_0_0_avg_mean,3)}fs, with std dev of {round(toa_0_0_avg_std*1000, 0)}ps")
 
     toa_hist = hist.Hist(time_axis)
     toa_hist.fill(time=ak.flatten(events.toa[((events.row==0)&(events.col==0))]))
