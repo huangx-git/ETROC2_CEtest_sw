@@ -9,7 +9,7 @@ import numpy as np
 from scipy.optimize import curve_fit
 from matplotlib import pyplot as plt
 from tqdm import tqdm
-
+import pandas as pd
 import os
 import sys
 import json
@@ -92,6 +92,7 @@ def vth_scan(ETROC2, vth_min=693, vth_max=709, vth_step=1, decimal=False, fifo=N
         print(f"Working on threshold {vth=}")
         if decimal:
             ETROC2.wr_reg('DAC', int(vth), broadcast=True)
+            #print("Acc value", ETROC2.get_ACC(row=0, col=0)) #doesn't work here
         else:
             ETROC2.set_Vth_mV(vth)
         i = int((vth-vth_min)/vth_step)
@@ -137,6 +138,7 @@ if __name__ == '__main__':
     argParser.add_argument('--partial', action='store_true', default=False, help="Only read data from corners and edges")
     argParser.add_argument('--qinj_scan', action='store_true', default=False, help="Run the phase scan for Qinj")
     argParser.add_argument('--qinj', action='store_true', default=False, help="Run some charge injection tests")
+    argParser.add_argument('--qinj_vth_scan', action='store_true', default=False, help="Run some charge injection tests")
     argParser.add_argument('--charge', action='store', default=15, help="Charge to be injected")
     argParser.add_argument('--hard_reset', action='store_true', default=False, help="Hard reset of selected ETROC2 chip")
     argParser.add_argument('--skip_sanity_checks', action='store_true', default=False, help="Don't run sanity checks of ETROC2 chip")
@@ -521,7 +523,6 @@ if __name__ == '__main__':
             ### threshold scan draft
             dac_min = vth_max - 75
             dac_max = vth_max + 75
-
             vth_scan_data = vth_scan(
                 etroc,
                 vth_min = dac_min,
@@ -530,6 +531,7 @@ if __name__ == '__main__':
                 fifo = fifo,
                 absolute = True,
             )
+
             vth_axis    = np.array(vth_scan_data[0])
             hit_rate    = np.array(vth_scan_data[1])
             N_pix       = len(hit_rate) # total # of pixels
@@ -537,11 +539,13 @@ if __name__ == '__main__':
             max_indices = np.argmax(hit_rate, axis=1)
             maximums    = vth_axis[max_indices]
             max_matrix  = np.empty([N_pix_w, N_pix_w])
+            noise_matrix  = np.empty([N_pix_w, N_pix_w])
             threshold_matrix = np.empty([N_pix_w, N_pix_w])
 
             for pix in range(N_pix):
                 r, c = fromPixNum(pix, N_pix_w)
                 max_matrix[r][c] = maximums[pix]
+                noise_matrix[r][c] = np.size(np.nonzero(hit_rate[pix]))
                 max_value = vth_axis[hit_rate[pix]==max(hit_rate[pix])]
                 if isinstance(max_value, np.ndarray):
                     max_value = max_value[-1]
@@ -555,20 +559,30 @@ if __name__ == '__main__':
             # 2D histogram of the mean
             # this is based on the code for automatic sigmoid fits
             # for software emulator data below
-            fig, ax = plt.subplots()
-            plt.title("Peak values of threshold scan")
-            cax = ax.matshow(max_matrix)
+            fig, ax = plt.subplots(2,1, figsize=(15,15))
+            ax[0].set_title("Peak values of threshold scan")
+            ax[1].set_title("Noise width of threshold scan")
+            cax1 = ax[0].matshow(max_matrix)
+            cax2 = ax[1].matshow(noise_matrix)
+            fig.colorbar(cax1,ax=ax[0])
+            fig.colorbar(cax2,ax=ax[1])
+            
+            ax[0].set_xticks(np.arange(N_pix_w))
+            ax[0].set_yticks(np.arange(N_pix_w))
 
-            fig.colorbar(cax)
-            ax.set_xticks(np.arange(N_pix_w))
-            ax.set_yticks(np.arange(N_pix_w))
-
+            ax[1].set_xticks(np.arange(N_pix_w))
+            ax[1].set_yticks(np.arange(N_pix_w))
+            
             for i in range(N_pix_w):
                 for j in range(N_pix_w):
-                    text = ax.text(j, i, int(max_matrix[i,j]),
+                    text = ax[0].text(j, i, int(max_matrix[i,j]),
                             ha="center", va="center", color="w", fontsize="xx-small")
 
-            fig.savefig(f'results/peak_thresholds.png')
+                    text1 = ax[1].text(j, i, int(noise_matrix[i,j]),
+                            ha="center", va="center", color="w", fontsize="xx-small")
+                    
+            #fig.savefig(f'results/peak_thresholds.png')
+            fig.savefig(f'results/peak_and_noiseWidth_thresholds.png')
             plt.show()
 
             plt.close(fig)
@@ -697,7 +711,6 @@ if __name__ == '__main__':
             ax.set_xlim(mid_slope-20, mid_slope+20)
             ax.set_xlabel("DAC")
             ax.set_ylabel("normalized count")
-
             plt.legend()
 
             fig.savefig(f'results/scan_internal.png')
@@ -708,6 +721,75 @@ if __name__ == '__main__':
             print("Setting ETROC in internal test data mode")
             etroc.wr_reg("workMode", 0x1, broadcast=True)  # this was missing
             etroc.wr_reg("selfTestOccupancy", 2, broadcast=True)
+
+        if args.qinj_vth_scan:
+            fifo.reset()
+            delay = 10
+            i = 4
+            j = 3
+            L1Adelay = 501
+            
+            vth_axis    = np.linspace(415, 820, 406)
+            #charges = [1,5,10,15,20,25,30,32]
+            #charges = [5,10,15,20,25,30,32]
+            charges = [4,6,8,12]
+            results =[[] for i in range(0,len(charges))]
+            TOA = [[] for i in range(0,len(charges))]
+            TOT =  [[] for i in range(0,len(charges))]
+            CAL = [[] for i in range(0,len(charges))]
+            k=0
+            for q in charges:
+                print(f"\n - Will send L1a/QInj pulse with delay of {delay} cycles and charge of {q} fC")
+                print(f"\n - to pixel at Row {i}, Col {j}.")
+
+                for vth in vth_axis:
+                    
+                    etroc.QInj_set(q, delay, L1Adelay, row=i, col=j, broadcast = False) #set reg on ETROC
+                    etroc.wr_reg('DAC', int(vth), row=i, col=j, broadcast=False) #set vth on ETROC
+                
+                    fifo.send_QInj(count=3200, delay=504) #send Qinj pulses with L1Adelay
+                    result = fifo.pretty_read(df)
+                    hits=0
+                    toa=[]
+                    tot=[]
+                    cal=[]
+                    for word in result:
+                        if(word[0] == 'data'):
+                          toa.append(word[1]['toa'])
+                          tot.append(word[1]['tot'])
+                          cal.append(word[1]['cal'])
+                          
+                        if(word[0] == 'trailer'):
+                            hits+=word[1]['hits']
+                    results[k].append(hits)
+                    TOT[k].append(tot)
+                    TOA[k].append(toa)
+                    CAL[k].append(cal)
+                k+=1
+                
+                scan_df = pd.DataFrame({'vth': vth_axis,
+                                        'hits': results[k-1],
+                                        'toa' : TOA[k-1],
+                                        'tot' : TOT[k-1],
+                                        'cal' : CAL[k-1]})
+                #print(scan_df.info())
+                scan_df.to_pickle(f"results/Qinj_scan_L1A_504_{q}.pkl")
+                
+            fig, ax = plt.subplots()
+
+            plt.title("S curve for Qinj")
+            plt.xlabel("Vth")
+            plt.ylabel("hit rate")
+            for i in range(0,len(charges)):
+                plt.plot(vth_axis, results[i], '.-')
+            
+            plt.xlim(410,820)
+            plt.grid(True)
+            plt.legend(loc='best')
+            
+            fig.savefig(f'results/Scurve_Qinj.png')
+            plt.close(fig)
+            del fig, ax
 
         if args.qinj:
             etroc.reset()

@@ -368,7 +368,6 @@ class ETROC():
             # set ETROC in 320Mbps mode
             self.wr_reg('serRateLeft', 0)
             self.wr_reg('serRateRight', 0)
-
             # get the current number of invalid fast commands received
             self.invalid_FC_counter = self.get_invalidFCCount()
 
@@ -396,7 +395,7 @@ class ETROC():
     # === HIGH-LEVEL FUNC ===
     # =======================
 
-    def QInj_set(self, charge, delay, row=0, col=0, broadcast=True, reset=True):
+    def QInj_set(self, charge, delay, L1Adelay, row=0, col=0, broadcast=True, reset=True):
         # FIXME this is a bad name, given that set_QInj also exists
         """
         High-level function to set the charge injection in the ETROC;
@@ -404,8 +403,18 @@ class ETROC():
         Charge injection can be done at the pixel level (\'row\', \'col\') or globally (\'broadcast\'); default is global.
         By default, the charge injection module is reset upon calling (\'reset\').
         """
-        self.set_ChargeInjReset(reset=reset)                           # Reset charge injection module
+        #self.set_ChargeInjReset(reset=reset)                           # Reset charge injection module
+        self.disable_data_readout(broadcast=True)                    #disable data readout for all pixels
+        self.disable_QInj(broadcast=True)                              #disable Qinj for all pixel
+        self.disable_trigger_readout(broadcast=True)                   #disable trig readout for all pix
+
+        #Now turn on the pixel of interest
+        #self.apply_THCal(row=row, col=col, broadcast=broadcast)#use auto calibration
+        #self.set_THoffset(V=5, row=row, col=col, broadcast=broadcast)# Offset used to add to the auto BL for real triggering
+        self.enable_data_readout(row=row, col=col, broadcast=broadcast)#enable data readout
         self.enable_QInj(row=row, col=col, broadcast=broadcast)        # Enable charge injection
+        self.set_L1Adelay(delay=L1Adelay,row=row, col=col, broadcast=broadcast)#Change L1A delay
+        self.enable_trigger_readout(row=row, col=col, broadcast=broadcast) #enable trigger
         self.set_QInj(charge, row=row, col=col, broadcast=broadcast)   # Set charge
         self.set_chargeInjDelay(delay)                                 # Set time delay
 
@@ -647,7 +656,7 @@ class ETROC():
     def disable_data_readout(self, row=0, col=0, broadcast=True):
         self.wr_reg('disDataReadout', 1, row=row, col=col, broadcast=broadcast)
 
-    # Enable/disable trigger readout of current pixel
+    # Enable/disable trger readout of current pixel
     def enable_trigger_readout(self, row=0, col=0, broadcast=True):
         self.wr_reg('disTrigPath', 0, row=row, col=col, broadcast=broadcast)
 
