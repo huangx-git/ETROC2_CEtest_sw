@@ -22,12 +22,20 @@ def stream_daq(rb=0, l1a_rate=1000, loops=1000, superblock=100, block=255):
 
     rate_setting = l1a_rate / 25E-9 / (0xffffffff) * 10000
 
-    # set l1a rate
-    hw.getNode("SYSTEM.L1A_RATE").write(int(rate_setting))
+    hw.getNode(f"SYSTEM.L1A_DELAY").write(0)
+    hw.dispatch()
+
+    hw.getNode(f"SYSTEM.QINJ_MAKES_L1A").write(0)
     hw.dispatch()
 
     # reset fifo
     hw.getClient().write(hw.getNode(f"READOUT_BOARD_{rb}.FIFO_RESET").getAddress(), 0x1)
+    hw.dispatch()
+
+    # set l1a rate
+    hw.getNode("SYSTEM.L1A_RATE").write(int(rate_setting))
+    hw.dispatch()
+    hw.getNode("SYSTEM.QINJ_RATE").write(0)
     hw.dispatch()
 
     start = time.time()
