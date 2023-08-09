@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import awkward as ak
+import argparse
 import numpy as np
 import hist
 import matplotlib.pyplot as plt
@@ -9,7 +10,11 @@ plt.style.use(hep.style.CMS)
 
 if __name__ == '__main__':
 
-    with open("../output/output_qinj_10fC.json", "r") as f:
+    argParser = argparse.ArgumentParser(description = "Argument parser")
+    argParser.add_argument('--input', action='store', default='output_qinj_10fC', help="Binary file to read from")
+    args = argParser.parse_args()
+
+    with open(f"../output/{args.input}.json", "r") as f:
         res = json.load(f)
     events = ak.from_json(res)
 
@@ -23,10 +28,23 @@ if __name__ == '__main__':
 
     time_axis = hist.axis.Regular(100, toa_mean-2, toa_mean+2, name="time", label="time")
     cal_axis = hist.axis.Regular(2**10, 0, 2**10, name="cal", label="cal")
+    nhits_axis = hist.axis.Regular(257, -0.5, 256.5, name='n', label=r"$N_{hits}$")
 
     toa_hist = hist.Hist(time_axis)
     cal_hist = hist.Hist(cal_axis)
     toa_code_hist = hist.Hist(cal_axis)
+    nhits_hist = hist.Hist(nhits_axis)
+
+    # Making number of hits plot
+    nhits_hist.fill(n=events.nhits)
+
+    fig, ax = plt.subplots()
+    nhits_hist.plot1d(
+        ax=ax,
+    )
+
+    fig.savefig(f'../results/nhits.png')
+
 
     # Making CAL plot
     cal_hist.fill(cal=ak.flatten(events.cal_code))
