@@ -703,6 +703,8 @@ if __name__ == '__main__':
             fig.savefig(f'results/scan_internal.png')
 
         if args.internal_data:
+            # this still gives type == 0 data (with TOA, TOT, CAL)
+            # but those should be random (?) values
             print("Setting ETROC in internal test data mode")
             etroc.wr_reg("workMode", 0x1, broadcast=True)  # this was missing
             etroc.wr_reg("selfTestOccupancy", 2, broadcast=True)
