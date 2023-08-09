@@ -142,6 +142,7 @@ if __name__ == '__main__':
     argParser.add_argument('--skip_sanity_checks', action='store_true', default=False, help="Don't run sanity checks of ETROC2 chip")
     argParser.add_argument('--scan', action='store', default=['full'], choices=['none', 'full', 'simple', 'internal'], help="Which threshold scan to run with ETROC2")
     argParser.add_argument('--mode', action='store', default=['dual'], choices=['dual', 'single'], help="Port mode for ETROC2")
+    argParser.add_argument('--internal_data', action='store_true', help="Set up internal data generation")
     args = argParser.parse_args()
 
 
@@ -701,6 +702,11 @@ if __name__ == '__main__':
 
             fig.savefig(f'results/scan_internal.png')
 
+        if args.internal_data:
+            print("Setting ETROC in internal test data mode")
+            etroc.wr_reg("workMode", 0x1, broadcast=True)  # this was missing
+            etroc.wr_reg("selfTestOccupancy", 2, broadcast=True)
+
         if args.qinj:
             etroc.reset()
             with open('results/thresholds.yaml', 'r') as f:
@@ -741,13 +747,25 @@ if __name__ == '__main__':
                 etroc.wr_reg("QInjEn", 1, row=row, col=col)
 
             fifo.reset()
-            fifo.send_QInj(5000, delay=etroc.QINJ_delay)
+            fifo_depth = 8192*2  # number of words the FIFO can hold
+            events_max = int(fifo_depth/(len(pixels)+4))  # calculate the maximum number if l1as that the FIFO can handle
+            # without getting drained in between
+            print(f"Sending {events_max} L1As and charge injection pulses")
+            fifo.send_QInj(events_max, delay=etroc.QINJ_delay)
             data = fifo.pretty_read(df)
 
+            event_counter = 0
+            hit_counter = 0
             hit_matrix = np.zeros([N_pix_w, N_pix_w])
             for x in data:
+                if x[0] == 'header':
+                    event_counter += 1
                 if x[0] == 'data':
+                    hit_counter += 1
                     hit_matrix[x[1]['row_id']][x[1]['col_id']] += 1
+
+            print(f"Found {event_counter} headers")
+            print(f"... with {hit_counter} hits total")
 
             fig, ax = plt.subplots()
             plt.title("Hits from charge injection")
