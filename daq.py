@@ -93,4 +93,4 @@ if __name__ == '__main__':
     argParser.add_argument('--meas_time', action='store', default=10, type=int, help="Time in [s] to take data")
     args = argParser.parse_args()
 
-    stream_daq(l1a_rate=args.l1a_rate, loops=args.loops)
+    stream_daq(l1a_rate=args.l1a_rate, meas_time=args.meas_time)
