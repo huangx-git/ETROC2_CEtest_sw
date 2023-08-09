@@ -78,6 +78,8 @@ if __name__ == '__main__':
     nhits_trail = []
     chipid      = []
     crc         = []
+    bcid        = []
+    counter_a   = []
 
     i = 0
     l1a = -1
@@ -100,14 +102,22 @@ if __name__ == '__main__':
                 nhits_trail.append([])
                 chipid.append([])
                 crc.append([])
+                bcid.append([])
+                counter_a.append([])
                 i += 1
 
         if t == 'data':
+            if 'tot' in d:
+                tot_code[-1].append(d['tot'])
+                toa_code[-1].append(d['toa'])
+                cal_code[-1].append(d['cal'])
+            elif 'counter_a' in d:
+                bcid[-1].append(d['bcid'])
+                counter_a[-1].append(d['counter_a'])
+            elif 'counter_b' in d:
+                pass
             row[-1].append(d['row_id'])
             col[-1].append(d['col_id'])
-            tot_code[-1].append(d['tot'])
-            toa_code[-1].append(d['toa'])
-            cal_code[-1].append(d['cal'])
             elink[-1].append(d['elink'])
             raw[-1].append(d['raw'])
             nhits[-1] += 1
@@ -131,6 +141,8 @@ if __name__ == '__main__':
         'raw': raw,
         'crc': crc,
         'chipid': chipid,
+        'bcid': bcid,
+        'counter_a': counter_a,
         'nhits': nhits,
         'nhits_trail': nhits_trail,
     })
