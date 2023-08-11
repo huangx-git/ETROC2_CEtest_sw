@@ -676,6 +676,9 @@ if __name__ == '__main__':
             ten_percent_occupancy = dac[(res/max(res)<0.1)][0]
             mid_slope = int(slope[int(len(slope)/2)])
             threshold = dac[res==0][2]  # take a DAC value a bit above the threshold
+            print("Found the following results:")
+            print(f"Threshold [DAC]: {threshold}")
+            print(f"Mid-slope [DAC]: {mid_slope}")
 
             res_normalized = res / max(res)
 
@@ -693,7 +696,7 @@ if __name__ == '__main__':
             print("\n - Running external threshold scan on single pixel")
             vth     = []
             count   = []
-            print("Fine scanning around this DAC value now")
+            print("Fine scanning around the mid-slope DAC value now")
             for i in range(mid_slope-20, mid_slope+20):
                 #etroc.wr_reg("DAC", i, row=3, col=4)
                 etroc.wr_reg("DAC", i, row=row, col=col)

@@ -390,6 +390,14 @@ class ETROC():
             self.wr_reg("upperCal", 0x3ff, broadcast=True)
             self.wr_reg("lowerCal", 0, broadcast=True)
 
+            ## Configuring the trigger stream
+            self.wr_reg("disTrigPath", 1, broadcast=True)
+            self.wr_reg("upperTOATrig", 0x3ff, broadcast=True)
+            self.wr_reg("lowerTOATrig", 0, broadcast=True)
+            self.wr_reg("upperTOTTrig", 0x1ff, broadcast=True)
+            self.wr_reg("lowerTOTTrig", 0, broadcast=True)
+            self.wr_reg("upperCalTrig", 0x3ff, broadcast=True)
+            self.wr_reg("lowerCalTrig", 0, broadcast=True)
 
     # =======================
     # === HIGH-LEVEL FUNC ===
