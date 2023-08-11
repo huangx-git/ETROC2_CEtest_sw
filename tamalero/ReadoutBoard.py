@@ -365,8 +365,8 @@ class ReadoutBoard:
         return voltage
     
     def read_mux_test_board(self, ch):
-        #checks to see SCA version
-        assert self.SCA.ver in [2], f"Incompatibale mapping SCA verrsion {self.SCA.ver}"
+        #checks to see RB mapping version (RB ver = 1, SCA ver = RB.ver + 1)
+        assert self.SCA.ver in [2], f"MUX64 testboard only works with 2v RB\nRB 1v detected"
 
         #checks to see if MUX64 testboard dict has already been initialized
         if not self.mux64_tb_dict:
@@ -389,7 +389,7 @@ class ReadoutBoard:
 
         #read integar value and covert it to a voltge
         integer_volt = self.SCA.read_adc(0x12)
-        volt = self.volt_conver_mux64(integer_volt,ch)
+        gi = self.volt_conver_mux64(integer_volt,ch)
 
         return volt
     
@@ -408,7 +408,7 @@ class ReadoutBoard:
         
         if (show):
             print(tabulate(table, headers=["Channel","Voltage", "Sig_Name"],  tablefmt="simple_outline"))
-            
+
         return table
 
     def read_vtrx_temp(self):
