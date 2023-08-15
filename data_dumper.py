@@ -81,10 +81,13 @@ if __name__ == '__main__':
     bcid        = []
     counter_a   = []
 
+    header_counter = 0
+
     i = 0
     l1a = -1
     for t, d in unpacked_data:
         if t == 'header':
+            header_counter += 1
             if d['l1counter'] == l1a:
                 pass
             else:
@@ -125,7 +128,7 @@ if __name__ == '__main__':
         if t == 'trailer':
             chipid[-1].append(d['hits']*d['chipid'])
             nhits_trail[-1].append(d['hits'])
-            nhits_trail[-1].append(d['raw'])
+            raw[-1].append(d['raw'])
             crc[-1].append(d['crc'])
 
     print("Zipping")
