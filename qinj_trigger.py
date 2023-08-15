@@ -45,6 +45,7 @@ if __name__ == '__main__':
     argParser.add_argument('--cycles', action='store', default=2, type=int, help="Number of cycles")
     argParser.add_argument('--cycle_time', action='store', default=60, type=int, help="Cycle time in [s]")
     argParser.add_argument('--pulses', action='store', default=10000, type=int, help="Number of pulses")
+    argParser.add_argument('--pulse_time', action='store', default=4, type=int, help="Maximum pulse time in [s]")
     argParser.add_argument('--trigger', action='store_true', help="Run pure L1A mode")
 
     args = argParser.parse_args()
@@ -55,4 +56,4 @@ if __name__ == '__main__':
     kcu.write_node("READOUT_BOARD_%s.L1A_INJ_DLY"%rb, 504)
 
     for i in range(args.cycles):
-        run_qinj(kcu, rb=rb, cycle_time=args.cycle_time, max_pulses=args.pulses)
+        run_qinj(kcu, rb=rb, cycle_time=args.cycle_time, max_pulses=args.pulses, max_pulse_time=args.pulse_time)

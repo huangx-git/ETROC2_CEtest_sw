@@ -46,7 +46,8 @@ def stream_daq(kcu, rb=0, l1a_rate=1000, run_time=10, superblock=100, block=250,
     data = []
 
     occupancy = 0
-    with open(f"output/output_run_{run}_time_{start}.dat", mode="wb") as f:
+    f_out = f"output/output_run_{run}_time_{start}.dat"
+    with open(f_out, mode="wb") as f:
         while start + run_time > time.time():
             num_blocks_to_read = 0
             occupancy = get_occupancy(hw, rb)
@@ -121,6 +122,7 @@ def stream_daq(kcu, rb=0, l1a_rate=1000, run_time=10, superblock=100, block=250,
 
     hw.getClient().write(hw.getNode(f"READOUT_BOARD_{rb}.FIFO_RESET").getAddress(), 0x1)
     hw.dispatch()
+    return f_out
 
 
 if __name__ == '__main__':
@@ -136,7 +138,10 @@ if __name__ == '__main__':
     rb = int(args.rb)
     kcu = get_kcu(args.kcu)
 
-    stream_daq(kcu, l1a_rate=args.l1a_rate, run_time=args.run_time, run=args.run)
+    print(f"Taking data now.\n ...")
+
+    f_out = stream_daq(kcu, l1a_rate=args.l1a_rate, run_time=args.run_time, run=args.run)
 
     print(f"Run {args.run} has ended.")
+    print(f"Stored data in file: {f_out}")
     # NOTE this would be the place to also dump the ETROC configs
