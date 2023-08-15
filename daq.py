@@ -10,23 +10,28 @@ import argparse
 import sys
 import time
 from time import sleep
+from tamalero.utils import get_kcu
 
 #IPB_PATH = "ipbusudp-2.0://192.168.0.10:50001?max_payload_size=1500"
 IPB_PATH = "ipbusudp-2.0://192.168.0.10:50001"
 ADR_TABLE = "./address_table/generic/etl_test_fw.xml"
 
-def stream_daq(rb=0, l1a_rate=1000, meas_time=10, superblock=100, block=255):
+def get_occupancy(hw, rb):
+    try:
+        occupancy = hw.getNode(f"READOUT_BOARD_{rb}.RX_FIFO_OCCUPANCY").read()
+        hw.dispatch()
+        occ = occupancy.value()
+    except uhal._core.exception:
+        print("uhal UPDP error when trying to get occupancy. Returning 0.")
+        occ = 0
+    return occ * 4  # not sure where the factor of 4 comes from, but it's needed
+
+def stream_daq(kcu, rb=0, l1a_rate=1000, run_time=10, superblock=100, block=250, run=1):
 
     uhal.disableLogging()
-    hw = uhal.getDevice("kcu105_daq", IPB_PATH, "file://" + ADR_TABLE)
+    hw = kcu.hw  #uhal.getDevice("kcu105_daq", IPB_PATH, "file://" + ADR_TABLE)
 
     rate_setting = l1a_rate / 25E-9 / (0xffffffff) * 10000
-
-    hw.getNode(f"SYSTEM.L1A_DELAY").write(0)
-    hw.dispatch()
-
-    hw.getNode(f"SYSTEM.QINJ_MAKES_L1A").write(0)
-    hw.dispatch()
 
     # reset fifo
     hw.getClient().write(hw.getNode(f"READOUT_BOARD_{rb}.FIFO_RESET").getAddress(), 0x1)
@@ -35,34 +40,67 @@ def stream_daq(rb=0, l1a_rate=1000, meas_time=10, superblock=100, block=255):
     # set l1a rate
     hw.getNode("SYSTEM.L1A_RATE").write(int(rate_setting))
     hw.dispatch()
-    hw.getNode("SYSTEM.QINJ_RATE").write(0)
-    hw.dispatch()
 
     start = time.time()
 
     data = []
 
-    with open("output/output.dat", mode="wb") as f:
-        while start + meas_time > time.time():
-        #for i in range(loops):
-            try:
+    occupancy = 0
+    with open(f"output/output_run_{run}_time_{start}.dat", mode="wb") as f:
+        while start + run_time > time.time():
+            num_blocks_to_read = 0
+            occupancy = get_occupancy(hw, rb)
+            num_blocks_to_read = occupancy // block
 
-                # figure out how many blocks to read
-                occupancy = hw.getNode(f"READOUT_BOARD_{rb}.RX_FIFO_OCCUPANCY").read()
-                hw.dispatch()
-                num_blocks_to_read = occupancy.value() // block
-
-
-                # read them
-                if (num_blocks_to_read):
+            # read the blocks
+            if (num_blocks_to_read):
+                try:
                     reads = num_blocks_to_read * [hw.getNode("DAQ_RB0").readBlock(block)]
                     hw.dispatch()
                     for read in reads:
                         data += read.value()
+                except uhal._core.exception:
+                    print("uhal UDP error in reading FIFO")
 
-            except uhal._core.exception:
-                print("uhal UDP error in daq")
+                # Write data to disk
+                try:
+                    f.write(struct.pack('<{}I'.format(len(data)), *data))
+                    data = []
+                except:
+                    print("Error writing to file")
 
+        print("Resetting L1A rate back to 0")
+        hw.getNode("SYSTEM.L1A_RATE").write(0)
+        hw.dispatch()
+
+        # Read data that might still be in the FIFO
+        occupancy = get_occupancy(hw, rb)
+        print(f"Occupancy before last read: {occupancy}")
+        reads = [hw.getNode("DAQ_RB0").readBlock(occupancy)]
+        hw.dispatch()
+        for read in reads:
+            data += read.value()
+        #print(data)
+
+
+        #print(data)
+        occupancy = get_occupancy(hw, rb)
+        while occupancy>0:
+            print("Found stuff in FIFO. This should not have happened!")
+            num_blocks_to_read = occupancy // block
+            last_block = occupancy % block
+            if num_blocks_to_read > 0:
+                print(occupancy, num_blocks_to_read, last_block)
+            if (num_blocks_to_read or last_block):
+                reads = num_blocks_to_read * [hw.getNode("DAQ_RB0").readBlock(block)]
+                reads += [hw.getNode("DAQ_RB0").readBlock(last_block)]
+                hw.dispatch()
+                for read in reads:
+                    data += read.value()
+            occupancy = hw.getNode(f"READOUT_BOARD_{rb}.RX_FIFO_OCCUPANCY").read()
+            hw.dispatch()
+
+        # Get some stats
         timediff = time.time() - start
         speed = 32*len(data)  / timediff / 1E6
         occupancy = hw.getNode(f"READOUT_BOARD_{rb}.RX_FIFO_OCCUPANCY").read()
@@ -80,17 +118,25 @@ def stream_daq(rb=0, l1a_rate=1000, meas_time=10, superblock=100, block=255):
         # write to disk
         f.write(struct.pack('<{}I'.format(len(data)), *data))
 
-    hw.getNode("SYSTEM.L1A_RATE").write(0)
-    hw.dispatch()
 
     hw.getClient().write(hw.getNode(f"READOUT_BOARD_{rb}.FIFO_RESET").getAddress(), 0x1)
     hw.dispatch()
 
+
 if __name__ == '__main__':
 
     argParser = argparse.ArgumentParser(description = "Argument parser")
+    argParser.add_argument('--kcu', action='store', default='192.168.0.10', help="KCU address")
+    argParser.add_argument('--rb', action='store', default=0, type=int, help="RB number (default 0)")
     argParser.add_argument('--l1a_rate', action='store', default=1000, type=int, help="L1A rate in Hz")
-    argParser.add_argument('--meas_time', action='store', default=10, type=int, help="Time in [s] to take data")
+    argParser.add_argument('--run_time', action='store', default=10, type=int, help="Time in [s] to take data")
+    argParser.add_argument('--run', action='store', default=1, type=int, help="Run number")
     args = argParser.parse_args()
 
-    stream_daq(l1a_rate=args.l1a_rate, meas_time=args.meas_time)
+    rb = int(args.rb)
+    kcu = get_kcu(args.kcu)
+
+    stream_daq(kcu, l1a_rate=args.l1a_rate, run_time=args.run_time, run=args.run)
+
+    print(f"Run {args.run} has ended.")
+    # NOTE this would be the place to also dump the ETROC configs
