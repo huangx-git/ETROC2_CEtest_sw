@@ -492,12 +492,10 @@ if __name__ == '__main__':
             # Prescanning a random pixel to get an idea of the threshold
             row = 4
             col = 3
-            if col > 7:
-                fifo.select_elink(0)
-            else:
-                fifo.select_elink(2)
-            rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
-            rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
+
+            elink, slave = etroc.get_elink_for_pixel(row, col)
+
+            rb_0.reset_data_error_count()
             print("\n - Running simple threshold scan on single pixel")
             vth     = []
             count   = []
@@ -508,12 +506,11 @@ if __name__ == '__main__':
                 etroc.wr_reg("DAC", i, row=row, col=col)
                 fifo.send_l1a(2000)
                 vth.append(i)
-                data_cnt = rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value()
+                data_cnt = rb_0.read_data_count(elink, slave=slave)
                 count.append(data_cnt)
                 if data_cnt > 0:
                     print(i, data_cnt)
-                rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
-                rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
+                rb_0.reset_data_error_count()
 
             vth_a = np.array(vth)
             count_a = np.array(count)
@@ -616,16 +613,10 @@ if __name__ == '__main__':
         elif args.scan == 'simple':
             row = 4
             col = 3
-            # FIXME the elink selector is still hard coded
-            # but should not be
-            # this also only works in the dual port mode right now
-            # otherwise everything should be coming through link 2(?)
-            if col > 7:
-                fifo.select_elink(0)
-            else:
-                fifo.select_elink(2)
-            rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
-            rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
+
+            elink, slave = etroc.get_elink_for_pixel(row, col)
+
+            rb_0.reset_data_error_count()
             print("\n - Running simple threshold scan on single pixel")
             vth     = []
             count   = []
@@ -637,10 +628,9 @@ if __name__ == '__main__':
                 etroc.wr_reg("DAC", i, row=row, col=col)
                 fifo.send_l1a(2000)
                 vth.append(i)
-                count.append(rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value())
-                print(i, rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value())
-                rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
-                rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
+                count.append(rb_0.read_data_count(elink, slave=slave))
+                print(i, rb_0.read_data_count(elink, slave=slave))
+                rb_0.reset_data_error_count()
 
             vth_a = np.array(vth)
             count_a = np.array(count)
@@ -655,10 +645,10 @@ if __name__ == '__main__':
                 etroc.wr_reg("DAC", i, row=row, col=col)
                 fifo.send_l1a(5000)
                 vth.append(i)
-                count.append(rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value())
-                print(i, rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value())
-                rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
-                rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
+                count.append(rb_0.read_data_count(elink, slave=slave))
+                print(i, rb_0.read_data_count(elink, slave=slave))
+                rb_0.reset_data_error_count()
+
 
             print(vth)
             print(count)
@@ -667,6 +657,8 @@ if __name__ == '__main__':
 
             row = 4
             col = 3
+
+            elink, slave = etroc.get_elink_for_pixel(row, col)
 
             print(f"\n - Running internal threshold scan for pixel {row}, {col}")
 
@@ -687,12 +679,7 @@ if __name__ == '__main__':
             ax.plot(dac, res_normalized, '.-', color='blue', label='internal (acc)')
 
             # compare with external scan
-            if col > 7:
-                fifo.select_elink(0)
-            else:
-                fifo.select_elink(2)
-            rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
-            rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
+            rb_0.reset_data_error_count()
             print("\n - Running external threshold scan on single pixel")
             vth     = []
             count   = []
@@ -702,9 +689,8 @@ if __name__ == '__main__':
                 etroc.wr_reg("DAC", i, row=row, col=col)
                 fifo.send_l1a(5000)
                 vth.append(i)
-                count.append(rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value())
-                rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
-                rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
+                count.append(rb_0.read_data_count(elink, slave=slave))
+                rb_0.reset_data_error_count()
 
             count = np.array(count)
             count_normalized = count / max(count)
@@ -893,14 +879,10 @@ if __name__ == '__main__':
             col = 1
 
             # select the correct elink for the counter
-            if col > 7:
-                fifo.select_elink(0)
-            else:
-                fifo.select_elink(2)
+            elink, slave = etroc.get_elink_for_pixel(row, col)
 
             # reset the counter
-            rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
-            rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
+            rb_0.reset_data_error_count()
 
             # turn off data readout for all pixels
             etroc.wr_reg("disDataReadout", 1, broadcast=True)
@@ -920,10 +902,9 @@ if __name__ == '__main__':
             # check that everything actually works
             etroc.wr_reg("DAC", mid_slope, row=row, col=col)
             fifo.send_l1a(5000)
-            hits = rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value()
+            hits = rb_0.read_data_count(elink, slave=slave)
             print(f"Found {hits} hits when sitting mid-slope and sending 5000 L1As")
-            rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
-            rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
+            rb_0.reset_data_error_count()
 
             # set threshold to threshold
             print(f"Using found threshold at {dac[res==0][0]}, using value {dac[res==0][2]} for DAC.")
@@ -936,10 +917,9 @@ if __name__ == '__main__':
             delays = []
             counts = []
             for i in range(500, 510, 1):
-                rb_0.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 1)
-                rb_0.kcu.write_node("READOUT_BOARD_0.DATA_CNT_RESET", 1)
+                rb_0.reset_data_error_count()
                 fifo.send_QInj(5000, delay=i)
-                hits = rb_0.kcu.read_node("READOUT_BOARD_0.DATA_CNT").value()
+                hits = rb_0.read_data_count(elink, slave=slave)
                 print(i, hits)
                 delays.append(i)
                 counts.append(hits)
