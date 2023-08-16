@@ -471,6 +471,16 @@ class ETROC():
         else:
             return -1
 
+    def get_elink_for_pixel(self, row, col):
+        elinks = self.elinks[0] + self.elinks[1]
+        slaves = len(self.elinks[0])*[False] + len(self.elinks[1])*[True]
+        if col > 7 and self.get_singlePort == 'both':
+            # NOTE: this makes the assumption that the "right" elink is always second in the ETROC config yaml file
+            return elinks[0], slaves[0]
+        else:
+            return elinks[1], slaves[1]
+
+
     # ***********************
     # *** IN-PIXEL CONFIG ***
     # ***********************
