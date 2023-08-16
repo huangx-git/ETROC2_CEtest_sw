@@ -4,6 +4,8 @@ from tamalero.SCA import SCA
 from tamalero.utils import get_temp, chunk, get_temp_direct, get_config
 from tamalero.VTRX import VTRX
 from tamalero.utils import read_mapping
+from tamalero.colors import red, green
+
 try:
     from tabulate import tabulate
 except ModuleNotFoundError:
@@ -557,3 +559,29 @@ class ReadoutBoard:
         self.kcu.write_node(f"READOUT_BOARD_{self.rb}.FIFO_ELINK_SEL0", elink)
         self.kcu.write_node(f"READOUT_BOARD_{self.rb}.FIFO_LPGBT_SEL0", 1 if slave else 0)
         return self.kcu.read_node(f"READOUT_BOARD_{self.rb}.DATA_CNT").value()
+
+    def get_link_status(self, elink, slave=False, verbose=True):
+        expected_filler_rate = 16500000
+
+        print(f"- Status of link {elink}")
+        locked = self.etroc_locked(elink, slave=slave)
+
+        filler_rate = self.read_filler_rate(elink, slave=slave)
+        error_count = self.read_error_count(elink, slave=slave)
+        packet_count = self.read_packet_count(elink, slave=slave)
+        data_count = self.read_data_count(elink, slave=slave)
+
+        if verbose:
+            colored = green if (locked) else red
+            print(colored("{:20}{:10}".format("Locked", locked)))
+            colored = green if (filler_rate > expected_filler_rate) else red
+            print(colored("{:20}{:10}".format("Filler rate", filler_rate)))
+            colored = green if (error_count < 1) else red
+            print(colored("{:20}{:10}".format("Error count", error_count)))
+            print("{:20}{:10}".format("Packet count", packet_count))
+            print("{:20}{:10}".format("Data count", data_count))
+
+            if filler_rate < expected_filler_rate:
+                print("Filler rate is low. Try resetting PLL and FC of the ETROC.")
+
+        return locked & (filler_rate > expected_filler_rate) & (error_count < 1)
