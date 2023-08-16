@@ -486,7 +486,6 @@ class ReadoutBoard:
                 raise Exception("Unknown lpgbt version")
 
         else:
-
             raise Exception(f"Attempt to read unknown thermistor rt={rt}")
 
     def read_temp(self, verbose=False):
@@ -509,3 +508,52 @@ class ReadoutBoard:
                 print ("Temperature on RB VTRX is: %.1f C" % t_vtrx)
 
         return {'t1': t_rt1, 't2': t_rt2, 't_SCA': t_sca, 't_VTRX': t_vtrx}
+
+    def etroc_locked(self, elink, slave=False):
+        if slave:
+            locked = self.kcu.read_node(f"READOUT_BOARD_{self.rb}.ETROC_LOCKED_SLAVE").value()
+        else:
+            locked = self.kcu.read_node(f"READOUT_BOARD_{self.rb}.ETROC_LOCKED").value()
+
+        return ((locked & (1 << elink)) >> elink) == True
+
+    def disable_etroc_readout(self, elink, slave=False):
+        if slave:
+            disabled = self.kcu.read_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE_SLAVE").value()
+            to_disable = disabled | (1 << elink)
+            self.kcu.write_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE_SLAVE", to_disable)
+        else:
+            disabled = self.kcu.read_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE").value()
+            to_disable = disabled | (1 << elink)
+            self.kcu.write_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE", to_disable)
+
+    def enable_etroc_readout(self, slave=False):
+        if slave:
+            self.kcu.write_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE_SLAVE", 0)
+        else:
+            self.kcu.write_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE", 0)
+
+    def reset_data_error_count(self):
+        self.kcu.write_node(f"READOUT_BOARD_{self.rb}.PACKET_CNT_RESET", 0x1)
+        self.kcu.write_node(f"READOUT_BOARD_{self.rb}.ERR_CNT_RESET", 0x1)
+        self.kcu.write_node(f"READOUT_BOARD_{self.rb}.DATA_CNT_RESET", 0x1)
+
+    def read_filler_rate(self, elink, slave=False):
+        self.kcu.write_node(f"READOUT_BOARD_{self.rb}.FIFO_ELINK_SEL0", elink)
+        self.kcu.write_node(f"READOUT_BOARD_{self.rb}.FIFO_LPGBT_SEL0", 1 if slave else 0)
+        return self.kcu.read_node(f"READOUT_BOARD_{self.rb}.FILLER_RATE").value()
+
+    def read_packet_count(self, elink, slave=False):
+        self.kcu.write_node(f"READOUT_BOARD_{self.rb}.FIFO_ELINK_SEL0", elink)
+        self.kcu.write_node(f"READOUT_BOARD_{self.rb}.FIFO_LPGBT_SEL0", 1 if slave else 0)
+        return self.kcu.read_node(f"READOUT_BOARD_{self.rb}.PACKET_CNT").value()
+
+    def read_error_count(self, elink, slave=False):
+        self.kcu.write_node(f"READOUT_BOARD_{self.rb}.FIFO_ELINK_SEL0", elink)
+        self.kcu.write_node(f"READOUT_BOARD_{self.rb}.FIFO_LPGBT_SEL0", 1 if slave else 0)
+        return self.kcu.read_node(f"READOUT_BOARD_{self.rb}.ERROR_CNT").value()
+
+    def read_data_count(self, elink, slave=False):
+        self.kcu.write_node(f"READOUT_BOARD_{self.rb}.FIFO_ELINK_SEL0", elink)
+        self.kcu.write_node(f"READOUT_BOARD_{self.rb}.FIFO_LPGBT_SEL0", 1 if slave else 0)
+        return self.kcu.read_node(f"READOUT_BOARD_{self.rb}.DATA_CNT").value()
