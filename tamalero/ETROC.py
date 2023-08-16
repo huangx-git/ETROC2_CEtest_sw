@@ -411,7 +411,6 @@ class ETROC():
         Charge injection can be done at the pixel level (\'row\', \'col\') or globally (\'broadcast\'); default is global.
         By default, the charge injection module is reset upon calling (\'reset\').
         """
-        #self.set_ChargeInjReset(reset=reset)                           # Reset charge injection module
         self.disable_data_readout(broadcast=True)                    #disable data readout for all pixels
         self.disable_QInj(broadcast=True)                              #disable Qinj for all pixel
         self.disable_trigger_readout(broadcast=True)                   #disable trig readout for all pix
@@ -432,7 +431,6 @@ class ETROC():
         Unset can be done at the pixel level (\'row\', \'col\') or globally (\'broadcast\'); default is global.
         """
         if broadcast:
-            self.set_ChargeInjReset(False)                             # Reset charge injection module
             self.disable_QInj(broadcast=broadcast)   # Only disable charge injection for specified pixel
         else:
             self.disable_QInj(row=row, col=col, broadcast=broadcast)   # Only disable charge injection for specified pixel
@@ -1305,25 +1303,22 @@ class ETROC():
     def get_PLLReset(self):
         return self.rd_reg('asyPLLReset')
 
-    # Reset charge injection module, active low
-    def set_ChargeInjReset(self, reset):
-        if not isinstance(reset, bool):
-            raise TypeError('Argument must be True (reset) or False (don\'t reset)')
-        val = 0 if reset else 1
-        self.wr_reg('asyResetChargeInj', val)
+    def reset_PLL(self):
+        self.wr_reg("asyPLLReset", 0)
+        time.sleep(0.1)
+        self.wr_reg("asyPLLReset", 1)
 
-    def get_ChargeInjReset(self):
-        return self.rd_reg('asyResetChargeInj')
+    # Reset charge injection module, active low
+    def reset_charge_injection(self):
+        self.wr_reg("asyResetChargeInj", 0)
+        time.sleep(0.1)
+        self.wr_reg("asyResetChargeInj", 1)
 
     # Reset fastcommand from I2C, active low
-    def set_FCReset(self, reset):
-        if not isinstance(reset, bool):
-            raise TypeError('Argument must be True (reset) or False (don\'t reset)')
-        val = 0 if reset else 1
-        self.wr_reg('asyResetFastcommand', val)
-
-    def get_FCReset(self):
-        return self.rd_reg('asyResetFastcommand')
+    def reset_fast_command(self):
+        self.wr_reg("asyResetFastcommand", 0)
+        time.sleep(0.1)
+        self.wr_reg("asyResetFastcommand", 1)
 
     # Reset globalReadout module, active low
     def set_GlobalReadoutReset(self, reset):
