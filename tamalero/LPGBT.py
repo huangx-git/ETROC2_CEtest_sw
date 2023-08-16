@@ -169,12 +169,13 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.POWERUP.DLLCONFIGDONE", 0x1)  # NOTE untested change
         self.wr_reg("LPGBT.RWF.POWERUP.PLLCONFIGDONE", 0x1)
 
-    def set_adc_mapping(self):
+    def set_adc_mapping(self, verbose=False):
         assert self.ver in [0, 1], f"Unrecognized version {self.ver}"
         self.adc_mapping = get_config(self.config, version=f'v{self.ver+1}')['LPGBT']['adc']
         for channel in self.adc_mapping:
             if self.adc_mapping[channel]['current'] == 1:
-                print(f'Setting {channel} to current DAC')
+                if verbose:
+                    print(f'Setting {channel} to current DAC')
                 self.set_current_adc(self.adc_mapping[channel]['pin'])
         #if self.ver == 0:
         #    self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping.yaml'), 'adc')

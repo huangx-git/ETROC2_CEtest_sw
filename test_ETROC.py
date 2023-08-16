@@ -129,6 +129,7 @@ if __name__ == '__main__':
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--test_readwrite', action='store_true', default=False, help="Test simple read/write functionality?")
     argParser.add_argument('--test_chip', action='store_true', default=False, help="Test simple read/write functionality for real chip?")
+    argParser.add_argument('--config_chip', action='store_true', default=False, help="Configure chip?")
     argParser.add_argument('--vth', action='store_true', default=False, help="Parse Vth scan plots?")
     argParser.add_argument('--rerun', action='store_true', default=False, help="Rerun Vth scan and overwrite data?")
     argParser.add_argument('--fitplots', action='store_true', default=False, help="Create individual vth fit plots for all pixels?")
@@ -186,6 +187,44 @@ if __name__ == '__main__':
         else:
             print(f"Threshold is currently set to {read_val=} mV")
             print("Test passed.\n")
+
+    elif args.config_chip:
+
+        start_time = time.time()
+        kcu = get_kcu(args.kcu, control_hub=True, host=args.host, verbose=False)
+        if (kcu == 0):
+            # if not basic connection was established the get_kcu function returns 0
+            # this would cause the RB init to fail.
+            sys.exit(1)
+
+        int_time = time.time()
+        rb_0 = ReadoutBoard(0, kcu=kcu, config='modulev0')
+        data = 0xabcd1234
+        kcu.write_node("LOOPBACK.LOOPBACK", data)
+        if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
+            print("No communications with KCU105... quitting")
+            sys.exit(1)
+
+        is_configured = rb_0.DAQ_LPGBT.is_configured()
+        if not is_configured:
+            print("RB is not configured, exiting.")
+            exit(0)
+
+        from tamalero.Module import Module
+
+        int2_time = time.time()
+        # FIXME the below code is still pretty stupid
+        modules = []
+        for i in [1,2,3]:
+            m_tmp = Module(rb=rb_0, i=i)
+            if m_tmp.ETROCs[0].connected:  # NOTE assume that module is connected if first ETROC is connected
+                modules.append(m_tmp)
+
+        end_time = time.time()
+
+        print("KCU init done in     {:.2f}s".format(int_time-start_time))
+        print("RB init done in      {:.2f}s".format(int2_time-int_time))
+        print("Module init done in  {:.2f}s".format(end_time-int2_time))  # default config is what's slow
 
     elif args.test_chip:
         kcu = get_kcu(args.kcu, control_hub=True, host=args.host, verbose=False)

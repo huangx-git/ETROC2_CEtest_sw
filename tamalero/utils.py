@@ -246,8 +246,9 @@ def download_address_table(version):
         tree = json.loads(r.content)
         print (f"Local firmware version detected. Will download address table corresponding to commit {version}.")
 
-    print(f"Making directory: address_table/{version}")
     if not os.path.isdir(f"address_table/{version}"):
+        print (f"Downloading latest firmware version address table to address_table/{version}")
+        print(f"Making directory: address_table/{version}")
         os.makedirs(f"address_table/{version}")
         for f in tree:
             if f['type'] == 'tree':
@@ -331,7 +332,6 @@ def get_kcu(kcu_address, control_hub=True, host='localhost', verbose=False):
 
     last_commit = get_last_commit_sha(xml_sha)
     if not os.path.isdir(f"address_table/{last_commit}"):
-        print (f"Downloading latest firmware version address table to address_table/{last_commit}")
         xml_sha = download_address_table(xml_sha)
     else:
         xml_sha = last_commit

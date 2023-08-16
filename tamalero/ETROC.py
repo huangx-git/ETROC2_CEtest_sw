@@ -195,27 +195,43 @@ class ETROC():
                 ret = self.rd_reg(reg)
                 print(yellow(f"Pixel (row={row}, col={col}) status reg={reg}: ret={ret}"))
 
-    def print_perif_conf(self):
+    def print_perif_conf(self, quiet=False):
         df = []
         for reg in self.regs:
             if self.regs[reg]['stat'] == 0 and self.regs[reg]['pixel'] == 0:
                 ret = self.rd_reg(reg)
                 exp = self.regs[reg]['default']
-                colored = green if ret == exp else red
-                print(colored(f"Perif config reg={reg}: ret={ret}, exp={exp}"))
+                if not quiet:
+                    colored = green if ret == exp else red
+                    print(colored(f"Perif config reg={reg}: ret={ret}, exp={exp}"))
                 df.append({'register': reg, 'value': ret, 'default': exp})
         return df
 
-    def print_pixel_conf(self, row=0, col=0):
+    def print_pixel_conf(self, row=0, col=0, quiet=False):
         df = []
         for reg in self.regs:
             if self.regs[reg]['stat'] == 0 and self.regs[reg]['pixel'] == 1:
                 ret = self.rd_reg(reg)
                 exp = self.regs[reg]['default']
-                colored = green if ret == exp else red
-                print(colored(f"Pixel (row={row}, col={col}) config reg={reg}: ret={ret}, exp={exp}"))
+                if not quiet:
+                    colored = green if ret == exp else red
+                    print(colored(f"Pixel (row={row}, col={col}) config reg={reg}: ret={ret}, exp={exp}"))
                 df.append({'register': reg, 'value': ret, 'default': exp})
         return df
+
+    def dump_register(self):
+        reg = {}
+        for r in range(16):
+            for c in range(16):
+                for i in range(25):
+                    adr = (1 << 15) | (r<<5) | (c << 9) | i
+                    reg[adr] = etroc.rd_adr(adr)
+        for i in range(32):
+            adr = i
+            reg[adr] = etroc.rd_adr(adr)
+
+        self.reg_dump = reg
+
 
     def pixel_sanity_check(self, full=True, verbose=False, return_matrix=False):
         all_pass = True
