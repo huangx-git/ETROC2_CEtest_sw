@@ -339,18 +339,67 @@ if __name__ == '__main__':
         fifo.ready()
 
         print("\n - Checking elinks")
-        locked = kcu.read_node(f"READOUT_BOARD_0.ETROC_LOCKED").value()
-        if (locked & 0b101) == 5:
-            print(green('Both elinks (0 and 2) are locked.'))
-        elif (locked & 1) == 1:
-            print(yellow('Only elink 0 is locked.'))
-        elif (locked & 4) == 4:
-            print(yellow('Only elink 2 is locked.'))
-        else:
-            print(red('No elink is locked.'))
 
-        fifo.send_l1a(10)
-        _ = fifo.pretty_read(df)
+        print("Disabling readout for all elinks but the ETROC under test")
+        rb_0.disable_etroc_readout(all=True)
+        rb_0.reset_data_error_count()
+        #rb_0.enable_etroc_readout()
+        for lpgbt in etroc.elinks:
+            if lpgbt == 0:
+                slave = False
+            else:
+                slave = True
+            for link in etroc.elinks[lpgbt]:
+                rb_0.enable_etroc_readout(link, slave=slave)
+                rb_0.reset_data_error_count()
+                time.sleep(0.2)
+                stat = rb_0.get_link_status(link, slave=slave, verbose=False)
+                if stat:
+                    rb_0.get_link_status(link, slave=slave)
+                start_time = time.time()
+                while not stat:
+                    rb_0.disable_etroc_readout(link, slave=slave)
+                    rb_0.enable_etroc_readout(link, slave=slave)
+                    rb_0.reset_data_error_count()
+                    time.sleep(0.2)
+                    stat = rb_0.get_link_status(link, slave=slave, verbose=False
+                                                )
+                    if stat:
+                        rb_0.get_link_status(link, slave=slave)
+                        break
+                    if time.time() - start_time > 2:
+                        print('Link not good, but continuing')
+                        rb_0.get_link_status(link, slave=slave)
+                        break
+
+        ## Bloc below to be retired
+        ## Keeping it for one more iteration
+        #locked = kcu.read_node(f"READOUT_BOARD_0.ETROC_LOCKED").value()
+        #if (locked & 0b101) == 5:
+        #    print(green('Both elinks (0 and 2) are locked.'))
+        #elif (locked & 1) == 1:
+        #    print(yellow('Only elink 0 is locked.'))
+        #elif (locked & 4) == 4:
+        #    print(yellow('Only elink 2 is locked.'))
+        #else:
+        #    print(red('No elink is locked.'))
+
+        # The block below is a bit unclear
+        # The first FIFO read (fifo.pretty_read(df)) will always fail,
+        # but with a reset afterwards it should get in a stable state
+        start_time = time.time()
+        while True:
+            try:
+                fifo.reset()
+                fifo.send_l1a(10)
+                _ = fifo.pretty_read(df)
+                fifo.reset()
+                break
+            except:
+                print("Initial (re)set of FIFO.")
+                if time.time() - start_time > 1:
+                    print("FIFO state is unexpected.")
+                    raise
         etroc.reset()
 
         print("\n - Getting internal test data")
@@ -925,7 +974,7 @@ if __name__ == '__main__':
 
             # turn off data readout for all pixels
             etroc.wr_reg("disDataReadout", 1, broadcast=True)
-            etroc.wr_reg("disDataReadout", 0, row=row, col=col, broadcast=True)
+            etroc.wr_reg("disDataReadout", 0, row=row, col=col, broadcast=False)
 
             # test the settings and get the proper threshold for the pixel,
             # using internal accumulator
@@ -939,6 +988,7 @@ if __name__ == '__main__':
             threshold = dac[res==0][2]  # take a DAC value a bit above the threshold
 
             # check that everything actually works
+            rb_0.reset_data_error_count()
             etroc.wr_reg("DAC", mid_slope, row=row, col=col)
             fifo.send_l1a(5000)
             hits = rb_0.read_data_count(elink, slave=slave)
