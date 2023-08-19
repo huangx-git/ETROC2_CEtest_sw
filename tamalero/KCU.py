@@ -21,6 +21,7 @@ class KCU:
 
         self.dummy = dummy
 
+        self.max_retries = 10
         if not self.dummy:
             try:
                 self.hw = uhal.getDevice("my_device", ipb_path, "file://" + adr_table)
@@ -35,8 +36,16 @@ class KCU:
         self.auto_dispatch = False
 
     def dispatch(self):
-        self.hw.dispatch()
-        self.auto_dispatch = True
+        i = 0
+        while i<self.max_retries:
+            try:
+                self.hw.dispatch()
+                self.auto_dispatch = True
+                break
+            except:
+                if i > (self.max_retries-2):
+                    raise
+                i+=1
 
     def write_node(self, id, value):
         reg = self.hw.getNode(id)

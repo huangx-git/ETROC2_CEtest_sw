@@ -137,7 +137,10 @@ class FIFO:
             try:
                 if dispatch:
                     reads = self.rb.kcu.hw.getNode("DAQ_RB0").readBlock(block)
-                    self.rb.kcu.hw.dispatch()
+
+                    # this was tested with 5M pulses
+                    self.rb.kcu.dispatch()  # changed from more udp error prone self.rb.kcu.hw.dispatch()
+
                     return reads
                 else:
                     return self.rb.kcu.hw.getNode("DAQ_RB0").readBlock(block)
