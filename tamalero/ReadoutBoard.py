@@ -49,6 +49,8 @@ class ReadoutBoard:
 
         self.configuration = get_config(self.config, version=f'v{self.ver}')
 
+        self.enable_etroc_readout()  # enable readout of all ETROCs by default
+
     def get_trigger(self):
         # Self-check if a trigger lpGBT is present, if trigger is not explicitely set to False
         sleep(0.5)
@@ -519,21 +521,35 @@ class ReadoutBoard:
 
         return ((locked & (1 << elink)) >> elink) == True
 
-    def disable_etroc_readout(self, elink, slave=False):
-        if slave:
-            disabled = self.kcu.read_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE_SLAVE").value()
-            to_disable = disabled | (1 << elink)
-            self.kcu.write_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE_SLAVE", to_disable)
+    def disable_etroc_readout(self, elink=-1, slave=False, all=False):
+        if all:
+            self.kcu.write_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE_SLAVE", 0x0FFFFFFF)
+            self.kcu.write_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE", 0x0FFFFFFF)
+        elif elink>=0 and elink<28:
+            if slave:
+                disabled = self.kcu.read_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE_SLAVE").value()
+                to_disable = disabled | (1 << elink)
+                self.kcu.write_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE_SLAVE", to_disable)
+            else:
+                disabled = self.kcu.read_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE").value()
+                to_disable = disabled | (1 << elink)
+                self.kcu.write_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE", to_disable)
         else:
-            disabled = self.kcu.read_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE").value()
-            to_disable = disabled | (1 << elink)
-            self.kcu.write_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE", to_disable)
+            print(f"Don't know what to do with elink number {elink}")
 
-    def enable_etroc_readout(self, slave=False):
+    def enable_etroc_readout(self, only=None, slave=False):
         if slave:
-            self.kcu.write_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE_SLAVE", 0)
+            if only:
+                disabled = self.kcu.read_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE_SLAVE").value()
+                self.kcu.write_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE_SLAVE", disabled ^ (1 << only))
+            else:
+                self.kcu.write_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE_SLAVE", 0)
         else:
-            self.kcu.write_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE", 0)
+            if only:
+                disabled = self.kcu.read_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE").value()
+                self.kcu.write_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE", disabled ^ (1 << only))
+            else:
+                self.kcu.write_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE", 0)
 
     def reset_data_error_count(self):
         self.kcu.write_node(f"READOUT_BOARD_{self.rb}.PACKET_CNT_RESET", 0x1)
@@ -563,7 +579,6 @@ class ReadoutBoard:
     def get_link_status(self, elink, slave=False, verbose=True):
         expected_filler_rate = 16500000
 
-        print(f"- Status of link {elink}")
         locked = self.etroc_locked(elink, slave=slave)
 
         filler_rate = self.read_filler_rate(elink, slave=slave)
@@ -572,6 +587,7 @@ class ReadoutBoard:
         data_count = self.read_data_count(elink, slave=slave)
 
         if verbose:
+            print(f"- Status of link {elink}")
             colored = green if (locked) else red
             print(colored("{:20}{:10}".format("Locked", locked)))
             colored = green if (filler_rate > expected_filler_rate) else red
