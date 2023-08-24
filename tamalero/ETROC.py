@@ -1381,6 +1381,16 @@ class ETROC():
     def power_down_TempSen(self):
         self.wr_reg('TS_PD', 1)
 
+    def check_temp(self, volt = False):
+        C2 = -0.0073
+        C1 = 26
+        qoK = 11604.5181
+        raw = self.rb.SCA.read_adc(0x02)
+        if volt:
+            return raw
+        else:
+            return (raw - C2)*qoK/C1
+
     # The TDC clock testing enable.
     # 1'b1: sending TDC clock at the left serial port;
     # 1'b0: sending left serializer data at the left port.
