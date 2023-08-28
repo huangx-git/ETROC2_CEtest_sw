@@ -748,6 +748,10 @@ if __name__ == '__main__':
 
             elink, slave = etroc.get_elink_for_pixel(row, col)
 
+            # turn off data readout for all pixels
+            etroc.wr_reg("disDataReadout", 1, broadcast=True)
+            etroc.wr_reg("disDataReadout", 0, row=row, col=col, broadcast=False)
+
             print(f"\n - Running internal threshold scan for pixel {row}, {col}")
 
             dac, res = vth_scan_internal(etroc, row=row, col=col, dac_min=0, dac_max=1000)
