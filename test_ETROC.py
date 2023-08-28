@@ -234,7 +234,7 @@ if __name__ == '__main__':
             # this would cause the RB init to fail.
             sys.exit(1)
 
-        rb_0 = ReadoutBoard(0, kcu=kcu, config='modulev0')
+        rb_0 = ReadoutBoard(0, kcu=kcu, config=args.configuration)
         data = 0xabcd1234
         kcu.write_node("LOOPBACK.LOOPBACK", data)
         if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
