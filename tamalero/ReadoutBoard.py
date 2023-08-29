@@ -539,14 +539,16 @@ class ReadoutBoard:
 
     def enable_etroc_readout(self, only=None, slave=False):
         if slave:
-            if only:
+            if only is not None:
                 disabled = self.kcu.read_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE_SLAVE").value()
                 self.kcu.write_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE_SLAVE", disabled ^ (1 << only))
             else:
                 self.kcu.write_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE_SLAVE", 0)
         else:
-            if only:
+            if only is not None:
                 disabled = self.kcu.read_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE").value()
+                #print(bin(disabled))
+                #print(bin(disabled ^ (1 << only)))
                 self.kcu.write_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE", disabled ^ (1 << only))
             else:
                 self.kcu.write_node(f"READOUT_BOARD_{self.rb}.ETROC_DISABLE", 0)
@@ -601,3 +603,14 @@ class ReadoutBoard:
                 print("Filler rate is low. Try resetting PLL and FC of the ETROC.")
 
         return locked & (filler_rate > expected_filler_rate) & (error_count < 1)
+
+    def enable_bitslip(self):
+        self.kcu.write_node("READOUT_BOARD_%s.BITSLIP_AUTO_EN"%self.rb, 0x1)
+
+    def disable_bitslip(self):
+        self.kcu.write_node("READOUT_BOARD_%s.BITSLIP_AUTO_EN"%self.rb, 0x0)
+
+    def rerun_bitslip(self):
+        self.enable_bitslip()
+        sleep(0.01)
+        self.disable_bitslip()

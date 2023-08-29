@@ -339,7 +339,7 @@ if __name__ == '__main__':
         df = DataFrame()
         # NOTE this is for single port tests right now, where we only get elink 2
         fifo = FIFO(rb=rb_0)
-        fifo.select_elink(2)
+        fifo.select_elink(0)
         fifo.ready()
 
         print("\n - Checking elinks")
@@ -355,8 +355,11 @@ if __name__ == '__main__':
                 slave = True
             for link in etroc.elinks[lpgbt]:
                 rb_0.enable_etroc_readout(link, slave=slave)
+                #time.sleep(0.1)
+                #rb_0.reset_data_error_count()
+                rb_0.rerun_bitslip()
+                time.sleep(1.5)
                 rb_0.reset_data_error_count()
-                time.sleep(0.5)
                 stat = rb_0.get_link_status(link, slave=slave, verbose=False)
                 if stat:
                     rb_0.get_link_status(link, slave=slave)
@@ -364,8 +367,11 @@ if __name__ == '__main__':
                 while not stat:
                     #rb_0.disable_etroc_readout(link, slave=slave)
                     rb_0.enable_etroc_readout(link, slave=slave)
+                    #time.sleep(0.1)
+                    #rb_0.reset_data_error_count()
+                    rb_0.rerun_bitslip()
+                    time.sleep(1.5)
                     rb_0.reset_data_error_count()
-                    time.sleep(0.5)
                     stat = rb_0.get_link_status(link, slave=slave, verbose=False
                                                 )
                     if stat:

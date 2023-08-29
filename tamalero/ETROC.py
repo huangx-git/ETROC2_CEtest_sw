@@ -296,6 +296,8 @@ class ETROC():
             self.wr_reg("asyResetGlobalReadout", 0)
             time.sleep(0.1)
             self.wr_reg("asyResetGlobalReadout", 1)
+        if not self.isfake:
+            self.rb.rerun_bitslip()  # NOTE this is necessary to get the links to lock again
 
     def read_Vref(self):
         return self.rb.SCA.read_adc(self.vref_pin)

@@ -285,7 +285,7 @@ if __name__ == '__main__':
     #-------------------------------------------------------------------------------
 
     modules = []
-    if args.configuration == 'emulator' or args.configuration == 'modulev0':
+    if args.configuration == 'emulator' or args.configuration.count('modulev0'):
         print("Configuring ETROCs")
         for i in range(res['n_module']):
             modules.append(Module(rb, i+1))
