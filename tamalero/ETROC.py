@@ -25,6 +25,7 @@ class ETROC():
             reset=None,
             breed='emulator',
             vref=None,
+            vref_pd=False,
     ):
         self.QINJ_delay = 504  # this is a fixed value for the default settings of ETROC2
         self.isfake = False
@@ -45,6 +46,12 @@ class ETROC():
             self.ver = "X-X-X"
 
         self.regs = load_yaml(os.path.join(here, '../address_table/ETROC2_example.yaml'))
+
+        if self.is_connected():
+            if vref_pd:
+                self.power_down_VRef()
+            else:
+                self.power_up_VRef()
 
         self.get_elink_status()
         try:

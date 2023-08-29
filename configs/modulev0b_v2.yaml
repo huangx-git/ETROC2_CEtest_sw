@@ -341,6 +341,7 @@ modules:
       channel: 1
     reset: mod_d07
     vref: [mod_a05]
+    disable_vref_gen: [True]
     power_board: mod_d01
   2:
     elinks: [[[4],[4]]]
@@ -350,6 +351,7 @@ modules:
       channel: 3
     reset: mod_d15
     vref: [mod_a13]
+    disable_vref_gen: [True]
     power_board: mod_d09
   3:
     elinks: [[[8],[8]]]
@@ -359,4 +361,5 @@ modules:
       channel: 0
     reset: mod_d23
     vref: [mod_a21]
+    disable_vref_gen: [True]
     power_board: mod_d17

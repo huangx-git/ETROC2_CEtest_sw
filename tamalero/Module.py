@@ -48,6 +48,7 @@ class Module:
                         reset = self.config['reset'],
                         breed = self.breed,
                         vref = self.config['vref'][j],
+                        vref_pd = self.config['disable_vref_gen'][j],
                     ))
 
     #def configure(self):
