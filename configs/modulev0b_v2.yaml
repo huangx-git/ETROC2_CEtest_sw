@@ -340,13 +340,17 @@ modules:
       master: lpgbt
       channel: 1
     reset: mod_d07
+    vref: [mod_a05]
+    power_board: mod_d01
   2:
-    elinks: [[[4, 6],[]]]
+    elinks: [[[4],[4]]]
     addresses: [0x64]
     i2c:
       master: sca
       channel: 3
     reset: mod_d15
+    vref: [mod_a13]
+    power_board: mod_d09
   3:
     elinks: [[[8],[8]]]
     addresses: [0x68]
@@ -354,3 +358,5 @@ modules:
       master: sca
       channel: 0
     reset: mod_d23
+    vref: [mod_a21]
+    power_board: mod_d17

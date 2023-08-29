@@ -147,6 +147,7 @@ if __name__ == '__main__':
     argParser.add_argument('--scan', action='store', default=['full'], choices=['none', 'full', 'simple', 'internal'], help="Which threshold scan to run with ETROC2")
     argParser.add_argument('--mode', action='store', default=['dual'], choices=['dual', 'single'], help="Port mode for ETROC2")
     argParser.add_argument('--internal_data', action='store_true', help="Set up internal data generation")
+    argParser.add_argument('--enable_power_board', action='store_true', help="Enable Power Board (all modules). Jumpers must still be set as well.")
     args = argParser.parse_args()
 
 
@@ -250,16 +251,18 @@ if __name__ == '__main__':
 
         # FIXME the below code is still pretty stupid
         modules = []
+        connected_modules = []
         for i in [1,2,3]:
-            m_tmp = Module(rb=rb_0, i=i)
+            m_tmp = Module(rb=rb_0, i=i, enable_power_board=args.enable_power_board)
+            modules.append(m_tmp)
             if m_tmp.ETROCs[0].connected:  # NOTE assume that module is connected if first ETROC is connected
-                modules.append(m_tmp)
+                connected_modules.append(i)
 
-        print(f"Found {len(modules)} connected modules")
+        print(f"Found {len(connected_modules)} connected modules")
         if int(args.module) > 0:
             module = int(args.module)
         else:
-            module = 1
+            module = connected_modules[0]
 
         print(f"Will proceed with testing Module {module}")
         print("Module status:")
@@ -353,16 +356,16 @@ if __name__ == '__main__':
             for link in etroc.elinks[lpgbt]:
                 rb_0.enable_etroc_readout(link, slave=slave)
                 rb_0.reset_data_error_count()
-                time.sleep(0.2)
+                time.sleep(0.5)
                 stat = rb_0.get_link_status(link, slave=slave, verbose=False)
                 if stat:
                     rb_0.get_link_status(link, slave=slave)
                 start_time = time.time()
                 while not stat:
-                    rb_0.disable_etroc_readout(link, slave=slave)
+                    #rb_0.disable_etroc_readout(link, slave=slave)
                     rb_0.enable_etroc_readout(link, slave=slave)
                     rb_0.reset_data_error_count()
-                    time.sleep(0.2)
+                    time.sleep(0.5)
                     stat = rb_0.get_link_status(link, slave=slave, verbose=False
                                                 )
                     if stat:

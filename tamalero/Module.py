@@ -7,7 +7,7 @@ from tamalero.Monitoring import Lock
 from time import sleep
 
 class Module:
-    def __init__(self, rb, i=1, strict=False):
+    def __init__(self, rb, i=1, strict=False, enable_power_board=False):
         # don't like that this also needs a RB
         # think about a better solution
         self.config = rb.configuration['modules'][i]
@@ -17,6 +17,10 @@ class Module:
         #self.regs_em = ['disScrambler', 'singlePort', 'mergeTriggerData', 'triggerGranularity']
         self.i = i
         self.rb = rb
+
+        if enable_power_board:
+            self.enable_power_board()
+            sleep(0.1)  # enough time to let the ETROC power up?
 
         self.ETROCs = []
         for j in range(len(self.config['addresses'])):
@@ -43,6 +47,7 @@ class Module:
                         strict      = strict,
                         reset = self.config['reset'],
                         breed = self.breed,
+                        vref = self.config['vref'][j],
                     ))
 
     #def configure(self):
@@ -83,6 +88,15 @@ class Module:
 
     #    return (self.I2C_read(adr)&mask) >> shift
 
+    def get_power_board_status(self):
+        return self.rb.SCA.read_gpio(self.config['power_board'])
+
+    def enable_power_board(self):
+        return self.rb.SCA.set_gpio(self.config['power_board'], 1)
+
+    def disable_power_board(self):
+        return self.rb.SCA.set_gpio(self.config['power_board'], 0)
+
     def get_locked_links(self):
         self.locked = {0:[], 1:[]}
         self.unlocked = {0:[], 1:[]}
@@ -108,8 +122,13 @@ class Module:
         print ('┏━┳━' + 25*'━' + '━┳━┓')
         print ('┃○┃ ' + 25*' ' + ' ┃○┃')
         print ('┃ ┃ ' + '{:10}{:<15}'.format("Module:", self.i) + ' ┃ ┃' )
-        ver = self.ETROCs[0].get_ver()
-        print ('┃ ┃ ' + '{:16}{:9}'.format("Firmware ver.",ver) + ' ┃ ┃' )
+        # this was useful for the emulator, but version numbers haven't
+        # been updated anyway...
+        # no FW version for the actual ETROCs
+        #ver = self.ETROCs[0].get_ver()
+        #print ('┃ ┃ ' + '{:16}{:9}'.format("Firmware ver.",ver) + ' ┃ ┃' )
+        pb_status, pb_col = ('on', green) if self.get_power_board_status() else ('off', red)
+        print ('┃ ┃ ' + pb_col('{:16}{:9}'.format("Power board is:",pb_status)) + ' ┃ ┃' )
         #print ('┃ ┃ ' + 25*' ' + ' ┃ ┃')
         col = green if self.ETROCs[0].connected else red
         prefix = '' if self.ETROCs[0].connected else "Not "
