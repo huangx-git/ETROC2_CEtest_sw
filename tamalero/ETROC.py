@@ -24,6 +24,7 @@ class ETROC():
             strict=True,
             reset=None,
             breed='emulator',
+            vref=None,
     ):
         self.QINJ_delay = 504  # this is a fixed value for the default settings of ETROC2
         self.isfake = False
@@ -33,6 +34,7 @@ class ETROC():
         # check if connected
         self.i2c_channel = i2c_channel
         self.i2c_adr = i2c_adr
+        self.vref_pin = vref
         self.elinks = elinks
         self.reset_pin = reset
         self.breed = breed
@@ -287,6 +289,9 @@ class ETROC():
             self.wr_reg("asyResetGlobalReadout", 0)
             time.sleep(0.1)
             self.wr_reg("asyResetGlobalReadout", 1)
+
+    def read_Vref(self):
+        return self.rb.SCA.read_adc(self.vref_pin)
 
     # ============================
     # === MONITORING FUNCTIONS ===

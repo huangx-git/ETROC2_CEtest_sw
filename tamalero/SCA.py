@@ -445,12 +445,19 @@ class SCA:
         val = self.rw_reg(SCA_ADC.ADC_R_CURR).value()
         return val == 0
 
-    def read_adc(self, MUX_reg = 0):
+    def read_adc(self, pin = 0):
+        # either read raw ADC values for a pin, or physical quantity for
+        # a (string) named port
+        if isinstance(pin, str):
+            conv = self.adc_mapping[pin]['conv'] / (2**12 - 1)
+            pin = self.adc_mapping[pin]['pin']
+        else:
+            conv = 1
         self.enable_adc() #enable ADC
-        self.rw_reg(SCA_ADC.ADC_W_MUX, MUX_reg) #configure register we want to read
+        self.rw_reg(SCA_ADC.ADC_W_MUX, pin) #configure register we want to read
         val = self.rw_reg(SCA_ADC.ADC_GO, 0x01).value() #execute and read ADC_GO command
         self.rw_reg(SCA_ADC.ADC_W_MUX, 0x0) #reset register to default (0)
-        return val
+        return val*conv
 
     def read_adcs(self, check=False, strict_limits=False): #read and print all adc values
         adc_dict = self.adc_mapping
@@ -497,7 +504,8 @@ class SCA:
         # not very precise (according to manual), but still useful.
         return ((self.read_adc(31)/2**12)*1000 - 716)/-1.829
 
-    def read_gpio(self, line):
+    @gpio_byname
+    def read_gpio(self, line, to=1):
         self.enable_gpio()  # enable GPIO
         val = self.rw_reg(SCA_GPIO.GPIO_R_DATAIN).value()
         return int((val >> line) & 1)
