@@ -502,7 +502,7 @@ class ETROC():
     def get_elink_for_pixel(self, row, col):
         elinks = self.elinks[0] + self.elinks[1]
         slaves = len(self.elinks[0])*[False] + len(self.elinks[1])*[True]
-        if col > 7 and self.get_singlePort == 'both':
+        if col > 7 and self.get_singlePort() == 'both':
             # NOTE: this makes the assumption that the "right" elink is always second in the ETROC config yaml file
             return elinks[0], slaves[0]
         else:
@@ -882,7 +882,7 @@ class ETROC():
     # Merge trigger and data in a port
     def set_mergeTriggerData(self, mode):
         val = {'separate':0, 'merge':1}
-        if (self.get_singlePort == 'right') and (mode == 'separate'):
+        if (self.get_singlePort() == 'right') and (mode == 'separate'):
             raise Exception('Trigger and data in separate ports is only allowed when singlePort is set to \'both\'')
         try:
             self.wr_reg('mergeTriggerData', val[mode])
