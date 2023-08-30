@@ -148,6 +148,8 @@ if __name__ == '__main__':
     argParser.add_argument('--mode', action='store', default=['dual'], choices=['dual', 'single'], help="Port mode for ETROC2")
     argParser.add_argument('--internal_data', action='store_true', help="Set up internal data generation")
     argParser.add_argument('--enable_power_board', action='store_true', help="Enable Power Board (all modules). Jumpers must still be set as well.")
+    argParser.add_argument('--row', action='store', default=4, help="Pixel row to be tested")
+    argParser.add_argument('--col', action='store', default=3, help="Pixel column to be tested")
     args = argParser.parse_args()
 
 
@@ -595,11 +597,16 @@ if __name__ == '__main__':
 
             rb_0.reset_data_error_count()
             print("\n - Running simple threshold scan on single pixel")
+            print(f"Found this pixel on elink {elink}, lpGBT is servant: {slave}")
             vth     = []
             count   = []
-            etroc.reset(hard=True)
-            etroc.default_config()
+            #etroc.reset(hard=True)
+            #etroc.default_config()
+
+            rb_0.get_link_status(elink, slave=slave)
+
             print("Coarse scan to find the peak location")
+            first_val = 1023
             for i in range(0, 1000, 5):
                 etroc.wr_reg("DAC", i, row=row, col=col)
                 fifo.send_l1a(2000)
@@ -608,7 +615,12 @@ if __name__ == '__main__':
                 count.append(data_cnt)
                 if data_cnt > 0:
                     print(i, data_cnt)
+                    first_val = i
                 rb_0.reset_data_error_count()
+                if i > (first_val + 10):
+                    # break the loop early because this scan is sloooow
+                    print("I've seen enough, breaking coarse scan.")
+                    break
 
             vth_a = np.array(vth)
             count_a = np.array(count)
@@ -616,7 +628,7 @@ if __name__ == '__main__':
             print(f"Found maximum count at DAC setting vth_max={vth_max}")
 
             ### threshold scan draft
-            dac_min = vth_max - 75
+            dac_min = max(0, vth_max - 75)  # don't run into negatives!
             dac_max = vth_max + 75
             vth_scan_data = vth_scan(
                 etroc,
@@ -753,8 +765,8 @@ if __name__ == '__main__':
 
         elif args.scan =="internal":
 
-            row = 4
-            col = 3
+            row = int(args.row)
+            col = int(args.col)
 
             elink, slave = etroc.get_elink_for_pixel(row, col)
 
@@ -763,6 +775,7 @@ if __name__ == '__main__':
             etroc.wr_reg("disDataReadout", 0, row=row, col=col, broadcast=False)
 
             print(f"\n - Running internal threshold scan for pixel {row}, {col}")
+            print(f"Found this pixel on elink {elink}, lpGBT is servant: {slave}")
 
             dac, res = vth_scan_internal(etroc, row=row, col=col, dac_min=0, dac_max=1000)
             slope = dac[((res>0) & (res<max(res)))]
@@ -786,12 +799,15 @@ if __name__ == '__main__':
             vth     = []
             count   = []
             print("Fine scanning around the mid-slope DAC value now")
+            rb_0.get_link_status(elink, slave=slave)
             for i in range(mid_slope-20, mid_slope+20):
                 #etroc.wr_reg("DAC", i, row=3, col=4)
                 etroc.wr_reg("DAC", i, row=row, col=col)
                 fifo.send_l1a(5000)
                 vth.append(i)
-                count.append(rb_0.read_data_count(elink, slave=slave))
+                c = rb_0.read_data_count(elink, slave=slave)
+                print(i,c)
+                count.append(c)
                 rb_0.reset_data_error_count()
 
             count = np.array(count)
@@ -804,7 +820,7 @@ if __name__ == '__main__':
             ax.set_ylabel("normalized count")
             plt.legend()
 
-            fig.savefig(f'results/scan_internal.png')
+            fig.savefig(f'results/scan_internal_row_{row}_col_{col}.png')
 
         if args.internal_data:
             # this still gives type == 0 data (with TOA, TOT, CAL)
