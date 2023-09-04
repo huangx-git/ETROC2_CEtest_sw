@@ -43,6 +43,7 @@ class Module:
                         strict      = strict,
                         reset = self.config['reset'],
                         breed = self.breed,
+                        vtemp = self.config['vtemp'][j],
                     ))
 
     #def configure(self):

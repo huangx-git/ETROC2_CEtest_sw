@@ -24,7 +24,8 @@ class ETROC():
             strict=True,
             reset=None,
             breed='emulator',
-    ):
+            vtemp = None,
+            ):
         self.QINJ_delay = 504  # this is a fixed value for the default settings of ETROC2
         self.isfake = False
         self.I2C_master = rb.DAQ_LPGBT if master.lower() == 'lpgbt' else rb.SCA
@@ -1386,7 +1387,7 @@ class ETROC():
         C2 = -0.0073
         C1 = 26
         qoK = 11604.5181
-        raw = self.rb.SCA.read_adc(0x02)
+        raw = self.rb.SCA.read_adc(self.vtemp)
         if mode == 'bits':
             return raw
         elif mode == 'volt':

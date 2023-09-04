@@ -340,6 +340,7 @@ modules:
       master: lpgbt
       channel: 1
     reset: mod_d07
+    vtemp: mod_a07
   2:
     elinks: [[[4, 6],[]]]
     addresses: [0x64]
@@ -347,6 +348,7 @@ modules:
       master: sca
       channel: 3
     reset: mod_d15
+    vtemp: mod_a14
   3:
     elinks: [[[8, 10],[]]]
     addresses: [0x68]
@@ -354,3 +356,4 @@ modules:
       master: sca
       channel: 0
     reset: mod_d23
+    vtemp: mod_a22
