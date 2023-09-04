@@ -130,6 +130,7 @@ if __name__ == '__main__':
     argParser.add_argument('--test_readwrite', action='store_true', default=False, help="Test simple read/write functionality?")
     argParser.add_argument('--test_chip', action='store_true', default=False, help="Test simple read/write functionality for real chip?")
     argParser.add_argument('--config_chip', action='store_true', default=False, help="Configure chip?")
+    argParser.add_argument('--configuration', action='store', default='modulev0', choices=['modulev0', 'modulev0b'], help="Board configuration to be loaded")
     argParser.add_argument('--vth', action='store_true', default=False, help="Parse Vth scan plots?")
     argParser.add_argument('--rerun', action='store_true', default=False, help="Rerun Vth scan and overwrite data?")
     argParser.add_argument('--fitplots', action='store_true', default=False, help="Create individual vth fit plots for all pixels?")
@@ -198,7 +199,7 @@ if __name__ == '__main__':
             sys.exit(1)
 
         int_time = time.time()
-        rb_0 = ReadoutBoard(0, kcu=kcu, config='modulev0')
+        rb_0 = ReadoutBoard(0, kcu=kcu, config=args.configuration)
         data = 0xabcd1234
         kcu.write_node("LOOPBACK.LOOPBACK", data)
         if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
@@ -233,7 +234,7 @@ if __name__ == '__main__':
             # this would cause the RB init to fail.
             sys.exit(1)
 
-        rb_0 = ReadoutBoard(0, kcu=kcu, config='modulev0')
+        rb_0 = ReadoutBoard(0, kcu=kcu, config=args.configuration)
         data = 0xabcd1234
         kcu.write_node("LOOPBACK.LOOPBACK", data)
         if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
@@ -747,6 +748,10 @@ if __name__ == '__main__':
             col = 3
 
             elink, slave = etroc.get_elink_for_pixel(row, col)
+
+            # turn off data readout for all pixels
+            etroc.wr_reg("disDataReadout", 1, broadcast=True)
+            etroc.wr_reg("disDataReadout", 0, row=row, col=col, broadcast=False)
 
             print(f"\n - Running internal threshold scan for pixel {row}, {col}")
 
