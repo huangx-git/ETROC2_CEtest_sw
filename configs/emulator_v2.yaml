@@ -66,6 +66,7 @@ modules:
      channel: 1
    status: mod_d01
    reset: None
+   vtemp: None
   2:
    elinks: [[[4],[4]], [[6],[6]], [[16],[16]], [[18],[18]]]
    addresses: [0x72, 0x72, 0x72, 0x72]
@@ -74,6 +75,7 @@ modules:
      channel: 3
    status: mod_d09
    reset: None
+   vtemp: None
   3:
    elinks: [[[8],[8]], [[10],[10]], [[12],[12]], [[14],[14]]]
    addresses: [0x72, 0x72, 0x72, 0x72]
@@ -82,3 +84,4 @@ modules:
      channel: 0
    status: mod_d17
    reset: None
+   vtemp: None
