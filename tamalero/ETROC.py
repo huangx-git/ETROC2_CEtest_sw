@@ -26,6 +26,7 @@ class ETROC():
             breed='emulator',
             vref=None,
             vref_pd=False,
+            vtemp = None,
     ):
         self.QINJ_delay = 504  # this is a fixed value for the default settings of ETROC2
         self.isfake = False
@@ -1394,6 +1395,19 @@ class ETROC():
 
     def power_down_TempSen(self):
         self.wr_reg('TS_PD', 1)
+
+    def check_temp(self, mode = 'bits'):
+        #C1 and C2 need to be calibrated
+        C2 = -0.0073
+        C1 = 26
+        qoK = 11604.5181
+        raw = self.rb.SCA.read_adc(self.vtemp)
+        if mode == 'bits':
+            return raw
+        elif mode == 'volt':
+            return raw/4092
+        else:
+            return (raw/4092 - C2)*qoK/C1
 
     # The TDC clock testing enable.
     # 1'b1: sending TDC clock at the left serial port;
