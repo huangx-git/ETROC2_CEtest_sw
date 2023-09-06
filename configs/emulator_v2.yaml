@@ -69,7 +69,7 @@ modules:
    vref: [None, None, None, None]
    disable_vref_gen: [False, False, False, False]
    power_board: 0
-   vtemp: None
+   vtemp: [None, None, None, None]
   2:
    elinks: [[[4],[4]], [[6],[6]], [[16],[16]], [[18],[18]]]
    addresses: [0x72, 0x72, 0x72, 0x72]
@@ -81,7 +81,7 @@ modules:
    vref: [None, None, None, None]
    disable_vref_gen: [False, False, False, False]
    power_board: 0
-   vtemp: None
+   vtemp: [None, None, None, None]
   3:
    elinks: [[[8],[8]], [[10],[10]], [[12],[12]], [[14],[14]]]
    addresses: [0x72, 0x72, 0x72, 0x72]
@@ -93,4 +93,4 @@ modules:
    vref: [None, None, None, None]
    disable_vref_gen: [False, False, False, False]
    power_board: 0
-   vtemp: None
+   vtemp: [None, None, None, None]

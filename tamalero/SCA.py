@@ -445,14 +445,14 @@ class SCA:
         val = self.rw_reg(SCA_ADC.ADC_R_CURR).value()
         return val == 0
 
-    def read_adc(self, pin = 0):
+    def read_adc(self, pin = 0, raw=False):
         # either read raw ADC values for a pin, or physical quantity for
         # a (string) named port
+        conv = 1
         if isinstance(pin, str):
-            conv = self.adc_mapping[pin]['conv'] / (2**12 - 1)
+            if not raw:
+                conv = self.adc_mapping[pin]['conv'] / (2**12 - 1)
             pin = self.adc_mapping[pin]['pin']
-        else:
-            conv = 1
         self.enable_adc() #enable ADC
         self.rw_reg(SCA_ADC.ADC_W_MUX, pin) #configure register we want to read
         val = self.rw_reg(SCA_ADC.ADC_GO, 0x01).value() #execute and read ADC_GO command

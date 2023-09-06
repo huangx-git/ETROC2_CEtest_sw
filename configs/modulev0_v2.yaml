@@ -343,7 +343,7 @@ modules:
     vref: [mod_a05]
     disable_vref_gen: [False]
     power_board: mod_d01
-    vtemp: mod_a07
+    vtemp: [mod_a06]
   2:
     elinks: [[[4, 6],[]]]
     addresses: [0x64]
@@ -354,7 +354,7 @@ modules:
     vref: [mod_a13]
     disable_vref_gen: [False]
     power_board: mod_d09
-    vtemp: mod_a14
+    vtemp: [mod_a14]
   3:
     elinks: [[[8, 10],[]]]
     addresses: [0x68]
@@ -365,4 +365,4 @@ modules:
     vref: [mod_a21]
     disable_vref_gen: [False]
     power_board: mod_d17
-    vtemp: mod_a22
+    vtemp: [mod_a22]

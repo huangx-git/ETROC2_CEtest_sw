@@ -37,6 +37,7 @@ class ETROC():
         self.i2c_channel = i2c_channel
         self.i2c_adr = i2c_adr
         self.vref_pin = vref
+        self.vtemp = vtemp
         self.elinks = elinks
         self.reset_pin = reset
         self.breed = breed
@@ -1401,13 +1402,13 @@ class ETROC():
         C2 = -0.0073
         C1 = 26
         qoK = 11604.5181
-        raw = self.rb.SCA.read_adc(self.vtemp)
+        raw = self.rb.SCA.read_adc(self.vtemp, raw=True if mode=='bits' else False)
         if mode == 'bits':
             return raw
         elif mode == 'volt':
-            return raw/4092
+            return raw
         else:
-            return (raw/4092 - C2)*qoK/C1
+            return (raw - C2)*qoK/C1
 
     # The TDC clock testing enable.
     # 1'b1: sending TDC clock at the left serial port;
