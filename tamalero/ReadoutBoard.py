@@ -614,3 +614,25 @@ class ReadoutBoard:
         self.enable_bitslip()
         sleep(0.01)
         self.disable_bitslip()
+
+    def enable_external_trigger(self):
+        '''
+        this lives in RB even though it's a system wide setting.
+        Therefore, we let the user know.
+        '''
+        print("Enabling the external trigger for the KCU board")
+        self.kcu.write_node("SYSTEM.EN_EXT_TRIGGER", 0x1)
+
+    def disable_external_trigger(self):
+        '''
+        this lives in RB even though it's a system wide setting.
+        Therefore, we let the user know.
+        '''
+        print("Disabling the external trigger for the KCU board")
+        self.kcu.write_node("SYSTEM.EN_EXT_TRIGGER", 0x0)
+
+    def external_trigger_status(self):
+        status = "enabled" if self.kcu.read_node("SYSTEM.EN_EXT_TRIGGER") else "disabled"
+        print(f"External trigger is currently {status}")
+
+        return status == "enabled"
