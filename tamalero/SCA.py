@@ -567,7 +567,7 @@ class SCA:
         else:
             raise RuntimeError(f"SCA only has 16 I2C channels, don't know what to do with channel {channel}")
 
-    def I2C_write(self, reg=0x0, val=0x0, master=3, slave_addr=0x48, adr_nbytes=2):
+    def I2C_write(self, reg=0x0, val=0x0, master=3, slave_addr=0x48, adr_nbytes=2, freq=2):
         # wrapper function to have similar interface as lpGBT I2C_write
         self.enable_I2C(channel=master)
         adr_bytes = [ ((reg >> (8*i)) & 0xff) for i in range(adr_nbytes) ]
@@ -577,16 +577,16 @@ class SCA:
             data_bytes = val
         else:
             raise("data must be an int or list of ints")
-        self.I2C_write_multi(adr_bytes + data_bytes, channel=master, servant=slave_addr)
+        self.I2C_write_multi(adr_bytes + data_bytes, channel=master, servant=slave_addr, freq=freq)
 
-    def I2C_read(self, reg=0x0, master=3, slave_addr=0x48, nbytes=1, adr_nbytes=2):
+    def I2C_read(self, reg=0x0, master=3, slave_addr=0x48, nbytes=1, adr_nbytes=2, freq=2):
         # wrapper function to have similar interface as lpGBT I2C_read
-        if nbytes > 1:
-            return self.I2C_read_multi(channel=master, servant=slave_addr, reg=reg, nbytes=nbytes)
+        if nbytes > 1 or adr_nbytes>1:
+            return self.I2C_read_multi(channel=master, servant=slave_addr, reg=reg, nbytes=nbytes, adr_nbytes=adr_nbytes, freq=freq)
         else:
-            return self.I2C_read_single_byte(channel=master, servant=slave_addr, reg=reg)
+            return self.I2C_read_single_byte(channel=master, servant=slave_addr, reg=reg, freq=freq)
 
-    def I2C_read_single_byte(self, channel=3, servant=0x48, reg=0x00):
+    def I2C_read_single_byte(self, channel=3, servant=0x48, reg=0x00, freq=2):
         self.enable_I2C(channel=channel)
 
         # write to the pointer reg
@@ -608,7 +608,7 @@ class SCA:
             #print ("Read not successful")
             return False
 
-    def I2C_write_single_byte(self, channel, servant, data):
+    def I2C_write_single_byte(self, channel, servant, data, freq=2):
         #enable channel
         self.enable_I2C(channel=channel)
         #single byte write
@@ -640,13 +640,15 @@ class SCA:
         res = self.rw_cmd(SCA_I2C.I2C_R_CTRL, self.get_I2C_channel(channel), 0x0).value()
         return res >> 24
 
-    def I2C_read_multi(self, channel=3, servant=0x48, nbytes=15, reg=0x0):
+    def I2C_read_multi(self, channel=3, servant=0x48, nbytes=1, reg=0x0, adr_nbytes=2, freq=2):
+        adr_bytes = [ ((reg >> (8*i)) & 0xff) for i in range(adr_nbytes) ]
         #enable channel
         self.enable_I2C(channel=channel)
         #configure NBYTES in the control register
-        self.I2C_write_ctrl(channel, nbytes<<2)
+        self.I2C_write_ctrl(channel, nbytes<<2 | freq)
         # write to the pointer reg
-        self.I2C_write_single_byte(channel=channel, servant=servant, data=reg)
+        self.I2C_write_multi(adr_bytes, channel, servant)
+        #self.I2C_write_single_byte(channel=channel, servant=servant, data=reg)
         #multi-byte read
         start_time = time.time()
         cmd_res = self.rw_cmd(SCA_I2C.I2C_M_7B_R, self.get_I2C_channel(channel), (servant<<24)).value()
@@ -673,16 +675,19 @@ class SCA:
                     return_byte = (page_value & mask) >> (8 * (3 - byte))
                     out_bytes.append(return_byte)
 
-        return out_bytes
+        if len(out_bytes) > 1:
+            return out_bytes
+        else:
+            return out_bytes[0]
 
-    def I2C_write_multi(self, data, channel=3, servant=0x48):
+    def I2C_write_multi(self, data, channel=3, servant=0x48, freq=2):
         if not type(data) == list:
             data = [data]
         nbytes = len(data)
         #enable channel
         self.enable_I2C(channel=channel)
         #configure NBYTES in the control register
-        self.I2C_write_ctrl(channel, nbytes<<2)
+        self.I2C_write_ctrl(channel, nbytes<<2 | freq)
         #begin writing to the data registers [I2C_W_DATA0, I2C_W_DATA1, I2C_W_DATA2, I2C_W_DATA3]
         data_registers = [SCA_I2C.I2C_W_DATA0 + SCA_I2C.I2C_RW_DATA_OFFSET * n for n in range(((nbytes-1)//4) + 1)]
         for page in range(((nbytes-1)//4) + 1):
