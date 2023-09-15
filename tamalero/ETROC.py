@@ -71,6 +71,7 @@ class ETROC():
         self.DAC_step = 400/2**10
         self.invalid_FC_counter = 0
 
+        self.hot_pixels = []
 
     # =========================
     # === UTILITY FUNCTIONS ===
@@ -258,6 +259,8 @@ class ETROC():
                     ret = self.rd_reg('PixelID', row=row, col=col)
                     exp = ((col << 4) | row)
                     comp = ret == exp
+                    if not comp:
+                        self.hot_pixels.append((row,col))
                     if verbose:
                         if comp:
                             print(green(f"Sanity check passed for row={row}, col={col}"))
@@ -271,6 +274,17 @@ class ETROC():
             return status_matrix
         else:
             return all_pass
+
+    def deactivate_hot_pixels(self, pixels=[], hot_pixels=True):
+        for row, col in pixels:
+            self.wr_reg("enable_TDC", 0, row=row, col=col)
+            self.wr_reg("disDataReadout", 1, row=row, col=col)
+        if hot_pixels:
+            # hot pixels are those that fail the pixel sanity check
+            for row, col in self.hot_pixels:
+                self.wr_reg("enable_TDC", 0, row=row, col=col)
+                self.wr_reg("disDataReadout", 1, row=row, col=col)
+
 
     def pixel_random_check(self, ntest=20, verbose=False):
         all_pass = True
@@ -410,7 +424,7 @@ class ETROC():
             self.wr_reg("onChipL1AConf", 0)  # this should be default anyway
             self.wr_reg("PLL_ENABLEPLL", 1)
             self.wr_reg("chargeInjectionDelay", 0xa)
-            self.wr_reg("L1Adelay", 0x01f5)
+            self.wr_reg("L1Adelay", 0x01f5, broadcast=True)
             self.wr_reg("disTrigPath", 1, broadcast=True)
             self.wr_reg("QInjEn", 0, broadcast=True)
 
@@ -884,8 +898,8 @@ class ETROC():
     # Merge trigger and data in a port
     def set_mergeTriggerData(self, mode):
         val = {'separate':0, 'merge':1}
-        if (self.get_singlePort() == 'right') and (mode == 'separate'):
-            raise Exception('Trigger and data in separate ports is only allowed when singlePort is set to \'both\'')
+        if (self.get_singlePort() == 'both') and (mode == 'separate'):
+            raise Exception('Trigger and data in different ports is only allowed when singlePort is set to \'right\'')
         try:
             self.wr_reg('mergeTriggerData', val[mode])
         except KeyError:
