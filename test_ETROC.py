@@ -3,6 +3,7 @@ from tamalero.ETROC_Emulator import ETROC2_Emulator as software_ETROC2
 from tamalero.DataFrame import DataFrame
 from tamalero.utils import get_kcu
 from tamalero.ReadoutBoard import ReadoutBoard
+from tamalero.PixelMask import PixelMask
 from tamalero.colors import red, green, yellow
 
 import numpy as np
@@ -14,6 +15,7 @@ import os
 import sys
 import json
 import time
+import datetime
 from yaml import load, dump
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -148,8 +150,10 @@ if __name__ == '__main__':
     argParser.add_argument('--mode', action='store', default=['dual'], choices=['dual', 'single'], help="Port mode for ETROC2")
     argParser.add_argument('--internal_data', action='store_true', help="Set up internal data generation")
     argParser.add_argument('--enable_power_board', action='store_true', help="Enable Power Board (all modules). Jumpers must still be set as well.")
+    argParser.add_argument('--timing_scan', action='store_true', help="Perform L1Adelay timing scan")
     argParser.add_argument('--row', action='store', default=4, help="Pixel row to be tested")
     argParser.add_argument('--col', action='store', default=3, help="Pixel column to be tested")
+    argParser.add_argument('--pixel_mask', action='store', default=None, help="Pixel mask to apply")
     args = argParser.parse_args()
 
 
@@ -286,6 +290,16 @@ if __name__ == '__main__':
 
         #etroc = ETROC(rb=rb_0, i2c_adr=96, i2c_channel=1, elinks={0:[0,2]})
 
+        # Load a pixel mask if specified
+        masked_pixels = []
+        if args.pixel_mask:
+            mask = PixelMask.from_file(args.pixel_mask)
+            masked_pixels = mask.get_masked_pixels()
+
+            print("\n - Will apply the following pixel mask:")
+            mask.show()
+
+        
         if not args.skip_sanity_checks:
 
             print("\n - Checking peripheral configuration:")
@@ -334,6 +348,13 @@ if __name__ == '__main__':
                 print("Passed!")
             else:
                 print(f"Failed: {test0=}, {test1=}, {test2=}, {test3=}")
+        else:
+            # still run sanity check but quietly
+            # this is needed so that we can deactivate problematic / hot pixels
+            res = etroc.pixel_sanity_check(verbose=False)
+
+        print("\n - Deactivating problematic / hot pixels")
+        etroc.deactivate_hot_pixels(pixels=masked_pixels)
 
         # NOTE below is WIP code for tests of the actual data readout
         from tamalero.FIFO import FIFO
@@ -341,8 +362,8 @@ if __name__ == '__main__':
         df = DataFrame()
         # NOTE this is for single port tests right now, where we only get elink 2
         fifo = FIFO(rb=rb_0)
-        fifo.select_elink(0)
-        fifo.ready()
+        #fifo.select_elink(0)
+        #fifo.ready()
 
         print("\n - Checking elinks")
 
@@ -356,9 +377,12 @@ if __name__ == '__main__':
             else:
                 slave = True
             for link in etroc.elinks[lpgbt]:
+                print(f"Enabling elink {link}, slave is {slave}")
                 rb_0.enable_etroc_readout(link, slave=slave)
-                #time.sleep(0.1)
+                #time.sleep(0.5)
                 #rb_0.reset_data_error_count()
+                #fifo.select_elink(link, slave)
+                #fifo.ready()
                 rb_0.rerun_bitslip()
                 time.sleep(1.5)
                 rb_0.reset_data_error_count()
@@ -369,8 +393,11 @@ if __name__ == '__main__':
                 while not stat:
                     #rb_0.disable_etroc_readout(link, slave=slave)
                     rb_0.enable_etroc_readout(link, slave=slave)
+                    #time.sleep(0.5)
                     #time.sleep(0.1)
                     #rb_0.reset_data_error_count()
+                    #fifo.select_elink(link, slave)
+                    #fifo.ready()
                     rb_0.rerun_bitslip()
                     time.sleep(1.5)
                     rb_0.reset_data_error_count()
@@ -443,6 +470,7 @@ if __name__ == '__main__':
             etroc.wr_reg("workMode", 0x1, row=15, col=7)
             etroc.wr_reg("workMode", 0x1, row=15, col=8)
 
+        etroc.deactivate_hot_pixels(pixels=masked_pixels)
         etroc.wr_reg("onChipL1AConf", 0x2)  # NOTE: internal L1A is around 1MHz, so we're only turning this on for the shortest amount of time.
         etroc.wr_reg("onChipL1AConf", 0x0)
         test_data = []
@@ -513,7 +541,9 @@ if __name__ == '__main__':
         fifo.reset()
         if not args.partial:
             print("Will use workMode 1 to get some occupancy (no noise or charge injection)")
-            etroc.wr_reg("workMode", 0x1, broadcast=True)  # this was missing
+            etroc.wr_reg("workMode", 0x1, broadcast=True)  # this overwrites disDataReadout!
+            etroc.deactivate_hot_pixels(pixels=masked_pixels)
+
             for j in range(1):
                 # One go is enough, but can run through this loop many times if there's any issue
                 # with FIFO / data readout at any point
@@ -800,7 +830,7 @@ if __name__ == '__main__':
             count   = []
             print("Fine scanning around the mid-slope DAC value now")
             rb_0.get_link_status(elink, slave=slave)
-            for i in range(mid_slope-20, mid_slope+20):
+            for i in range(mid_slope-20, mid_slope+35):
                 #etroc.wr_reg("DAC", i, row=3, col=4)
                 etroc.wr_reg("DAC", i, row=row, col=col)
                 fifo.send_l1a(5000)
@@ -820,7 +850,8 @@ if __name__ == '__main__':
             ax.set_ylabel("normalized count")
             plt.legend()
 
-            fig.savefig(f'results/scan_internal_row_{row}_col_{col}.png')
+            now = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            fig.savefig(f'results/scan_internal_row_{row}_col_{col}_{now}.png')
 
         if args.internal_data:
             # this still gives type == 0 data (with TOA, TOT, CAL)
@@ -900,6 +931,7 @@ if __name__ == '__main__':
 
         if args.qinj:
             etroc.reset()
+            etroc.wr_reg("disDataReadout", 1, broadcast=True)
             with open('results/thresholds.yaml', 'r') as f:
                 threshold_matrix = load(f, Loader)
 
@@ -933,6 +965,7 @@ if __name__ == '__main__':
 
             charge = int(args.charge) - 1
             for row, col in pixels:
+                etroc.wr_reg("disDataReadout", 0, row=row, col=col, broadcast=False)
                 etroc.wr_reg("DAC", int(threshold_matrix[row][col]), row=row, col=col)
                 etroc.wr_reg("QSel", charge, row=row, col=col)
                 etroc.wr_reg("QInjEn", 1, row=row, col=col)
@@ -1089,6 +1122,44 @@ if __name__ == '__main__':
             cal_min = np.mean(cal_code) - 20
             cal_max = np.mean(cal_code) + 20
             cal_hist[complex(0,cal_min):complex(0,cal_max):1j].show(columns=100)
+
+        elif args.timing_scan:
+            import pickle
+            print("Running timing scan")
+            rb_0.enable_external_trigger()
+            etroc.wr_reg("disDataReadout", 0, row=15, col=0, broadcast=False)
+            etroc.wr_reg("DAC", 115, row=15, col=0)
+            #data = []
+            results = []
+            fifo.reset()
+            rb_0.reset_data_error_count()
+            #data_count = 0
+            #for j in range(0, 512):  # max delay is 511 bunch crossings
+            for j in range(230, 245):  # max delay is 511 bunch crossings
+                data_count = 0
+                trigger_count = 0
+                data = []
+                etroc.wr_reg("L1Adelay", j, broadcast=True)  # broadcast was missing before.
+                for i in range(100):
+                    #etroc.wr_reg("L1Adelay", 0x01f5)
+                    if fifo.is_full():
+                        print("Fifo is full!")
+                        fifo.reset()
+                    if rb_0.read_data_count(0, slave=True):
+                        #print("There was a hit (or noise)")
+                        data += fifo.pretty_read(df)
+                        trigger_count += rb_0.read_packet_count(0, slave=True)
+                        data_count += rb_0.read_data_count(0, slave=True)
+                        rb_0.reset_data_error_count()
+                        #data_count += rb_0.read_data_count(0, slave=True)
+                        #fifo.reset()
+                results.append((j, data_count, trigger_count))
+                print(j,data_count,trigger_count)
+
+            with open("timing_scan.pkl", "wb") as f:
+                pickle.dump(results, f)
+
+            rb_0.disable_external_trigger()
 
     elif args.vth:
         # ==============================
