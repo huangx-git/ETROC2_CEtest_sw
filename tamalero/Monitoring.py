@@ -8,6 +8,13 @@ def module_mon(module, sleep=10):
     t.start()
     return mon
 
+def blink_rhett(rb, iterations=5):
+    from threading import Thread
+    mon = Monitoring(rb.bad_boy)
+    t = Thread(target = mon.run_limited, args=(iterations,))
+    t.start()
+    return mon
+
 class Monitoring:
 
     def __init__(self, fun):
@@ -21,6 +28,11 @@ class Monitoring:
         while self._running and True:
             self.fun()
             time.sleep(sleep)
+
+    def run_limited(self, iterations=5):
+        for it in range(iterations):
+            self.fun()
+        self._running = False
 
 class Lock:
     def __init__(self, to_lock):

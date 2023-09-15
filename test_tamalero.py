@@ -396,10 +396,6 @@ if __name__ == '__main__':
         rb.DAQ_LPGBT.set_gpio("LED_1", 1) # Set LED1 after tamalero finishes succesfully
         t_end = time.time() + 10
         if args.power_up:
+            from tamalero.Monitoring import Monitoring, blink_rhett
             print("RB configured successfully. Rhett is happy " + emojize(":dog_face:"))
-            while time.time() < t_end:
-                rb.DAQ_LPGBT.set_gpio("LED_RHETT", 1) # Let Rhett LED blink for 10s
-                time.sleep(0.5)
-                rb.DAQ_LPGBT.set_gpio("LED_RHETT", 0)
-                time.sleep(0.5)
-        rb.DAQ_LPGBT.set_gpio("LED_RHETT", 1)
+            b = blink_rhett(rb, iterations=3)
