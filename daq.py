@@ -26,7 +26,7 @@ def get_occupancy(hw, rb):
         occ = 0
     return occ * 4  # not sure where the factor of 4 comes from, but it's needed
 
-def stream_daq(kcu, rb=0, l1a_rate=1000, run_time=10, superblock=100, block=250, run=1):
+def stream_daq(kcu, rb=0, l1a_rate=1000, run_time=10, superblock=100, block=250, run=1, ext_l1a=False):
 
     uhal.disableLogging()
     hw = kcu.hw  #uhal.getDevice("kcu105_daq", IPB_PATH, "file://" + ADR_TABLE)
@@ -40,6 +40,12 @@ def stream_daq(kcu, rb=0, l1a_rate=1000, run_time=10, superblock=100, block=250,
     # set l1a rate
     hw.getNode("SYSTEM.L1A_RATE").write(int(rate_setting))
     hw.dispatch()
+
+    if ext_l1a:
+        # enable external trigger
+        hw.getNode("SYSTEM.EN_EXT_TRIGGER").write(0x1)
+        hw.dispatch()
+
 
     start = time.time()
 
@@ -122,6 +128,12 @@ def stream_daq(kcu, rb=0, l1a_rate=1000, run_time=10, superblock=100, block=250,
 
     hw.getClient().write(hw.getNode(f"READOUT_BOARD_{rb}.FIFO_RESET").getAddress(), 0x1)
     hw.dispatch()
+
+    if ext_l1a:
+        # disable external trigger again
+        hw.getNode("SYSTEM.EN_EXT_TRIGGER").write(0x0)
+        hw.dispatch()
+
     return f_out
 
 
@@ -131,6 +143,7 @@ if __name__ == '__main__':
     argParser.add_argument('--kcu', action='store', default='192.168.0.10', help="KCU address")
     argParser.add_argument('--rb', action='store', default=0, type=int, help="RB number (default 0)")
     argParser.add_argument('--l1a_rate', action='store', default=1000, type=int, help="L1A rate in Hz")
+    argParser.add_argument('--ext_l1a', action='store_true', help="Enable external trigger input")
     argParser.add_argument('--run_time', action='store', default=10, type=int, help="Time in [s] to take data")
     argParser.add_argument('--run', action='store', default=1, type=int, help="Run number")
     args = argParser.parse_args()
@@ -140,7 +153,7 @@ if __name__ == '__main__':
 
     print(f"Taking data now.\n ...")
 
-    f_out = stream_daq(kcu, l1a_rate=args.l1a_rate, run_time=args.run_time, run=args.run)
+    f_out = stream_daq(kcu, l1a_rate=args.l1a_rate, run_time=args.run_time, run=args.run, ext_l1a=args.ext_l1a)
 
     print(f"Run {args.run} has ended.")
     print(f"Stored data in file: {f_out}")
