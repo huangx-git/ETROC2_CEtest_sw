@@ -424,7 +424,7 @@ class ETROC():
             self.wr_reg("onChipL1AConf", 0)  # this should be default anyway
             self.wr_reg("PLL_ENABLEPLL", 1)
             self.wr_reg("chargeInjectionDelay", 0xa)
-            self.wr_reg("L1Adelay", 0x01f5, broadcast=True)
+            self.wr_reg("L1Adelay", 0x01f5, broadcast=True)  # default for LHC / Qinj
             self.wr_reg("disTrigPath", 1, broadcast=True)
             self.wr_reg("QInjEn", 0, broadcast=True)
 

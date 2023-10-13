@@ -637,7 +637,7 @@ if __name__ == '__main__':
 
             print("Coarse scan to find the peak location")
             first_val = 1023
-            for i in range(0, 1000, 5):
+            for i in range(0, 1000, 3):  # FIXME step size of 5 was too large
                 etroc.wr_reg("DAC", i, row=row, col=col)
                 fifo.send_l1a(2000)
                 vth.append(i)
@@ -1127,8 +1127,8 @@ if __name__ == '__main__':
             import pickle
             print("Running timing scan")
             rb_0.enable_external_trigger()
-            etroc.wr_reg("disDataReadout", 0, row=15, col=0, broadcast=False)
-            etroc.wr_reg("DAC", 115, row=15, col=0)
+            etroc.wr_reg("disDataReadout", 0, row=15, col=2, broadcast=False)
+            etroc.wr_reg("DAC", 96, row=15, col=2)  # FIXME this should not be hard coded.
             #data = []
             results = []
             fifo.reset()
@@ -1156,7 +1156,8 @@ if __name__ == '__main__':
                 results.append((j, data_count, trigger_count))
                 print(j,data_count,trigger_count)
 
-            with open("timing_scan.pkl", "wb") as f:
+            now = time.time()
+            with open(f"timing_scan_{now}.pkl", "wb") as f:
                 pickle.dump(results, f)
 
             rb_0.disable_external_trigger()
