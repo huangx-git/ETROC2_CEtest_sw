@@ -166,7 +166,7 @@ if __name__ == '__main__':
     rb_0.enable_external_trigger()
     for i in range(4):
         etroc.wr_reg("disDataReadout", 0, row=15, col=i, broadcast=False)
-        etroc.wr_reg("DAC", threshold_matrix[15][i], row=15, col=i)
+        etroc.wr_reg("DAC", int(threshold_matrix[15][i]), row=15, col=i)
 
     L1Adelay = 17  # NOTE this is what we've found for the laser setup at FNAL
     if args.timing_scan:
