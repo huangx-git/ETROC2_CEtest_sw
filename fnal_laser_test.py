@@ -32,6 +32,7 @@ if __name__ == '__main__':
     import argparse
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--kcu', action='store', default='192.168.0.10', help="IP Address of KCU105 board")
+    argParser.add_argument('--configuration', action='store', default='modulev0b', choices=['modulev0', 'modulev0b'], help="Board configuration to be loaded")
     argParser.add_argument('--module', action='store', default=0, choices=['1','2','3'], help="Module to test")
     argParser.add_argument('--host', action='store', default='localhost', help="Hostname for control hub")
     argParser.add_argument('--hard_reset', action='store_true', default=False, help="Hard reset of selected ETROC2 chip")
