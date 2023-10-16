@@ -157,6 +157,9 @@ if __name__ == '__main__':
     args = argParser.parse_args()
 
 
+    if not os.path.isdir("results/"):
+        os.makedirs("results/")
+
     if args.test_readwrite:
         # ==============================
         # === Test simple read/write ===
