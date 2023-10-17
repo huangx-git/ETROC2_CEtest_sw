@@ -148,6 +148,7 @@ if __name__ == '__main__':
     argParser.add_argument('--skip_sanity_checks', action='store_true', default=False, help="Don't run sanity checks of ETROC2 chip")
     argParser.add_argument('--scan', action='store', default=['full'], choices=['none', 'full', 'simple', 'internal'], help="Which threshold scan to run with ETROC2")
     argParser.add_argument('--mode', action='store', default=['dual'], choices=['dual', 'single'], help="Port mode for ETROC2")
+    argParser.add_argument('--threshold', action='store', default=['manual'], choices=['manual', 'auto'], help="Use thresholds from manual or automatic scan?")
     argParser.add_argument('--internal_data', action='store_true', help="Set up internal data generation")
     argParser.add_argument('--enable_power_board', action='store_true', help="Enable Power Board (all modules). Jumpers must still be set as well.")
     argParser.add_argument('--timing_scan', action='store_true', help="Perform L1Adelay timing scan")
@@ -620,6 +621,56 @@ if __name__ == '__main__':
 
         etroc.wr_reg("workMode", 0x0, broadcast=True)
 
+        if args.threshold == 'auto':
+
+            # using broadcast
+            print ("Using auto-threshold calibration with broadcast")
+            baseline, noise_width = etroc.auto_threshold_scan(broadcast=True)
+
+            fig, ax = plt.subplots(1,1,figsize=(7,7))
+            cax = ax.matshow(baseline)
+            ax.set_ylabel(r'$Row$')
+            ax.set_xlabel(r'$Column$')
+            fig.colorbar(cax,ax=ax)
+            name = 'baseline_auto_broadcast'
+            fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
+            fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
+
+            fig, ax = plt.subplots(1,1,figsize=(7,7))
+            cax = ax.matshow(noise_width)
+            ax.set_ylabel(r'$Row$')
+            ax.set_xlabel(r'$Column$')
+            fig.colorbar(cax,ax=ax)
+            name = 'noisewidth_auto_broadcast'
+            fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
+            fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
+
+            # not using broadcast
+            print ("Using auto-threshold calibration for individual pixels")
+            baseline = np.empty([16, 16])
+            noise_width = np.empty([16, 16])
+            for i in range(16):
+                for j in range(16):
+                    baseline[i][j], noise_width[i][j] = etroc.auto_threshold_scan(row=i, col=j, broadcast=False)
+
+            fig, ax = plt.subplots(1,1,figsize=(7,7))
+            cax = ax.matshow(baseline)
+            ax.set_ylabel(r'$Row$')
+            ax.set_xlabel(r'$Column$')
+            fig.colorbar(cax,ax=ax)
+            name = 'baseline_auto_individual'
+            fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
+            fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
+
+            fig, ax = plt.subplots(1,1,figsize=(7,7))
+            cax = ax.matshow(noise_width)
+            ax.set_ylabel(r'$Row$')
+            ax.set_xlabel(r'$Column$')
+            fig.colorbar(cax,ax=ax)
+            name = 'noisewidth_auto_individual'
+            fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
+            fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
+
         if args.scan == 'full':
 
             # Prescanning a random pixel to get an idea of the threshold
@@ -640,7 +691,7 @@ if __name__ == '__main__':
 
             print("Coarse scan to find the peak location")
             first_val = 1023
-            for i in range(0, 1000, 3):  # FIXME step size of 5 was too large
+            for i in range(0, 1000, 3):
                 etroc.wr_reg("DAC", i, row=row, col=col)
                 fifo.send_l1a(2000)
                 vth.append(i)

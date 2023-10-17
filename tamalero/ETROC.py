@@ -488,16 +488,68 @@ class ETROC():
         else:
             return self.get_QInj(row=row, col=col)
 
-    def auto_threshold_scan(self):
-        # FIXME not yet fully working
-        self.apply_THCal()
-        self.enable_THCal_buffer()
-        self.wr_reg('TH_offset', 2, broadcast=True)
-        self.reset_THCal()
-        self.init_THCal()
-        self.wr_reg('RSTn_THCal', 1, broadcast=True)
-        self.init_THCal()
-        return self.rd_reg('TH', row=2, col=2)
+    def auto_threshold_scan(self, row=0, col=0, broadcast=False, offset='auto'):
+        '''
+        From the manual:
+        1. set "Bypass" low.
+        2. set "BufEn_THCal" high.
+        3. set "TH_offset" a proper value.
+        4. reset "Th_Cal":
+        (a) set "RSTn" low.
+        (b) enable clock by issuing a rising edge of ScanStart.
+        (c) set "RSTn" high.
+        5. launch auto threshold calibration by issuing a rising edge of ScanStart.
+        '''
+        if broadcast:
+            baseline = np.empty([16, 16])
+            noise_width = np.empty([16, 16])
+        else:
+            baseline = 0
+            noise_width = 0
+        self.wr_reg("CLKEn_THCal", 1, row=row, col=col, broadcast=broadcast)
+        self.wr_reg('Bypass_THCal', 0, row=row, col=col, broadcast=broadcast)
+        self.wr_reg('BufEn_THCal', 1, row=row, col=col, broadcast=broadcast)
+        self.wr_reg('RSTn_THCal', 0, row=row, col=col, broadcast=broadcast)
+        time.sleep(0.1)  # NOTE check if needed
+        self.wr_reg('RSTn_THCal', 1, row=row, col=col, broadcast=broadcast)
+        time.sleep(0.1)  # NOTE check if needed
+        self.wr_reg('ScanStart_THCal', 1, row=row, col=col, broadcast=broadcast)
+        done = False
+        while not done:
+            done = True
+            if broadcast:
+                for i in range(16):
+                    for j in range(16):
+                        tmp = self.rd_reg("ScanDone", row=i, col=j)
+                        done &= tmp
+                #if not done: print("not done")
+            else:
+                done = self.rd_reg("ScanDone", row=row, col=col)
+                time.sleep(0.001)
+        self.wr_reg('ScanStart_THCal', 0, row=row, col=col, broadcast=broadcast)
+        if offset == 'auto':
+            if broadcast:
+                for i in range(16):
+                    for j in range(16):
+                        nw = self.get_noisewidth(row=i, col=j)
+                        self.wr_reg('TH_offset', nw, row=i, col=j)
+                        noise_width[i][j] = nw
+                        baseline[i][j] = self.get_baseline(row=i, col=j)
+            else:
+                noise_width = self.get_noisewidth(row=row, col=col)
+                baseline = self.get_baseline(row=row, col=col)
+        else:
+            self.wr_reg('TH_offset', offset, row=row, col=col, broadcast=broadcast)
+            if broadcast:
+                for i in range(16):
+                    for j in range(16):
+                        noise_width[i][j] = self.get_noisewidth(row=i, col=j)
+                        baseline[i][j] = self.get_baseline(row=i, col=j)
+            else:
+                noise_width = self.get_noisewidth(row=row, col=col)
+                baseline = self.get_baseline(row=row, col=col)
+
+        return baseline, noise_width
 
     def setup_accumulator(self, row=0, col=0):
         self.wr_reg("CLKEn_THCal", 1, row=row, col=col, broadcast=False)
