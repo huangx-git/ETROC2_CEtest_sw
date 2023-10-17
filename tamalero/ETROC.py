@@ -721,6 +721,17 @@ class ETROC():
     def get_THoffset(self, row=0, col=0):
         return self.rd_reg('TH_offset', row=row, col=col)
 
+    def add_THoffset(self, val, row=0, col=0, broadcast=False):
+        '''
+        add to the currently set offset
+        '''
+        rows = range(16) if broadcast else [row]
+        cols = range(16) if broadcast else [col]
+        for i in rows:
+            for j in cols:
+                tmp = self.get_THoffset(row=i, col=j)
+                self.set_THoffset(tmp+val, row=i, col=j, broadcast=False)
+
     # Reset of threshold calibration block, active low
     def reset_THCal(self, row=0, col=0, broadcast=True):
         self.wr_reg('RSTn_THCal', 0, row=row, col=col, broadcast=broadcast)
