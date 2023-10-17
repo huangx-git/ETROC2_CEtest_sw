@@ -500,6 +500,8 @@ class ETROC():
         (c) set "RSTn" high.
         5. launch auto threshold calibration by issuing a rising edge of ScanStart.
         '''
+        # NOTE the below routine has been checked.
+        assert broadcast==False, "Auto-threshold calibration with broadcast does not work in ETROC2"
         if broadcast:
             baseline = np.empty([16, 16])
             noise_width = np.empty([16, 16])
@@ -510,9 +512,7 @@ class ETROC():
         self.wr_reg('Bypass_THCal', 0, row=row, col=col, broadcast=broadcast)
         self.wr_reg('BufEn_THCal', 1, row=row, col=col, broadcast=broadcast)
         self.wr_reg('RSTn_THCal', 0, row=row, col=col, broadcast=broadcast)
-        time.sleep(0.1)  # NOTE check if needed
         self.wr_reg('RSTn_THCal', 1, row=row, col=col, broadcast=broadcast)
-        time.sleep(0.1)  # NOTE check if needed
         self.wr_reg('ScanStart_THCal', 1, row=row, col=col, broadcast=broadcast)
         done = False
         while not done:

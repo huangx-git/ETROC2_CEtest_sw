@@ -623,27 +623,29 @@ if __name__ == '__main__':
 
         if args.threshold == 'auto':
 
-            # using broadcast
-            print ("Using auto-threshold calibration with broadcast")
-            baseline, noise_width = etroc.auto_threshold_scan(broadcast=True)
+            # using broadcast.
+            # NOTE: not working in ETROC2, so this part is currently being skipped
+            if False:
+                print ("Using auto-threshold calibration with broadcast")
+                baseline, noise_width = etroc.auto_threshold_scan(broadcast=True)
 
-            fig, ax = plt.subplots(1,1,figsize=(7,7))
-            cax = ax.matshow(baseline)
-            ax.set_ylabel(r'$Row$')
-            ax.set_xlabel(r'$Column$')
-            fig.colorbar(cax,ax=ax)
-            name = 'baseline_auto_broadcast'
-            fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
-            fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
+                fig, ax = plt.subplots(1,1,figsize=(7,7))
+                cax = ax.matshow(baseline)
+                ax.set_ylabel(r'$Row$')
+                ax.set_xlabel(r'$Column$')
+                fig.colorbar(cax,ax=ax)
+                name = 'baseline_auto_broadcast'
+                fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
+                fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
 
-            fig, ax = plt.subplots(1,1,figsize=(7,7))
-            cax = ax.matshow(noise_width)
-            ax.set_ylabel(r'$Row$')
-            ax.set_xlabel(r'$Column$')
-            fig.colorbar(cax,ax=ax)
-            name = 'noisewidth_auto_broadcast'
-            fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
-            fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
+                fig, ax = plt.subplots(1,1,figsize=(7,7))
+                cax = ax.matshow(noise_width)
+                ax.set_ylabel(r'$Row$')
+                ax.set_xlabel(r'$Column$')
+                fig.colorbar(cax,ax=ax)
+                name = 'noisewidth_auto_broadcast'
+                fig.savefig(os.path.join(plot_dir, "{}.pdf".format(name)))
+                fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
 
             # not using broadcast
             print ("Using auto-threshold calibration for individual pixels")
