@@ -15,6 +15,15 @@ from scipy import stats
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--loc', action = 'store', default = '4,3')
+parser.add_argument('--input', action = 'store')
+parser.add_argument('--vth_cuts', action = 'store', nargs = 2, type = int, default = [])
+parser.add_argument('--cal_cuts', action = 'store', nargs = 2, type = int, default = [])
+parser.add_argument('--nl1a', action = 'store', type = int, default = 3200)
+parser.add_argument('--delay', action = 'store', type = int, default = 504)
+parser.add_arguemnt('--nbins', action = 'store', type = int, default = 10)
+parser.add_argument('--plotted_pixels', action = 'store', nargs = '*', default = )
+parser.add_argument('--plotted_vths', action = 'store', nargs = '*', default = [250, 255, 260, 292, 299, 340], type = int)
+parser.add_argument('--hits_cut', action = 'store', type = float, default = 0)
 args = parser.parse_args()
 
 if args.loc == 'broadcast':
@@ -27,29 +36,40 @@ else:
     pixpath = f'r{i}c{j}/'
 
 #loc_title = ''
-delay = 504
-nl1a = 32
-nbins = 10
+delay = args.delay
+nl1a = args.nl1a
+nbins = args.nbins
 fileform = f'Qinj_scan_L1A_{delay}'
-low_cut = 0
-high_cut =  500
+low_cut = np.min(args.vth_cut)
+high_cut = np.max(args.vth_cut)
+low_cal = np.min(args.cal_cuts)
+high_cal = np.max(args.cal_cuts)
 labfontsize = 20
 titfontsize = 25
-#path = 'results/08072023_roberto/'
-path = 'results/10172023_reaquaint_source/' + pixpath
-store = path + 'full_qinj_plots/'
+hitslim = args.nl1a*args.hits_cut
+path = args.input + '/' + pixpath
+if len(args.vth_cuts) == 0 and len(args.cal_cuts) == 0 and args.hits_cut == 0: 
+    store = path + 'full_range_qinj_plots/'
+else:
+    store = path
+    if len(args.vth_cuts) > 0:
+        store += f'vth{low_cut}_{high_cut}_'
+    if len(args.cal_cuts):
+        store += f'cal{low_cal}_{high_cal}_'
+    if args.hits_cut > 0
+        store += f'hits_{args.hits_cut_'.replace('.', 'p')
+    store += 'qinj_plots/'
 files = [f for f in os.listdir(path) if fileform in f]
 if not os.path.isdir(store):
     os.mkdir(store)
-interest = []#[250, 255, 260, 292, 299, 340]
-#interest = [815, 820, 825, 873]
+
 figsize = (9, 7)
 errorbarsize = (12, 7)
 
 #Loading In Data
 if len(files) == 0:
     print('No files here.')
-    stupid.phrase.to.stop.code
+    sys.exit(0)
 
 print(f'Loading the following files from {path}')
 
@@ -65,7 +85,8 @@ for f in files:
 print()
 print(df.head())
 if df.empty:
-    stupid.phrase.to.stop.code
+    print('Files found but no hits found.')
+    sys.exit(0)
 
 #Slide 3 S Curve Plots
 #Hits v. Threshold DAC Values, All QSel
@@ -81,7 +102,6 @@ for q in tqdm(np.unique(df.charge)):
     x = df.vth[idx]
     y = df.hits[idx]
     plt.plot(x, y, 'o-', label = f'Qinj = {q}')
-#plt.ylim([3100, 3300])
 plt.legend()
 plt.savefig(f'{store}/DAC_v_Hits.pdf')
 plt.savefig(f'{store}/DAC_v_Hits.png')
@@ -108,9 +128,7 @@ for q in tqdm(np.unique(df.charge)):
 temp = pd.DataFrame()
 for q in np.unique(df.charge):
     sub = df[df.charge == q]
-    lim = np.max(sub.hits)*.9
-    idx = [df.charge.iloc[i] == q and df.vth.iloc[i] < high_cut and df.vth.iloc[i] > low_cut for i in range(len(df.hits))]
-    #idx = [df.charge.iloc[i] == q and df.hits.iloc[i] > lim and df.vth.iloc[i] < high_cut and df.vth.iloc[i] > low_cut for i in range(len(df.hits))]
+    idx = [df.charge.iloc[i] == q and df.hits.iloc[i] > hitslim and df.vth.iloc[i] < high_cut and df.vth.iloc[i] > low_cut for i in range(len(df.hits))]
     sub = df[idx]
     temp = pd.concat([temp, sub])
 
@@ -157,8 +175,7 @@ for q in np.unique(df.charge):
     best = np.max(data.hits)
     if best == nl1a:
         charges.append(q)
-        firstbest.append(data.vth[data.hits == np.max(data.hits)].iloc[-1])
-
+        firstbest.append(data.vth[data.hits >= hitslim].iloc[-1])
 ax.scatter(charges, firstbest, label = 'Data', color = 'r')
 model = stats.linregress(charges, firstbest)
 x = np.linspace(np.min(charges), np.max(charges), 1000)
@@ -188,7 +205,7 @@ plt.savefig(f'{store}/Threshold_DAC_Limit.png')
 print('Working on TOT, TOA, and Cal hists for individual settings')
 for q in tqdm(np.unique(df.charge)):
     idx = [df.charge.iloc[i] == q and df.hits.iloc[i] > 0 for i in range(len(df.hits))]
-    for d in tqdm(interest, leave = False, desc = f'Working on QSel = {q}'):
+    for d in tqdm(args.plotted_vth, leave = False, desc = f'Working on QSel = {q}'):
         #if not d in df.vth: d = np.random.choice(df.vth, 1)
         idx = [df.charge.iloc[i] == q and df.vth.iloc[i] == d for i in range(len(df.vth))]
 
@@ -230,7 +247,7 @@ print('Working on TOA v. DAC')
 
 for q in tqdm(np.unique(df.charge)):
     chargeidx = df.charge == q
-    hitsidx = df.hits[chargeidx] > 100
+    hitsidx = df.hits[chargeidx] > hitslim
 
     vth = df.vth[chargeidx][hitsidx]
 
@@ -277,7 +294,7 @@ for q in tqdm(np.unique(df.charge)):
 fig = plt.figure(figsize = errorbarsize)
 for q in tqdm(np.unique(df.charge)):
     chargeidx = df.charge == q
-    hitsidx = df.hits[chargeidx] > 10#== nl1a
+    hitsidx = df.hits[chargeidx] >= hitslim#== nl1a
     vth = df.vth[chargeidx][hitsidx]
     toa = df.toa[chargeidx][hitsidx]
     toaavg = [np.mean(dat) for dat in toa]
@@ -295,7 +312,7 @@ plt.close()
 fig = plt.figure(figsize = errorbarsize)
 for q in tqdm(np.unique(df.charge)):
     chargeidx = df.charge == q
-    hitsidx = df.hits[chargeidx] > 10#== nl1a
+    hitsidx = df.hits[chargeidx] >= hitslim#== nl1a
     vth = df.vth[chargeidx][hitsidx]
     tot = df.tot[chargeidx][hitsidx]
     totavg = [np.mean(dat) for dat in tot]
@@ -313,7 +330,7 @@ plt.close()
 fig = plt.figure(figsize = errorbarsize)
 for q in tqdm(np.unique(df.charge)):
     chargeidx = df.charge == q
-    hitsidx = df.hits[chargeidx] > 100
+    hitsidx = df.hits[chargeidx] >= hitslim
     vth = df.vth[chargeidx][hitsidx]
     cal = df.cal[chargeidx][hitsidx]
     calavg = [np.mean(dat) for dat in cal]
@@ -395,7 +412,7 @@ for q in np.unique(df.charge):
 
     for i in range(len(vth)):
         #print(df.hits[idx].iloc[i], len(toa.iloc[i]))
-        if len(toa.iloc[i]) > .98*nl1a:# and np.std(toa.iloc[i]) < 2:#> .98*nl1a :
+        if len(toa.iloc[i]) >= hitslim:# and np.std(toa.iloc[i]) < 2:#> .98*nl1a :
             x.append(vth.iloc[i])
             y.append(np.std(toa.iloc[i]))
 

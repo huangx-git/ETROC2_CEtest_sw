@@ -144,6 +144,7 @@ if __name__ == '__main__':
     argParser.add_argument('--qinj', action='store_true', default=False, help="Run some charge injection tests")
     argParser.add_argument('--qinj_vth_scan', action='store_true', default=False, help="Run some charge injection tests")
     argParser.add_argument('--charge', action='store', default=15, help="Charge to be injected")
+    argParser.add_argument('--charges', action = 'store', default = [15], nargs = '+', type = int, help = 'Charges to be injecte specifically for qinj_vth_scan')
     argParser.add_argument('--hard_reset', action='store_true', default=False, help="Hard reset of selected ETROC2 chip")
     argParser.add_argument('--skip_sanity_checks', action='store_true', default=False, help="Don't run sanity checks of ETROC2 chip")
     argParser.add_argument('--scan', action='store', default=['full'], choices=['none', 'full', 'simple', 'internal'], help="Which threshold scan to run with ETROC2")
@@ -154,6 +155,9 @@ if __name__ == '__main__':
     argParser.add_argument('--row', action='store', default=4, help="Pixel row to be tested")
     argParser.add_argument('--col', action='store', default=3, help="Pixel column to be tested")
     argParser.add_argument('--pixel_mask', action='store', default=None, help="Pixel mask to apply")
+    argParser.add_argument('--vth_axis', action = 'store', default = [], nargs = '+', type = int, help = 'Vth axis for qinj_vth_scan') 
+    argParser.add_argument('--nl1a', action = 'store', default = 3200, type = int, help = 'Number of L1As to send during Qinj_vth_Scan')
+    argParser.add_argument('--outdir', action = 'store', default = 'results/', help = 'Location to deposit output files')
     args = argParser.parse_args()
 
 
@@ -866,14 +870,21 @@ if __name__ == '__main__':
         if args.qinj_vth_scan:
             fifo.reset()
             delay = 10
-            i = 4
-            j = 3
-            L1Adelay = 501
+            i = int(args.row)
+            j = int(args.col)
+            L1Adelay = 504
             
-            vth_axis    = np.linspace(415, 820, 406)
+            if len(args.vth_axis) == 3:
+                vth_axis = np.linspace(args.vth_axis[0], args.vth_axis[1], args.vth_axis[2])
+            elif len(args.vth_axis) == 2:
+                vth_axis = range(args.vth_axis[0], args.vth_axis[1])
+            else:
+                vth_axis    = np.linspace(415, 820, 406)
             #charges = [1,5,10,15,20,25,30,32]
             #charges = [5,10,15,20,25,30,32]
-            charges = [4,6,8,12]
+            
+            #charges = [4,6,8,12]
+            charges = args.charges
             results =[[] for i in range(0,len(charges))]
             TOA = [[] for i in range(0,len(charges))]
             TOT =  [[] for i in range(0,len(charges))]
@@ -888,7 +899,7 @@ if __name__ == '__main__':
                     etroc.QInj_set(q, delay, L1Adelay, row=i, col=j, broadcast = False) #set reg on ETROC
                     etroc.wr_reg('DAC', int(vth), row=i, col=j, broadcast=False) #set vth on ETROC
                 
-                    fifo.send_QInj(count=3200, delay=504) #send Qinj pulses with L1Adelay
+                    fifo.send_QInj(count=args.nl1a, delay=504) #send Qinj pulses with L1Adelay
                     result = fifo.pretty_read(df)
                     hits=0
                     toa=[]
@@ -914,7 +925,7 @@ if __name__ == '__main__':
                                         'tot' : TOT[k-1],
                                         'cal' : CAL[k-1]})
                 #print(scan_df.info())
-                scan_df.to_pickle(f"results/Qinj_scan_L1A_504_{q}.pkl")
+                scan_df.to_pickle(f"{args.outdir}/Qinj_scan_L1A_504_{q}.pkl")
                 
             fig, ax = plt.subplots()
 
