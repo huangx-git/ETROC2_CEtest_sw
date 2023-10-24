@@ -12,16 +12,15 @@ import os
 from tqdm import tqdm
 import argparse
 from scipy import stats
-
+import sys
 parser = argparse.ArgumentParser()
 parser.add_argument('--loc', action = 'store', default = '4,3')
 parser.add_argument('--input', action = 'store')
-parser.add_argument('--vth_cuts', action = 'store', nargs = 2, type = int, default = [])
-parser.add_argument('--cal_cuts', action = 'store', nargs = 2, type = int, default = [])
+parser.add_argument('--vth_cuts', action = 'store', nargs = 2, type = int, default = [0, 500])
+parser.add_argument('--cal_cuts', action = 'store', nargs = 2, type = int, default = [5000])
 parser.add_argument('--nl1a', action = 'store', type = int, default = 3200)
 parser.add_argument('--delay', action = 'store', type = int, default = 504)
-parser.add_arguemnt('--nbins', action = 'store', type = int, default = 10)
-parser.add_argument('--plotted_pixels', action = 'store', nargs = '*', default = )
+parser.add_argument('--nbins', action = 'store', type = int, default = 10)
 parser.add_argument('--plotted_vths', action = 'store', nargs = '*', default = [250, 255, 260, 292, 299, 340], type = int)
 parser.add_argument('--hits_cut', action = 'store', type = float, default = 0)
 args = parser.parse_args()
@@ -40,8 +39,8 @@ delay = args.delay
 nl1a = args.nl1a
 nbins = args.nbins
 fileform = f'Qinj_scan_L1A_{delay}'
-low_cut = np.min(args.vth_cut)
-high_cut = np.max(args.vth_cut)
+low_cut = np.min(args.vth_cuts)
+high_cut = np.max(args.vth_cuts)
 low_cal = np.min(args.cal_cuts)
 high_cal = np.max(args.cal_cuts)
 labfontsize = 20
@@ -56,8 +55,8 @@ else:
         store += f'vth{low_cut}_{high_cut}_'
     if len(args.cal_cuts):
         store += f'cal{low_cal}_{high_cal}_'
-    if args.hits_cut > 0
-        store += f'hits_{args.hits_cut_'.replace('.', 'p')
+    if args.hits_cut > 0: 
+        store += f'hits_{args.hits_cut}_'.replace('.', 'p')
     store += 'qinj_plots/'
 files = [f for f in os.listdir(path) if fileform in f]
 if not os.path.isdir(store):

@@ -4,26 +4,41 @@ import pandas as pd
 import os
 import json
 import pickle
-
+import argparse
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 
-q = 15
-if q == 25:
-    exrange = [220, 550]
+parser = argparse.ArgumentParser()
+parser.add_argument('--input', '-i', action = 'store')
+parser.add_argument('--charge', '-q', action = 'store', type = int)
+parser.add_argument('--vth_axis', action = 'store', default = [], nargs = 2, type = int)
+parser.add_argument('--count_lim', action = 'store', default = 0, type = float)
+parser.add_argument('--cal_lim', action = 'store', default = 500000, type = int)
+parser.add_argument('--nl1a', action = 'store', type = int, default = 32000)
+args = parser.parse_args()
+
+q = args.charge
+if len(args.vth_axis) != 2:
+    if q == 25:
+        exrange = [220, 550]
+    else:
+        exrange = [220, 425]
 else:
-    exrange = [220, 425]
-nl1a = 32
-countlim = .98*nl1a
-callim = 5000000
-path = 'results/10172023_reaquaint_source/'
+    exrange = args.vth_axis
+nl1a = args.nl1a
+countlim = args.count_lim*nl1a
+callim = args.cal_lim
+path = args.input
 pixels = [f for f in os.listdir(path) if not '.' in f]#[:15]
+print(pixels)
+
 df = pd.DataFrame()
 temp = []
 for pix in pixels:
     i = int(pix.split('c')[0][1:])
     j = int(pix.split('c')[1])
     pixpath = path + pix + f'/Qinj_scan_L1A_504_{q}.pkl'
+    print(pixpath)
     if os.path.exists(pixpath):
         try:
             data = pickle.load(open(pixpath, 'rb'))
@@ -35,7 +50,10 @@ for pix in pixels:
                 temp.append(pix)
         except:
             print(f'Found but failed to retrieve data for Row {i} Col {j}.')
+    else:
+        print(f'Found folder but no files for Row {i} Col {j}.')
 pixels = temp
+print(df)
 print(df[df.hits > 0].head())
 
 fitdata = {}
@@ -44,7 +62,7 @@ if len(pixels) <= 5:
     subset = pixels
 else:
     #subset = np.random.choice(pixels, 5, replace = False)
-    subset = ['r2c5', 'r3c8', 'r13c11', 'r1c15', 'r8c9']
+    subset = ['r2c5', 'r3c8', 'r13c11', 'r15c1', 'r8c9']
 calgrid = np.zeros([16, 16])
 calstdgrid = np.zeros([16, 16])
 calgridtxt = [[i for i in range(16)] for i in range(16)]
