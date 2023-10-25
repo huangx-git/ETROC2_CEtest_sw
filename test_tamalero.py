@@ -174,7 +174,7 @@ if __name__ == '__main__':
 
         temp.status()
     # write to the loopback node of the KCU105 to check ethernet communication
-    kcu = get_kcu(args.kcu, control_hub=args.control_hub, host=args.host, verbose=args.verbose)
+    kcu = get_kcu(args.kcu, control_hub=True, host=args.host, verbose=args.verbose)
     if (kcu == 0):
         # if not basic connection was established the get_kcu function returns 0
         # this would cause the RB init to fail.
