@@ -104,6 +104,7 @@ for q in tqdm(np.unique(df.charge)):
 plt.legend()
 plt.savefig(f'{store}/DAC_v_Hits.pdf')
 plt.savefig(f'{store}/DAC_v_Hits.png')
+plt.show()
 plt.close()
 
 #Slide 4 S Curve Plots
@@ -149,6 +150,7 @@ for q in tqdm(np.unique(df.charge)):
 plt.legend()
 plt.savefig(f'{store}/DAC_v_Hits_redux.pdf')
 plt.savefig(f'{store}/DAC_v_Hits_redux.png')
+plt.show()
 plt.close()
 
 for q in tqdm(np.unique(df.charge)):
@@ -172,7 +174,7 @@ firstbest = []
 for q in np.unique(df.charge):
     data = df[df.charge == q]
     best = np.max(data.hits)
-    if best == nl1a:
+    if best >= hitslim:
         charges.append(q)
         firstbest.append(data.vth[data.hits >= hitslim].iloc[-1])
 ax.scatter(charges, firstbest, label = 'Data', color = 'r')
@@ -197,14 +199,14 @@ ax.set_xlabel('Qinj')
 ax.set_ylabel('Threshold DAC')
 plt.savefig(f'{store}/Threshold_DAC_Limit.png')
 plt.savefig(f'{store}/Threshold_DAC_Limit.png')
-
+plt.show()
+plt.close()
 
 #Slide 5 TOT, etc. Distributions at indivudial QSel, 5 different Threshold DACs
 
 print('Working on TOT, TOA, and Cal hists for individual settings')
 for q in tqdm(np.unique(df.charge)):
-    idx = [df.charge.iloc[i] == q and df.hits.iloc[i] > 0 for i in range(len(df.hits))]
-    for d in tqdm(args.plotted_vth, leave = False, desc = f'Working on QSel = {q}'):
+    for d in tqdm(args.plotted_vths, leave = False, desc = f'Working on QSel = {q}'):
         #if not d in df.vth: d = np.random.choice(df.vth, 1)
         idx = [df.charge.iloc[i] == q and df.vth.iloc[i] == d for i in range(len(df.vth))]
 
@@ -306,6 +308,7 @@ plt.legend()
 plt.title(f'Mean TOA vs. Theshold DAC for Delay = {delay} {loc_title}', fontsize = titfontsize)
 plt.savefig(f'{store}/DAC_v_TOA.pdf')
 plt.savefig(f'{store}/DAC_v_TOA.png')
+plt.show()
 plt.close()
 
 fig = plt.figure(figsize = errorbarsize)
@@ -324,6 +327,7 @@ plt.legend()
 plt.title(f'Mean TOT vs. Theshold DAC for Delay = {delay} {loc_title}', fontsize = titfontsize)
 plt.savefig(f'{store}/DAC_v_TOT.pdf')
 plt.savefig(f'{store}/DAC_v_TOT.png')
+plt.show()
 plt.close()
 
 fig = plt.figure(figsize = errorbarsize)
@@ -341,6 +345,7 @@ plt.ylabel('CAL Mean', fontsize = labfontsize)
 plt.title(f'Mean CAL vs. Theshold DAC for Delay = {delay} {loc_title}', fontsize = titfontsize)
 plt.savefig(f'{store}/DAC_v_CAL.pdf')
 plt.savefig(f'{store}/DAC_v_CAL.png')
+plt.show()
 plt.close()
 
 
@@ -428,6 +433,7 @@ plt.legend()
 plt.title(f'Standard Deviation of TOA vs. Theshold DAC for Delay = {delay}\n {loc_title}')
 plt.savefig(f'{store}/DAC_v_TOASD.pdf')
 plt.savefig(f'{store}/DAC_v_TOASD.png')
+plt.show()
 plt.close()
 
 
