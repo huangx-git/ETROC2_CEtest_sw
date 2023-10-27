@@ -129,7 +129,6 @@ if __name__ == '__main__':
     argParser.add_argument('--etroc', action='store', default="ETROC2", help='Specify ETROC version.')
     argParser.add_argument('--eyescan', action='store_true', default=False, help="Run eyescan?")
     argParser.add_argument('--recal_lpgbt', action='store_true', default=False, help="Recalibrate ADC in LPGBT? (instead of using saved values)")
-    argParser.add_argument('--control_hub', action='store_true', default=False, help="Use control hub for communication?")
     argParser.add_argument('--host', action='store', default='localhost', help="Specify host for control hub")
     argParser.add_argument('--configuration', action='store', default='default', choices=['default', 'emulator', 'modulev0', 'modulev0b'], help="Specify a configuration of the RB, e.g. emulator or modulev0")
     argParser.add_argument('--devel', action='store_true', default=False, help="Don't check repo status (not recommended)")
@@ -155,7 +154,7 @@ if __name__ == '__main__':
     rb = None
 
     if args.multi_board:
-        temp = get_kcu(args.kcu, control_hub=args.control_hub, host=args.host, verbose=args.verbose)
+        temp = get_kcu(args.kcu, control_hub=True, host=args.host, verbose=args.verbose)
         if temp == 0:
             sys.exit(1)
         for i in range(3):
@@ -175,7 +174,7 @@ if __name__ == '__main__':
 
         temp.status()
     # write to the loopback node of the KCU105 to check ethernet communication
-    kcu = get_kcu(args.kcu, control_hub=args.control_hub, host=args.host, verbose=args.verbose)
+    kcu = get_kcu(args.kcu, control_hub=True, host=args.host, verbose=args.verbose)
     if (kcu == 0):
         # if not basic connection was established the get_kcu function returns 0
         # this would cause the RB init to fail.
