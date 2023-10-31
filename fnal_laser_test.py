@@ -42,6 +42,7 @@ if __name__ == '__main__':
     argParser.add_argument('--enable_power_board', action='store_true', help="Enable Power Board (all modules). Jumpers must still be set as well.")
     argParser.add_argument('--row', action='store', default=4, help="Pixel row to be tested")
     argParser.add_argument('--col', action='store', default=3, help="Pixel column to be tested")
+    argParser.add_argument('--offset', action='store', default=0, help="The offset from the baseline")
     args = argParser.parse_args()
 
     kcu = get_kcu(args.kcu, control_hub=True, host=args.host, verbose=False)
@@ -136,8 +137,7 @@ if __name__ == '__main__':
                 rb_0.rerun_bitslip()
                 time.sleep(1.5)
                 rb_0.reset_data_error_count()
-                stat = rb_0.get_link_status(link, slave=slave, verbose=False
-                                            )
+                stat = rb_0.get_link_status(link, slave=slave, verbose=False)
                 if stat:
                     rb_0.get_link_status(link, slave=slave)
                     break
@@ -164,9 +164,20 @@ if __name__ == '__main__':
         threshold_matrix = load(f, Loader)
 
     rb_0.enable_external_trigger()
+    offset_from_baseline = int(args.offset)
     for i in range(4):
         etroc.wr_reg("disDataReadout", 0, row=15, col=i, broadcast=False)
-        etroc.wr_reg("DAC", int(threshold_matrix[15][i]), row=15, col=i)
+        current_offset = etroc.get_THoffset(row = 15, col = i)
+        threshold = etroc.auto_threshold_scan(15, i)
+        # print(f"Old threshold offset: {current_offset}, Matrix threshold value: {int(threshold_matrix[15][i])}.")
+        # print(f"Setting up threshold values: {int(threshold[0])} for row: {15}, col: {i}.")
+        etroc.add_THoffset(offset_from_baseline, row = 15, col = i)
+        current_offset = etroc.get_THoffset(row = 15, col = i)
+        # print(f"New threshold offset: {current_offset}")
+        # print(int(sum(threshold)))
+        etroc.wr_reg("DAC", sum(threshold), row=15, col=i)
+        # int(threshold_matrix[15][i])
+        # etroc.wr_reg("DAC", 120, row=15, col=i)
 
     L1Adelay = 17  # NOTE this is what we've found for the laser setup at FNAL
     if args.timing_scan:

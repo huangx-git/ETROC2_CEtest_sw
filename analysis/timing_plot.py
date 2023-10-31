@@ -37,7 +37,7 @@ if __name__ == '__main__':
     cal_axis = hist.axis.Regular(2**10, 0, 2**10, name="cal", label="cal")
     #nhits_axis = hist.axis.Regular(257, -0.5, 256.5, name='n', label=r"$N_{hits}$")
     nhits_axis = hist.axis.Regular(6, -0.5, 5.5, name='n', label=r"$N_{hits}$")
-    pixel_axis    = hist.axis.StrCategory([], name="pixel", label="Pixel", growth=True)
+    pixel_axis = hist.axis.StrCategory([], name="pixel", label="Pixel", growth=True)
 
     toa_hist = hist.Hist(time_axis_ext)
     toa_hist_perf = hist.Hist(time_axis_ext, pixel_axis)
@@ -160,6 +160,7 @@ if __name__ == '__main__':
 
     ### TOA performance (?)
     ###
+    '''
     toa_hist_perf.fill(
         pixel="(15,0)",
         time=ak.flatten(events.toa[((events.nhits==4)&(events.row==15)&(events.col==0))]),
@@ -185,6 +186,33 @@ if __name__ == '__main__':
     tot_1 = events.tot[((events.nhits==4)&(events.row==15)&(events.col==1))]
     tot_2 = events.tot[((events.nhits==4)&(events.row==15)&(events.col==2))]
     tot_3 = events.tot[((events.nhits==4)&(events.row==15)&(events.col==3))]
+    '''
+    # Number of hits = 3
+    toa_hist_perf.fill(
+        pixel="(15,0)",
+        time=ak.flatten(events.toa[((events.nhits==3)&(events.row==15)&(events.col==0))]),
+    )
+    toa_hist_perf.fill(
+        pixel="(15,1)",
+        time=ak.flatten(events.toa[((events.nhits==3)&(events.row==15)&(events.col==1))]),
+    )
+    toa_hist_perf.fill(
+        pixel="(15,2)",
+        time=ak.flatten(events.toa[((events.nhits==3)&(events.row==15)&(events.col==2))]),
+    )
+    toa_hist_perf.fill(
+        pixel="(15,3)",
+        time=ak.flatten(events.toa[((events.nhits==3)&(events.row==15)&(events.col==3))]),
+    )
+
+    # print(f"Mean TOT of pixel row: {15}, col: {0} is {np.mean(events.toa[((events.nhits==4)&(events.row==15)&(events.col==0))])}")
+    # print(f"Mean TOT of pixel row: {15}, col: {1} is {np.mean(events.toa[((events.nhits==4)&(events.row==15)&(events.col==1))])}")
+    # print(f"Mean TOT of pixel row: {15}, col: {2} is {np.mean(events.toa[((events.nhits==4)&(events.row==15)&(events.col==2))])}")
+    # print(f"Mean TOT of pixel row: {15}, col: {3} is {np.mean(events.toa[((events.nhits==4)&(events.row==15)&(events.col==3))])} \n")
+    tot_0 = events.tot[((events.nhits==3)&(events.row==15)&(events.col==0))]
+    tot_1 = events.tot[((events.nhits==3)&(events.row==15)&(events.col==1))]
+    tot_2 = events.tot[((events.nhits==3)&(events.row==15)&(events.col==2))]
+    tot_3 = events.tot[((events.nhits==3)&(events.row==15)&(events.col==3))]
     tot_0 = tot_0[tot_0 < 100000]
     tot_1 = tot_1[tot_1 < 100000]
     tot_2 = tot_2[tot_2 < 100000]
@@ -193,13 +221,13 @@ if __name__ == '__main__':
     print(np.mean(tot_1))
     print(np.mean(tot_2))
     print(np.mean(tot_3))
-    
+    print(len(tot_0))
     print(np.std(tot_0) / len(tot_0))
     print(np.std(tot_1) / len(tot_1))
     print(np.std(tot_2) / len(tot_2))
     print(np.std(tot_3) / len(tot_3))
 
-    print(events.tot[((events.nhits==4)&(events.row==15)&(events.col==3))])
+    print(events.tot[((events.nhits==3)&(events.row==15)&(events.col==3))])
 
     fig, ax = plt.subplots()
     toa_hist_perf[::2j,::].plot1d(
