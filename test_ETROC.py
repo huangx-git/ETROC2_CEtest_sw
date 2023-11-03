@@ -547,6 +547,7 @@ if __name__ == '__main__':
             print("Will use workMode 1 to get some occupancy (no noise or charge injection)")
             etroc.wr_reg("workMode", 0x1, broadcast=True)  # this overwrites disDataReadout!
             etroc.deactivate_hot_pixels(pixels=masked_pixels)
+            #etroc.deactivate_hot_pixels(pixels=[(i,1) for i in range(16)])
 
             for j in range(1):
                 # One go is enough, but can run through this loop many times if there's any issue

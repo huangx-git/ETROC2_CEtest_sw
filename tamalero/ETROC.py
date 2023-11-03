@@ -275,13 +275,16 @@ class ETROC():
         else:
             return all_pass
 
-    def deactivate_hot_pixels(self, pixels=[], hot_pixels=True):
+    def deactivate_hot_pixels(self, pixels=[], hot_pixels=True, verbose=False):
+        if verbose: print("Deactivating hot pixels (row, col)")
         for row, col in pixels:
+            if verbose: print(row, col)
             self.wr_reg("enable_TDC", 0, row=row, col=col)
             self.wr_reg("disDataReadout", 1, row=row, col=col)
         if hot_pixels:
             # hot pixels are those that fail the pixel sanity check
             for row, col in self.hot_pixels:
+                if verbose: print(row, col)
                 self.wr_reg("enable_TDC", 0, row=row, col=col)
                 self.wr_reg("disDataReadout", 1, row=row, col=col)
 
@@ -314,6 +317,17 @@ class ETROC():
             self.wr_reg("asyResetGlobalReadout", 1)
         if not self.isfake:
             self.rb.rerun_bitslip()  # NOTE this is necessary to get the links to lock again
+
+    def reset_modules(self):
+        self.reset(hard=True)
+        # reset PLL and FC modules
+        self.reset_PLL()
+        self.reset_fast_command()
+        self.reset()
+        self.default_config()
+        self.rb.kcu.write_node("READOUT_BOARD_%s.BITSLIP_AUTO_EN"%self.rb.rb, 0x1)
+        time.sleep(0.1)
+        self.rb.kcu.write_node("READOUT_BOARD_%s.BITSLIP_AUTO_EN"%self.rb.rb, 0x0)
 
     def read_Vref(self):
         return self.rb.SCA.read_adc(self.vref_pin)
