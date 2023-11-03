@@ -979,7 +979,7 @@ if __name__ == '__main__':
                                         'cal' : CAL[k-1]})
                 #print(scan_df.info())
                 scan_df.to_pickle(f"{args.outdir}/Qinj_scan_L1A_504_{q}.pkl")
-                
+                print('File saved at', f"{args.outdir}/Qinj_scan_L1A_504_{q}.pkl") 
             fig, ax = plt.subplots()
 
             plt.title("S curve for Qinj")
