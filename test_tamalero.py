@@ -138,6 +138,7 @@ if __name__ == '__main__':
     argParser.add_argument('--port', action='store', default=5000, type=int, help="Port to use for server")
     argParser.add_argument('--rb', action='store', default=0, type=int, help="Specify Readout Board")
     argParser.add_argument('--multi_board', action = 'store_true')
+    argParser.add_argument('--power_board', action='store_true', help="Enable power board usage, and show status.")
     args = argParser.parse_args()
 
 
@@ -284,10 +285,14 @@ if __name__ == '__main__':
     #-------------------------------------------------------------------------------
 
     modules = []
+    pb_channel = []
     if args.configuration == 'emulator' or args.configuration.count('modulev0'):
         print("Configuring ETROCs")
         for i in range(res['n_module']):
-            modules.append(Module(rb, i+1))
+            modules.append(Module(rb, i+1, enable_power_board=args.power_board))
+
+            if args.power_board:
+                pb_channel.append(modules[-1].get_power_good())
 
         print()
         print("Querying module status")
