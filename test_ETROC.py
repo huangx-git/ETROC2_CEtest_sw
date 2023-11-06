@@ -161,6 +161,7 @@ if __name__ == '__main__':
     argParser.add_argument('--outdir', action = 'store', default = 'results/', help = 'Location to deposit output files')
     args = argParser.parse_args()
 
+    print(args.nl1a, type(args.nl1a))
 
     if not os.path.isdir("results/"):
         os.makedirs("results/")
@@ -938,6 +939,7 @@ if __name__ == '__main__':
             
             #charges = [4,6,8,12]
             charges = args.charges
+            print([[q, type(q)] for q in args.charges])
             results =[[] for i in range(0,len(charges))]
             TOA = [[] for i in range(0,len(charges))]
             TOT =  [[] for i in range(0,len(charges))]
@@ -988,11 +990,12 @@ if __name__ == '__main__':
             for i in range(0,len(charges)):
                 plt.plot(vth_axis, results[i], '.-')
             
-            plt.xlim(410,820)
+            #plt.xlim(410,820)
             plt.grid(True)
             plt.legend(loc='best')
             
             fig.savefig(f'results/Scurve_Qinj.png')
+            plt.show()
             plt.close(fig)
             del fig, ax
 
