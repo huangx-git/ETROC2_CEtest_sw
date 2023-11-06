@@ -132,7 +132,7 @@ if __name__ == '__main__':
     argParser.add_argument('--test_readwrite', action='store_true', default=False, help="Test simple read/write functionality?")
     argParser.add_argument('--test_chip', action='store_true', default=False, help="Test simple read/write functionality for real chip?")
     argParser.add_argument('--config_chip', action='store_true', default=False, help="Configure chip?")
-    argParser.add_argument('--configuration', action='store', default='modulev0', choices=['modulev0', 'modulev0b'], help="Board configuration to be loaded")
+    argParser.add_argument('--configuration', action='store', default='modulev0', choices=['modulev0', 'modulev0b', 'multimodule'], help="Board configuration to be loaded")
     argParser.add_argument('--vth', action='store_true', default=False, help="Parse Vth scan plots?")
     argParser.add_argument('--rerun', action='store_true', default=False, help="Rerun Vth scan and overwrite data?")
     argParser.add_argument('--fitplots', action='store_true', default=False, help="Create individual vth fit plots for all pixels?")
