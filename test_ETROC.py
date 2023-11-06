@@ -158,8 +158,11 @@ if __name__ == '__main__':
     argParser.add_argument('--moduleid', action='store', default=0, help="")
     args = argParser.parse_args()
 
-    assert int(args.moduleid)>0, "Module ID is not specified. This is a new feature, please run with --moduleid MODULEID, where MODULEID is the number on the module test board."
-    MID = args.moduleid
+    if args.test_chip or args.config_chip:
+        assert int(args.moduleid)>0, "Module ID is not specified. This is a new feature, please run with --moduleid MODULEID, where MODULEID is the number on the module test board."
+        MID = args.moduleid
+    else:
+        MID = "software"
 
     timestamp = time.time()
 
