@@ -146,9 +146,9 @@ if __name__ == '__main__':
     argParser.add_argument('--charge', action='store', default=15, help="Charge to be injected")
     argParser.add_argument('--hard_reset', action='store_true', default=False, help="Hard reset of selected ETROC2 chip")
     argParser.add_argument('--skip_sanity_checks', action='store_true', default=False, help="Don't run sanity checks of ETROC2 chip")
-    argParser.add_argument('--scan', action='store', default=['full'], choices=['none', 'full', 'simple', 'internal'], help="Which threshold scan to run with ETROC2")
-    argParser.add_argument('--mode', action='store', default=['dual'], choices=['dual', 'single'], help="Port mode for ETROC2")
-    argParser.add_argument('--threshold', action='store', default=['manual'], choices=['manual', 'auto'], help="Use thresholds from manual or automatic scan?")
+    argParser.add_argument('--pixelscan', action='store', default='none', choices=['none', 'full', 'simple', 'internal'], help="Which threshold scan to run with ETROC2")
+    argParser.add_argument('--mode', action='store', default='dual', choices=['dual', 'single'], help="Port mode for ETROC2")
+    argParser.add_argument('--threshold', action='store', default='auto', help="Use thresholds from manual or automatic scan?")
     argParser.add_argument('--internal_data', action='store_true', help="Set up internal data generation")
     argParser.add_argument('--enable_power_board', action='store_true', help="Enable Power Board (all modules). Jumpers must still be set as well.")
     argParser.add_argument('--timing_scan', action='store_true', help="Perform L1Adelay timing scan")
@@ -164,7 +164,7 @@ if __name__ == '__main__':
     else:
         MID = "software"
 
-    timestamp = time.time()
+    timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
 
     result_dir = f"results/{MID}/{timestamp}/"
     out_dir = f"outputs/{MID}/{timestamp}/"
@@ -550,7 +550,7 @@ if __name__ == '__main__':
             )
         name = 'hit_matrix_internal_test_pattern'
         fig.savefig(os.path.join(result_dir, f"{name}.pdf"))
-        fig.savefig(os.path.join(tesult_dir, f"{name}.png"))
+        fig.savefig(os.path.join(result_dir, f"{name}.png"))
 
         fifo.reset()
         print("\n - Testing fast command communication - Sending two L1As")
@@ -576,7 +576,7 @@ if __name__ == '__main__':
 
                 #etroc.QInj_set(30, 0, row=3, col=3, broadcast=False)
                 start_time = time.time()
-                with tqdm(total=65536) as pbar:
+                with tqdm(total=65536, bar_format='{l_bar}{bar:20}{r_bar}{bar:-20b}') as pbar:
                     while not fifo.is_full():
                         fifo.send_l1a()
                         #fifo.send_QInj(delay=j)
@@ -666,13 +666,24 @@ if __name__ == '__main__':
                 fig.savefig(os.path.join(plot_dir, "{}.png".format(name)))
 
             # not using broadcast
-            print ("Using auto-threshold calibration for individual pixels")
+            print ("\n - Using auto-threshold calibration for individual pixels")
             baseline = np.empty([16, 16])
             noise_width = np.empty([16, 16])
-            for i in range(16):
-                for j in range(16):
-                    baseline[i][j], noise_width[i][j] = etroc.auto_threshold_scan(row=i, col=j, broadcast=False)
+            #pixel = 0
+            with tqdm(total=255, bar_format='{l_bar}{bar:20}{r_bar}{bar:-20b}') as pbar:
+                for pixel in range(256):
+                    row = pixel & 0xF
+                    col = (pixel & 0xF0) >> 4
+                    #print(pixel, row, col)
+                    baseline[row][col], noise_width[row][col] = etroc.auto_threshold_scan(row=row, col=col, broadcast=False)
+                    #print(pixel)
+                    pbar.update()
+            #pbar.close()
+                    #pixel += 1
+            #for i, j in pixels: in range(16):
+            #    for j in range(16):
 
+            print ("Done with threshold scan")
             fig, ax = plt.subplots(1,1,figsize=(7,7))
             cax = ax.matshow(baseline)
             ax.set_ylabel(r'$Row$')
@@ -1087,7 +1098,7 @@ if __name__ == '__main__':
                     text = ax.text(j, i, int(hit_matrix[i,j]),
                             ha="center", va="center", color="w", fontsize="xx-small")
 
-            fig.savefig(f'results/hit_matrix.png')
+            fig.savefig(f'{result_dir}/hit_matrix_qinj.png')
             plt.show()
 
             plt.close(fig)
@@ -1096,7 +1107,7 @@ if __name__ == '__main__':
 
             import struct
             fifo.reset()
-            with open(f"output/output_qinj_{args.charge}fC.dat", mode="wb") as f:
+            with open(f"{out_dir}/output_qinj_{args.charge}fC.dat", mode="wb") as f:
                 for i in range(50):
                     fifo.send_QInj(1000, delay=etroc.QINJ_delay)
                     data = fifo.read(dispatch=True)
