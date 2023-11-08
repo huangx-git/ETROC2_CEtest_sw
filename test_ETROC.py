@@ -670,7 +670,7 @@ if __name__ == '__main__':
             baseline = np.empty([16, 16])
             noise_width = np.empty([16, 16])
             #pixel = 0
-            with tqdm(total=255, bar_format='{l_bar}{bar:20}{r_bar}{bar:-20b}') as pbar:
+            with tqdm(total=256, bar_format='{l_bar}{bar:20}{r_bar}{bar:-20b}') as pbar:
                 for pixel in range(256):
                     row = pixel & 0xF
                     col = (pixel & 0xF0) >> 4
