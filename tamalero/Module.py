@@ -99,6 +99,9 @@ class Module:
     def disable_power_board(self):
         return self.rb.SCA.set_gpio(self.config['power_board'], 0)
 
+    def get_power_good(self):
+        return self.rb.SCA.read_gpio(self.config['pgood'])
+
     def get_locked_links(self):
         self.locked = {0:[], 1:[]}
         self.unlocked = {0:[], 1:[]}
@@ -129,7 +132,7 @@ class Module:
         # no FW version for the actual ETROCs
         #ver = self.ETROCs[0].get_ver()
         #print ('┃ ┃ ' + '{:16}{:9}'.format("Firmware ver.",ver) + ' ┃ ┃' )
-        pb_status, pb_col = ('on', green) if self.get_power_board_status() else ('off', red)
+        pb_status, pb_col = ('on', green) if self.get_power_good() else ('off', red)
         print ('┃ ┃ ' + pb_col('{:16}{:9}'.format("Power board is:",pb_status)) + ' ┃ ┃' )
         #print ('┃ ┃ ' + 25*' ' + ' ┃ ┃')
         col = green if self.ETROCs[0].connected else red
