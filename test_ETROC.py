@@ -919,14 +919,15 @@ if __name__ == '__main__':
         if args.qinj_vth_scan:
             fifo.reset()
             delay = 10
-            i = 4
-            j = 3
+            row = int(args.row)
+            col = int(args.col)
             L1Adelay = 501
             
-            vth_axis    = np.linspace(415, 820, 406)
+            vth_axis    = np.linspace(0, 405, 406)
             #charges = [1,5,10,15,20,25,30,32]
             #charges = [5,10,15,20,25,30,32]
-            charges = [4,6,8,10,12,15,20,25,30,32]
+            # charges = [4,6,8,10,12,15,20,25,30,32]
+            charges = [25]
             results =[[] for i in range(0,len(charges))]
             TOA = [[] for i in range(0,len(charges))]
             TOT =  [[] for i in range(0,len(charges))]
@@ -934,14 +935,14 @@ if __name__ == '__main__':
             k=0
             for q in charges:
                 print(f"\n - Will send L1a/QInj pulse with delay of {delay} cycles and charge of {q} fC")
-                print(f"\n - to pixel at Row {i}, Col {j}.")
+                print(f"\n - to pixel at Row {row}, Col {col}.")
 
                 for vth in vth_axis:
                     
-                    etroc.QInj_set(q, delay, L1Adelay, row=i, col=j, broadcast = False) #set reg on ETROC
-                    etroc.wr_reg('DAC', int(vth), row=i, col=j, broadcast=False) #set vth on ETROC
+                    etroc.QInj_set(q, delay, L1Adelay, row=row, col=col, broadcast = False) #set reg on ETROC
+                    etroc.wr_reg('DAC', int(vth), row=row, col=col, broadcast=False) #set vth on ETROC
                 
-                    fifo.send_QInj(count=3200, delay=504) #send Qinj pulses with L1Adelay
+                    fifo.send_QInj(count=1000, delay=504) #send Qinj pulses with L1Adelay
                     result = fifo.pretty_read(df)
                     hits=0
                     toa=[]
