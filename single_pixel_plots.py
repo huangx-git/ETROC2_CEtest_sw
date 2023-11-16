@@ -46,7 +46,7 @@ high_cal = np.max(args.cal_cuts)
 labfontsize = 20
 titfontsize = 25
 hitslim = args.nl1a*args.hits_cut
-path = args.input + '/' + pixpath
+path = args.input + '/' #+ pixpath
 if len(args.vth_cuts) == 0 and len(args.cal_cuts) == 0 and args.hits_cut == 0: 
     store = path + 'full_range_qinj_plots/'
 else:

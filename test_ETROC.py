@@ -159,7 +159,6 @@ if __name__ == '__main__':
 
     argParser.add_argument('--charges', action = 'store', default = [15], nargs = '*', type = int, help = 'Charges to inject')
     argParser.add_argument('--vth_axis', action = 'store', default = [415, 820, 406], nargs = '*', type = int, help = 'Threshold DAC values to scan over')
-    argParser.add_argument('--outdir', action = 'store', default = 'results/', help = 'Threshold DAC values to scan over')
     argParser.add_argument('--nl1a', action = 'store', type = int, default = 3200, help = 'Number of Qinj/L1A pulses to send')
     args = argParser.parse_args()
 
@@ -970,7 +969,7 @@ if __name__ == '__main__':
             L1Adelay = 501
             
             if len(args.vth_axis) == 3:
-                vth_axis = np.linspace(*args.vth_scan)
+                vth_axis = np.linspace(*args.vth_axis)
             elif len(args.vth_axis) < 3:
                 vth_axis = range(*args.vth_axis)
             else:
@@ -988,12 +987,16 @@ if __name__ == '__main__':
                 print(f"\n - to pixel at Row {i}, Col {j}.")
 
                 for vth in vth_axis:
-                    
-                    etroc.QInj_set(q, delay, L1Adelay, row=i, col=j, broadcast = False) #set reg on ETROC
-                    etroc.wr_reg('DAC', int(vth), row=i, col=j, broadcast=False) #set vth on ETROC
-                
-                    fifo.send_QInj(count=int(args.nl1a), delay=504) #send Qinj pulses with L1Adelay
-                    result = fifo.pretty_read(df)
+                    worked = False
+                    while(not worked):
+                        try:
+                            etroc.QInj_set(q, delay, L1Adelay, row=i, col=j, broadcast = False) #set reg on ETROC
+                            etroc.wr_reg('DAC', int(vth), row=i, col=j, broadcast=False) #set vth on ETROC
+                            fifo.send_QInj(count=int(args.nl1a), delay=504) #send Qinj pulses with L1Adelay
+                            result = fifo.pretty_read(df)
+                            worked = True
+                        except:
+                            print('Something failed, probably a FIFO read error. Retrying...')
                     hits=0
                     toa=[]
                     tot=[]
@@ -1018,7 +1021,7 @@ if __name__ == '__main__':
                                         'tot' : TOT[k-1],
                                         'cal' : CAL[k-1]})
                 #print(scan_df.info())
-                scan_df.to_pickle(f"{args.outdir}/Qinj_scan_L1A_504_{q}.pkl")
+                scan_df.to_pickle(f"{out_dir}/Qinj_scan_L1A_504_{q}.pkl")
                 
             fig, ax = plt.subplots()
 
@@ -1032,7 +1035,7 @@ if __name__ == '__main__':
             plt.grid(True)
             plt.legend(loc='best')
             
-            fig.savefig(f'{args.outdir}/Scurve_Qinj.png')
+            fig.savefig(f'{result_dir}/Scurve_Qinj.png')
             plt.close(fig)
             del fig, ax
 
