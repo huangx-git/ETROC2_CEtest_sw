@@ -155,7 +155,8 @@ if __name__ == '__main__':
     argParser.add_argument('--row', action='store', default=4, help="Pixel row to be tested")
     argParser.add_argument('--col', action='store', default=3, help="Pixel column to be tested")
     argParser.add_argument('--pixel_mask', action='store', default=None, help="Pixel mask to apply")
-    argParser.add_argument('--moduleid', action='store', default=0, help="")
+    argParser.add_argument('--moduleid', action='store', default=0, help="Module ID of module under test")
+    argParser.add_argument('--multi', action='store_true', help="Run multiple modules at once (for data taking only!)")
     args = argParser.parse_args()
 
     if args.test_chip or args.config_chip:
@@ -216,6 +217,67 @@ if __name__ == '__main__':
         else:
             print(f"Threshold is currently set to {read_val=} mV")
             print("Test passed.\n")
+
+    elif args.multi:
+
+        from tamalero.FIFO import FIFO
+        from tamalero.DataFrame import DataFrame
+        df = DataFrame()
+
+        kcu = get_kcu(args.kcu, control_hub=True, host=args.host, verbose=False)
+        if (kcu == 0):
+            # if not basic connection was established the get_kcu function returns 0
+            # this would cause the RB init to fail.
+            sys.exit(1)
+
+        rb_0 = ReadoutBoard(0, kcu=kcu, config=args.configuration)
+        data = 0xabcd1234
+        kcu.write_node("LOOPBACK.LOOPBACK", data)
+        if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
+            print("No communications with KCU105... quitting")
+            sys.exit(1)
+
+        fifo = FIFO(rb=rb_0)
+
+        is_configured = rb_0.DAQ_LPGBT.is_configured()
+        if not is_configured:
+            print("RB is not configured, exiting.")
+            exit(0)
+
+        from tamalero.Module import Module
+
+        print("\n - Getting modules")
+        modules = []
+        connected_modules = []
+        for i in [1,2,3]:
+            # FIXME we might want to hard reset all ETROCs at this point?
+            m_tmp = Module(rb=rb_0, i=i, enable_power_board=args.enable_power_board)
+            modules.append(m_tmp)
+            if m_tmp.ETROCs[0].is_connected():  # NOTE assume that module is connected if first ETROC is connected
+                connected_modules.append(i)
+                for e_tmp in m_tmp.ETROCs:
+                    if args.hard_reset:
+                        print(f"Running hard reset and default config on module {i}")
+                        e_tmp.reset(hard=True)
+                        e_tmp.default_config()
+                        time.sleep(1.1)
+                        #e_tmp.default_config()
+
+
+        time.sleep(0.1)
+        rb_0.enable_etroc_readout()
+        rb_0.enable_etroc_readout(slave=True)
+        rb_0.reset_data_error_count()
+
+        for module in modules:
+            module.show_status()
+
+        fifo.reset()
+        print("\n - Testing fast command communication - Sending two L1As")
+        fifo.send_l1a(2)
+        for x in fifo.pretty_read(df):
+            print(x)
+
 
     elif args.config_chip:
 
