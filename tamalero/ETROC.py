@@ -59,9 +59,13 @@ class ETROC():
         try:
             self.default_config()
         except TimeoutError:
-            if verbose:
+            if verbose or True:
                 print("Warning: ETROC default configuration failed!")
             pass
+
+        if self.connected:
+            if not self.is_good():
+                raise (RuntimeError, f"ETROC is not in the expected status! {self.controllerState=}")
 
         if strict:
             self.consistency(verbose=verbose)
@@ -420,7 +424,7 @@ class ETROC():
 
     def default_config(self):
         # FIXME should use higher level functions for better readability
-        if self.connected:
+        if self.is_connected():
             self.reset()  # soft reset of the global readout
             self.set_singlePort('both')
             self.set_mergeTriggerData('merge')
@@ -458,6 +462,16 @@ class ETROC():
             self.wr_reg("lowerTOTTrig", 0, broadcast=True)
             self.wr_reg("upperCalTrig", 0x3ff, broadcast=True)
             self.wr_reg("lowerCalTrig", 0, broadcast=True)
+
+            self.reset()  # soft reset of the global readout, 2nd reset needed for some ETROCs
+
+    def is_good(self):
+        good = True
+        self.controllerState = self.rd_reg("controllerState")
+        good &= (self.controllerState == 11)
+
+        return good
+
 
     # =======================
     # === HIGH-LEVEL FUNC ===
