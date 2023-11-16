@@ -158,7 +158,10 @@ class FIFO:
         data = []
         while self.get_occupancy()>0:
             # FIXME checking get_occupancy all the time is slow, but this is at least not broken.
-            data += self.read_block(250, dispatch=dispatch).value()
+            try:
+               data += self.read_block(250, dispatch=dispatch).value()
+            except:
+               print('Data read failed')
 
         #if (num_blocks_to_read or last_block):
         #    if dispatch:
