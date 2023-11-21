@@ -1,0 +1,732 @@
+Python 3.8.10 (default, May 26 2023, 14:05:08) 
+Type 'copyright', 'credits' or 'license' for more information
+IPython 8.12.2 -- An enhanced Interactive Python. Type '?' for help.
+ETROC2 emulator instantiated, base configuration successful
+IPBus address: chtcp-2.0://localhost:10203?target=192.168.0.10:50001
+Successfully got list of address table files from gitlab.
+KCU firmware version: 3.2.0
+Figuring out lpGBT version by reading from ROMREG
+ > lpGBT v1 detected
+Loaded ADC calibration data for chip 3686715904. Gain: 1.871094 / Offset: 518
+Found 2 connected modules
+Will proceed with testing Module 1
+Module status:
+┏━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━┓
+┃○┃                           ┃○┃
+┃ ┃ Module:   1               ┃ ┃
+┃ ┃ [91mPower board is: off      [0m ┃ ┃
+┃ ┃ [92mConnected:               [0m ┃ ┃
+┃ ┃ [92m i2c master: lpgbt       [0m ┃ ┃
+┃ ┃ [92m channel:    1           [0m ┃ ┃
+┃ ┃ lpGBT 1 links:            ┃ ┃
+┃ ┃  [92m0[0m                        ┃ ┃
+┃ ┃ lpGBT 2 links:            ┃ ┃
+┃ ┃  [92m0[0m                        ┃ ┃
+┃○┃                           ┃○┃
+┗━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━┛
+
+ - Checking peripheral configuration:
+[92mPerif config reg=readoutClockDelayPixel: ret=0, exp=0[0m
+[92mPerif config reg=readoutClockWidthPixel: ret=16, exp=16[0m
+[92mPerif config reg=readoutClockDelayGlobal: ret=0, exp=0[0m
+[92mPerif config reg=readoutClockWidthGlobal: ret=16, exp=16[0m
+[91mPerif config reg=serRateRight: ret=0, exp=1[0m
+[91mPerif config reg=serRateLeft: ret=0, exp=1[0m
+[92mPerif config reg=linkResetTestPattern: ret=1, exp=1[0m
+[92mPerif config reg=linkResetFixedPattern: ret=2898758853, exp=2898758853[0m
+[92mPerif config reg=emptySlotBCID: ret=1, exp=1[0m
+[92mPerif config reg=triggerGranularity: ret=0, exp=0[0m
+[92mPerif config reg=disScrambler: ret=1, exp=1[0m
+[91mPerif config reg=mergeTriggerData: ret=1, exp=0[0m
+[91mPerif config reg=singlePort: ret=0, exp=1[0m
+[92mPerif config reg=onChipL1AConf: ret=0, exp=0[0m
+[91mPerif config reg=BCIDoffset: ret=208, exp=13[0m
+[92mPerif config reg=fcSelfAlignEn: ret=0, exp=0[0m
+[92mPerif config reg=fcClkDelayEn: ret=0, exp=0[0m
+[92mPerif config reg=fcDataDelayEn: ret=0, exp=0[0m
+[91mPerif config reg=chargeInjectionDelay: ret=10, exp=24[0m
+[92mPerif config reg=RefStrSel: ret=3, exp=3[0m
+[92mPerif config reg=PLL_BIASGEN_CONFIG: ret=8, exp=8[0m
+[92mPerif config reg=PLL_CONFIG_I_PLL: ret=9, exp=9[0m
+[92mPerif config reg=PLL_CONFIG_P_PLL: ret=9, exp=9[0m
+[92mPerif config reg=PLL_R_CONFIG: ret=2, exp=2[0m
+[92mPerif config reg=PLL_vcoDAC: ret=8, exp=8[0m
+[92mPerif config reg=PLL_vcoRailMode: ret=1, exp=1[0m
+[91mPerif config reg=PLL_ENABLEPLL: ret=1, exp=0[0m
+[92mPerif config reg=PLL_FBDiv_skip: ret=0, exp=0[0m
+[92mPerif config reg=PLL_FBDiv_clkTreeDisable: ret=0, exp=0[0m
+[92mPerif config reg=PLLclkgen_disSER: ret=1, exp=1[0m
+[92mPerif config reg=PLLclkgen_disVCO: ret=0, exp=0[0m
+[92mPerif config reg=PLLclkgen_disEOM: ret=1, exp=1[0m
+[92mPerif config reg=PLLclkgen_disCLK: ret=0, exp=0[0m
+[92mPerif config reg=PLLclkgen_disDES: ret=0, exp=0[0m
+[92mPerif config reg=CLKSel: ret=1, exp=1[0m
+[92mPerif config reg=PS_CPCurrent: ret=1, exp=1[0m
+[92mPerif config reg=PS_CapRst: ret=0, exp=0[0m
+[92mPerif config reg=PS_Enable: ret=1, exp=1[0m
+[92mPerif config reg=PS_ForceDown: ret=0, exp=0[0m
+[92mPerif config reg=PS_PhaseAdj: ret=0, exp=0[0m
+[92mPerif config reg=CLK40_EnRx: ret=1, exp=1[0m
+[92mPerif config reg=CLK40_EnTer: ret=1, exp=1[0m
+[92mPerif config reg=CLK40_Equ: ret=0, exp=0[0m
+[92mPerif config reg=CLK40_InvData: ret=0, exp=0[0m
+[92mPerif config reg=CLK40_SetCM: ret=1, exp=1[0m
+[92mPerif config reg=CLK1280_EnRx: ret=1, exp=1[0m
+[92mPerif config reg=CLK1280_EnTer: ret=1, exp=1[0m
+[92mPerif config reg=CLK1280_Equ: ret=0, exp=0[0m
+[92mPerif config reg=CLK1280_InvData: ret=0, exp=0[0m
+[92mPerif config reg=CLK1280_SetCM: ret=1, exp=1[0m
+[92mPerif config reg=FC_EnRx: ret=1, exp=1[0m
+[92mPerif config reg=FC_EnTer: ret=1, exp=1[0m
+[92mPerif config reg=FC_Equ: ret=0, exp=0[0m
+[92mPerif config reg=FC_InvData: ret=0, exp=0[0m
+[92mPerif config reg=FC_SetCM: ret=1, exp=1[0m
+[92mPerif config reg=disPowerSequence: ret=0, exp=0[0m
+[92mPerif config reg=softBoot: ret=0, exp=0[0m
+[92mPerif config reg=EFuse_TCKHP: ret=4, exp=4[0m
+[92mPerif config reg=EFuse_EnClk: ret=0, exp=0[0m
+[92mPerif config reg=EFuse_Mode: ret=2, exp=2[0m
+[92mPerif config reg=EFuse_Rstn: ret=1, exp=1[0m
+[92mPerif config reg=EFuse_Start: ret=0, exp=0[0m
+[91mPerif config reg=EFuse_Prog: ret=1234, exp=0[0m
+[92mPerif config reg=EFuse_Bypass: ret=1, exp=1[0m
+[92mPerif config reg=IfLockThrCounter: ret=11, exp=11[0m
+[92mPerif config reg=IfReLockThrCounter: ret=11, exp=11[0m
+[92mPerif config reg=IfUnLockThrCounter: ret=11, exp=11[0m
+[92mPerif config reg=asyAlignFastcommand: ret=0, exp=0[0m
+[92mPerif config reg=asyLinkReset: ret=0, exp=0[0m
+[92mPerif config reg=asyPLLReset: ret=1, exp=1[0m
+[92mPerif config reg=asyResetChargeInj: ret=1, exp=1[0m
+[92mPerif config reg=asyResetFastcommand: ret=1, exp=1[0m
+[92mPerif config reg=asyResetGlobalReadout: ret=1, exp=1[0m
+[92mPerif config reg=asyResetLockDetect: ret=1, exp=1[0m
+[92mPerif config reg=asyStartCalibration: ret=1, exp=1[0m
+[92mPerif config reg=VRefGen_PD: ret=0, exp=0[0m
+[92mPerif config reg=TS_PD: ret=0, exp=0[0m
+[92mPerif config reg=TDCClockTest: ret=0, exp=0[0m
+[92mPerif config reg=TDCStrobeTest: ret=0, exp=0[0m
+[92mPerif config reg=LTx_AmplSel: ret=4, exp=4[0m
+[92mPerif config reg=RTx_AmplSel: ret=4, exp=4[0m
+[92mPerif config reg=disLTx: ret=0, exp=0[0m
+[92mPerif config reg=disRTx: ret=0, exp=0[0m
+[92mPerif config reg=GRO_TOARST_N: ret=1, exp=1[0m
+[92mPerif config reg=GRO_Start: ret=0, exp=0[0m
+[92mPerif config reg=GRO_TOA_Latch: ret=1, exp=1[0m
+[92mPerif config reg=GRO_TOA_CK: ret=1, exp=1[0m
+[92mPerif config reg=GRO_TOT_CK: ret=1, exp=1[0m
+[92mPerif config reg=GRO_TOTRST_N: ret=1, exp=1[0m
+
+ - Checking peripheral status:
+[93mPerif status reg=fcBitAlignError: ret=0[0m
+[93mPerif status reg=PS_Late: ret=0[0m
+[93mPerif status reg=AFCcalCap: ret=23[0m
+[93mPerif status reg=AFCBusy: ret=0[0m
+[93mPerif status reg=fcAlignFinalState: ret=0[0m
+[93mPerif status reg=controllerState: ret=11[0m
+[93mPerif status reg=fcAlignStatus: ret=0[0m
+[93mPerif status reg=invalidFCCount: ret=1479[0m
+[93mPerif status reg=pllUnlockCount: ret=0[0m
+[93mPerif status reg=EFuseQ: ret=1234[0m
+
+ - Running pixel sanity check:
+Passed!
+
+ - Running pixel random check:
+Passed!
+
+ - Checking configuration for pixel (4,5):
+[92mPixel (row=4, col=5) config reg=CLSel: ret=0, exp=0[0m
+[92mPixel (row=4, col=5) config reg=IBSel: ret=7, exp=7[0m
+[92mPixel (row=4, col=5) config reg=RfSel: ret=2, exp=2[0m
+[92mPixel (row=4, col=5) config reg=HysSel: ret=15, exp=15[0m
+[92mPixel (row=4, col=5) config reg=PD_DACDiscri: ret=0, exp=0[0m
+[92mPixel (row=4, col=5) config reg=QSel: ret=6, exp=6[0m
+[92mPixel (row=4, col=5) config reg=QInjEn: ret=0, exp=0[0m
+[92mPixel (row=4, col=5) config reg=autoReset_TDC: ret=0, exp=0[0m
+[92mPixel (row=4, col=5) config reg=enable_TDC: ret=1, exp=1[0m
+[92mPixel (row=4, col=5) config reg=level_TDC: ret=1, exp=1[0m
+[92mPixel (row=4, col=5) config reg=resetn_TDC: ret=1, exp=1[0m
+[92mPixel (row=4, col=5) config reg=testMode_TDC: ret=0, exp=0[0m
+[92mPixel (row=4, col=5) config reg=Bypass_THCal: ret=1, exp=1[0m
+[92mPixel (row=4, col=5) config reg=DAC: ret=0, exp=0[0m
+[92mPixel (row=4, col=5) config reg=TH_offset: ret=10, exp=10[0m
+[92mPixel (row=4, col=5) config reg=RSTn_THCal: ret=1, exp=1[0m
+[92mPixel (row=4, col=5) config reg=ScanStart_THCal: ret=0, exp=0[0m
+[92mPixel (row=4, col=5) config reg=BufEn_THCal: ret=0, exp=0[0m
+[92mPixel (row=4, col=5) config reg=CLKEn_THCal: ret=0, exp=0[0m
+[92mPixel (row=4, col=5) config reg=workMode: ret=0, exp=0[0m
+[92mPixel (row=4, col=5) config reg=L1Adelay: ret=501, exp=501[0m
+[92mPixel (row=4, col=5) config reg=disDataReadout: ret=0, exp=0[0m
+[91mPixel (row=4, col=5) config reg=disTrigPath: ret=1, exp=0[0m
+[91mPixel (row=4, col=5) config reg=upperTOATrig: ret=1023, exp=512[0m
+[91mPixel (row=4, col=5) config reg=lowerTOATrig: ret=0, exp=32[0m
+[91mPixel (row=4, col=5) config reg=upperTOTTrig: ret=511, exp=64[0m
+[91mPixel (row=4, col=5) config reg=lowerTOTTrig: ret=0, exp=16[0m
+[91mPixel (row=4, col=5) config reg=upperCalTrig: ret=1023, exp=512[0m
+[91mPixel (row=4, col=5) config reg=lowerCalTrig: ret=0, exp=16[0m
+[91mPixel (row=4, col=5) config reg=upperTOA: ret=1023, exp=512[0m
+[91mPixel (row=4, col=5) config reg=lowerTOA: ret=0, exp=32[0m
+[91mPixel (row=4, col=5) config reg=upperTOT: ret=511, exp=256[0m
+[91mPixel (row=4, col=5) config reg=lowerTOT: ret=0, exp=16[0m
+[91mPixel (row=4, col=5) config reg=upperCal: ret=1023, exp=512[0m
+[91mPixel (row=4, col=5) config reg=lowerCal: ret=0, exp=16[0m
+[92mPixel (row=4, col=5) config reg=addrOffset: ret=1, exp=1[0m
+[92mPixel (row=4, col=5) config reg=selfTestOccupancy: ret=1, exp=1[0m
+[92mPixel (row=4, col=5) config reg=PixelSanityConfig: ret=0, exp=0[0m
+
+ - Checking status for pixel (4,5):
+[93mPixel (row=4, col=5) status reg=ACC: ret=0[0m
+[93mPixel (row=4, col=5) status reg=ScanDone: ret=0[0m
+[93mPixel (row=4, col=5) status reg=BL: ret=0[0m
+[93mPixel (row=4, col=5) status reg=NW: ret=0[0m
+[93mPixel (row=4, col=5) status reg=TH: ret=0[0m
+[93mPixel (row=4, col=5) status reg=THState: ret=0[0m
+[93mPixel (row=4, col=5) status reg=PixelID: ret=0[0m
+[93mPixel (row=4, col=5) status reg=PixelSanityStat: ret=0[0m
+
+ - Checking pixel broadcast.
+Passed!
+Redoing bitslip
+
+ - Checking elinks
+Disabling readout for all elinks but the ETROC under test
+- Status of link 0
+[92mLocked                       1[0m
+[92mFiller rate           16777215[0m
+[92mError count                  0[0m
+Packet count                 0
+Data count                   0
+- Status of link 0
+[92mLocked                       1[0m
+[92mFiller rate           16777215[0m
+[92mError count                  0[0m
+Packet count                 0
+Data count                   0
+
+ - Getting internal test data
+Got number of total events n_events_total=2632
+Events with at least one hit n_events_hit=2623
+Events with some error in data unpacking n_events_err=0
+Installed gtk3 event loop hook.
+
+ - Testing fast command communication - Sending two L1As
+('header', {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 186, 'type': 0, 'bcid': 2473, 'raw': '0x3c5c2e89a9', 'meta': '0x100'})
+('data', {'ea': 0, 'col_id': 8, 'row_id': 0, 'toa': 512, 'cal': 938, 'tot': 126, 'elink': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x901001fbaa', 'meta': '0x0'})
+('data', {'ea': 0, 'col_id': 8, 'row_id': 7, 'toa': 542, 'cal': 938, 'tot': 330, 'elink': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x90f0f52baa', 'meta': '0x0'})
+('data', {'ea': 0, 'col_id': 8, 'row_id': 15, 'toa': 573, 'cal': 938, 'tot': 438, 'elink': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x91f1eedbaa', 'meta': '0x0'})
+('data', {'ea': 0, 'col_id': 15, 'row_id': 8, 'toa': 993, 'cal': 426, 'tot': 233, 'elink': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x9f1f0ba5aa', 'meta': '0x0'})
+('data', {'ea': 0, 'col_id': 15, 'row_id': 15, 'toa': 1022, 'cal': 426, 'tot': 396, 'elink': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x9ffff631aa', 'meta': '0x0'})
+('trailer', {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 5, 'crc': 33, 'raw': '0x134800521', 'meta': '0x200'})
+('header', {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 186, 'type': 0, 'bcid': 2473, 'raw': '0x3c5c2e89a9', 'meta': '0x11c'})
+('data', {'ea': 0, 'col_id': 7, 'row_id': 0, 'toa': 450, 'cal': 938, 'tot': 262, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x8e0e141baa', 'meta': '0x1c'})
+('data', {'ea': 0, 'col_id': 7, 'row_id': 7, 'toa': 476, 'cal': 938, 'tot': 447, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x8eeee6ffaa', 'meta': '0x1c'})
+('data', {'ea': 0, 'col_id': 0, 'row_id': 7, 'toa': 29, 'cal': 426, 'tot': 259, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x80e0ec0daa', 'meta': '0x1c'})
+('data', {'ea': 0, 'col_id': 0, 'row_id': 8, 'toa': 33, 'cal': 426, 'tot': 363, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81010dadaa', 'meta': '0x1c'})
+('trailer', {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 4, 'crc': 177, 'raw': '0x1348004b1', 'meta': '0x21c'})
+('header', {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 187, 'type': 0, 'bcid': 3490, 'raw': '0x3c5c2ecda2', 'meta': '0x100'})
+('data', {'ea': 0, 'col_id': 8, 'row_id': 0, 'toa': 513, 'cal': 426, 'tot': 123, 'elink': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x901009edaa', 'meta': '0x0'})
+('data', {'ea': 0, 'col_id': 8, 'row_id': 15, 'toa': 574, 'cal': 426, 'tot': 435, 'elink': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x91f1f6cdaa', 'meta': '0x0'})
+('data', {'ea': 0, 'col_id': 15, 'row_id': 7, 'toa': 988, 'cal': 426, 'tot': 477, 'elink': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x9efee775aa', 'meta': '0x0'})
+('data', {'ea': 0, 'col_id': 15, 'row_id': 8, 'toa': 994, 'cal': 938, 'tot': 229, 'elink': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x9f1f1397aa', 'meta': '0x0'})
+('trailer', {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 4, 'crc': 195, 'raw': '0x1348004c3', 'meta': '0x200'})
+('header', {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 187, 'type': 0, 'bcid': 3490, 'raw': '0x3c5c2ecda2', 'meta': '0x11c'})
+('data', {'ea': 0, 'col_id': 7, 'row_id': 0, 'toa': 448, 'cal': 426, 'tot': 13, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x8e0e0035aa', 'meta': '0x1c'})
+('data', {'ea': 0, 'col_id': 7, 'row_id': 8, 'toa': 481, 'cal': 426, 'tot': 163, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x8f0f0a8daa', 'meta': '0x1c'})
+('data', {'ea': 0, 'col_id': 7, 'row_id': 15, 'toa': 510, 'cal': 938, 'tot': 316, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x8feff4f3aa', 'meta': '0x1c'})
+('data', {'ea': 0, 'col_id': 0, 'row_id': 0, 'toa': 0, 'cal': 426, 'tot': 422, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x80000699aa', 'meta': '0x1c'})
+('data', {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 63, 'cal': 938, 'tot': 163, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81e1fa8faa', 'meta': '0x1c'})
+('trailer', {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 5, 'crc': 23, 'raw': '0x134800517', 'meta': '0x21c'})
+
+ - Will send L1a/QInj pulse with delay of 10 cycles and charge of 30 fC
+
+ - to pixel at Row 15, Col 0.
+Range row:  range(15, 16)
+Range col:  range(0, 1)
+VTH:  5.0
+
+ Response size:  40
+
+ Response:  [['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 188, 'type': 0, 'bcid': 1078, 'raw': '0x3c5c2f0436', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 97, 'raw': '0x134800061', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 188, 'type': 0, 'bcid': 1078, 'raw': '0x3c5c2f0436', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 97, 'raw': '0x134800061', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 189, 'type': 0, 'bcid': 1967, 'raw': '0x3c5c2f47af', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 5, 'raw': '0x134800005', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 189, 'type': 0, 'bcid': 1967, 'raw': '0x3c5c2f47af', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 5, 'raw': '0x134800005', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 190, 'type': 0, 'bcid': 2872, 'raw': '0x3c5c2f8b38', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 2, 'raw': '0x134800002', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 190, 'type': 0, 'bcid': 2872, 'raw': '0x3c5c2f8b38', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 2, 'raw': '0x134800002', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 191, 'type': 0, 'bcid': 197, 'raw': '0x3c5c2fc0c5', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 250, 'raw': '0x1348000fa', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 191, 'type': 0, 'bcid': 197, 'raw': '0x3c5c2fc0c5', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 250, 'raw': '0x1348000fa', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 192, 'type': 0, 'bcid': 1102, 'raw': '0x3c5c30044e', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 238, 'raw': '0x1348000ee', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 192, 'type': 0, 'bcid': 1102, 'raw': '0x3c5c30044e', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 238, 'raw': '0x1348000ee', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 193, 'type': 0, 'bcid': 1991, 'raw': '0x3c5c3047c7', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 83, 'raw': '0x134800053', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 193, 'type': 0, 'bcid': 1991, 'raw': '0x3c5c3047c7', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 83, 'raw': '0x134800053', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 194, 'type': 0, 'bcid': 2896, 'raw': '0x3c5c308b50', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 84, 'raw': '0x134800054', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 194, 'type': 0, 'bcid': 2896, 'raw': '0x3c5c308b50', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 84, 'raw': '0x134800054', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 195, 'type': 0, 'bcid': 221, 'raw': '0x3c5c30c0dd', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 253, 'raw': '0x1348000fd', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 195, 'type': 0, 'bcid': 221, 'raw': '0x3c5c30c0dd', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 253, 'raw': '0x1348000fd', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 196, 'type': 0, 'bcid': 1126, 'raw': '0x3c5c310466', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 124, 'raw': '0x13480007c', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 196, 'type': 0, 'bcid': 1126, 'raw': '0x3c5c310466', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 124, 'raw': '0x13480007c', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 197, 'type': 0, 'bcid': 2015, 'raw': '0x3c5c3147df', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 133, 'raw': '0x134800085', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 197, 'type': 0, 'bcid': 2015, 'raw': '0x3c5c3147df', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 133, 'raw': '0x134800085', 'meta': '0x21c'}]]
+Range row:  range(15, 16)
+Range col:  range(0, 1)
+VTH:  106.25
+
+ Response size:  49
+
+ Response:  [['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 198, 'type': 0, 'bcid': 772, 'raw': '0x3c5c318304', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 120, 'raw': '0x134800078', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 198, 'type': 0, 'bcid': 772, 'raw': '0x3c5c318304', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 72, 'cal': 199, 'tot': 0, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81e24000c7', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 52, 'raw': '0x134800134', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 199, 'type': 0, 'bcid': 1025, 'raw': '0x3c5c31c401', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 129, 'raw': '0x134800081', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 199, 'type': 0, 'bcid': 1025, 'raw': '0x3c5c31c401', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 709, 'cal': 579, 'tot': 0, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81f6280243', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 131, 'raw': '0x134800183', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 200, 'type': 0, 'bcid': 1406, 'raw': '0x3c5c32057e', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 57, 'raw': '0x134800039', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 200, 'type': 0, 'bcid': 1406, 'raw': '0x3c5c32057e', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 708, 'cal': 955, 'tot': 192, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81f62303bb', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 156, 'raw': '0x13480019c', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 201, 'type': 0, 'bcid': 1659, 'raw': '0x3c5c32467b', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 191, 'raw': '0x1348000bf', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 201, 'type': 0, 'bcid': 1659, 'raw': '0x3c5c32467b', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 191, 'raw': '0x1348000bf', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 202, 'type': 0, 'bcid': 2888, 'raw': '0x3c5c328b48', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 177, 'raw': '0x1348000b1', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 202, 'type': 0, 'bcid': 2888, 'raw': '0x3c5c328b48', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 693, 'cal': 595, 'tot': 0, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81f5a80253', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 128, 'raw': '0x134800180', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 203, 'type': 0, 'bcid': 3429, 'raw': '0x3c5c32cd65', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 122, 'raw': '0x13480007a', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 203, 'type': 0, 'bcid': 3429, 'raw': '0x3c5c32cd65', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 710, 'cal': 317, 'tot': 384, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81f636013d', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 195, 'raw': '0x1348001c3', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 204, 'type': 0, 'bcid': 1526, 'raw': '0x3c5c3305f6', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 28, 'raw': '0x13480001c', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 204, 'type': 0, 'bcid': 1526, 'raw': '0x3c5c3305f6', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 693, 'cal': 463, 'tot': 448, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81f5af01cf', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 7, 'raw': '0x134800107', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 205, 'type': 0, 'bcid': 1939, 'raw': '0x3c5c334793', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 70, 'raw': '0x134800046', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 205, 'type': 0, 'bcid': 1939, 'raw': '0x3c5c334793', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 812, 'cal': 476, 'tot': 0, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81f96001dc', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 126, 'raw': '0x13480017e', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 206, 'type': 0, 'bcid': 2080, 'raw': '0x3c5c338820', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 202, 'raw': '0x1348000ca', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 206, 'type': 0, 'bcid': 2080, 'raw': '0x3c5c338820', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 693, 'cal': 352, 'tot': 384, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81f5ae0160', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 244, 'raw': '0x1348001f4', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 207, 'type': 0, 'bcid': 2173, 'raw': '0x3c5c33c87d', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 135, 'raw': '0x134800087', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 207, 'type': 0, 'bcid': 2173, 'raw': '0x3c5c33c87d', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 786, 'cal': 622, 'tot': 64, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81f891026e', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 241, 'raw': '0x1348001f1', 'meta': '0x21c'}]]
+Range row:  range(15, 16)
+Range col:  range(0, 1)
+VTH:  207.5
+
+ Response size:  50
+
+ Response:  [['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 208, 'type': 0, 'bcid': 1174, 'raw': '0x3c5c340496', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 82, 'raw': '0x134800052', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 208, 'type': 0, 'bcid': 1174, 'raw': '0x3c5c340496', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 325, 'cal': 199, 'tot': 61, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81ea28f4c7', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 251, 'raw': '0x1348001fb', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 209, 'type': 0, 'bcid': 2223, 'raw': '0x3c5c3448af', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 252, 'raw': '0x1348000fc', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 209, 'type': 0, 'bcid': 2223, 'raw': '0x3c5c3448af', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 324, 'cal': 199, 'tot': 61, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81ea20f4c7', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 69, 'raw': '0x134800145', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 210, 'type': 0, 'bcid': 604, 'raw': '0x3c5c34825c', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 78, 'raw': '0x13480004e', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 210, 'type': 0, 'bcid': 604, 'raw': '0x3c5c34825c', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 324, 'cal': 200, 'tot': 61, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81ea20f4c8', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 151, 'raw': '0x134800197', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 211, 'type': 0, 'bcid': 1573, 'raw': '0x3c5c34c625', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 11, 'raw': '0x13480000b', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 211, 'type': 0, 'bcid': 1573, 'raw': '0x3c5c34c625', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 324, 'cal': 199, 'tot': 62, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81ea20f8c7', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 141, 'raw': '0x13480018d', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 212, 'type': 0, 'bcid': 2958, 'raw': '0x3c5c350b8e', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 249, 'raw': '0x1348000f9', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 212, 'type': 0, 'bcid': 2958, 'raw': '0x3c5c350b8e', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 324, 'cal': 199, 'tot': 61, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81ea20f4c7', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 2, 'raw': '0x134800102', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 213, 'type': 0, 'bcid': 491, 'raw': '0x3c5c3541eb', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 93, 'raw': '0x13480005d', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 213, 'type': 0, 'bcid': 491, 'raw': '0x3c5c3541eb', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 324, 'cal': 199, 'tot': 61, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81ea20f4c7', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 95, 'raw': '0x13480015f', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 214, 'type': 0, 'bcid': 1620, 'raw': '0x3c5c358654', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 62, 'raw': '0x13480003e', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 214, 'type': 0, 'bcid': 1620, 'raw': '0x3c5c358654', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 324, 'cal': 199, 'tot': 61, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81ea20f4c7', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 15, 'raw': '0x13480010f', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 215, 'type': 0, 'bcid': 2525, 'raw': '0x3c5c35c9dd', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 2, 'raw': '0x134800002', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 215, 'type': 0, 'bcid': 2525, 'raw': '0x3c5c35c9dd', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 324, 'cal': 199, 'tot': 62, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81ea20f8c7', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 219, 'raw': '0x1348001db', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 216, 'type': 0, 'bcid': 3414, 'raw': '0x3c5c360d56', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 0, 'raw': '0x134800000', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 216, 'type': 0, 'bcid': 3414, 'raw': '0x3c5c360d56', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 324, 'cal': 199, 'tot': 61, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81ea20f4c7', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 47, 'raw': '0x13480012f', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 217, 'type': 0, 'bcid': 755, 'raw': '0x3c5c3642f3', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 176, 'raw': '0x1348000b0', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 217, 'type': 0, 'bcid': 755, 'raw': '0x3c5c3642f3', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 324, 'cal': 199, 'tot': 61, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81ea20f4c7', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 65, 'raw': '0x134800141', 'meta': '0x21c'}]]
+Range row:  range(15, 16)
+Range col:  range(0, 1)
+VTH:  308.75
+
+ Response size:  50
+
+ Response:  [['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 218, 'type': 0, 'bcid': 2104, 'raw': '0x3c5c368838', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 189, 'raw': '0x1348000bd', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 218, 'type': 0, 'bcid': 2104, 'raw': '0x3c5c368838', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 307, 'cal': 199, 'tot': 37, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81e99894c7', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 251, 'raw': '0x1348001fb', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 219, 'type': 0, 'bcid': 1961, 'raw': '0x3c5c36c7a9', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 163, 'raw': '0x1348000a3', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 219, 'type': 0, 'bcid': 1961, 'raw': '0x3c5c36c7a9', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 306, 'cal': 199, 'tot': 37, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81e99094c7', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 43, 'raw': '0x13480012b', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 220, 'type': 0, 'bcid': 3270, 'raw': '0x3c5c370cc6', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 83, 'raw': '0x134800053', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 220, 'type': 0, 'bcid': 3270, 'raw': '0x3c5c370cc6', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 306, 'cal': 200, 'tot': 37, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81e99094c8', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 153, 'raw': '0x134800199', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 221, 'type': 0, 'bcid': 679, 'raw': '0x3c5c3742a7', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 98, 'raw': '0x134800062', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 221, 'type': 0, 'bcid': 679, 'raw': '0x3c5c3742a7', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 307, 'cal': 199, 'tot': 37, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81e99894c7', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 212, 'raw': '0x1348001d4', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 222, 'type': 0, 'bcid': 1540, 'raw': '0x3c5c378604', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 53, 'raw': '0x134800035', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 222, 'type': 0, 'bcid': 1540, 'raw': '0x3c5c378604', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 307, 'cal': 199, 'tot': 37, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81e99894c7', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 42, 'raw': '0x13480012a', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 223, 'type': 0, 'bcid': 2353, 'raw': '0x3c5c37c931', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 118, 'raw': '0x134800076', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 223, 'type': 0, 'bcid': 2353, 'raw': '0x3c5c37c931', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 307, 'cal': 199, 'tot': 37, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81e99894c7', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 231, 'raw': '0x1348001e7', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 224, 'type': 0, 'bcid': 3102, 'raw': '0x3c5c380c1e', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 177, 'raw': '0x1348000b1', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 224, 'type': 0, 'bcid': 3102, 'raw': '0x3c5c380c1e', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 307, 'cal': 199, 'tot': 37, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81e99894c7', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 234, 'raw': '0x1348001ea', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 225, 'type': 0, 'bcid': 2127, 'raw': '0x3c5c38484f', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 146, 'raw': '0x134800092', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 225, 'type': 0, 'bcid': 2127, 'raw': '0x3c5c38484f', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 308, 'cal': 198, 'tot': 37, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81e9a094c6', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 46, 'raw': '0x13480012e', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 226, 'type': 0, 'bcid': 3548, 'raw': '0x3c5c388ddc', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 213, 'raw': '0x1348000d5', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 226, 'type': 0, 'bcid': 3548, 'raw': '0x3c5c388ddc', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 307, 'cal': 199, 'tot': 37, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81e99894c7', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 136, 'raw': '0x134800188', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 227, 'type': 0, 'bcid': 877, 'raw': '0x3c5c38c36d', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 2, 'raw': '0x134800002', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 227, 'type': 0, 'bcid': 877, 'raw': '0x3c5c38c36d', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 306, 'cal': 199, 'tot': 37, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81e99094c7', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 49, 'raw': '0x134800131', 'meta': '0x21c'}]]
+Range row:  range(15, 16)
+Range col:  range(0, 1)
+VTH:  410.0
+
+ Response size:  40
+
+ Response:  [['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 228, 'type': 0, 'bcid': 3430, 'raw': '0x3c5c390d66', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 187, 'raw': '0x1348000bb', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 228, 'type': 0, 'bcid': 3430, 'raw': '0x3c5c390d66', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 187, 'raw': '0x1348000bb', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 229, 'type': 0, 'bcid': 1095, 'raw': '0x3c5c394447', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 28, 'raw': '0x13480001c', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 229, 'type': 0, 'bcid': 1095, 'raw': '0x3c5c394447', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 28, 'raw': '0x13480001c', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 230, 'type': 0, 'bcid': 2020, 'raw': '0x3c5c3987e4', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 200, 'raw': '0x1348000c8', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 230, 'type': 0, 'bcid': 2020, 'raw': '0x3c5c3987e4', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 200, 'raw': '0x1348000c8', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 231, 'type': 0, 'bcid': 2241, 'raw': '0x3c5c39c8c1', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 82, 'raw': '0x134800052', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 231, 'type': 0, 'bcid': 2241, 'raw': '0x3c5c39c8c1', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 82, 'raw': '0x134800052', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 232, 'type': 0, 'bcid': 2270, 'raw': '0x3c5c3a08de', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 54, 'raw': '0x134800036', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 232, 'type': 0, 'bcid': 2270, 'raw': '0x3c5c3a08de', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 54, 'raw': '0x134800036', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 233, 'type': 0, 'bcid': 2171, 'raw': '0x3c5c3a487b', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 251, 'raw': '0x1348000fb', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 233, 'type': 0, 'bcid': 2171, 'raw': '0x3c5c3a487b', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 251, 'raw': '0x1348000fb', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 234, 'type': 0, 'bcid': 1944, 'raw': '0x3c5c3a8798', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 187, 'raw': '0x1348000bb', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 234, 'type': 0, 'bcid': 1944, 'raw': '0x3c5c3a8798', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 187, 'raw': '0x1348000bb', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 235, 'type': 0, 'bcid': 1925, 'raw': '0x3c5c3ac785', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 227, 'raw': '0x1348000e3', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 235, 'type': 0, 'bcid': 1925, 'raw': '0x3c5c3ac785', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 227, 'raw': '0x1348000e3', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 236, 'type': 0, 'bcid': 614, 'raw': '0x3c5c3b0266', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 1, 'raw': '0x134800001', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 236, 'type': 0, 'bcid': 614, 'raw': '0x3c5c3b0266', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 1, 'raw': '0x134800001', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 237, 'type': 0, 'bcid': 2643, 'raw': '0x3c5c3b4a53', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 193, 'raw': '0x1348000c1', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 237, 'type': 0, 'bcid': 2643, 'raw': '0x3c5c3b4a53', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 193, 'raw': '0x1348000c1', 'meta': '0x21c'}]]
+
+In [1]: 

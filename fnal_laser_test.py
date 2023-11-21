@@ -160,7 +160,10 @@ if __name__ == '__main__':
                 raise
     etroc.reset()
 
-    with open('results/thresholds.yaml', 'r') as f:
+    # with open('results/thresholds.yaml', 'r') as f:
+    #     threshold_matrix = load(f, Loader)
+
+    with open('results/no_temperature_control/N13/185V/noise_scan/thresholds.yaml', 'r') as f:
         threshold_matrix = load(f, Loader)
 
     rb_0.enable_external_trigger()

@@ -1,0 +1,14 @@
+## etl_test_fw Timing summary
+                                  
+| **Parameter** | **value (ns)** |
+| ---           | ---            |
+| WNS:          | 0.241508       |
+| TNS:          | 0.000000       |
+| WHS:          | 0.004000       |
+| THS:          | 0.000000       |
+
+
+ Time requirements are met.
+
+
+

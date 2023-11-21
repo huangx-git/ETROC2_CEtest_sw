@@ -925,9 +925,9 @@ if __name__ == '__main__':
             
             vth_axis    = np.linspace(0, 405, 406)
             #charges = [1,5,10,15,20,25,30,32]
-            #charges = [5,10,15,20,25,30,32]
-            # charges = [4,6,8,10,12,15,20,25,30,32]
-            charges = [25]
+            # charges = [20,25,30,32]
+            charges = [4,6,8,10,12,15,20,25,30,32]
+            # charges = [25]
             results =[[] for i in range(0,len(charges))]
             TOA = [[] for i in range(0,len(charges))]
             TOT =  [[] for i in range(0,len(charges))]

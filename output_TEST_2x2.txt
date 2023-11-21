@@ -1,0 +1,495 @@
+Python 3.8.10 (default, May 26 2023, 14:05:08) 
+Type 'copyright', 'credits' or 'license' for more information
+IPython 8.12.2 -- An enhanced Interactive Python. Type '?' for help.
+ETROC2 emulator instantiated, base configuration successful
+IPBus address: chtcp-2.0://localhost:10203?target=192.168.0.10:50001
+Successfully got list of address table files from gitlab.
+KCU firmware version: 3.2.0
+Figuring out lpGBT version by reading from ROMREG
+ > lpGBT v1 detected
+Loaded ADC calibration data for chip 3686715904. Gain: 1.871094 / Offset: 518
+Found 2 connected modules
+Will proceed with testing Module 1
+Module status:
+┏━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━┓
+┃○┃                           ┃○┃
+┃ ┃ Module:   1               ┃ ┃
+┃ ┃ [91mPower board is: off      [0m ┃ ┃
+┃ ┃ [92mConnected:               [0m ┃ ┃
+┃ ┃ [92m i2c master: lpgbt       [0m ┃ ┃
+┃ ┃ [92m channel:    1           [0m ┃ ┃
+┃ ┃ lpGBT 1 links:            ┃ ┃
+┃ ┃  [92m0[0m                        ┃ ┃
+┃ ┃ lpGBT 2 links:            ┃ ┃
+┃ ┃  [92m0[0m                        ┃ ┃
+┃○┃                           ┃○┃
+┗━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━┛
+
+ - Checking peripheral configuration:
+[92mPerif config reg=readoutClockDelayPixel: ret=0, exp=0[0m
+[92mPerif config reg=readoutClockWidthPixel: ret=16, exp=16[0m
+[92mPerif config reg=readoutClockDelayGlobal: ret=0, exp=0[0m
+[92mPerif config reg=readoutClockWidthGlobal: ret=16, exp=16[0m
+[91mPerif config reg=serRateRight: ret=0, exp=1[0m
+[91mPerif config reg=serRateLeft: ret=0, exp=1[0m
+[92mPerif config reg=linkResetTestPattern: ret=1, exp=1[0m
+[92mPerif config reg=linkResetFixedPattern: ret=2898758853, exp=2898758853[0m
+[92mPerif config reg=emptySlotBCID: ret=1, exp=1[0m
+[92mPerif config reg=triggerGranularity: ret=0, exp=0[0m
+[92mPerif config reg=disScrambler: ret=1, exp=1[0m
+[91mPerif config reg=mergeTriggerData: ret=1, exp=0[0m
+[91mPerif config reg=singlePort: ret=0, exp=1[0m
+[92mPerif config reg=onChipL1AConf: ret=0, exp=0[0m
+[91mPerif config reg=BCIDoffset: ret=208, exp=13[0m
+[92mPerif config reg=fcSelfAlignEn: ret=0, exp=0[0m
+[92mPerif config reg=fcClkDelayEn: ret=0, exp=0[0m
+[92mPerif config reg=fcDataDelayEn: ret=0, exp=0[0m
+[91mPerif config reg=chargeInjectionDelay: ret=10, exp=24[0m
+[92mPerif config reg=RefStrSel: ret=3, exp=3[0m
+[92mPerif config reg=PLL_BIASGEN_CONFIG: ret=8, exp=8[0m
+[92mPerif config reg=PLL_CONFIG_I_PLL: ret=9, exp=9[0m
+[92mPerif config reg=PLL_CONFIG_P_PLL: ret=9, exp=9[0m
+[92mPerif config reg=PLL_R_CONFIG: ret=2, exp=2[0m
+[92mPerif config reg=PLL_vcoDAC: ret=8, exp=8[0m
+[92mPerif config reg=PLL_vcoRailMode: ret=1, exp=1[0m
+[91mPerif config reg=PLL_ENABLEPLL: ret=1, exp=0[0m
+[92mPerif config reg=PLL_FBDiv_skip: ret=0, exp=0[0m
+[92mPerif config reg=PLL_FBDiv_clkTreeDisable: ret=0, exp=0[0m
+[92mPerif config reg=PLLclkgen_disSER: ret=1, exp=1[0m
+[92mPerif config reg=PLLclkgen_disVCO: ret=0, exp=0[0m
+[92mPerif config reg=PLLclkgen_disEOM: ret=1, exp=1[0m
+[92mPerif config reg=PLLclkgen_disCLK: ret=0, exp=0[0m
+[92mPerif config reg=PLLclkgen_disDES: ret=0, exp=0[0m
+[92mPerif config reg=CLKSel: ret=1, exp=1[0m
+[92mPerif config reg=PS_CPCurrent: ret=1, exp=1[0m
+[92mPerif config reg=PS_CapRst: ret=0, exp=0[0m
+[92mPerif config reg=PS_Enable: ret=1, exp=1[0m
+[92mPerif config reg=PS_ForceDown: ret=0, exp=0[0m
+[92mPerif config reg=PS_PhaseAdj: ret=0, exp=0[0m
+[92mPerif config reg=CLK40_EnRx: ret=1, exp=1[0m
+[92mPerif config reg=CLK40_EnTer: ret=1, exp=1[0m
+[92mPerif config reg=CLK40_Equ: ret=0, exp=0[0m
+[92mPerif config reg=CLK40_InvData: ret=0, exp=0[0m
+[92mPerif config reg=CLK40_SetCM: ret=1, exp=1[0m
+[92mPerif config reg=CLK1280_EnRx: ret=1, exp=1[0m
+[92mPerif config reg=CLK1280_EnTer: ret=1, exp=1[0m
+[92mPerif config reg=CLK1280_Equ: ret=0, exp=0[0m
+[92mPerif config reg=CLK1280_InvData: ret=0, exp=0[0m
+[92mPerif config reg=CLK1280_SetCM: ret=1, exp=1[0m
+[92mPerif config reg=FC_EnRx: ret=1, exp=1[0m
+[92mPerif config reg=FC_EnTer: ret=1, exp=1[0m
+[92mPerif config reg=FC_Equ: ret=0, exp=0[0m
+[92mPerif config reg=FC_InvData: ret=0, exp=0[0m
+[92mPerif config reg=FC_SetCM: ret=1, exp=1[0m
+[92mPerif config reg=disPowerSequence: ret=0, exp=0[0m
+[92mPerif config reg=softBoot: ret=0, exp=0[0m
+[92mPerif config reg=EFuse_TCKHP: ret=4, exp=4[0m
+[92mPerif config reg=EFuse_EnClk: ret=0, exp=0[0m
+[92mPerif config reg=EFuse_Mode: ret=2, exp=2[0m
+[92mPerif config reg=EFuse_Rstn: ret=1, exp=1[0m
+[92mPerif config reg=EFuse_Start: ret=0, exp=0[0m
+[91mPerif config reg=EFuse_Prog: ret=1234, exp=0[0m
+[92mPerif config reg=EFuse_Bypass: ret=1, exp=1[0m
+[92mPerif config reg=IfLockThrCounter: ret=11, exp=11[0m
+[92mPerif config reg=IfReLockThrCounter: ret=11, exp=11[0m
+[92mPerif config reg=IfUnLockThrCounter: ret=11, exp=11[0m
+[92mPerif config reg=asyAlignFastcommand: ret=0, exp=0[0m
+[92mPerif config reg=asyLinkReset: ret=0, exp=0[0m
+[92mPerif config reg=asyPLLReset: ret=1, exp=1[0m
+[92mPerif config reg=asyResetChargeInj: ret=1, exp=1[0m
+[92mPerif config reg=asyResetFastcommand: ret=1, exp=1[0m
+[92mPerif config reg=asyResetGlobalReadout: ret=1, exp=1[0m
+[92mPerif config reg=asyResetLockDetect: ret=1, exp=1[0m
+[92mPerif config reg=asyStartCalibration: ret=1, exp=1[0m
+[92mPerif config reg=VRefGen_PD: ret=0, exp=0[0m
+[92mPerif config reg=TS_PD: ret=0, exp=0[0m
+[92mPerif config reg=TDCClockTest: ret=0, exp=0[0m
+[92mPerif config reg=TDCStrobeTest: ret=0, exp=0[0m
+[92mPerif config reg=LTx_AmplSel: ret=4, exp=4[0m
+[92mPerif config reg=RTx_AmplSel: ret=4, exp=4[0m
+[92mPerif config reg=disLTx: ret=0, exp=0[0m
+[92mPerif config reg=disRTx: ret=0, exp=0[0m
+[92mPerif config reg=GRO_TOARST_N: ret=1, exp=1[0m
+[92mPerif config reg=GRO_Start: ret=0, exp=0[0m
+[92mPerif config reg=GRO_TOA_Latch: ret=1, exp=1[0m
+[92mPerif config reg=GRO_TOA_CK: ret=1, exp=1[0m
+[92mPerif config reg=GRO_TOT_CK: ret=1, exp=1[0m
+[92mPerif config reg=GRO_TOTRST_N: ret=1, exp=1[0m
+
+ - Checking peripheral status:
+[93mPerif status reg=fcBitAlignError: ret=0[0m
+[93mPerif status reg=PS_Late: ret=1[0m
+[93mPerif status reg=AFCcalCap: ret=23[0m
+[93mPerif status reg=AFCBusy: ret=0[0m
+[93mPerif status reg=fcAlignFinalState: ret=0[0m
+[93mPerif status reg=controllerState: ret=11[0m
+[93mPerif status reg=fcAlignStatus: ret=0[0m
+[93mPerif status reg=invalidFCCount: ret=1479[0m
+[93mPerif status reg=pllUnlockCount: ret=0[0m
+[93mPerif status reg=EFuseQ: ret=1234[0m
+
+ - Running pixel sanity check:
+Passed!
+
+ - Running pixel random check:
+Passed!
+
+ - Checking configuration for pixel (4,5):
+[92mPixel (row=4, col=5) config reg=CLSel: ret=0, exp=0[0m
+[92mPixel (row=4, col=5) config reg=IBSel: ret=7, exp=7[0m
+[92mPixel (row=4, col=5) config reg=RfSel: ret=2, exp=2[0m
+[92mPixel (row=4, col=5) config reg=HysSel: ret=15, exp=15[0m
+[92mPixel (row=4, col=5) config reg=PD_DACDiscri: ret=0, exp=0[0m
+[92mPixel (row=4, col=5) config reg=QSel: ret=6, exp=6[0m
+[92mPixel (row=4, col=5) config reg=QInjEn: ret=0, exp=0[0m
+[92mPixel (row=4, col=5) config reg=autoReset_TDC: ret=0, exp=0[0m
+[92mPixel (row=4, col=5) config reg=enable_TDC: ret=1, exp=1[0m
+[92mPixel (row=4, col=5) config reg=level_TDC: ret=1, exp=1[0m
+[92mPixel (row=4, col=5) config reg=resetn_TDC: ret=1, exp=1[0m
+[92mPixel (row=4, col=5) config reg=testMode_TDC: ret=0, exp=0[0m
+[92mPixel (row=4, col=5) config reg=Bypass_THCal: ret=1, exp=1[0m
+[92mPixel (row=4, col=5) config reg=DAC: ret=0, exp=0[0m
+[92mPixel (row=4, col=5) config reg=TH_offset: ret=10, exp=10[0m
+[92mPixel (row=4, col=5) config reg=RSTn_THCal: ret=1, exp=1[0m
+[92mPixel (row=4, col=5) config reg=ScanStart_THCal: ret=0, exp=0[0m
+[92mPixel (row=4, col=5) config reg=BufEn_THCal: ret=0, exp=0[0m
+[92mPixel (row=4, col=5) config reg=CLKEn_THCal: ret=0, exp=0[0m
+[92mPixel (row=4, col=5) config reg=workMode: ret=0, exp=0[0m
+[92mPixel (row=4, col=5) config reg=L1Adelay: ret=501, exp=501[0m
+[92mPixel (row=4, col=5) config reg=disDataReadout: ret=0, exp=0[0m
+[91mPixel (row=4, col=5) config reg=disTrigPath: ret=1, exp=0[0m
+[91mPixel (row=4, col=5) config reg=upperTOATrig: ret=1023, exp=512[0m
+[91mPixel (row=4, col=5) config reg=lowerTOATrig: ret=0, exp=32[0m
+[91mPixel (row=4, col=5) config reg=upperTOTTrig: ret=511, exp=64[0m
+[91mPixel (row=4, col=5) config reg=lowerTOTTrig: ret=0, exp=16[0m
+[91mPixel (row=4, col=5) config reg=upperCalTrig: ret=1023, exp=512[0m
+[91mPixel (row=4, col=5) config reg=lowerCalTrig: ret=0, exp=16[0m
+[91mPixel (row=4, col=5) config reg=upperTOA: ret=1023, exp=512[0m
+[91mPixel (row=4, col=5) config reg=lowerTOA: ret=0, exp=32[0m
+[91mPixel (row=4, col=5) config reg=upperTOT: ret=511, exp=256[0m
+[91mPixel (row=4, col=5) config reg=lowerTOT: ret=0, exp=16[0m
+[91mPixel (row=4, col=5) config reg=upperCal: ret=1023, exp=512[0m
+[91mPixel (row=4, col=5) config reg=lowerCal: ret=0, exp=16[0m
+[92mPixel (row=4, col=5) config reg=addrOffset: ret=1, exp=1[0m
+[92mPixel (row=4, col=5) config reg=selfTestOccupancy: ret=1, exp=1[0m
+[92mPixel (row=4, col=5) config reg=PixelSanityConfig: ret=0, exp=0[0m
+
+ - Checking status for pixel (4,5):
+[93mPixel (row=4, col=5) status reg=ACC: ret=0[0m
+[93mPixel (row=4, col=5) status reg=ScanDone: ret=0[0m
+[93mPixel (row=4, col=5) status reg=BL: ret=0[0m
+[93mPixel (row=4, col=5) status reg=NW: ret=0[0m
+[93mPixel (row=4, col=5) status reg=TH: ret=0[0m
+[93mPixel (row=4, col=5) status reg=THState: ret=0[0m
+[93mPixel (row=4, col=5) status reg=PixelID: ret=0[0m
+[93mPixel (row=4, col=5) status reg=PixelSanityStat: ret=0[0m
+
+ - Checking pixel broadcast.
+Passed!
+Redoing bitslip
+
+ - Checking elinks
+Disabling readout for all elinks but the ETROC under test
+- Status of link 0
+[92mLocked                       1[0m
+[92mFiller rate           16777215[0m
+[92mError count                  0[0m
+Packet count                 0
+Data count                   0
+- Status of link 0
+[92mLocked                       1[0m
+[92mFiller rate           16777215[0m
+[92mError count                  0[0m
+Packet count                 0
+Data count                   0
+
+ - Getting internal test data
+Got number of total events n_events_total=2626
+Events with at least one hit n_events_hit=2620
+Events with some error in data unpacking n_events_err=0
+Installed gtk3 event loop hook.
+
+ - Testing fast command communication - Sending two L1As
+('header', {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 24, 'type': 0, 'bcid': 3297, 'raw': '0x3c5c060ce1', 'meta': '0x100'})
+('data', {'ea': 0, 'col_id': 8, 'row_id': 8, 'toa': 547, 'cal': 938, 'tot': 214, 'elink': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x91111b5baa', 'meta': '0x0'})
+('data', {'ea': 0, 'col_id': 15, 'row_id': 0, 'toa': 960, 'cal': 426, 'tot': 223, 'elink': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x9e1e037daa', 'meta': '0x0'})
+('data', {'ea': 0, 'col_id': 15, 'row_id': 7, 'toa': 990, 'cal': 938, 'tot': 47, 'elink': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x9efef0bfaa', 'meta': '0x0'})
+('data', {'ea': 0, 'col_id': 15, 'row_id': 8, 'toa': 993, 'cal': 426, 'tot': 319, 'elink': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x9f1f0cfdaa', 'meta': '0x0'})
+('data', {'ea': 0, 'col_id': 15, 'row_id': 15, 'toa': 1021, 'cal': 426, 'tot': 42, 'elink': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x9fffe8a9aa', 'meta': '0x0'})
+('trailer', {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 5, 'crc': 151, 'raw': '0x134800597', 'meta': '0x200'})
+('header', {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 24, 'type': 0, 'bcid': 3297, 'raw': '0x3c5c060ce1', 'meta': '0x11c'})
+('data', {'ea': 0, 'col_id': 7, 'row_id': 0, 'toa': 450, 'cal': 938, 'tot': 353, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x8e0e1587aa', 'meta': '0x1c'})
+('data', {'ea': 0, 'col_id': 7, 'row_id': 7, 'toa': 478, 'cal': 938, 'tot': 231, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x8eeef39faa', 'meta': '0x1c'})
+('data', {'ea': 0, 'col_id': 7, 'row_id': 8, 'toa': 482, 'cal': 938, 'tot': 134, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x8f0f121baa', 'meta': '0x1c'})
+('data', {'ea': 0, 'col_id': 0, 'row_id': 8, 'toa': 33, 'cal': 938, 'tot': 333, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81010d37aa', 'meta': '0x1c'})
+('data', {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 60, 'cal': 938, 'tot': 75, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81e1e12faa', 'meta': '0x1c'})
+('trailer', {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 5, 'crc': 105, 'raw': '0x134800569', 'meta': '0x21c'})
+('header', {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 25, 'type': 0, 'bcid': 638, 'raw': '0x3c5c06427e', 'meta': '0x100'})
+('data', {'ea': 0, 'col_id': 8, 'row_id': 7, 'toa': 541, 'cal': 426, 'tot': 249, 'elink': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x90f0ebe5aa', 'meta': '0x0'})
+('data', {'ea': 0, 'col_id': 8, 'row_id': 15, 'toa': 572, 'cal': 938, 'tot': 480, 'elink': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x91f1e783aa', 'meta': '0x0'})
+('data', {'ea': 0, 'col_id': 15, 'row_id': 8, 'toa': 994, 'cal': 938, 'tot': 259, 'elink': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x9f1f140faa', 'meta': '0x0'})
+('trailer', {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 3, 'crc': 126, 'raw': '0x13480037e', 'meta': '0x200'})
+('header', {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 25, 'type': 0, 'bcid': 638, 'raw': '0x3c5c06427e', 'meta': '0x11c'})
+('data', {'ea': 0, 'col_id': 7, 'row_id': 7, 'toa': 479, 'cal': 426, 'tot': 172, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x8eeefab1aa', 'meta': '0x1c'})
+('data', {'ea': 0, 'col_id': 7, 'row_id': 8, 'toa': 483, 'cal': 426, 'tot': 75, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x8f0f192daa', 'meta': '0x1c'})
+('data', {'ea': 0, 'col_id': 7, 'row_id': 15, 'toa': 509, 'cal': 938, 'tot': 3, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x8fefe80faa', 'meta': '0x1c'})
+('data', {'ea': 0, 'col_id': 0, 'row_id': 0, 'toa': 0, 'cal': 426, 'tot': 476, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x80000771aa', 'meta': '0x1c'})
+('data', {'ea': 0, 'col_id': 0, 'row_id': 8, 'toa': 34, 'cal': 426, 'tot': 274, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81011449aa', 'meta': '0x1c'})
+('data', {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 61, 'cal': 426, 'tot': 16, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81e1e841aa', 'meta': '0x1c'})
+('trailer', {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 6, 'crc': 69, 'raw': '0x134800645', 'meta': '0x21c'})
+
+ - Will send L1a/QInj pulse with delay of 10 cycles and charge of 30 fC
+
+ - to pixel at Row 15, Col 0.
+Range row:  range(14, 16)
+Range col:  range(0, 2)
+VTH:  5.0
+
+ Response size:  40
+
+ Response:  [['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 26, 'type': 0, 'bcid': 712, 'raw': '0x3c5c0682c8', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 209, 'raw': '0x1348000d1', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 26, 'type': 0, 'bcid': 712, 'raw': '0x3c5c0682c8', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 209, 'raw': '0x1348000d1', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 27, 'type': 0, 'bcid': 1641, 'raw': '0x3c5c06c669', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 137, 'raw': '0x134800089', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 27, 'type': 0, 'bcid': 1641, 'raw': '0x3c5c06c669', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 137, 'raw': '0x134800089', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 28, 'type': 0, 'bcid': 3146, 'raw': '0x3c5c070c4a', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 41, 'raw': '0x134800029', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 28, 'type': 0, 'bcid': 3146, 'raw': '0x3c5c070c4a', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 41, 'raw': '0x134800029', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 29, 'type': 0, 'bcid': 767, 'raw': '0x3c5c0742ff', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 20, 'raw': '0x134800014', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 29, 'type': 0, 'bcid': 767, 'raw': '0x3c5c0742ff', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 20, 'raw': '0x134800014', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 30, 'type': 0, 'bcid': 1200, 'raw': '0x3c5c0784b0', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 88, 'raw': '0x134800058', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 30, 'type': 0, 'bcid': 1200, 'raw': '0x3c5c0784b0', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 88, 'raw': '0x134800058', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 31, 'type': 0, 'bcid': 3057, 'raw': '0x3c5c07cbf1', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 160, 'raw': '0x1348000a0', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 31, 'type': 0, 'bcid': 3057, 'raw': '0x3c5c07cbf1', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 160, 'raw': '0x1348000a0', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 32, 'type': 0, 'bcid': 2886, 'raw': '0x3c5c080b46', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 68, 'raw': '0x134800044', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 32, 'type': 0, 'bcid': 2886, 'raw': '0x3c5c080b46', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 68, 'raw': '0x134800044', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 33, 'type': 0, 'bcid': 747, 'raw': '0x3c5c0842eb', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 216, 'raw': '0x1348000d8', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 33, 'type': 0, 'bcid': 747, 'raw': '0x3c5c0842eb', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 216, 'raw': '0x1348000d8', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 34, 'type': 0, 'bcid': 1484, 'raw': '0x3c5c0885cc', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 179, 'raw': '0x1348000b3', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 34, 'type': 0, 'bcid': 1484, 'raw': '0x3c5c0885cc', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 179, 'raw': '0x1348000b3', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 35, 'type': 0, 'bcid': 61, 'raw': '0x3c5c08c03d', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 115, 'raw': '0x134800073', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 35, 'type': 0, 'bcid': 61, 'raw': '0x3c5c08c03d', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 115, 'raw': '0x134800073', 'meta': '0x21c'}]]
+Range row:  range(14, 16)
+Range col:  range(0, 2)
+VTH:  106.25
+
+ Response size:  2595
+
+ Response:  [['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 36, 'type': 0, 'bcid': 2416, 'raw': '0x3c5c090970', 'meta': '0x100'}]
+ ['data'
+  {'ea': 0, 'col_id': 8, 'row_id': 0, 'toa': 338, 'cal': 198, 'tot': 90, 'elink': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x900a9168c6', 'meta': '0x0'}]
+ ['data'
+  {'ea': 0, 'col_id': 8, 'row_id': 1, 'toa': 340, 'cal': 199, 'tot': 84, 'elink': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x902aa150c7', 'meta': '0x0'}]
+ ...
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 14, 'toa': 697, 'cal': 363, 'tot': 291, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81d5cc8d6b', 'meta': '0x1c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 55, 'cal': 199, 'tot': 0, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81e1b800c7', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 128, 'crc': 153, 'raw': '0x134808099', 'meta': '0x21c'}]]
+Range row:  range(14, 16)
+Range col:  range(0, 2)
+VTH:  207.5
+
+ Response size:  2550
+
+ Response:  [['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 46, 'type': 0, 'bcid': 2892, 'raw': '0x3c5c0b8b4c', 'meta': '0x100'}]
+ ['data'
+  {'ea': 0, 'col_id': 8, 'row_id': 0, 'toa': 317, 'cal': 200, 'tot': 55, 'elink': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x9009e8dcc8', 'meta': '0x0'}]
+ ['data'
+  {'ea': 0, 'col_id': 8, 'row_id': 1, 'toa': 317, 'cal': 200, 'tot': 45, 'elink': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x9029e8b4c8', 'meta': '0x0'}]
+ ...
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 14, 'toa': 313, 'cal': 200, 'tot': 65, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81c9c904c8', 'meta': '0x1c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 325, 'cal': 199, 'tot': 63, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81ea28fcc7', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 127, 'crc': 102, 'raw': '0x134807f66', 'meta': '0x21c'}]]
+Range row:  range(14, 16)
+Range col:  range(0, 2)
+VTH:  308.75
+
+ Response size:  652
+
+ Response:  [['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 56, 'type': 0, 'bcid': 3272, 'raw': '0x3c5c0e0cc8', 'meta': '0x100'}]
+ ['data'
+  {'ea': 0, 'col_id': 8, 'row_id': 0, 'toa': 412, 'cal': 202, 'tot': 71, 'elink': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x900ce11cca', 'meta': '0x0'}]
+ ['data'
+  {'ea': 0, 'col_id': 8, 'row_id': 4, 'toa': 294, 'cal': 200, 'tot': 35, 'elink': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x9089308cc8', 'meta': '0x0'}]
+ ...
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 14, 'toa': 298, 'cal': 200, 'tot': 44, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81c950b0c8', 'meta': '0x1c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 15, 'toa': 308, 'cal': 199, 'tot': 38, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81e9a098c7', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 38, 'crc': 126, 'raw': '0x13480267e', 'meta': '0x21c'}]]
+Range row:  range(14, 16)
+Range col:  range(0, 2)
+VTH:  410.0
+
+ Response size:  48
+
+ Response:  [['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 66, 'type': 0, 'bcid': 1957, 'raw': '0x3c5c1087a5', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 114, 'raw': '0x134800072', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 66, 'type': 0, 'bcid': 1957, 'raw': '0x3c5c1087a5', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 14, 'toa': 276, 'cal': 200, 'tot': 10, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81c8a028c8', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 70, 'raw': '0x134800146', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 67, 'type': 0, 'bcid': 934, 'raw': '0x3c5c10c3a6', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 232, 'raw': '0x1348000e8', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 67, 'type': 0, 'bcid': 934, 'raw': '0x3c5c10c3a6', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 14, 'toa': 274, 'cal': 200, 'tot': 7, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81c8901cc8', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 95, 'raw': '0x13480015f', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 68, 'type': 0, 'bcid': 2675, 'raw': '0x3c5c110a73', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 80, 'raw': '0x134800050', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 68, 'type': 0, 'bcid': 2675, 'raw': '0x3c5c110a73', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 14, 'toa': 274, 'cal': 200, 'tot': 7, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81c8901cc8', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 202, 'raw': '0x1348001ca', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 69, 'type': 0, 'bcid': 452, 'raw': '0x3c5c1141c4', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 51, 'raw': '0x134800033', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 69, 'type': 0, 'bcid': 452, 'raw': '0x3c5c1141c4', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 14, 'toa': 270, 'cal': 200, 'tot': 480, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81c87780c8', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 144, 'raw': '0x134800190', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 70, 'type': 0, 'bcid': 1601, 'raw': '0x3c5c118641', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 154, 'raw': '0x13480009a', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 70, 'type': 0, 'bcid': 1601, 'raw': '0x3c5c118641', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 154, 'raw': '0x13480009a', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 71, 'type': 0, 'bcid': 2818, 'raw': '0x3c5c11cb02', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 191, 'raw': '0x1348000bf', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 71, 'type': 0, 'bcid': 2818, 'raw': '0x3c5c11cb02', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 14, 'toa': 741, 'cal': 757, 'tot': 72, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81d72922f5', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 32, 'raw': '0x134800120', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 72, 'type': 0, 'bcid': 1203, 'raw': '0x3c5c1204b3', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 117, 'raw': '0x134800075', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 72, 'type': 0, 'bcid': 1203, 'raw': '0x3c5c1204b3', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 14, 'toa': 276, 'cal': 200, 'tot': 10, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81c8a028c8', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 116, 'raw': '0x134800174', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 73, 'type': 0, 'bcid': 2896, 'raw': '0x3c5c124b50', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 79, 'raw': '0x13480004f', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 73, 'type': 0, 'bcid': 2896, 'raw': '0x3c5c124b50', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 14, 'toa': 273, 'cal': 201, 'tot': 6, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81c88818c9', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 191, 'raw': '0x1348001bf', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 74, 'type': 0, 'bcid': 3277, 'raw': '0x3c5c128ccd', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 196, 'raw': '0x1348000c4', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 74, 'type': 0, 'bcid': 3277, 'raw': '0x3c5c128ccd', 'meta': '0x11c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 196, 'raw': '0x1348000c4', 'meta': '0x21c'}]
+ ['header'
+  {'elink': 0, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 75, 'type': 0, 'bcid': 3370, 'raw': '0x3c5c12cd2a', 'meta': '0x100'}]
+ ['trailer'
+  {'elink': 0, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 0, 'crc': 61, 'raw': '0x13480003d', 'meta': '0x200'}]
+ ['header'
+  {'elink': 28, 'sof': 1, 'eof': 0, 'full': 0, 'any_full': 0, 'global_full': 0, 'l1counter': 75, 'type': 0, 'bcid': 3370, 'raw': '0x3c5c12cd2a', 'meta': '0x11c'}]
+ ['data'
+  {'ea': 0, 'col_id': 0, 'row_id': 14, 'toa': 273, 'cal': 201, 'tot': 7, 'elink': 28, 'full': 0, 'any_full': 0, 'global_full': 0, 'raw': '0x81c8881cc9', 'meta': '0x1c'}]
+ ['trailer'
+  {'elink': 28, 'sof': 0, 'eof': 1, 'full': 0, 'any_full': 0, 'global_full': 0, 'chipid': 308, 'status': 0, 'hits': 1, 'crc': 228, 'raw': '0x1348001e4', 'meta': '0x21c'}]]
+
+In [1]: 
+In [1]: 
+In [1]: 
+In [1]: 
+In [1]: 
+In [1]: 
