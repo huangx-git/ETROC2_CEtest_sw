@@ -205,7 +205,7 @@ plt.close()
 #Slide 5 TOT, etc. Distributions at indivudial QSel, 5 different Threshold DACs
 
 print('Working on TOT, TOA, and Cal hists for individual settings')
-for q in tqdm(np.unique(df.charge)):
+for q in [25]:#tqdm(np.unique(df.charge)):
     for d in tqdm(args.plotted_vths, leave = False, desc = f'Working on QSel = {q}'):
         #if not d in df.vth: d = np.random.choice(df.vth, 1)
         idx = [df.charge.iloc[i] == q and df.vth.iloc[i] == d for i in range(len(df.vth))]
@@ -350,7 +350,7 @@ plt.close()
 
 
 # Polynomial Regression of TOA SD data
-
+'''
 for q in np.unique(df.charge):
     idx = df.charge == q
     vth = df.vth[idx]
@@ -405,7 +405,7 @@ for q in np.unique(df.charge):
         plt.close()
         
 
-
+'''
 fig = plt.figure(figsize = figsize)
 for q in np.unique(df.charge):
     idx = df.charge == q
