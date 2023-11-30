@@ -59,9 +59,13 @@ class ETROC():
         try:
             self.default_config()
         except TimeoutError:
-            if verbose:
+            if verbose or True:
                 print("Warning: ETROC default configuration failed!")
             pass
+
+        if self.connected:
+            if not self.is_good():
+                raise (RuntimeError, f"ETROC is not in the expected status! {self.controllerState=}")
 
         if strict:
             self.consistency(verbose=verbose)
@@ -275,13 +279,16 @@ class ETROC():
         else:
             return all_pass
 
-    def deactivate_hot_pixels(self, pixels=[], hot_pixels=True):
+    def deactivate_hot_pixels(self, pixels=[], hot_pixels=True, verbose=False):
+        if verbose: print("Deactivating hot pixels (row, col)")
         for row, col in pixels:
+            if verbose: print(row, col)
             self.wr_reg("enable_TDC", 0, row=row, col=col)
             self.wr_reg("disDataReadout", 1, row=row, col=col)
         if hot_pixels:
             # hot pixels are those that fail the pixel sanity check
             for row, col in self.hot_pixels:
+                if verbose: print(row, col)
                 self.wr_reg("enable_TDC", 0, row=row, col=col)
                 self.wr_reg("disDataReadout", 1, row=row, col=col)
 
@@ -314,6 +321,17 @@ class ETROC():
             self.wr_reg("asyResetGlobalReadout", 1)
         if not self.isfake:
             self.rb.rerun_bitslip()  # NOTE this is necessary to get the links to lock again
+
+    def reset_modules(self):
+        self.reset(hard=True)
+        # reset PLL and FC modules
+        self.reset_PLL()
+        self.reset_fast_command()
+        self.reset()
+        self.default_config()
+        self.rb.kcu.write_node("READOUT_BOARD_%s.BITSLIP_AUTO_EN"%self.rb.rb, 0x1)
+        time.sleep(0.1)
+        self.rb.kcu.write_node("READOUT_BOARD_%s.BITSLIP_AUTO_EN"%self.rb.rb, 0x0)
 
     def read_Vref(self):
         return self.rb.SCA.read_adc(self.vref_pin)
@@ -406,7 +424,7 @@ class ETROC():
 
     def default_config(self):
         # FIXME should use higher level functions for better readability
-        if self.connected:
+        if self.is_connected():
             self.reset()  # soft reset of the global readout
             self.set_singlePort('both')
             self.set_mergeTriggerData('merge')
@@ -444,6 +462,16 @@ class ETROC():
             self.wr_reg("lowerTOTTrig", 0, broadcast=True)
             self.wr_reg("upperCalTrig", 0x3ff, broadcast=True)
             self.wr_reg("lowerCalTrig", 0, broadcast=True)
+
+            self.reset()  # soft reset of the global readout, 2nd reset needed for some ETROCs
+
+    def is_good(self):
+        good = True
+        self.controllerState = self.rd_reg("controllerState")
+        good &= (self.controllerState == 11)
+
+        return good
+
 
     # =======================
     # === HIGH-LEVEL FUNC ===
@@ -488,7 +516,7 @@ class ETROC():
         else:
             return self.get_QInj(row=row, col=col)
 
-    def auto_threshold_scan(self, row=0, col=0, broadcast=False, offset='auto'):
+    def auto_threshold_scan(self, row=0, col=0, broadcast=False, offset='auto', time_out=3, verbose=False):
         '''
         From the manual:
         1. set "Bypass" low.
@@ -515,6 +543,8 @@ class ETROC():
         self.wr_reg('RSTn_THCal', 1, row=row, col=col, broadcast=broadcast)
         self.wr_reg('ScanStart_THCal', 1, row=row, col=col, broadcast=broadcast)
         done = False
+        start_time = time.time()
+        timed_out = False
         while not done:
             done = True
             if broadcast:
@@ -522,10 +552,16 @@ class ETROC():
                     for j in range(16):
                         tmp = self.rd_reg("ScanDone", row=i, col=j)
                         done &= tmp
+
                 #if not done: print("not done")
             else:
                 done = self.rd_reg("ScanDone", row=row, col=col)
                 time.sleep(0.001)
+                if time.time() - start_time > time_out:
+                    if verbose:
+                        print(f"Auto threshold scan timed out for pixel {row=}, {col=}")
+                    timed_out = True
+                    break
         self.wr_reg('ScanStart_THCal', 0, row=row, col=col, broadcast=broadcast)
         if offset == 'auto':
             if broadcast:

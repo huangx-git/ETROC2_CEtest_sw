@@ -132,7 +132,7 @@ if __name__ == '__main__':
     argParser.add_argument('--test_readwrite', action='store_true', default=False, help="Test simple read/write functionality?")
     argParser.add_argument('--test_chip', action='store_true', default=False, help="Test simple read/write functionality for real chip?")
     argParser.add_argument('--config_chip', action='store_true', default=False, help="Configure chip?")
-    argParser.add_argument('--configuration', action='store', default='modulev0', choices=['modulev0', 'modulev0b'], help="Board configuration to be loaded")
+    argParser.add_argument('--configuration', action='store', default='modulev0', choices=['modulev0', 'modulev0b', 'multimodule'], help="Board configuration to be loaded")
     argParser.add_argument('--vth', action='store_true', default=False, help="Parse Vth scan plots?")
     argParser.add_argument('--rerun', action='store_true', default=False, help="Rerun Vth scan and overwrite data?")
     argParser.add_argument('--fitplots', action='store_true', default=False, help="Create individual vth fit plots for all pixels?")
@@ -156,10 +156,10 @@ if __name__ == '__main__':
     argParser.add_argument('--col', action='store', default=3, help="Pixel column to be tested")
     argParser.add_argument('--pixel_mask', action='store', default=None, help="Pixel mask to apply")
     argParser.add_argument('--moduleid', action='store', default=0, help="")
-
     argParser.add_argument('--charges', action = 'store', default = [15], nargs = '*', type = int, help = 'Charges to inject')
     argParser.add_argument('--vth_axis', action = 'store', default = [415, 820, 406], nargs = '*', type = int, help = 'Threshold DAC values to scan over')
     argParser.add_argument('--nl1a', action = 'store', type = int, default = 3200, help = 'Number of Qinj/L1A pulses to send')
+    argParser.add_argument('--multi', action='store_true', help="Run multiple modules at once (for data taking only!)")
     args = argParser.parse_args()
 
     if args.test_chip or args.config_chip:
@@ -220,6 +220,67 @@ if __name__ == '__main__':
         else:
             print(f"Threshold is currently set to {read_val=} mV")
             print("Test passed.\n")
+
+    elif args.multi:
+
+        from tamalero.FIFO import FIFO
+        from tamalero.DataFrame import DataFrame
+        df = DataFrame()
+
+        kcu = get_kcu(args.kcu, control_hub=True, host=args.host, verbose=False)
+        if (kcu == 0):
+            # if not basic connection was established the get_kcu function returns 0
+            # this would cause the RB init to fail.
+            sys.exit(1)
+
+        rb_0 = ReadoutBoard(0, kcu=kcu, config=args.configuration)
+        data = 0xabcd1234
+        kcu.write_node("LOOPBACK.LOOPBACK", data)
+        if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
+            print("No communications with KCU105... quitting")
+            sys.exit(1)
+
+        fifo = FIFO(rb=rb_0)
+
+        is_configured = rb_0.DAQ_LPGBT.is_configured()
+        if not is_configured:
+            print("RB is not configured, exiting.")
+            exit(0)
+
+        from tamalero.Module import Module
+
+        print("\n - Getting modules")
+        modules = []
+        connected_modules = []
+        for i in [1,2,3]:
+            # FIXME we might want to hard reset all ETROCs at this point?
+            m_tmp = Module(rb=rb_0, i=i, enable_power_board=args.enable_power_board)
+            modules.append(m_tmp)
+            if m_tmp.ETROCs[0].is_connected():  # NOTE assume that module is connected if first ETROC is connected
+                connected_modules.append(i)
+                for e_tmp in m_tmp.ETROCs:
+                    if args.hard_reset:
+                        print(f"Running hard reset and default config on module {i}")
+                        e_tmp.reset(hard=True)
+                        e_tmp.default_config()
+                        time.sleep(1.1)
+                        #e_tmp.default_config()
+
+
+        time.sleep(0.1)
+        rb_0.enable_etroc_readout()
+        rb_0.enable_etroc_readout(slave=True)
+        rb_0.reset_data_error_count()
+
+        for module in modules:
+            module.show_status()
+
+        fifo.reset()
+        print("\n - Testing fast command communication - Sending two L1As")
+        fifo.send_l1a(2)
+        for x in fifo.pretty_read(df):
+            print(x)
+
 
     elif args.config_chip:
 
@@ -568,6 +629,7 @@ if __name__ == '__main__':
             print("Will use workMode 1 to get some occupancy (no noise or charge injection)")
             etroc.wr_reg("workMode", 0x1, broadcast=True)  # this overwrites disDataReadout!
             etroc.deactivate_hot_pixels(pixels=masked_pixels)
+            #etroc.deactivate_hot_pixels(pixels=[(i,1) for i in range(16)])
 
             for j in range(1):
                 # One go is enough, but can run through this loop many times if there's any issue
@@ -671,6 +733,7 @@ if __name__ == '__main__':
 
             # not using broadcast
             print ("\n - Using auto-threshold calibration for individual pixels")
+            print ("Info: if progress is slow, probably most pixel threshold calibrations time out because of high noise levels.")
             baseline = np.empty([16, 16])
             noise_width = np.empty([16, 16])
             #pixel = 0
