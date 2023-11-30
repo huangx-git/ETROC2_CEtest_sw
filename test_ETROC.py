@@ -730,6 +730,7 @@ if __name__ == '__main__':
 
             # not using broadcast
             print ("\n - Using auto-threshold calibration for individual pixels")
+            print ("Info: if progress is slow, probably most pixel threshold calibrations time out because of high noise levels.")
             baseline = np.empty([16, 16])
             noise_width = np.empty([16, 16])
             #pixel = 0

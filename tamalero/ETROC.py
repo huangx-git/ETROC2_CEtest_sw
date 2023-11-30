@@ -516,7 +516,7 @@ class ETROC():
         else:
             return self.get_QInj(row=row, col=col)
 
-    def auto_threshold_scan(self, row=0, col=0, broadcast=False, offset='auto'):
+    def auto_threshold_scan(self, row=0, col=0, broadcast=False, offset='auto', time_out=3, verbose=False):
         '''
         From the manual:
         1. set "Bypass" low.
@@ -543,6 +543,8 @@ class ETROC():
         self.wr_reg('RSTn_THCal', 1, row=row, col=col, broadcast=broadcast)
         self.wr_reg('ScanStart_THCal', 1, row=row, col=col, broadcast=broadcast)
         done = False
+        start_time = time.time()
+        timed_out = False
         while not done:
             done = True
             if broadcast:
@@ -550,10 +552,16 @@ class ETROC():
                     for j in range(16):
                         tmp = self.rd_reg("ScanDone", row=i, col=j)
                         done &= tmp
+
                 #if not done: print("not done")
             else:
                 done = self.rd_reg("ScanDone", row=row, col=col)
                 time.sleep(0.001)
+                if time.time() - start_time > time_out:
+                    if verbose:
+                        print(f"Auto threshold scan timed out for pixel {row=}, {col=}")
+                    timed_out = True
+                    break
         self.wr_reg('ScanStart_THCal', 0, row=row, col=col, broadcast=broadcast)
         if offset == 'auto':
             if broadcast:
