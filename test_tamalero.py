@@ -284,6 +284,9 @@ if __name__ == '__main__':
     # Module Status
     #-------------------------------------------------------------------------------
 
+    rb.enable_etroc_readout()
+    rb.enable_etroc_readout(slave=True)
+
     modules = []
     pb_channel = []
     if args.configuration == 'emulator' or args.configuration.count('modulev0'):
