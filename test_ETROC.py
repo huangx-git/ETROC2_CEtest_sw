@@ -254,7 +254,8 @@ if __name__ == '__main__':
         connected_modules = []
         for i in [1,2,3]:
             # FIXME we might want to hard reset all ETROCs at this point?
-            m_tmp = Module(rb=rb_0, i=i, enable_power_board=args.enable_power_board)
+            moduleid = int(args.moduleid) if i==int(args.module) else (i+200)  # NOTE: at some point we should also include the RB number, e.g. (rb << 4) | (module)
+            m_tmp = Module(rb=rb_0, i=i, enable_power_board=args.enable_power_board, moduleid = moduleid)
             modules.append(m_tmp)
             if m_tmp.ETROCs[0].is_connected():  # NOTE assume that module is connected if first ETROC is connected
                 connected_modules.append(i)
@@ -344,11 +345,30 @@ if __name__ == '__main__':
         # FIXME the below code is still pretty stupid
         modules = []
         connected_modules = []
+
         for i in [1,2,3]:
-            m_tmp = Module(rb=rb_0, i=i, enable_power_board=args.enable_power_board)
+            # FIXME we might want to hard reset all ETROCs at this point?
+            moduleid = int(args.moduleid) if i==int(args.module) else (i+200)
+            m_tmp = Module(rb=rb_0, i=i, enable_power_board=args.enable_power_board, moduleid = moduleid)
             modules.append(m_tmp)
-            if m_tmp.ETROCs[0].connected:  # NOTE assume that module is connected if first ETROC is connected
+            if m_tmp.ETROCs[0].is_connected():  # NOTE assume that module is connected if first ETROC is connected
                 connected_modules.append(i)
+                for e_tmp in m_tmp.ETROCs:
+                    if args.hard_reset:
+                        print(f"Running hard reset and default config on module {i}")
+                        e_tmp.reset(hard=True)
+                        e_tmp.default_config()
+                        time.sleep(1.1)
+                        #e_tmp.default_config()
+                        #
+                    print("Setting ETROCs into workMode 0")
+                    e_tmp.wr_reg("workMode", 0, broadcast=True)
+
+        #for i in [1,2,3]:
+        #    m_tmp = Module(rb=rb_0, i=i, enable_power_board=args.enable_power_board)
+        #    modules.append(m_tmp)
+        #    if m_tmp.ETROCs[0].connected:  # NOTE assume that module is connected if first ETROC is connected
+        #        connected_modules.append(i)
 
         print(f"Found {len(connected_modules)} connected modules")
         if int(args.module) > 0:

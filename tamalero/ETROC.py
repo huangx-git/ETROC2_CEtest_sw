@@ -27,6 +27,7 @@ class ETROC():
             vref=None,
             vref_pd=False,
             vtemp = None,
+            chip_id = 0,
     ):
         self.QINJ_delay = 504  # this is a fixed value for the default settings of ETROC2
         self.isfake = False
@@ -47,7 +48,16 @@ class ETROC():
         else:
             self.ver = "X-X-X"
 
+        self.chip_id = chip_id
         self.regs = load_yaml(os.path.join(here, '../address_table/ETROC2_example.yaml'))
+
+        # NOTE: some ETROCs need to be hard reset, otherwise the I2C target does not come alive.
+        # This actually solves this issue, so please don't take it out (Chesterton's Fence, anyone?)
+        for i in range(2):
+            if self.is_connected():
+                break
+            self.reset(hard=True)
+            time.sleep(0.1)
 
         if self.is_connected():
             if vref_pd:
@@ -436,7 +446,7 @@ class ETROC():
             self.invalid_FC_counter = self.get_invalidFCCount()
 
             # give some number to the ETROC
-            self.wr_reg("EFuse_Prog", 1234)  # gives a chip ID of 308.
+            self.wr_reg("EFuse_Prog", (self.chip_id)<<2)  # gives the correct chip ID
 
             # configuration as per discussion with ETROC2 developers
             self.wr_reg("onChipL1AConf", 0)  # this should be default anyway
