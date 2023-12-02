@@ -582,7 +582,16 @@ class SCA:
     def I2C_read(self, reg=0x0, master=3, slave_addr=0x48, nbytes=1, adr_nbytes=2, freq=2):
         # wrapper function to have similar interface as lpGBT I2C_read
         if nbytes > 1 or adr_nbytes>1:
-            return self.I2C_read_multi(channel=master, servant=slave_addr, reg=reg, nbytes=nbytes, adr_nbytes=adr_nbytes, freq=freq)
+            start_time = time.time()
+            while True:
+                try:
+                    return self.I2C_read_multi(channel=master, servant=slave_addr, reg=reg, nbytes=nbytes, adr_nbytes=adr_nbytes, freq=freq)
+                except:
+                    if (time.time() - start_time) < 2:
+                        pass
+                    else:
+                        #print("I2C_read in SCA timed out.")  # not printing this. SCA will time out e.g. if we're trying to see if a module/ETROC is connected on an empty slot!
+                        raise RuntimeError("SCA timed out")
         else:
             return self.I2C_read_single_byte(channel=master, servant=slave_addr, reg=reg, freq=freq)
 
