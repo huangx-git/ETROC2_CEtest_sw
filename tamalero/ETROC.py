@@ -321,14 +321,16 @@ class ETROC():
         return all_pass
 
     def reset(self, hard=False):
-        if hard:
-            self.rb.SCA.set_gpio(self.reset_pin, 0)
-            time.sleep(0.1)
-            self.rb.SCA.set_gpio(self.reset_pin, 1)
-        else:
-            self.wr_reg("asyResetGlobalReadout", 0)
-            time.sleep(0.1)
-            self.wr_reg("asyResetGlobalReadout", 1)
+        if self.breed not in ['software', 'emulator']:
+            # the emulators are not going to be reset at all
+            if hard:
+                self.rb.SCA.set_gpio(self.reset_pin, 0)
+                time.sleep(0.1)
+                self.rb.SCA.set_gpio(self.reset_pin, 1)
+            else:
+                self.wr_reg("asyResetGlobalReadout", 0)
+                time.sleep(0.1)
+                self.wr_reg("asyResetGlobalReadout", 1)
         if not self.isfake:
             self.rb.rerun_bitslip()  # NOTE this is necessary to get the links to lock again
 
