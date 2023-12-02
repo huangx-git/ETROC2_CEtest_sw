@@ -338,7 +338,7 @@ class ETROC():
         self.reset_PLL()
         self.reset_fast_command()
         self.reset()
-        self.default_config()
+        self.default_config(no_reset=True)
         self.rb.kcu.write_node("READOUT_BOARD_%s.BITSLIP_AUTO_EN"%self.rb.rb, 0x1)
         time.sleep(0.1)
         self.rb.kcu.write_node("READOUT_BOARD_%s.BITSLIP_AUTO_EN"%self.rb.rb, 0x0)
@@ -432,7 +432,7 @@ class ETROC():
     # === CONTROL FUNCTIONS ===
     # =========================
 
-    def default_config(self):
+    def default_config(self, no_reset=False):
         # FIXME should use higher level functions for better readability
         if self.is_connected():
             self.reset()  # soft reset of the global readout
@@ -474,6 +474,23 @@ class ETROC():
             self.wr_reg("lowerCalTrig", 0, broadcast=True)
 
             self.reset()  # soft reset of the global readout, 2nd reset needed for some ETROCs
+            #
+            # FIXME this is where the module_reset should happen if links are not locked??
+            if not no_reset:
+                elink_status = self.get_elink_status()
+                #print(elink_status)
+                stat = True
+                for elinks in elink_status:
+                    #print(elink_status[elinks])
+                    for elink in elink_status[elinks]:
+                        if elink == False:
+                            stat &= False
+
+                if not stat:
+                    print("elinks not locked, resetting PLL and FC modules")
+                    self.reset_modules()
+
+                #print(self.get_elink_status())
 
     def is_good(self):
         good = True
