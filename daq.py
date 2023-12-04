@@ -9,6 +9,7 @@ import uhal
 import argparse
 import sys
 import time
+import pdb
 from time import sleep
 from tamalero.utils import get_kcu
 
@@ -26,12 +27,13 @@ def get_occupancy(hw, rb):
         occ = 0
     return occ * 4  # not sure where the factor of 4 comes from, but it's needed
 
-def stream_daq(kcu, rb=0, l1a_rate=1000, run_time=10, superblock=100, block=250, run=1, ext_l1a=False):
+def stream_daq(kcu, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superblock=100, block=250, run=1, ext_l1a=False):
 
     uhal.disableLogging()
     hw = kcu.hw  #uhal.getDevice("kcu105_daq", IPB_PATH, "file://" + ADR_TABLE)
 
     rate_setting = l1a_rate / 25E-9 / (0xffffffff) * 10000
+    print(rate_setting)
 
     # reset fifo
     hw.getClient().write(hw.getNode(f"READOUT_BOARD_{rb}.FIFO_RESET").getAddress(), 0x1)
@@ -52,17 +54,23 @@ def stream_daq(kcu, rb=0, l1a_rate=1000, run_time=10, superblock=100, block=250,
     data = []
 
     occupancy = 0
-    f_out = f"output/output_run_{run}_time_{start}.dat"
+    f_out = f"ETROC_output/output_run_{run}.dat"
+    ev_index = 0
+    occupancy_block = []
     with open(f_out, mode="wb") as f:
-        while start + run_time > time.time():
+        while (ev_index < n_events) and (start + run_time > time.time()):
+            # if ev_index > n_events: break
+            # print(f"Event: {ev_index} / {n_events}")
             num_blocks_to_read = 0
             occupancy = get_occupancy(hw, rb)
             num_blocks_to_read = occupancy // block
+            occupancy_block.append(num_blocks_to_read)
 
             # read the blocks
             if (num_blocks_to_read):
                 try:
                     reads = num_blocks_to_read * [hw.getNode("DAQ_RB0").readBlock(block)]
+                    # print(len(reads))
                     hw.dispatch()
                     for read in reads:
                         data += read.value()
@@ -75,11 +83,12 @@ def stream_daq(kcu, rb=0, l1a_rate=1000, run_time=10, superblock=100, block=250,
                     data = []
                 except:
                     print("Error writing to file")
+                ev_index += 1
 
         print("Resetting L1A rate back to 0")
         hw.getNode("SYSTEM.L1A_RATE").write(0)
         hw.dispatch()
-
+    
         # Read data that might still be in the FIFO
         occupancy = get_occupancy(hw, rb)
         print(f"Occupancy before last read: {occupancy}")
@@ -145,6 +154,7 @@ if __name__ == '__main__':
     argParser.add_argument('--l1a_rate', action='store', default=1000, type=int, help="L1A rate in Hz")
     argParser.add_argument('--ext_l1a', action='store_true', help="Enable external trigger input")
     argParser.add_argument('--run_time', action='store', default=10, type=int, help="Time in [s] to take data")
+    argParser.add_argument('--n_events', action='store', default=1000, type=int, help="N events")
     argParser.add_argument('--run', action='store', default=1, type=int, help="Run number")
     args = argParser.parse_args()
 
@@ -153,7 +163,7 @@ if __name__ == '__main__':
 
     print(f"Taking data now.\n ...")
 
-    f_out = stream_daq(kcu, l1a_rate=args.l1a_rate, run_time=args.run_time, run=args.run, ext_l1a=args.ext_l1a)
+    f_out = stream_daq(kcu, l1a_rate=args.l1a_rate, run_time=args.run_time, n_events = args.n_events, run=args.run, ext_l1a=args.ext_l1a)
 
     print(f"Run {args.run} has ended.")
     print(f"Stored data in file: {f_out}")

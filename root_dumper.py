@@ -24,7 +24,7 @@ if __name__ == '__main__':
 
     df = DataFrame('ETROC2')
 
-    f_in = f'output/{args.input}.dat'
+    f_in = f'ETROC_output/output_run_{args.input}.dat'
 
     with open(f_in, 'rb') as f:
         print("Reading from {}".format(f_in))
@@ -110,7 +110,6 @@ if __name__ == '__main__':
         'toa_code': toa_code,
         'cal_code': cal_code,
         'elink': elink,
-        # 'raw': raw,
         'crc': crc,
         'chipid': chipid,
         'bcid': bcid,
@@ -120,23 +119,65 @@ if __name__ == '__main__':
     }
 
     events = ak.Array(obj)
-    with rt.TFile.Open(f"output/{args.input}.root", "recreate") as f:
-        tree = rt.TTree("events", "events")
-        for l in obj:
-            vec = rt.std.vector[float]()
-            tree.Branch(l, vec)
-            for v in obj[l]:
-                is_list = False
-                if type(v) is list:
-                    vec.clear()
-                    vec.reserve(len(v))
-                    for v0 in v:
-                        vec.push_back(v0)
-                    tree.Fill()
-                    is_list = True
-                else:
-                    vec.push_back(v)
-                if not is_list:
-                    tree.Fill()
-            f.WriteObject(tree, "events")
+    with rt.TFile.Open(f"/home/daq/ETROC2_Test_Stand/ScopeHandler/ScopeData/ETROCData/output_run_{args.input}.root", "recreate") as f:
+        tree = rt.TTree("pulse", "pulse")
+        event = rt.std.vector[float]()
+        nhits = rt.std.vector[float]()
+        nhits_trail = rt.std.vector[float]()
+        l1counter = rt.std.vector[float]()
+        tree.Branch("event", event, "event")
+        tree.Branch("nhits", nhits, "nhits")
+        tree.Branch("l1counter", l1counter, "l1counter")
+        n = 1000
+        rows = rt.std.vector[float]()
+        cols = rt.std.vector[float]()
+        toa_code = rt.std.vector[float]()
+        tot_code = rt.std.vector[float]()
+        cal_code = rt.std.vector[float]()
+        elink = rt.std.vector[float]()
+        tree.Branch("rows", rows, f"rows[{n}]/D")
+        tree.Branch("cols", rows, f"cols[{n}]/D")
+        tree.Branch("toa_code", toa_code, f"toa_code[{n}]/D")
+        tree.Branch("tot_code", tot_code, f"tot_code[{n}]/D")
+        tree.Branch("cal_code", cal_code, f"cal_code[{n}]/D")
+        tree.Branch("elink", elink, f"elink[{n}]/D")
+        # tree.Branch("crc", crc, f"crc[{n}]/D")
+        # tree.Branch("chipid", chipid, f"chipid[{n}]/D")
+        # tree.Branch("bcid", bcid, f"bcid[{n}]/D")
+        # tree.Branch("counter_a", counter_a, f"counter_a[{n}]/D")
+        # tree.Branch("nhits_trail", nhits_trail, f"nhits_trail[{n}]/D")
 
+        print(len(obj["event"]))
+        for i in range(len(obj["event"])):
+            # print(obj["event"][i])
+            event.push_back(obj["event"][i])
+            nhits.push_back(obj["nhits"][i])
+            n = obj["nhits"][i]
+            rows = rt.std.vector[float]()
+            cols = rt.std.vector[float]()
+            toa_code = rt.std.vector[float]()
+            tot_code = rt.std.vector[float]()
+            cal_code = rt.std.vector[float]()
+            elink = rt.std.vector[float]()
+            # crc = rt.std.vector[float]()
+            # chipid = rt.std.vector[float]()
+            # bcid = rt.std.vector[float]()
+            # counter_a = rt.std.vector[float]()
+            # nhits_trail = rt.std.vector[float]()
+
+            for j in range(n):
+                rows.push_back(obj["row"][i][j])
+                cols.push_back(obj["col"][i][j])
+                toa_code.push_back(obj["toa_code"][i][j])
+                tot_code.push_back(obj["tot_code"][i][j])
+                cal_code.push_back(obj["cal_code"][i][j])
+                elink.push_back(obj["elink"][i][j])
+                # crc.push_back(obj["crc"][i][j])
+                # chipid.push_back(obj["chipid"][i][j])
+                # bcid.push_back(obj["bcid"][i][j])
+                # print(len(obj["counter_a"][i]), n)
+                # counter_a.push_back(obj["counter_a"][i][j])
+                # nhits_trail.push_back(obj["nhits_trail"][i][j])
+
+            tree.Fill()
+        f.WriteObject(tree, "pulse")
