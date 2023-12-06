@@ -2,6 +2,7 @@
 import struct
 import argparse
 import numpy as np
+import uproot
 import awkward as ak
 import json
 from tamalero.DataFrame import DataFrame
@@ -91,9 +92,9 @@ if __name__ == '__main__':
             if d['l1counter'] == l1a:
                 pass
             else:
-                l1a = d['l1counter']
+                l1a = int(d['l1counter'])
                 event.append(i)
-                l1counter.append(d['l1counter'])
+                l1counter.append(int(d['l1counter']))
                 row.append([])
                 col.append([])
                 tot_code.append([])
@@ -111,17 +112,17 @@ if __name__ == '__main__':
 
         if t == 'data':
             if 'tot' in d:
-                tot_code[-1].append(d['tot'])
-                toa_code[-1].append(d['toa'])
-                cal_code[-1].append(d['cal'])
+                tot_code[-1].append(float(d['tot']))
+                toa_code[-1].append(float(d['toa']))
+                cal_code[-1].append(float(d['cal']))
             elif 'counter_a' in d:
-                bcid[-1].append(d['bcid'])
-                counter_a[-1].append(d['counter_a'])
+                bcid[-1].append(float(d['bcid']))
+                counter_a[-1].append(float(d['counter_a']))
             elif 'counter_b' in d:
                 pass
-            row[-1].append(d['row_id'])
-            col[-1].append(d['col_id'])
-            elink[-1].append(d['elink'])
+            row[-1].append(int(d['row_id']))
+            col[-1].append(int(d['col_id']))
+            elink[-1].append(float(d['elink']))
             raw[-1].append(d['raw'])
             nhits[-1] += 1
 
@@ -132,23 +133,40 @@ if __name__ == '__main__':
             crc[-1].append(d['crc'])
 
     print("Zipping")
-    events = ak.Array({
+    obj = {
         'event': event,
         'l1counter': l1counter,
         'row': row,
         'col': col,
-        'tot_code': tot_code,
-        'toa_code': toa_code,
-        'cal_code': cal_code,
-        'elink': elink,
-        'raw': raw,
-        'crc': crc,
-        'chipid': chipid,
-        'bcid': bcid,
-        'counter_a': counter_a,
-        'nhits': nhits,
-        'nhits_trail': nhits_trail,
-    })
+        # 'tot_code': tot_code,
+        # 'toa_code': toa_code,
+        # 'cal_code': cal_code,
+        # 'elink': elink,
+        # 'raw': raw,
+        # 'crc': crc,
+        # 'chipid': chipid,
+        # 'bcid': bcid,
+        # 'counter_a': counter_a,
+        # 'nhits': nhits,
+        # 'nhits_trail': nhits_trail,
+    }
 
-    with open(f"output/{args.input}.json", "w") as f:
-        json.dump(ak.to_json(events), f)
+    # events = ak.Array(obj)
+
+    with uproot.recreate(f"./test.root") as f: #type(obj[e][0])
+        types = {}
+        print(obj.keys())
+        for e in obj.keys():
+            if not isinstance(obj[e][0], list):
+                types[e] = type(obj[e][0])
+            else:
+                # types[e] = f"{type(obj[e][0][0])}[]"
+                types[e] = type(obj[e][0][0])
+        print(types)
+        f.mktree("pulse", types)
+        f["pulse"].extend(obj)
+        # for b in obj.keys():
+        #     branches[b] = f["pulse"].array(b, title = b, dtype = "float64", shape=(1,))
+
+    # with open(f"output/{args.input}.json", "w") as f:
+    #     json.dump(ak.to_json(events), f)
