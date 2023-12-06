@@ -17,6 +17,8 @@ import json
 import time
 import datetime
 from yaml import load, dump
+import traceback
+
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
@@ -1051,7 +1053,8 @@ if __name__ == '__main__':
 
                 for vth in vth_axis:
                     worked = False
-                    while(not worked):
+                    qinjatt = 0
+                    while(not worked) and (qinjatt < 10):
                         try:
                             etroc.QInj_set(q, delay, L1Adelay, row=i, col=j, broadcast = False) #set reg on ETROC
                             etroc.wr_reg('DAC', int(vth), row=i, col=j, broadcast=False) #set vth on ETROC
@@ -1059,7 +1062,7 @@ if __name__ == '__main__':
                             result = fifo.pretty_read(df)
                             worked = True
                         except:
-                            print('Something failed, probably a FIFO read error. Retrying...')
+                            print(traceback.format_exc())
                     hits=0
                     toa=[]
                     tot=[]
@@ -1084,6 +1087,7 @@ if __name__ == '__main__':
                                         'tot' : TOT[k-1],
                                         'cal' : CAL[k-1]})
                 #print(scan_df.info())
+ 
                 scan_df.to_pickle(f"{out_dir}/Qinj_scan_L1A_504_{q}.pkl")
                 
             fig, ax = plt.subplots()
