@@ -243,6 +243,8 @@ if __name__ == '__main__':
             sys.exit(1)
 
         fifo = FIFO(rb=rb_0)
+        fifo.send_l1a(1)
+        fifo.reset()
 
         is_configured = rb_0.DAQ_LPGBT.is_configured()
         if not is_configured:
@@ -256,7 +258,8 @@ if __name__ == '__main__':
         connected_modules = []
         for i in [1,2,3]:
             # FIXME we might want to hard reset all ETROCs at this point?
-            m_tmp = Module(rb=rb_0, i=i, enable_power_board=args.enable_power_board)
+            moduleid = int(args.moduleid) if i==int(args.module) else (i+200)  # NOTE: at some point we should also include the RB number, e.g. (rb << 4) | (module)
+            m_tmp = Module(rb=rb_0, i=i, enable_power_board=args.enable_power_board, moduleid = moduleid)
             modules.append(m_tmp)
             if m_tmp.ETROCs[0].is_connected():  # NOTE assume that module is connected if first ETROC is connected
                 connected_modules.append(i)
@@ -267,6 +270,9 @@ if __name__ == '__main__':
                         e_tmp.default_config()
                         time.sleep(1.1)
                         #e_tmp.default_config()
+                        #
+                    print("Setting ETROCs into workMode 0")
+                    e_tmp.wr_reg("workMode", 0, broadcast=True)
 
 
         time.sleep(0.1)
@@ -346,11 +352,30 @@ if __name__ == '__main__':
         # FIXME the below code is still pretty stupid
         modules = []
         connected_modules = []
+
         for i in [1,2,3]:
-            m_tmp = Module(rb=rb_0, i=i, enable_power_board=args.enable_power_board)
+            # FIXME we might want to hard reset all ETROCs at this point?
+            moduleid = int(args.moduleid) if i==int(args.module) else (i+200)
+            m_tmp = Module(rb=rb_0, i=i, enable_power_board=args.enable_power_board, moduleid = moduleid)
             modules.append(m_tmp)
-            if m_tmp.ETROCs[0].connected:  # NOTE assume that module is connected if first ETROC is connected
+            if m_tmp.ETROCs[0].is_connected():  # NOTE assume that module is connected if first ETROC is connected
                 connected_modules.append(i)
+                for e_tmp in m_tmp.ETROCs:
+                    if args.hard_reset:
+                        print(f"Running hard reset and default config on module {i}")
+                        e_tmp.reset(hard=True)
+                        e_tmp.default_config()
+                        time.sleep(1.1)
+                        #e_tmp.default_config()
+                        #
+                    print("Setting ETROCs into workMode 0")
+                    e_tmp.wr_reg("workMode", 0, broadcast=True)
+
+        #for i in [1,2,3]:
+        #    m_tmp = Module(rb=rb_0, i=i, enable_power_board=args.enable_power_board)
+        #    modules.append(m_tmp)
+        #    if m_tmp.ETROCs[0].connected:  # NOTE assume that module is connected if first ETROC is connected
+        #        connected_modules.append(i)
 
         print(f"Found {len(connected_modules)} connected modules")
         if int(args.module) > 0:
@@ -455,49 +480,50 @@ if __name__ == '__main__':
 
         print("\n - Checking elinks")
 
-        print("Disabling readout for all elinks but the ETROC under test")
-        rb_0.disable_etroc_readout(all=True)
-        rb_0.reset_data_error_count()
-        #rb_0.enable_etroc_readout()
-        for lpgbt in etroc.elinks:
-            if lpgbt == 0:
-                slave = False
-            else:
-                slave = True
-            for link in etroc.elinks[lpgbt]:
-                print(f"Enabling elink {link}, slave is {slave}")
-                rb_0.enable_etroc_readout(link, slave=slave)
-                #time.sleep(0.5)
-                #rb_0.reset_data_error_count()
-                #fifo.select_elink(link, slave)
-                #fifo.ready()
-                rb_0.rerun_bitslip()
-                time.sleep(1.5)
-                rb_0.reset_data_error_count()
-                stat = rb_0.get_link_status(link, slave=slave, verbose=False)
-                if stat:
-                    rb_0.get_link_status(link, slave=slave)
-                start_time = time.time()
-                while not stat:
-                    #rb_0.disable_etroc_readout(link, slave=slave)
-                    rb_0.enable_etroc_readout(link, slave=slave)
-                    #time.sleep(0.5)
-                    #time.sleep(0.1)
-                    #rb_0.reset_data_error_count()
-                    #fifo.select_elink(link, slave)
-                    #fifo.ready()
-                    rb_0.rerun_bitslip()
-                    time.sleep(1.5)
-                    rb_0.reset_data_error_count()
-                    stat = rb_0.get_link_status(link, slave=slave, verbose=False
-                                                )
-                    if stat:
-                        rb_0.get_link_status(link, slave=slave)
-                        break
-                    if time.time() - start_time > 2:
-                        print('Link not good, but continuing')
-                        rb_0.get_link_status(link, slave=slave)
-                        break
+        #print("Disabling readout for all elinks but the ETROC under test")
+        ## FIXME this is still problematic...
+        #rb_0.disable_etroc_readout(all=True)
+        #rb_0.reset_data_error_count()
+        ##rb_0.enable_etroc_readout()
+        #for lpgbt in etroc.elinks:
+        #    if lpgbt == 0:
+        #        slave = False
+        #    else:
+        #        slave = True
+        #    for link in etroc.elinks[lpgbt]:
+        #        print(f"Enabling elink {link}, slave is {slave}")
+        #        rb_0.enable_etroc_readout(link, slave=slave)
+        #        #time.sleep(0.5)
+        #        #rb_0.reset_data_error_count()
+        #        #fifo.select_elink(link, slave)
+        #        #fifo.ready()
+        #        rb_0.rerun_bitslip()
+        #        time.sleep(1.5)
+        #        rb_0.reset_data_error_count()
+        #        stat = rb_0.get_link_status(link, slave=slave, verbose=False)
+        #        if stat:
+        #            rb_0.get_link_status(link, slave=slave)
+        #        start_time = time.time()
+        #        while not stat:
+        #            #rb_0.disable_etroc_readout(link, slave=slave)
+        #            rb_0.enable_etroc_readout(link, slave=slave)
+        #            #time.sleep(0.5)
+        #            #time.sleep(0.1)
+        #            #rb_0.reset_data_error_count()
+        #            #fifo.select_elink(link, slave)
+        #            #fifo.ready()
+        #            rb_0.rerun_bitslip()
+        #            time.sleep(1.5)
+        #            rb_0.reset_data_error_count()
+        #            stat = rb_0.get_link_status(link, slave=slave, verbose=False
+        #                                        )
+        #            if stat:
+        #                rb_0.get_link_status(link, slave=slave)
+        #                break
+        #            if time.time() - start_time > 2:
+        #                print('Link not good, but continuing')
+        #                rb_0.get_link_status(link, slave=slave)
+        #                break
 
         ## Bloc below to be retired
         ## Keeping it for one more iteration

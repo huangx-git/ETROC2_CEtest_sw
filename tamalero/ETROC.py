@@ -27,6 +27,7 @@ class ETROC():
             vref=None,
             vref_pd=False,
             vtemp = None,
+            chip_id = 0,
     ):
         self.QINJ_delay = 504  # this is a fixed value for the default settings of ETROC2
         self.isfake = False
@@ -47,7 +48,16 @@ class ETROC():
         else:
             self.ver = "X-X-X"
 
+        self.chip_id = chip_id
         self.regs = load_yaml(os.path.join(here, '../address_table/ETROC2_example.yaml'))
+
+        # NOTE: some ETROCs need to be hard reset, otherwise the I2C target does not come alive.
+        # This actually solves this issue, so please don't take it out (Chesterton's Fence, anyone?)
+        for i in range(2):
+            if self.is_connected():
+                break
+            self.reset(hard=True)
+            time.sleep(0.1)
 
         if self.is_connected():
             if vref_pd:
@@ -311,14 +321,16 @@ class ETROC():
         return all_pass
 
     def reset(self, hard=False):
-        if hard:
-            self.rb.SCA.set_gpio(self.reset_pin, 0)
-            time.sleep(0.1)
-            self.rb.SCA.set_gpio(self.reset_pin, 1)
-        else:
-            self.wr_reg("asyResetGlobalReadout", 0)
-            time.sleep(0.1)
-            self.wr_reg("asyResetGlobalReadout", 1)
+        if self.breed not in ['software', 'emulator']:
+            # the emulators are not going to be reset at all
+            if hard:
+                self.rb.SCA.set_gpio(self.reset_pin, 0)
+                time.sleep(0.1)
+                self.rb.SCA.set_gpio(self.reset_pin, 1)
+            else:
+                self.wr_reg("asyResetGlobalReadout", 0)
+                time.sleep(0.1)
+                self.wr_reg("asyResetGlobalReadout", 1)
         if not self.isfake:
             self.rb.rerun_bitslip()  # NOTE this is necessary to get the links to lock again
 
@@ -328,7 +340,7 @@ class ETROC():
         self.reset_PLL()
         self.reset_fast_command()
         self.reset()
-        self.default_config()
+        self.default_config(no_reset=True)
         self.rb.kcu.write_node("READOUT_BOARD_%s.BITSLIP_AUTO_EN"%self.rb.rb, 0x1)
         time.sleep(0.1)
         self.rb.kcu.write_node("READOUT_BOARD_%s.BITSLIP_AUTO_EN"%self.rb.rb, 0x0)
@@ -422,7 +434,7 @@ class ETROC():
     # === CONTROL FUNCTIONS ===
     # =========================
 
-    def default_config(self):
+    def default_config(self, no_reset=False):
         # FIXME should use higher level functions for better readability
         if self.is_connected():
             self.reset()  # soft reset of the global readout
@@ -436,7 +448,7 @@ class ETROC():
             self.invalid_FC_counter = self.get_invalidFCCount()
 
             # give some number to the ETROC
-            self.wr_reg("EFuse_Prog", 1234)  # gives a chip ID of 308.
+            self.wr_reg("EFuse_Prog", (self.chip_id)<<2)  # gives the correct chip ID
 
             # configuration as per discussion with ETROC2 developers
             self.wr_reg("onChipL1AConf", 0)  # this should be default anyway
@@ -464,6 +476,23 @@ class ETROC():
             self.wr_reg("lowerCalTrig", 0, broadcast=True)
 
             self.reset()  # soft reset of the global readout, 2nd reset needed for some ETROCs
+            #
+            # FIXME this is where the module_reset should happen if links are not locked??
+            if not no_reset:
+                elink_status = self.get_elink_status()
+                #print(elink_status)
+                stat = True
+                for elinks in elink_status:
+                    #print(elink_status[elinks])
+                    for elink in elink_status[elinks]:
+                        if elink == False:
+                            stat &= False
+
+                if not stat:
+                    print("elinks not locked, resetting PLL and FC modules")
+                    self.reset_modules()
+
+                #print(self.get_elink_status())
 
     def is_good(self):
         good = True
