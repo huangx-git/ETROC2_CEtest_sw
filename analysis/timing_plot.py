@@ -15,7 +15,8 @@ if __name__ == '__main__':
     argParser.add_argument('--input', action='store', default='output_qinj_10fC', help="Binary file to read from")
     args = argParser.parse_args()
 
-    with open(f"../output/{args.input}.json", "r") as f:
+    # with open(f"../output/{args.input}.json", "r") as f:
+    with open(f"../ETROC_output/{args.input}.json", "r") as f:
         res = json.load(f)
     events = ak.from_json(res)
 
@@ -119,7 +120,7 @@ if __name__ == '__main__':
 
     fig, ax = plt.subplots()
     tot_hist_perf.plot1d(
-        ax=ax,
+         ax=ax,
     )
     ax.set_xlabel("Time over threshold (ns)")
     ax.set_ylabel("Events")

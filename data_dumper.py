@@ -6,6 +6,7 @@ import uproot
 import awkward as ak
 import json
 from tamalero.DataFrame import DataFrame
+import ROOT as rt
 
 def merge_words(res):
     empty_frame_mask = np.array(res[0::2]) > (2**8)  # masking empty fifo entries
@@ -52,11 +53,12 @@ if __name__ == '__main__':
 
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--input', action='store', default='output_test2', help="Binary file to read from")
+    argParser.add_argument('--nevents', action='store', default=100, help="Number of events")
     args = argParser.parse_args()
 
     df = DataFrame('ETROC2')
 
-    f_in = f'output/{args.input}.dat'
+    f_in = f'ETROC_output/output_run_{args.input}.dat'
 
     with open(f_in, 'rb') as f:
         print("Reading from {}".format(f_in))
@@ -87,6 +89,25 @@ if __name__ == '__main__':
     i = 0
     l1a = -1
     for t, d in unpacked_data:
+        if i >= 1300: # int(args.nevents):
+            if t == 'header':
+                print(f"({i})")
+                print(t)
+                print(d.keys())
+                for k in d.keys():
+                    print(k, ": ", d[k])
+                print()
+            '''
+            if t=="header":
+                print(d["l1counter"])
+            elif t=="data":
+                for k in d.keys():
+                    print(k, ": ", d[k])
+                # print(d["col_id"])
+                # print(d["raw"])
+            elif t=="trailer":
+                print(d['hits'])
+            '''
         if t == 'header':
             header_counter += 1
             if d['l1counter'] == l1a:
@@ -132,41 +153,23 @@ if __name__ == '__main__':
             raw[-1].append(d['raw'])
             crc[-1].append(d['crc'])
 
-    print("Zipping")
-    obj = {
+    events = ak.Array({
         'event': event,
         'l1counter': l1counter,
         'row': row,
         'col': col,
-        # 'tot_code': tot_code,
-        # 'toa_code': toa_code,
-        # 'cal_code': cal_code,
-        # 'elink': elink,
-        # 'raw': raw,
-        # 'crc': crc,
-        # 'chipid': chipid,
-        # 'bcid': bcid,
-        # 'counter_a': counter_a,
-        # 'nhits': nhits,
-        # 'nhits_trail': nhits_trail,
-    }
+        'tot_code': tot_code,
+        'toa_code': toa_code,
+        'cal_code': cal_code,
+        'elink': elink,
+        'raw': raw,
+        'crc': crc,
+        'chipid': chipid,
+        'bcid': bcid,
+        'counter_a': counter_a,
+        'nhits': nhits,
+        'nhits_trail': nhits_trail,
+    })
 
-    # events = ak.Array(obj)
-
-    with uproot.recreate(f"./test.root") as f: #type(obj[e][0])
-        types = {}
-        print(obj.keys())
-        for e in obj.keys():
-            if not isinstance(obj[e][0], list):
-                types[e] = type(obj[e][0])
-            else:
-                # types[e] = f"{type(obj[e][0][0])}[]"
-                types[e] = type(obj[e][0][0])
-        print(types)
-        f.mktree("pulse", types)
-        f["pulse"].extend(obj)
-        # for b in obj.keys():
-        #     branches[b] = f["pulse"].array(b, title = b, dtype = "float64", shape=(1,))
-
-    # with open(f"output/{args.input}.json", "w") as f:
-    #     json.dump(ak.to_json(events), f)
+    with open(f"ETROC_output/output_run_{args.input}.json", "w") as f:
+        json.dump(ak.to_json(events), f)

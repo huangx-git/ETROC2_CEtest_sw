@@ -17,6 +17,9 @@ from tamalero.utils import get_kcu
 IPB_PATH = "ipbusudp-2.0://192.168.0.10:50001"
 ADR_TABLE = "./address_table/generic/etl_test_fw.xml"
 
+def get_kcu_flag():
+    return open(f"/home/daq/ETROC2_Test_Stand/ScopeHandler/Lecroy/Acquisition/running_acquitision.txt").read()
+
 def get_occupancy(hw, rb):
     try:
         occupancy = hw.getNode(f"READOUT_BOARD_{rb}.RX_FIFO_OCCUPANCY").read()
@@ -48,23 +51,41 @@ def stream_daq(kcu, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superblock=
         hw.getNode("SYSTEM.EN_EXT_TRIGGER").write(0x1)
         hw.dispatch()
 
-
     start = time.time()
 
     data = []
 
     occupancy = 0
     f_out = f"ETROC_output/output_run_{run}.dat"
-    ev_index = 0
+    # ev_index = 0
     occupancy_block = []
+    # blocks = 0
     with open(f_out, mode="wb") as f:
-        while (ev_index < n_events) and (start + run_time > time.time()):
-            # if ev_index > n_events: break
+        # while (start + run_time > time.time()):
+        iteration = 0
+        Running = get_kcu_flag()
+        while (Running == "False"):
+            if iteration == 0:
+                print("Waiting for the scope.")
+            Running = get_kcu_flag()
+            iteration += 1
+
+        Running = get_kcu_flag()
+        print(Running)
+        while (Running != "False"):
+            Running = get_kcu_flag()
+            # print(Running)
             # print(f"Event: {ev_index} / {n_events}")
             num_blocks_to_read = 0
             occupancy = get_occupancy(hw, rb)
             num_blocks_to_read = occupancy // block
             occupancy_block.append(num_blocks_to_read)
+            # blocks += num_blocks_to_read
+            # print(f"Number of blocks: {blocks}.")
+
+            # print(occupancy)
+            # if (occupancy >= block):
+            #     ev_index += 1
 
             # read the blocks
             if (num_blocks_to_read):
@@ -83,12 +104,12 @@ def stream_daq(kcu, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superblock=
                     data = []
                 except:
                     print("Error writing to file")
-                ev_index += 1
-
+            Running = open(f"/home/daq/ETROC2_Test_Stand/ScopeHandler/Lecroy/Acquisition/running_acquitision.txt").read()
+        
         print("Resetting L1A rate back to 0")
         hw.getNode("SYSTEM.L1A_RATE").write(0)
         hw.dispatch()
-    
+        
         # Read data that might still be in the FIFO
         occupancy = get_occupancy(hw, rb)
         print(f"Occupancy before last read: {occupancy}")
@@ -96,8 +117,6 @@ def stream_daq(kcu, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superblock=
         hw.dispatch()
         for read in reads:
             data += read.value()
-        #print(data)
-
 
         #print(data)
         occupancy = get_occupancy(hw, rb)
@@ -160,10 +179,11 @@ if __name__ == '__main__':
 
     rb = int(args.rb)
     kcu = get_kcu(args.kcu)
+    unit_time = 0.1
 
     print(f"Taking data now.\n ...")
 
-    f_out = stream_daq(kcu, l1a_rate=args.l1a_rate, run_time=args.run_time, n_events = args.n_events, run=args.run, ext_l1a=args.ext_l1a)
+    f_out = stream_daq(kcu, l1a_rate=args.l1a_rate, run_time=unit_time*args.n_events, n_events = args.n_events, run=args.run, ext_l1a=args.ext_l1a)
 
     print(f"Run {args.run} has ended.")
     print(f"Stored data in file: {f_out}")
