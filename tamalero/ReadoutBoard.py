@@ -636,3 +636,15 @@ class ReadoutBoard:
         print(f"External trigger is currently {status}")
 
         return status == "enabled"
+
+    def get_event_count(self):
+        '''
+        return number of L1As that went through this board
+        '''
+        return self.kcu.read_node(f"READOUT_BOARD_{self.rb}.EVENT_CNT").value()
+
+    def reset_event_count(self):
+        '''
+        reset the event counter
+        '''
+        self.kcu.write_node(f"READOUT_BOARD_{self.rb}.EVENT_CNT_RESET", 0x1)
