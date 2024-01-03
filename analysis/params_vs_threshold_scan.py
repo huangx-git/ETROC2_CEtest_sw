@@ -27,9 +27,13 @@ if __name__ == '__main__':
     # intensities = range(0, 55, 5) # [110, 111, 112, 113, 114, 115, 116, 117]
     # indices     = range(364, 375) # [252, 253, 254, 255, 256, 257, 258, 259]
 
-    filelist = os.listdir(f"../output/Threshold_scan_70/")
-    intensities = range(0, 55, 5)
-    indices     = range(375, 386)
+    # filelist = os.listdir(f"../output/Threshold_scan_70/")
+    # intensities = range(0, 55, 5)
+    # indices     = range(375, 386)
+    
+    path = "/home/daq/ETROC2_Test_Stand/ScopeHandler/ScopeData/LecroyMerged/"
+    intensities = range(0, 45, 5)
+    indices = range(10370, 10379, 1)
 
     mean_toa = [[],[],[],[]]
     std_toa  = [[],[],[],[]]
@@ -42,7 +46,8 @@ if __name__ == '__main__':
     # assert len(filelist) == len(intensities)
     for f_index, file in enumerate(indices):
         # with open(f"../output/Intensities/Data_{file}.json", "r") as f:
-        filename = glob.glob(f"../output/output_run_{file}_time_*.json")
+        # filename = glob.glob(f"../output/output_run_{file}_time_*.json")
+        filename = glob.glob(f"{path}/run_{file}.root")
         if len(filename) > 0:
             filename = filename[0]
         else:

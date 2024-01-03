@@ -163,19 +163,22 @@ if __name__ == '__main__':
     # with open('results/thresholds.yaml', 'r') as f:
     #     threshold_matrix = load(f, Loader)
 
-    with open('results/no_temperature_control/N13/185V/noise_scan/thresholds.yaml', 'r') as f:
+    # with open('results/no_temperature_control/N13/185V/noise_scan/thresholds.yaml', 'r') as f:
+    #     threshold_matrix = load(f, Loader)
+    with open('results/noise_scan/thresholds.yaml', 'r') as f:
         threshold_matrix = load(f, Loader)
 
     rb_0.enable_external_trigger()
     offset_from_baseline = int(args.offset)
     etroc.wr_reg("disDataReadout", 1, broadcast=True)
-    for i in range(4):
+    for i in [0,1,2,3]:
         etroc.wr_reg("disDataReadout", 0, row=15, col=i, broadcast=False)
         current_offset = etroc.get_THoffset(row = 15, col = i)
         threshold = etroc.auto_threshold_scan(15, i)
         # print(f"Old threshold offset: {current_offset}, Matrix threshold value: {int(threshold_matrix[15][i])}.")
         # print(f"Setting up threshold values: {int(threshold[0])} for row: {15}, col: {i}.")
         etroc.add_THoffset(offset_from_baseline, row = 15, col = i)
+        # etroc.add_THoffset(-10 , row = 15, col = i)
         current_offset = (etroc.get_THoffset(row = 15, col = i))
         # print(f"New threshold offset: {current_offset}")
         print(int(sum(threshold)))

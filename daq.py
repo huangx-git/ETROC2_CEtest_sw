@@ -91,7 +91,6 @@ def stream_daq(kcu, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superblock=
             if (num_blocks_to_read):
                 try:
                     reads = num_blocks_to_read * [hw.getNode("DAQ_RB0").readBlock(block)]
-                    # print(len(reads))
                     hw.dispatch()
                     for read in reads:
                         data += read.value()
@@ -104,7 +103,6 @@ def stream_daq(kcu, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superblock=
                     data = []
                 except:
                     print("Error writing to file")
-            Running = open(f"/home/daq/ETROC2_Test_Stand/ScopeHandler/Lecroy/Acquisition/running_acquitision.txt").read()
         
         print("Resetting L1A rate back to 0")
         hw.getNode("SYSTEM.L1A_RATE").write(0)
@@ -153,7 +151,6 @@ def stream_daq(kcu, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superblock=
         # write to disk
         f.write(struct.pack('<{}I'.format(len(data)), *data))
 
-
     hw.getClient().write(hw.getNode(f"READOUT_BOARD_{rb}.FIFO_RESET").getAddress(), 0x1)
     hw.dispatch()
 
@@ -183,8 +180,13 @@ if __name__ == '__main__':
 
     print(f"Taking data now.\n ...")
 
+    print(f"Resetting global event counter if RB #{rb}")
+    kcu.write_node(f"READOUT_BOARD_{rb}.EVENT_CNT_RESET", 0x1)
+
     f_out = stream_daq(kcu, l1a_rate=args.l1a_rate, run_time=unit_time*args.n_events, n_events = args.n_events, run=args.run, ext_l1a=args.ext_l1a)
 
     print(f"Run {args.run} has ended.")
     print(f"Stored data in file: {f_out}")
+    nevents = kcu.read_node(f"READOUT_BOARD_{rb}.EVENT_CNT").value()
+    print(f"Recorded nevents={nevents}")
     # NOTE this would be the place to also dump the ETROC configs

@@ -38,6 +38,7 @@ if __name__ == '__main__':
         crc_         = rt.std.vector[int]()
         chipid_      = rt.std.vector[int]()
         bcid_        = rt.std.vector[int]()
+        bcid_        = array("I",[0]) # rt.std.vector[int]()
         counter_a_   = rt.std.vector[int]()
         nhits_       = array('I',[0])
         nhits_trail_ = rt.std.vector[int]()
@@ -53,23 +54,26 @@ if __name__ == '__main__':
         #tree.Branch("raw",         raw_)
         tree.Branch("crc",         crc_)
         tree.Branch("chipid",      chipid_)
-        tree.Branch("bcid",        bcid_)
+        tree.Branch("bcid",        bcid_, "bcid/I")
         tree.Branch("counter_a",   counter_a_)
         tree.Branch("nhits",       nhits_, "nhits/I")
         tree.Branch("nhits_trail", nhits_trail_)
 
         for i, event in enumerate(jsonData):
+            # print(event["bcid"])
             event_[0] =             event["event"]
             l1counter_[0] =         event["l1counter"]
             setVector(row_,         event["row"])
             setVector(col_,         event["col"])
             setVector(tot_code_,    event["tot_code"])
             setVector(toa_code_,    event["toa_code"])
+            setVector(cal_code_,    event["cal_code"])
             setVector(elink_,       event["elink"])
             # setVector(raw_,         event["raw"])
             setVector(crc_,         event["crc"])
             setVector(chipid_,      event["chipid"])
-            setVector(bcid_,        event["bcid"])
+            bcid_[0] =              int(event["bcid"])
+            # setVector(bcid_,        event["bcid"])
             setVector(counter_a_,   event["counter_a"])
             nhits_[0] =             event["nhits"]
             setVector(nhits_trail_, event["nhits_trail"])
