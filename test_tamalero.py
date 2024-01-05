@@ -98,8 +98,8 @@ def create_app(rb, modules=[]):
 
         vth_scan_data = vth_scan(
             etroc,
-            vth_min = 220,
-            vth_max = 290,
+            vth_min = 0,
+            vth_max = 200,
             decimal = True,
             fifo = fifo,
             absolute = True,
