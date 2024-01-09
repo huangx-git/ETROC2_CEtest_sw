@@ -152,13 +152,14 @@ if __name__ == '__main__':
             raw[-1].append(d['raw'])
             nhits[-1] += 1
 
-        if t == 'trailer' and not skip_event:
+        if t == 'trailer':
             trailer_counter += 1
-            counter_t[-1] += 1
-            chipid[-1].append(d['hits']*d['chipid'])
-            nhits_trail[-1].append(d['hits'])
-            raw[-1].append(d['raw'])
-            crc[-1].append(d['crc'])
+            if not skip_event:
+                counter_t[-1] += 1
+                chipid[-1].append(d['hits']*d['chipid'])
+                nhits_trail[-1].append(d['hits'])
+                raw[-1].append(d['raw'])
+                crc[-1].append(d['crc'])
 
     print("Zipping")
     events = ak.Array({
