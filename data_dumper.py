@@ -100,7 +100,7 @@ if __name__ == '__main__':
     for t, d in unpacked_data:
         if i > 0 and t == 'header':
             # delta_bcid = abs((float(d['bcid']) % 3564) - (bcid[i-1] % 3564))
-            if bcid[i-1] > d['bcid']: # If it performed a roll
+            if bcid[i-1] > d['bcid']: # If it performed a roll | --------------.---|---.---.---------
                 delta_bcid = abs(float(d['bcid'] + (3564 - bcid[i-1])))
             else:
                 delta_bcid = abs(float(d['bcid'] - bcid[i-1]))
@@ -138,6 +138,10 @@ if __name__ == '__main__':
 
         if t == 'data':
             data_counter_l1a += 1
+            # print(float(d['elink']))
+            if (float(d['elink']) != 28.0):
+                # print(float(d['elink']))
+                print("Wrong elink: ", d['elink'])
             if 'tot' in d:
                 # print(d['toa'])
                 # print(d['tot'])
@@ -178,9 +182,9 @@ if __name__ == '__main__':
         'nhits': nhits,
         'nhits_trail': nhits_trail,
     })
-    
+    # events = ak.Array([i for i in events if (len(i['elink']) == i["nhits"])]) # if (len(i["elink"]) != 0) 
     datas = np.array(datas)
     # pdb.set_trace()
-    print(len(deltas))
+    # print(len(deltas))
     with open(f"ETROC_output/output_run_{args.input}.json", "w") as f:
         json.dump(ak.to_json(events), f)
