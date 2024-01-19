@@ -13,6 +13,8 @@ from tqdm import tqdm
 import argparse
 from scipy import stats
 import sys
+import yaml
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--loc', action = 'store', default = '4,3')
 parser.add_argument('--input', action = 'store')
@@ -76,7 +78,11 @@ df = pd.DataFrame()
 for f in files:
     print(f)
     charge = int(f.split('_')[4].split('.')[0])
-    sub = pickle.load(open(path+f, 'rb'))
+    if '.pkl' in f:
+        sub = pickle.load(open(path+f, 'rb'))
+    else:
+        with open(path + f, 'r') as infile:
+            sub = pd.DataFrame(yaml.load(infile, Loader = yaml.FullLoader))
     sub['charge'] = [charge]*len(sub.vth)
     if not len(np.unique(sub.hits)) == 1:
         df = pd.concat([df, sub])

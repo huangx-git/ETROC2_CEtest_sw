@@ -935,12 +935,12 @@ if __name__ == '__main__':
         else:
 
             print(f"Trying to load tresholds from the following file: {args.threshold}")
-            with open(f'{result_dir}/thresholds.yaml', 'r') as f:
+            with open(args.threshold, 'r') as f:
                 threshold_matrix = load(f)
 
             for row in range(16):
                 for col in range(16):
-                    etroc.wr_reg('DAC', threshold_matrix[row][col], row=row, col=col)
+                    etroc.wr_reg('DAC', int(threshold_matrix[row][col]), row=row, col=col)
 
         if args.pixelscan == 'simple':
             row = 4
@@ -1095,27 +1095,37 @@ if __name__ == '__main__':
                     cal=[]
                     for word in result:
                         if(word[0] == 'data'):
-                          toa.append(word[1]['toa'])
-                          tot.append(word[1]['tot'])
-                          cal.append(word[1]['cal'])
+                          toa.append(int(word[1]['toa']))
+                          tot.append(int(word[1]['tot']))
+                          cal.append(int(word[1]['cal']))
                           
                         if(word[0] == 'trailer'):
                             hits+=word[1]['hits']
-                    results[k].append(hits)
+                    results[k].append(int(hits))
                     TOT[k].append(tot)
                     TOA[k].append(toa)
                     CAL[k].append(cal)
                 k+=1
-                
+                ''' 
                 scan_df = pd.DataFrame({'vth': vth_axis,
                                         'hits': results[k-1],
                                         'toa' : TOA[k-1],
                                         'tot' : TOT[k-1],
                                         'cal' : CAL[k-1]})
                 #print(scan_df.info())
- 
-                scan_df.to_pickle(f"{out_dir}/Qinj_scan_L1A_504_{q}.pkl")
                 
+                scan_df.to_pickle(f"{out_dir}/Qinj_scan_L1A_504_{q}.pkl")
+                '''
+
+                scan_df = {'vth': list(vth_axis),
+                           'hits': list(results[k-1]),
+                           'toa' : TOA[k-1],
+                           'tot' : TOT[k-1],
+                           'cal' : CAL[k-1]}
+                for c in scan_df:
+                    print(c, type(scan_df[c]), type(scan_df[c][0]))
+                with open(f"{out_dir}/Qinj_scan_L1A_504_{q}.yaml", 'w') as f:
+                    dump(scan_df, f)
             fig, ax = plt.subplots()
 
             plt.title("S curve for Qinj")
