@@ -902,7 +902,7 @@ if __name__ == '__main__':
                             ha="center", va="center", color="w", fontsize="xx-small")
 
             fig.savefig(f'{result_dir}/peak_and_noiseWidth_thresholds.png')
-            #plt.show()
+            plt.show()
 
             plt.close(fig)
             del fig, ax
@@ -924,7 +924,7 @@ if __name__ == '__main__':
             ax.set_ylabel("Row")
 
             fig.savefig(f'{result_dir}/thresholds.png')
-            #plt.show()
+            plt.show()
 
             plt.close(fig)
             del fig, ax
@@ -1215,7 +1215,7 @@ if __name__ == '__main__':
                             ha="center", va="center", color="w", fontsize="xx-small")
 
             fig.savefig(f'{result_dir}/hit_matrix_qinj.png')
-            #plt.show()
+            plt.show()
 
             plt.close(fig)
             del fig, ax
@@ -1481,7 +1481,7 @@ if __name__ == '__main__':
                         ha="center", va="center", color="w", fontsize="xx-small")
 
         fig.savefig(f'results/sigmoid_mean_2D.png')
-        #plt.show()
+        plt.show()
 
         plt.close(fig)
         del fig, ax
@@ -1502,7 +1502,7 @@ if __name__ == '__main__':
         #cax.set_zlim(0, 10)
 
         fig.savefig(f'results/sigmoid_width_2D.png')
-        #plt.show()
+        plt.show()
 
     else:
         thresholds = [706-x*ETROC2.DAC_step for x in range(10)]
