@@ -151,10 +151,15 @@ if __name__ == '__main__':
     rb = int(args.rb)
     kcu = get_kcu(args.kcu)
 
+    print(f"Resetting global event counter if RB #{rb}")
+    kcu.write_node(f"READOUT_BOARD_{rb}.EVENT_CNT_RESET", 0x1)
+
     print(f"Taking data now.\n ...")
 
     f_out = stream_daq(kcu, l1a_rate=args.l1a_rate, run_time=args.run_time, run=args.run, ext_l1a=args.ext_l1a)
 
     print(f"Run {args.run} has ended.")
     print(f"Stored data in file: {f_out}")
+    nevents = kcu.read_node(f"READOUT_BOARD_{rb}.EVENT_CNT").value()
+    print(f"Recorded {nevents=}")
     # NOTE this would be the place to also dump the ETROC configs
