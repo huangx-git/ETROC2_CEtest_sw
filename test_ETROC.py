@@ -1087,6 +1087,9 @@ if __name__ == '__main__':
                             fifo.send_QInj(count=int(args.nl1a), delay=504) #send Qinj pulses with L1Adelay
                             result = fifo.pretty_read(df)
                             worked = True
+                        except KeyboardInterrupt:
+                            print(f'Interupted by keyboard. Terminating run')
+                            raise
                         except:
                             print(f'Attempt Number {qinjatt} failed. Trying again.')
                             print(traceback.format_exc())
