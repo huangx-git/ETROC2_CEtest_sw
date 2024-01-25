@@ -13,6 +13,8 @@ from tqdm import tqdm
 import argparse
 from scipy import stats
 import sys
+import yaml
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--loc', action = 'store', default = '4,3')
 parser.add_argument('--input', action = 'store')
@@ -76,7 +78,11 @@ df = pd.DataFrame()
 for f in files:
     print(f)
     charge = int(f.split('_')[4].split('.')[0])
-    sub = pickle.load(open(path+f, 'rb'))
+    if '.pkl' in f:
+        sub = pickle.load(open(path+f, 'rb'))
+    else:
+        with open(path + f, 'r') as infile:
+            sub = pd.DataFrame(yaml.load(infile, Loader = yaml.FullLoader))
     sub['charge'] = [charge]*len(sub.vth)
     if not len(np.unique(sub.hits)) == 1:
         df = pd.concat([df, sub])
@@ -205,7 +211,7 @@ plt.close()
 #Slide 5 TOT, etc. Distributions at indivudial QSel, 5 different Threshold DACs
 
 print('Working on TOT, TOA, and Cal hists for individual settings')
-for q in tqdm(np.unique(df.charge)):
+for q in [25]:#tqdm(np.unique(df.charge)):
     for d in tqdm(args.plotted_vths, leave = False, desc = f'Working on QSel = {q}'):
         #if not d in df.vth: d = np.random.choice(df.vth, 1)
         idx = [df.charge.iloc[i] == q and df.vth.iloc[i] == d for i in range(len(df.vth))]
@@ -350,7 +356,7 @@ plt.close()
 
 
 # Polynomial Regression of TOA SD data
-
+'''
 for q in np.unique(df.charge):
     idx = df.charge == q
     vth = df.vth[idx]
@@ -405,7 +411,7 @@ for q in np.unique(df.charge):
         plt.close()
         
 
-
+'''
 fig = plt.figure(figsize = figsize)
 for q in np.unique(df.charge):
     idx = df.charge == q

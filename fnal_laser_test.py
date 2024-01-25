@@ -168,7 +168,7 @@ if __name__ == '__main__':
         etroc.wr_reg("disDataReadout", 0, row=15, col=i, broadcast=False)
         etroc.wr_reg("DAC", int(threshold_matrix[15][i]), row=15, col=i)
 
-    L1Adelay = 17  # NOTE this is what we've found for the laser setup at FNAL
+    L1Adelay = 14  # NOTE this is what we've found for the laser setup at FNAL. Previous FW versions found a delay of 17
     if args.timing_scan:
         import pickle
         print("Running timing scan")

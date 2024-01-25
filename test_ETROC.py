@@ -17,6 +17,8 @@ import json
 import time
 import datetime
 from yaml import load, dump
+import traceback
+
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
@@ -933,12 +935,12 @@ if __name__ == '__main__':
         else:
 
             print(f"Trying to load tresholds from the following file: {args.threshold}")
-            with open(f'{result_dir}/thresholds.yaml', 'r') as f:
+            with open(args.threshold, 'r') as f:
                 threshold_matrix = load(f)
 
             for row in range(16):
                 for col in range(16):
-                    etroc.wr_reg('DAC', threshold_matrix[row][col], row=row, col=col)
+                    etroc.wr_reg('DAC', int(threshold_matrix[row][col]), row=row, col=col)
 
         if args.pixelscan == 'simple':
             row = 4
@@ -1077,41 +1079,46 @@ if __name__ == '__main__':
 
                 for vth in vth_axis:
                     worked = False
-                    while(not worked):
+                    qinjatt = 0
+                    while(not worked) and (qinjatt < 10):
                         try:
                             etroc.QInj_set(q, delay, L1Adelay, row=i, col=j, broadcast = False) #set reg on ETROC
                             etroc.wr_reg('DAC', int(vth), row=i, col=j, broadcast=False) #set vth on ETROC
                             fifo.send_QInj(count=int(args.nl1a), delay=504) #send Qinj pulses with L1Adelay
                             result = fifo.pretty_read(df)
                             worked = True
+                        except KeyboardInterrupt:
+                            print(f'Interupted by keyboard. Terminating run')
+                            raise
                         except:
-                            print('Something failed, probably a FIFO read error. Retrying...')
+                            print(f'Attempt Number {qinjatt} failed. Trying again.')
+                            print(traceback.format_exc())
+                        qinjatt += 1
                     hits=0
                     toa=[]
                     tot=[]
                     cal=[]
                     for word in result:
                         if(word[0] == 'data'):
-                          toa.append(word[1]['toa'])
-                          tot.append(word[1]['tot'])
-                          cal.append(word[1]['cal'])
+                          toa.append(int(word[1]['toa']))
+                          tot.append(int(word[1]['tot']))
+                          cal.append(int(word[1]['cal']))
                           
                         if(word[0] == 'trailer'):
                             hits+=word[1]['hits']
-                    results[k].append(hits)
+                    results[k].append(int(hits))
                     TOT[k].append(tot)
                     TOA[k].append(toa)
                     CAL[k].append(cal)
                 k+=1
-                
-                scan_df = pd.DataFrame({'vth': vth_axis,
-                                        'hits': results[k-1],
-                                        'toa' : TOA[k-1],
-                                        'tot' : TOT[k-1],
-                                        'cal' : CAL[k-1]})
-                #print(scan_df.info())
-                scan_df.to_pickle(f"{out_dir}/Qinj_scan_L1A_504_{q}.pkl")
-                
+
+                scan_df = {'vth': list(vth_axis),
+                           'hits': list(results[k-1]),
+                           'toa' : TOA[k-1],
+                           'tot' : TOT[k-1],
+                           'cal' : CAL[k-1]}
+                with open(f"{out_dir}/Qinj_scan_L1A_504_{q}.yaml", 'w') as f:
+                    dump(scan_df, f)
             fig, ax = plt.subplots()
 
             plt.title("S curve for Qinj")
@@ -1323,8 +1330,8 @@ if __name__ == '__main__':
             import pickle
             print("Running timing scan")
             rb_0.enable_external_trigger()
-            etroc.wr_reg("disDataReadout", 0, row=15, col=2, broadcast=False)
-            etroc.wr_reg("DAC", 96, row=15, col=2)  # FIXME this should not be hard coded.
+            etroc.wr_reg("disDataReadout", 0, row=args.col, col=args.row, broadcast=False)
+            etroc.wr_reg("DAC", 96, row=args.row, col=args.col)  # FIXME this should not be hard coded.
             #data = []
             results = []
             fifo.reset()
