@@ -56,6 +56,20 @@ class KCU:
             if self.auto_dispatch:
                 self.dispatch()
 
+    def rd_lpgbt_adr(self, rb=0):
+        '''
+        function for debugging.
+        Might be deleted again because it should not be a member in here
+        '''
+        self.write_node("READOUT_BOARD_%d.SC.TX_REGISTER_ADDR" % rb, adr)
+        self.dispatch()
+        self.action("READOUT_BOARD_%d.SC.TX_START_READ" % rb)
+        valid = self.read_node("READOUT_BOARD_%d.SC.RX_DATA_VALID" % rb).valid()
+        if valid:
+            return self.read_node("READOUT_BOARD_%d.SC.RX_DATA_FROM_GBTX" % rb)
+        print("LpGBT read failed!")
+        return None
+
     def read_node(self, id):
         try:
             reg = self.hw.getNode(id)
