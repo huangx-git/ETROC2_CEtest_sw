@@ -174,19 +174,21 @@ if __name__ == '__main__':
     for i in [0,1,2,3]:
         etroc.wr_reg("disDataReadout", 0, row=15, col=i, broadcast=False)
         current_offset = etroc.get_THoffset(row = 15, col = i)
-        threshold = etroc.auto_threshold_scan(15, i)
+        threshold = etroc.auto_threshold_scan(15, i, offset="auto")
         # print(f"Old threshold offset: {current_offset}, Matrix threshold value: {int(threshold_matrix[15][i])}.")
         # print(f"Setting up threshold values: {int(threshold[0])} for row: {15}, col: {i}.")
         etroc.add_THoffset(offset_from_baseline, row = 15, col = i)
         # etroc.add_THoffset(-10 , row = 15, col = i)
         current_offset = (etroc.get_THoffset(row = 15, col = i))
         # print(f"New threshold offset: {current_offset}")
-        print(int(sum(threshold)))
-        etroc.wr_reg("DAC", sum(threshold), row=15, col=i)
+        print(threshold)
+        print(current_offset)
+        # etroc.wr_reg("DAC", sum(threshold), row=15, col=i)
         # int(threshold_matrix[15][i])
         # etroc.wr_reg("DAC", 120, row=15, col=i)
 
-    L1Adelay = 17  # NOTE this is what we've found for the laser setup at FNAL
+    L1Adelay = 14  # NOTE this is what we've found for the laser setup at FNAL.
+    # We previously found a value of 17. Needs to be checked why it is different now.
     if args.timing_scan:
         import pickle
         print("Running timing scan")
@@ -206,7 +208,7 @@ if __name__ == '__main__':
                 if fifo.is_full():
                     print("Fifo is full!")
                     fifo.reset()
-                if rb_0.read_data_count(0, slave=True):
+                if rb_0.read_data_count(0, slave=True) or rb_0.read_packet_count(0, slave=True):
                     #print("There was a hit (or noise)")
                     data += fifo.pretty_read(df)
                     trigger_count += rb_0.read_packet_count(0, slave=True)
@@ -214,6 +216,7 @@ if __name__ == '__main__':
                     rb_0.reset_data_error_count()
                     #data_count += rb_0.read_data_count(0, slave=True)
                     #fifo.reset()
+            
             results.append((j, data_count, trigger_count))
             print(j,data_count,trigger_count)
             if data_count>0:

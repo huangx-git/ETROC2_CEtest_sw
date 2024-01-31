@@ -2,12 +2,10 @@
 import struct
 import argparse
 import numpy as np
-import uproot
 import awkward as ak
 import json
 from tamalero.DataFrame import DataFrame
-import ROOT as rt
-import pdb
+from emoji import emojize
 
 def merge_words(res):
     empty_frame_mask = np.array(res[0::2]) > (2**8)  # masking empty fifo entries
@@ -54,7 +52,6 @@ if __name__ == '__main__':
 
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--input', action='store', default='output_test2', help="Binary file to read from")
-    argParser.add_argument('--nevents', action='store', default=100, help="Number of events")
     args = argParser.parse_args()
 
     df = DataFrame('ETROC2')
@@ -70,6 +67,8 @@ if __name__ == '__main__':
     unpacked_data = map(df.read, merged_data)
 
     event       = []
+    counter_h   = []  # double check the number of headers
+    counter_t   = []  # double check the number of trailers
     l1counter   = []
     row         = []
     col         = []
@@ -86,39 +85,42 @@ if __name__ == '__main__':
     counter_a   = []
 
     header_counter = 0
+    trailer_counter = 0
 
-    header_counter_l1a = 0
-    trailer_counter_l1a = 0
-    data_counter_l1a = 0
     i = 0
     l1a = -1
-    # pdb.set_trace()
-    datas = []
-    headers = []
-    deltas = []
-    counter = 0
+    bcid_t = 9999
+    skip_event = False
+    skip_counter = 0
     for t, d in unpacked_data:
-        if i > 0 and t == 'header':
-            # delta_bcid = abs((float(d['bcid']) % 3564) - (bcid[i-1] % 3564))
-            if bcid[i-1] > d['bcid']: # If it performed a roll | --------------.---|---.---.---------
-                delta_bcid = abs(float(d['bcid'] + (3564 - bcid[i-1])))
-            else:
-                delta_bcid = abs(float(d['bcid'] - bcid[i-1]))
-            deltas.append(delta_bcid)
-            if (delta_bcid < 500): # or (delta_bcid > 1500 and delta_bcid < 2500)):
-                continue
-
         if t == 'header':
             header_counter += 1
+            #if (abs(d['bcid']-bcid_t)<50) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
+            #    skip_event = True
+            #    print("Skipping event")
+            #    continue
             if d['l1counter'] == l1a:
+                counter_h[-1] += 1
+                if skip_event:
+                    print("Skipping event", d['l1counter'], d['bcid'], bcid_t)
+                    continue
                 pass
             else:
-                datas.append(data_counter_l1a)
-                headers.append(l1a)
-                data_counter_l1a = 0
-                l1a = int(d['l1counter'])
+                #if (abs(d['bcid']-bcid_t)<40) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
+                #if (abs(d['bcid']-bcid_t)<500) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
+                if ((abs(d['bcid']-bcid_t)<150) or (abs(d['bcid']+3564-bcid_t)<50)) and not (d['bcid'] == bcid_t):
+                    skip_event = True
+                    print("Skipping event", d['l1counter'], d['bcid'], bcid_t)
+                    skip_counter += 1
+                    continue
+                else:
+                    skip_event = False
+                bcid_t = d['bcid']
+                l1a = d['l1counter']
                 event.append(i)
-                l1counter.append(int(d['l1counter']))
+                counter_h.append(1)
+                counter_t.append(0)
+                l1counter.append(d['l1counter'])
                 row.append([])
                 col.append([])
                 tot_code.append([])
@@ -130,44 +132,41 @@ if __name__ == '__main__':
                 nhits_trail.append([])
                 chipid.append([])
                 crc.append([])
-                # bcid.append([])
+                bcid.append([d['bcid']])
                 counter_a.append([])
                 i += 1
-                # bcid[-1].append(float(d['bcid']))
-                bcid.append(int(d['bcid']))
 
-        if t == 'data':
-            data_counter_l1a += 1
-            # print(float(d['elink']))
-            if (float(d['elink']) != 28.0):
-                # print(float(d['elink']))
-                print("Wrong elink: ", d['elink'])
+        if t == 'data' and not skip_event:
             if 'tot' in d:
-                # print(d['toa'])
-                # print(d['tot'])
-                # print(d['cal'])
-                tot_code[-1].append(float(d['tot']))
-                toa_code[-1].append(float(d['toa']))
-                cal_code[-1].append(float(d['cal']))
+                tot_code[-1].append(d['tot'])
+                toa_code[-1].append(d['toa'])
+                cal_code[-1].append(d['cal'])
             elif 'counter_a' in d:
-                counter_a[-1].append(float(d['counter_a']))
+                bcid[-1].append(d['bcid'])
+                counter_a[-1].append(d['counter_a'])
             elif 'counter_b' in d:
                 pass
-            row[-1].append(int(d['row_id']))
-            col[-1].append(int(d['col_id']))
-            elink[-1].append(float(d['elink']))
+            row[-1].append(d['row_id'])
+            col[-1].append(d['col_id'])
+            elink[-1].append(d['elink'])
             raw[-1].append(d['raw'])
             nhits[-1] += 1
 
         if t == 'trailer':
-            chipid[-1].append(d['hits']*d['chipid'])
-            nhits_trail[-1].append(d['hits']) # check if the sum is the number of data words.
-            # raw[-1].append(d['raw'])
-            crc[-1].append(d['crc'])
-    # print("Counter: ", counter)
+            trailer_counter += 1
+            if not skip_event:
+                counter_t[-1] += 1
+                chipid[-1].append(d['hits']*d['chipid'])
+                nhits_trail[-1].append(d['hits'])
+                raw[-1].append(d['raw'])
+                crc[-1].append(d['crc'])
+
+    print("Zipping")
     events = ak.Array({
         'event': event,
         'l1counter': l1counter,
+        'nheaders': counter_h,
+        'ntrailers': counter_t,
         'row': row,
         'col': col,
         'tot_code': tot_code,
@@ -180,11 +179,15 @@ if __name__ == '__main__':
         'bcid': bcid,
         'counter_a': counter_a,
         'nhits': nhits,
-        'nhits_trail': nhits_trail,
+        'nhits_trail': ak.sum(ak.Array(nhits_trail), axis=-1),
     })
-    # events = ak.Array([i for i in events if (len(i['elink']) == i["nhits"])]) # if (len(i["elink"]) != 0) 
-    datas = np.array(datas)
-    # pdb.set_trace()
-    # print(len(deltas))
+
+    print(f"Done with {len(events)} events. " + emojize(":check_mark_button:"))
+    print(f" - skipped {skip_counter/events.nheaders[0]} events that were identified as double-triggered " + emojize(":check_mark_button:"))
+    if header_counter == trailer_counter:
+        print(f" - found same number of headers and trailers! " + emojize(":check_mark_button:"))
+    else:
+        print(f" - found {header_counter} headers and {trailer_counter} trailers. Please check. " + emojize(":warning:"))
+
     with open(f"ETROC_output/output_run_{args.input}.json", "w") as f:
         json.dump(ak.to_json(events), f)

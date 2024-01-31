@@ -3,6 +3,7 @@ import argparse
 import json
 import ROOT as rt
 from array import array
+import numpy as np
 
 def setVector(v_, l_):
     v_.clear()
@@ -72,11 +73,12 @@ if __name__ == '__main__':
             # setVector(raw_,         event["raw"])
             setVector(crc_,         event["crc"])
             setVector(chipid_,      event["chipid"])
-            bcid_[0] =              int(event["bcid"])
+            print(event["bcid"])
+            bcid_[0] =              int(event["bcid"][0])
             # setVector(bcid_,        event["bcid"])
             setVector(counter_a_,   event["counter_a"])
             nhits_[0] =             event["nhits"]
-            setVector(nhits_trail_, event["nhits_trail"])
+            # setVector(nhits_trail_, event["nhits_trail"])
 
             tree.Fill()
 
