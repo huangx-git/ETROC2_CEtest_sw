@@ -12,14 +12,14 @@ import pandas as pd
 
 
 base             = "/home/daq/ETROC2_Test_Stand/ScopeHandler/ScopeData/LecroyMerged"
-legend_label     = "Bias voltage"
-scanning_version = "TEST_Bias_Voltage"
+legend_label     = "Laser Width"
+scanning_version = "TEST_Laser_width"
 output_folder    = f"/home/daq/ETROC2_Test_Stand/module_test_sw/analysis/plots_{scanning_version}"
-unit             = "V"
+unit             = "%"
 os.system(f"mkdir -p {output_folder}")
 
-y_axis = [10794]
-x_axis = [  185]
+y_axis = [10877,10878,10879]
+x_axis = [  20,10,15]
 
 a = 10
 c = 1
@@ -53,11 +53,11 @@ def load_data(indices):
             output[i]["col"]   = tree["col"].array()
             # Get the timestamps
             for c in [6, 7]:                        # The index of the scope channel
-                for p in [20,30,35,40,50,60,70,80]: # The percentage of amplitude value
+                for p in [20]: # The percentage of amplitude value
                     if c == 6:
-                        output[i][f"LP2_20_{c}"] = tree[f"linear_RE_{p}"].array()[:, c]
+                        output[i][f"LP2_{p}_{c}"] = tree["Clock"].array()[:, 0] # tree[f"linear_RE_{p}"].array()[:, c]
                     if c == 7:
-                        output[i][f"LP2_20_{c}"] = tree[f"LP2_20_{p}"].array()[:, c]
+                        output[i][f"LP2_{p}_{c}"] = tree[f"LP2_{p}"].array()[:, c]
     return output
 
 def gaussian(x, a, mean, sigma):
@@ -139,7 +139,7 @@ def plots(data, x_axis):
         # print("===========================> ", f"{legend_label}: {x_axis[d_i]} {unit}")
         # print(f"Number of events: {len(sel)}")
         cutflow_tables = {}
-        sel = ((d["nhits"] != 0)) # Select events with at least one hit.
+        sel = ((d["nhits"] == 3)) # Select events with at least one hit.
         row = d["row"][sel]
         col = d["col"][sel]
         toa = d["TOA"][sel]
@@ -150,30 +150,30 @@ def plots(data, x_axis):
         toa = fill_empty_arrays(toa)
         tot = fill_empty_arrays(tot)
         cal = fill_empty_arrays(cal)
-        LP2_20_6 = d["LP2_20_6"][sel]*10**9
-        LP2_30_6 = d["LP2_30_6"][sel]*10**9
-        LP2_35_6 = d["LP2_35_6"][sel]*10**9
-        LP2_40_6 = d["LP2_40_6"][sel]*10**9
-        LP2_50_6 = d["LP2_50_6"][sel]*10**9
-        LP2_60_6 = d["LP2_60_6"][sel]*10**9
-        LP2_70_6 = d["LP2_70_6"][sel]*10**9
-        LP2_80_6 = d["LP2_80_6"][sel]*10**9
+        LP2_20_6 = d["LP2_20_6"][sel]
+        # LP2_30_6 = d["LP2_30_6"][sel]*10**9
+        # LP2_35_6 = d["LP2_35_6"][sel]*10**9
+        # LP2_40_6 = d["LP2_40_6"][sel]*10**9
+        # LP2_50_6 = d["LP2_50_6"][sel]*10**9
+        # LP2_60_6 = d["LP2_60_6"][sel]*10**9
+        # LP2_70_6 = d["LP2_70_6"][sel]*10**9
+        # LP2_80_6 = d["LP2_80_6"][sel]*10**9
         LP2_20_7 = d["LP2_20_7"][sel]*10**9
-        LP2_30_7 = d["LP2_30_7"][sel]*10**9
-        LP2_35_7 = d["LP2_35_7"][sel]*10**9
-        LP2_40_7 = d["LP2_40_7"][sel]*10**9
-        LP2_50_7 = d["LP2_50_7"][sel]*10**9
-        LP2_60_7 = d["LP2_60_7"][sel]*10**9
-        LP2_70_7 = d["LP2_70_7"][sel]*10**9
-        LP2_80_7 = d["LP2_80_7"][sel]*10**9
-        LP2_20_6 = np.array([rescale(i) for i in LP2_20_6])
-        LP2_30_6 = np.array([rescale(i) for i in LP2_30_6])
-        LP2_35_6 = np.array([rescale(i) for i in LP2_35_6])
-        LP2_40_6 = np.array([rescale(i) for i in LP2_40_6])
-        LP2_50_6 = np.array([rescale(i) for i in LP2_50_6])
-        LP2_60_6 = np.array([rescale(i) for i in LP2_60_6])
-        LP2_70_6 = np.array([rescale(i) for i in LP2_70_6])
-        LP2_80_6 = np.array([rescale(i) for i in LP2_80_6])
+        # LP2_30_7 = d["LP2_30_7"][sel]*10**9
+        # LP2_35_7 = d["LP2_35_7"][sel]*10**9
+        # LP2_40_7 = d["LP2_40_7"][sel]*10**9
+        # LP2_50_7 = d["LP2_50_7"][sel]*10**9
+        # LP2_60_7 = d["LP2_60_7"][sel]*10**9
+        # LP2_70_7 = d["LP2_70_7"][sel]*10**9
+        # LP2_80_7 = d["LP2_80_7"][sel]*10**9
+        # LP2_20_6 = np.array([rescale(i) for i in LP2_20_6])
+        # LP2_30_6 = np.array([rescale(i) for i in LP2_30_6])
+        # LP2_35_6 = np.array([rescale(i) for i in LP2_35_6])
+        # LP2_40_6 = np.array([rescale(i) for i in LP2_40_6])
+        # LP2_50_6 = np.array([rescale(i) for i in LP2_50_6])
+        # LP2_60_6 = np.array([rescale(i) for i in LP2_60_6])
+        # LP2_70_6 = np.array([rescale(i) for i in LP2_70_6])
+        # LP2_80_6 = np.array([rescale(i) for i in LP2_80_6])
         hits.append(d["nhits"])
         for p in [0,1,2,3]:
             cuts = {}
@@ -187,7 +187,7 @@ def plots(data, x_axis):
             toa_ = toa_[event_sel]
             tot_ = tot_[event_sel]
             cal_ = cal_[event_sel]
-            element_sel = ((cal_ > 195) & (cal_ < 205)) # Other object level selections.
+            element_sel = ((cal_ > 195) & (cal_ < 205) & (tot_ > 0)) # Other object level selections.
             tot_ = tot_[element_sel]
             cal_ = cal_[element_sel]
             tot_ = fill_empty_arrays(tot_)[:,0]
@@ -195,21 +195,21 @@ def plots(data, x_axis):
             toa_ = fill_empty_arrays(toa_)[:,0]
             maps = np.ones(len(toa_), dtype = bool)
             LP2_20_6_[d_i] = LP2_20_6 [event_sel][maps]
-            LP2_30_6_[d_i] = LP2_30_6 [event_sel][maps]
-            LP2_35_6_[d_i] = LP2_35_6 [event_sel][maps]
-            LP2_40_6_[d_i] = LP2_40_6 [event_sel][maps]
-            LP2_50_6_[d_i] = LP2_50_6 [event_sel][maps]
-            LP2_60_6_[d_i] = LP2_60_6 [event_sel][maps]
-            LP2_70_6_[d_i] = LP2_70_6 [event_sel][maps]
-            LP2_80_6_[d_i] = LP2_80_6 [event_sel][maps]
+            # LP2_30_6_[d_i] = LP2_30_6 [event_sel][maps]
+            # LP2_35_6_[d_i] = LP2_35_6 [event_sel][maps]
+            # LP2_40_6_[d_i] = LP2_40_6 [event_sel][maps]
+            # LP2_50_6_[d_i] = LP2_50_6 [event_sel][maps]
+            # LP2_60_6_[d_i] = LP2_60_6 [event_sel][maps]
+            # LP2_70_6_[d_i] = LP2_70_6 [event_sel][maps]
+            # LP2_80_6_[d_i] = LP2_80_6 [event_sel][maps]
             LP2_20_7_[d_i] = LP2_20_7 [event_sel][maps]
-            LP2_30_7_[d_i] = LP2_30_7 [event_sel][maps]
-            LP2_35_7_[d_i] = LP2_35_7 [event_sel][maps]
-            LP2_40_7_[d_i] = LP2_40_7 [event_sel][maps]
-            LP2_50_7_[d_i] = LP2_50_7 [event_sel][maps]
-            LP2_60_7_[d_i] = LP2_60_7 [event_sel][maps]
-            LP2_70_7_[d_i] = LP2_70_7 [event_sel][maps]
-            LP2_80_7_[d_i] = LP2_80_7 [event_sel][maps]
+            # LP2_30_7_[d_i] = LP2_30_7 [event_sel][maps]
+            # LP2_35_7_[d_i] = LP2_35_7 [event_sel][maps]
+            # LP2_40_7_[d_i] = LP2_40_7 [event_sel][maps]
+            # LP2_50_7_[d_i] = LP2_50_7 [event_sel][maps]
+            # LP2_60_7_[d_i] = LP2_60_7 [event_sel][maps]
+            # LP2_70_7_[d_i] = LP2_70_7 [event_sel][maps]
+            # LP2_80_7_[d_i] = LP2_80_7 [event_sel][maps]
             hits_    [d_i] = hits[d_i][event_sel][maps]
             toa_ = toa_[maps]
             tot_ = tot_[maps]
@@ -257,6 +257,7 @@ def plots(data, x_axis):
         plt.close()
 
     # Plot histograms.
+    '''
     variables = [TOA  ,  TOT ,  CAL , \
                  LP2_20_6_ ,  LP2_30_6_ ,  LP2_35_6_ ,  LP2_40_6_ , LP2_50_6_  ,  LP2_60_6_ ,  LP2_70_6_ ,  LP2_80_6_ , \
                  LP2_20_7_ ,  LP2_30_7_ ,  LP2_35_7_ ,  LP2_40_7_ , LP2_50_7_  ,  LP2_60_7_ ,  LP2_70_7_ ,  LP2_80_7_ ,   hits_ ,   DT]
@@ -264,6 +265,15 @@ def plots(data, x_axis):
     labels    = ["TOA", "TOT", "CAL", \
                  "LP2_20_6_", "LP2_30_6_", "LP2_35_6_", "LP2_40_6_", "LP2_50_6_", "LP2_60_6_", "LP2_70_6_", "LP2_80_6_", \
                  "LP2_20_7_", "LP2_30_7_", "LP2_35_7_", "LP2_40_7_", "LP2_50_7_", "LP2_60_7_", "LP2_70_7_", "LP2_80_7_", "hits", "DT"]
+    '''
+
+    variables = [TOA  ,  TOT ,  CAL , \
+                 LP2_20_6_ ,   \
+                 LP2_20_7_ ,  hits_ ,   DT]
+
+    labels    = ["TOA", "TOT", "CAL", \
+                 "LP2_20_6_", \
+                 "LP2_20_7_", "hits", "DT"]
 
     vars      = dict(zip(labels, variables))
 
@@ -328,7 +338,7 @@ def plots(data, x_axis):
 
     for i in range(len(x_axis)): # tot vs Clock
         fig, ax = plt.subplots(1, 1, figsize = (2*a*c, 2*a))
-        ax.hist2d(np.array(variables[19][i]), np.array(variables[3][i]), bins = (50, 50))
+        ax.hist2d(np.array(variables[3][i]), np.array(variables[1][i]), bins = (50, 50))
         ax.set_title(f"Row: 15, Col: {p}")
         ax.set_xlabel("nHits",loc='center')
         ax.set_ylabel("Clock",loc='center')
