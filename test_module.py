@@ -222,32 +222,17 @@ def auto_threshold_scan(etroc, args):
             pbar.update()
 
     print ("Done with threshold scan")
-    fig, ax = plt.subplots(1,1,figsize=(7,7))
-    cax = ax.matshow(baseline)
-    ax.set_ylabel(r'$Row$')
-    ax.set_xlabel(r'$Column$')
-    fig.colorbar(cax,ax=ax)
-    name = 'baseline_auto_individual'
-    fig.savefig(os.path.join(result_dir, "{}.pdf".format(name)))
-    fig.savefig(os.path.join(result_dir, "{}.png".format(name)))
-
-    fig, ax = plt.subplots(1,1,figsize=(7,7))
-    cax = ax.matshow(noise_width)
-    ax.set_ylabel(r'$Row$')
-    ax.set_xlabel(r'$Column$')
-    fig.colorbar(cax,ax=ax)
-    name = 'noisewidth_auto_individual'
-    fig.savefig(os.path.join(result_dir, "{}.pdf".format(name)))
-    fig.savefig(os.path.join(result_dir, "{}.png".format(name)))
-
+    plot_scan_results(baseline, noise_width, (baseline+noise_width), result_dir, out_dir, mode = 'Auto')
+    
+    with open(f'{result_dir}/baseline.yaml', 'w') as f:
+        dump(baseline.tolist(), f)
+     
+    with open(f'{result_dir}/noise_width.yaml', 'w') as f:
+        dump(noise_width.tolist(), f)
+        
     with open(f'{result_dir}/thresholds.yaml', 'w') as f:
         dump((baseline+noise_width).tolist(), f)
-    with open(f'{out_dir}/baselines.yaml', 'w') as f:
-    	dump((baseline).tolist(), f)
-    with open(f'{out_dir}/noisewidths.yaml', 'w') as f:
-    	dump((noise_width).tolist(), f)
-    	
-    
+        
     return (baseline+noise_width).tolist()
     
 def manual_threshold_scan(etroc, fifo, rb_0, args):
@@ -298,8 +283,7 @@ def manual_threshold_scan(etroc, fifo, rb_0, args):
         fifo = fifo,
         absolute = True,
     )
-
-    #def plot_scan_results()
+    
     vth_axis    = np.array(vth_scan_data[0])
     hit_rate    = np.array(vth_scan_data[1])
     N_pix       = len(hit_rate) # total # of pixels
@@ -308,12 +292,12 @@ def manual_threshold_scan(etroc, fifo, rb_0, args):
     maximums    = vth_axis[max_indices]
     max_matrix  = np.empty([N_pix_w, N_pix_w])
     noise_matrix  = np.empty([N_pix_w, N_pix_w])
-    threshold_matrix = np.empty([N_pix_w, N_pix_w])
 
     rawout = {vth_axis[i]:hit_rate.T[i].tolist() for i in range(len(vth_axis))}
-    with open(out_dir + '/manual_thresh_scan_data.json', 'w') as f:
+    with open(f'{out_dir}/thresh_scan_data.json', 'w') as f:
         json.dump(rawout, f)
 
+    threshold_matrix = np.empty([N_pix_w, N_pix_w])
     for pix in range(N_pix):
         r, c = fromPixNum(pix, N_pix_w)
         max_matrix[r][c] = maximums[pix]
@@ -326,11 +310,25 @@ def manual_threshold_scan(etroc, fifo, rb_0, args):
             threshold_matrix[r][c] = zero_dac_values[0] + 2
         else:
             threshold_matrix[r][c] = dac_max + 2
+            
+    plot_scan_results(max_matrix, noise_matrix, threshold_matrix, result_dir, out_dir, mode = 'manual')
+    
+    with open(f'{result_dir}/thresholds.yaml', 'w') as f:
+        dump(threshold_matrix.tolist(), f)
+    with open(f'{result_dir}/baseline.yaml', 'w') as f:
+        dump(max_matrix.tolist(), f)
+    with open(f'{result_dir}/noise_width.yaml', 'w') as f:
+        dump(noise_matrix.tolist(), f)
+        
+    return threshold_matrix
 
+def plot_scan_results(max_matrix, noise_matrix, threshold_matrix, result_dir, out_dir, mode = None):
 
     # 2D histogram of the mean
     # this is based on the code for automatic sigmoid fits
     # for software emulator data below
+    N_pix_w = len(max_matrix)
+    
     fig, ax = plt.subplots(2,1, figsize=(15,15))
     ax[0].set_title("Peak values of threshold scan")
     ax[1].set_title("Noise width of threshold scan")
@@ -354,13 +352,14 @@ def manual_threshold_scan(etroc, fifo, rb_0, args):
 		        ha="center", va="center", color="w", fontsize="xx-small")
 
     fig.savefig(f'{result_dir}/peak_and_noiseWidth_thresholds.png')
-    plt.show()
+    if args.show_plots:
+        plt.show()
 
     plt.close(fig)
     del fig, ax
 
     fig, ax = plt.subplots()
-    plt.title("Thresholds from manual scan")
+    plt.title(f"Thresholds from {mode} scan")
     cax = ax.matshow(threshold_matrix)
 
     fig.colorbar(cax)
@@ -376,14 +375,12 @@ def manual_threshold_scan(etroc, fifo, rb_0, args):
     ax.set_ylabel("Row")
 
     fig.savefig(f'{result_dir}/thresholds.png')
-    plt.show()
+    if args.show_plots:
+        plt.show()
 
     plt.close(fig)
     del fig, ax
 
-    with open(f'{result_dir}/thresholds.yaml', 'w') as f:
-        dump(threshold_matrix.tolist(), f)
-    return threshold_matrix
     
 def isolate(etrocs, n):
     for i, e in enumerate(etrocs):
@@ -469,6 +466,9 @@ def readout_tests(etroc, masked_pixels, rb_0, args, result_dir = None, out_dir =
     name = 'hit_matrix_internal_test_pattern'
     fig.savefig(os.path.join(result_dir, f"{name}.pdf"))
     fig.savefig(os.path.join(result_dir, f"{name}.png"))
+    if args.show_plots:
+        plt.show()
+    plt.close()
 
     fifo.reset()
     print("\n - Testing fast command communication - Sending two L1As")
@@ -548,7 +548,9 @@ def readout_tests(etroc, masked_pixels, rb_0, args, result_dir = None, out_dir =
         name = 'hit_matrix_external_L1A'
         fig.savefig(os.path.join(result_dir, "{}.pdf".format(name)))
         fig.savefig(os.path.join(result_dir, "{}.png".format(name)))
-
+        if args.show_plots:
+            plt.show()
+        plt.close()
 
         print("\nOccupancy vs column:")
         hit_matrix[{"row":sum}].show(columns=100)
@@ -558,9 +560,9 @@ def readout_tests(etroc, masked_pixels, rb_0, args, result_dir = None, out_dir =
     # Set the chip back into well-defined workMode 0
     etroc.wr_reg("workMode", 0x0, broadcast=True)
     if args.threshold == 'auto':
-        auto_threshold_scan(etroc, args)
+        threshold_matrix = auto_threshold_scan(etroc, args)
     elif args.threshold == "manual":
-        manual_threshold_scan(etroc, fifo, args)
+        threshold_matrix = manual_threshold_scan(etroc, fifo, rb_0, args)
     else:
         print(f"Trying to load tresholds from the following file: {args.threshold}")
         with open(args.threshold, 'r') as f:
@@ -570,7 +572,116 @@ def readout_tests(etroc, masked_pixels, rb_0, args, result_dir = None, out_dir =
             for col in range(16):
                 etroc.wr_reg('DAC', int(threshold_matrix[row][col]), row=row, col=col)
     
-    return df, fifo
+    return threshold_matrix
+
+def qinj(etroc, mask, rb, thresholds, out_dir, result_dir, args):
+    
+    df = DataFrame()
+    fifo = FIFO(rb=rb)
+
+    fifo.reset()
+    delay = 10
+    i = int(args.row)
+    j = int(args.col)
+    L1Adelay = 501
+    
+    if args.threshold == 'auto':
+        etroc.apply_THCal()
+    print('Starting Charge Injection run using the following configurations')
+    if len(args.vth_axis) < 2:
+        vth_axis = range(int(np.max([np.min(thresholds) - 20, 0])), int(np.min([np.max(thresholds) + 350, 1000]))) 
+    elif len(args.vth_axis) == 2:
+        vth_axis = range(*args.vth_axis)
+    else:
+        vth_axis = np.linspace(*args.vth_axis)
+    print(f'DAC Range {np.min(vth_axis)} {np.max(vth_axis)}')
+    
+    if len(args.charges) == 0:
+       charges = [5, 15, 30]
+    else:
+       charges = args.charges
+    print(f'Charges {charges}')
+    
+    print(f'No. of L1As: {args.nl1a}')
+    print(f'Pixel Row {args.row} Col {args.col}')
+    print(f'Charge Injection Delay {delay}')
+    print(f'L1A Injection Delay {L1Adelay}')
+    
+    results =[[] for i in range(0,len(charges))]
+    TOA = [[] for i in range(0,len(charges))]
+    TOT =  [[] for i in range(0,len(charges))]
+    CAL = [[] for i in range(0,len(charges))]
+    k=0
+    for q in charges:
+        print(f"\n - Will send L1a/QInj pulse with delay of {delay} cycles and charge of {q} fC")
+        print(f"\n - to pixel at Row {i}, Col {j}.")
+        start_time = time.time()
+        for vth in vth_axis:
+            worked = False
+            qinjatt = 0
+            while(not worked) and (qinjatt < 10):
+                try:
+                    etroc.QInj_set(q, delay, L1Adelay, row=i, col=j, broadcast = False) #set reg on ETROC
+                    etroc.wr_reg('DAC', int(vth), row=i, col=j, broadcast=False) #set vth on ETROC
+                    fifo.send_QInj(count=int(args.nl1a), delay=504) #send Qinj pulses with L1Adelay
+                    result = fifo.pretty_read(df)
+                    worked = True
+                except KeyboardInterrupt:
+                    print(f'Interupted by keyboard. Terminating run')
+                    raise
+                except:
+                    print(f'Attempt Number {qinjatt} failed. Trying again.')
+                    print(traceback.format_exc())
+                qinjatt += 1
+            hits=0
+            toa=[]
+            tot=[]
+            cal=[]
+            for word in result:
+                if(word[0] == 'data'):
+                    toa.append(int(word[1]['toa']))
+                    tot.append(int(word[1]['tot']))
+                    cal.append(int(word[1]['cal']))
+                              
+                if(word[0] == 'trailer'):
+                    hits+=word[1]['hits']
+            results[k].append(int(hits))
+            TOT[k].append(tot)
+            TOA[k].append(toa)
+            CAL[k].append(cal)
+        k+=1
+        print(f'Data collection completed in {time.time() - start_time} s. Saving...')
+        start_time = time.time()
+        scan_df = {'vth': list(vth_axis),
+            'hits': list(results[k-1]),
+            'toa' : TOA[k-1],
+            'tot' : TOT[k-1],
+            'cal' : CAL[k-1]}
+
+        with open(f"{out_dir}/Qinj_scan_L1A_504_{q}.json", 'w') as f:
+            json.dump(scan_df, f)
+        print(f'Saving in {time.time() - start_time} s.')
+        
+        #with open(f"{out_dir}/Qinj_scan_L1A_504_{q}.yaml", 'w') as f:
+        #    dump(scan_df, f)
+    fig, ax = plt.subplots()
+    
+    plt.title("S curve for Qinj")
+    plt.xlabel("Vth")
+    plt.ylabel("hit rate")
+    for i in range(0,len(charges)):
+        plt.plot(vth_axis, results[i], '.-')
+                
+    #plt.xlim(410,820)
+    plt.grid(True)
+    plt.legend(loc='best')
+              
+    fig.savefig(f'{result_dir}/Scurve_Qinj.png')
+    if args.show_plots:
+        plt.show()
+    plt.close(fig)
+    del fig, ax
+    
 
 # initiate
 ETROC2 = software_ETROC2()  # currently using Software ETROC2 (fake)
@@ -595,7 +706,7 @@ if __name__ == '__main__':
 
     #Task Set
     argParser.add_argument('--test_chip', action='store_true', default=False, help="Test simple read/write functionality for real chip?")
-    
+    argParser.add_argument('--config_chip', action='store_true')    
     #run options
     argParser.add_argument('--hard_reset', action='store_true', help="")
     argParser.add_argument('--mode', action='store', default='dual', choices=['dual', 'single'], help="Port mode for ETROC2")
@@ -604,9 +715,14 @@ if __name__ == '__main__':
     argParser.add_argument('--row', action='store', default=4, help="Pixel row to be tested")
     argParser.add_argument('--col', action='store', default=3, help="Pixel column to be tested")
     argParser.add_argument('--pixel_masks', action='store', nargs = '*', default=['None'], help="Pixel mask to apply")
-    
+    argParser.add_argument('--show_plots', action = 'store_true')
+
     #Charge injection
-    argParser.add_argument('--qinj', action='store', default = None, choices = ['simple', 'full'])
+    argParser.add_argument('--qinj', action='store_true')
+    argParser.add_argument('--charges', action = 'store', type = int, nargs = '*', default = [])
+    argParser.add_argument('--vth_axis', action = 'store', type = int, nargs = '*', default = [])
+    argParser.add_argument('--nl1a', action = 'store', type = int, default = 3200)
+    #argParser.add_argument('--pixels', action = 'store', default = [])
     #charges
     #vth_axis
     #pixels
@@ -633,17 +749,57 @@ if __name__ == '__main__':
     
     if len(args.pixel_masks) == 1 and len(args.etrocs) > 1:
         args.pixel_masks *= len(args.etrocs)
+    
+    if args.config_chip:
+
+        start_time = time.time()
+        kcu = get_kcu(args.kcu, control_hub=True, host=args.host, verbose=False)
+        if (kcu == 0):
+            # if not basic connection was established the get_kcu function returns 0
+            # this would cause the RB init to fail.
+            sys.exit(1)
+
+        int_time = time.time()
+        rb_0 = ReadoutBoard(0, kcu=kcu, config=args.configuration)
+        data = 0xabcd1234
+        kcu.write_node("LOOPBACK.LOOPBACK", data)
+        if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
+            print("No communications with KCU105... quitting")
+            sys.exit(1)
+
+        is_configured = rb_0.DAQ_LPGBT.is_configured()
+        if not is_configured:
+            print("RB is not configured, exiting.")
+            exit(0)
+
+        from tamalero.Module import Module
+
+        int2_time = time.time()
+        # FIXME the below code is still pretty stupid
+        modules = []
+        for i in [1,2,3]:
+            m_tmp = Module(rb=rb_0, i=i)
+            if m_tmp.ETROCs[0].connected:  # NOTE assume that module is connected if first ETROC is connected
+                modules.append(m_tmp)
+
+        end_time = time.time()
+
+        print("KCU init done in     {:.2f}s".format(int_time-start_time))
+        print("RB init done in      {:.2f}s".format(int2_time-int_time))
+        print("Module init done in  {:.2f}s".format(end_time-int2_time))  # default config is what's slow
         
-    if args.test_chip:
+    elif args.test_chip:
         rb, module, etrocs, masks = setup(args)
         #Check all etrocs off?
         for i in range(len(etrocs)):
             etroc = etrocs[i]
             mask = masks[i]
-            etroc.pixel_sanity_check(verbose = args.skip_sanity_checks)
+            etroc.pixel_sanity_check(verbose = (not args.skip_sanity_checks))
             isolate(etrocs, i)
-            df, fifo = readout_tests(etroc, mask, rb, args, result_dir =  result_dir, out_dir = out_dir)
-                
+            thresholds = readout_tests(etroc, mask, rb, args, result_dir =  result_dir, out_dir = out_dir)
+            if args.qinj:
+            	qinj(etroc, mask, rb, thresholds, out_dir, result_dir, args)
+            	    
             
         
     
