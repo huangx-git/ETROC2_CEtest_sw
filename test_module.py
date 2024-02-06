@@ -615,8 +615,7 @@ def qinj(etroc, mask, rb, thresholds, out_dir, result_dir, args):
     for q in charges:
         print(f"\n - Will send L1a/QInj pulse with delay of {delay} cycles and charge of {q} fC")
         print(f"\n - to pixel at Row {i}, Col {j}.")
-        start_time = time.time()
-        for vth in vth_axis:
+        for vth in tqdm(vth_axis):
             worked = False
             qinjatt = 0
             while(not worked) and (qinjatt < 10):
@@ -650,8 +649,6 @@ def qinj(etroc, mask, rb, thresholds, out_dir, result_dir, args):
             TOA[k].append(toa)
             CAL[k].append(cal)
         k+=1
-        print(f'Data collection completed in {time.time() - start_time} s. Saving...')
-        start_time = time.time()
         scan_df = {'vth': list(vth_axis),
             'hits': list(results[k-1]),
             'toa' : TOA[k-1],
@@ -660,10 +657,7 @@ def qinj(etroc, mask, rb, thresholds, out_dir, result_dir, args):
 
         with open(f"{out_dir}/Qinj_scan_L1A_504_{q}.json", 'w') as f:
             json.dump(scan_df, f)
-        print(f'Saving in {time.time() - start_time} s.')
         
-        #with open(f"{out_dir}/Qinj_scan_L1A_504_{q}.yaml", 'w') as f:
-        #    dump(scan_df, f)
     fig, ax = plt.subplots()
     
     plt.title("S curve for Qinj")
