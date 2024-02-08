@@ -814,6 +814,14 @@ if __name__ == '__main__':
 
             with open(f'{result_dir}/thresholds.yaml', 'w') as f:
                 dump((baseline+noise_width).tolist(), f)
+            
+            with open(f'{result_dir}/baseline.yaml', 'w') as f:
+                dump((baseline).tolist(), f)
+
+            with open(f'{result_dir}/noise_width.yaml', 'w') as f:
+                dump((noise_width).tolist(), f)
+
+
 
         elif args.threshold == "manual":
 
@@ -950,6 +958,12 @@ if __name__ == '__main__':
 
             with open(f'{result_dir}/thresholds.yaml', 'w') as f:
                 dump(threshold_matrix.tolist(), f)
+
+            with open(f'{result_dir}/baseline.yaml', 'w') as f:
+                dump(max_matrix.tolist(), f)
+            
+            with open(f'{result_dir}/noise_width.yaml', 'w') as f:
+                dump(noise_matrix.tolist(), f)
 
         else:
 
