@@ -697,6 +697,7 @@ if __name__ == '__main__':
     argParser.add_argument('--multi', action='store_true', help="Run multiple modules at once (for data taking only!)")
     argParser.add_argument('--etrocs', action = 'store', nargs = '*', type = int, default = [0], help = 'ETROC to use on a multi-ETROC module')
     argParser.add_argument('--all-etrocs', action = 'store', type = int, default = 0, help = 'ETROC to use on a multi-ETROC module')
+    argParser.add_argument('--run_tag', action = 'store', default = None, help = 'descriptive tag to identify run beyond timestamp')
 
     #Task Set
     argParser.add_argument('--test_chip', action='store_true', default=False, help="Test simple read/write functionality for real chip?")
@@ -730,6 +731,8 @@ if __name__ == '__main__':
     assert int(args.moduleid)>0, "Module ID is not specified. This is a new feature, please run with --moduleid MODULEID, where MODULEID is the number on the module test board."
     MID = args.moduleid
     timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
+    if args.run_tag:
+        timestamp += '_' + args.run_tag
     result_dir = f"results/{MID}/{timestamp}/" #MultiETROC
     out_dir = f"outputs/{MID}/{timestamp}/"
  
