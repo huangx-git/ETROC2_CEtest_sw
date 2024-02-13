@@ -634,7 +634,7 @@ if __name__ == '__main__':
                         print(f"Unpacking error in test pattern, expected 0xAA but got {d[1]['test_pattern']=}")
                         n_events_err += 1
                 except KeyError:
-                    print(f"Unpacking error in test pattern, expected 0xAA but got {d[1]['test_pattern']=}")
+                    print(f"Unpacking error in test pattern: didn't find a test pattern!")
                     n_events_err += 1
 
         print(f"Got number of total events {n_events_total=}")
