@@ -612,13 +612,28 @@ if __name__ == '__main__':
             if d[0] == 'data':
                 hit_matrix.fill(row=d[1]['row_id'], col=d[1]['col_id'])
                 hits_total[d[1]['row_id']][d[1]['col_id']] += 1
-                if d[1]['row_id'] != d[1]['row_id2']:
+
+                try:
+                    if d[1]['row_id'] != d[1]['row_id2']:
+                        print("Unpacking error in row ID")
+                        n_events_err += 1
+                except KeyError:
                     print("Unpacking error in row ID")
                     n_events_err += 1
-                if d[1]['col_id'] != d[1]['col_id2']:
+
+                try:
+                    if d[1]['col_id'] != d[1]['col_id2']:
+                        print("Unpacking error in col ID")
+                        n_events_err += 1
+                except KeyError:
                     print("Unpacking error in col ID")
                     n_events_err += 1
-                if d[1]['test_pattern'] != 0xaa:
+
+                try:
+                    if d[1]['test_pattern'] != 0xaa:
+                        print(f"Unpacking error in test pattern, expected 0xAA but got {d[1]['test_pattern']=}")
+                        n_events_err += 1
+                except KeyError:
                     print(f"Unpacking error in test pattern, expected 0xAA but got {d[1]['test_pattern']=}")
                     n_events_err += 1
 
