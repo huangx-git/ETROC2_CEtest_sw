@@ -171,6 +171,11 @@ class KCU:
                 print(red('Warning: No elink is locked.'))
             print()
 
+    def reset_FEC_error_count(self):
+        for i in range(5):
+            self.write_node("READOUT_BOARD_%s.LPGBT.FEC_ERR_RESET" % i, 0x1)
+
+
     def print_reg(self, reg, threshold=1, maxval=0xFFFFFFFF, use_color=False, invert=False):
         from tamalero.colors import green, red, dummy
         val = reg.read()

@@ -94,7 +94,10 @@ class LPGBT(RegParser):
                 self.wr_adr(0x118, 0xC0) # https://lpgbt.web.cern.ch/lpgbt/v0/registermap.html#x118-uldatasource0
                 sleep(0.01)
                 self.wr_adr(0x118, 0) # https://lpgbt.web.cern.ch/lpgbt/v0/registermap.html#x118-uldatasource0
-                self.wr_adr(0x036, 0x80)
+                if self.rb == 0:
+                    self.wr_adr(0x036, 0x80)
+                else:
+                    self.wr_adr(0x036, 0x00)  # we might want to go back to the inversion with the next FW version
                 self.wr_adr(0x0ef, 0x6)
                 sleep(0.01)
                 is_v0 = (self.rd_adr(0x1c5) == 0xa5)
@@ -104,7 +107,11 @@ class LPGBT(RegParser):
                 self.wr_adr(0x128, 0xC0) # https://lpgbt.web.cern.ch/lpgbt/v1/registermap.html#x128-uldatasource0
                 sleep(0.01)
                 self.wr_adr(0x128, 0) # https://lpgbt.web.cern.ch/lpgbt/v1/registermap.html#x128-uldatasource0
-                self.wr_adr(0x036, 0x80)
+                if self.rb == 0:
+                    self.wr_adr(0x036, 0x80)
+                else:
+                    self.wr_adr(0x036, 0x00)  # we might want to go back to the inversion with the next FW version
+                #self.wr_adr(0x036, 0x80)
                 self.wr_adr(0x0fb, 0x6)
                 sleep(0.01)
                 is_v1 = (self.rd_adr(0x1d7) == 0xa6)
