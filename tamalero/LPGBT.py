@@ -94,10 +94,10 @@ class LPGBT(RegParser):
                 self.wr_adr(0x118, 0xC0) # https://lpgbt.web.cern.ch/lpgbt/v0/registermap.html#x118-uldatasource0
                 sleep(0.01)
                 self.wr_adr(0x118, 0) # https://lpgbt.web.cern.ch/lpgbt/v0/registermap.html#x118-uldatasource0
-                if self.rb == 0:
-                    self.wr_adr(0x036, 0x80)
+                if self.rb == 0 and self.trigger:
+                    self.wr_adr(0x036, 0x00)
                 else:
-                    self.wr_adr(0x036, 0x00)  # we might want to go back to the inversion with the next FW version
+                    self.wr_adr(0x036, 0x80)  # we might want to go back to the inversion with the next FW version
                 self.wr_adr(0x0ef, 0x6)
                 sleep(0.01)
                 is_v0 = (self.rd_adr(0x1c5) == 0xa5)
@@ -107,10 +107,10 @@ class LPGBT(RegParser):
                 self.wr_adr(0x128, 0xC0) # https://lpgbt.web.cern.ch/lpgbt/v1/registermap.html#x128-uldatasource0
                 sleep(0.01)
                 self.wr_adr(0x128, 0) # https://lpgbt.web.cern.ch/lpgbt/v1/registermap.html#x128-uldatasource0
-                if self.rb == 0:
-                    self.wr_adr(0x036, 0x80)
+                if self.rb == 0 and self.trigger:
+                    self.wr_adr(0x036, 0x00)
                 else:
-                    self.wr_adr(0x036, 0x00)  # we might want to go back to the inversion with the next FW version
+                    self.wr_adr(0x036, 0x80)  # we might want to go back to the inversion with the next FW version
                 #self.wr_adr(0x036, 0x80)
                 self.wr_adr(0x0fb, 0x6)
                 sleep(0.01)
@@ -142,7 +142,10 @@ class LPGBT(RegParser):
 
         if self.trigger:
             self.init_trigger_links()
-            self.wr_reg("LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT", 0x1)  # this is already done for v1
+            if self.rb == 0:
+                self.wr_reg("LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT", 0x0)  # this is already done for v1
+            else:
+                self.wr_reg("LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT", 0x1)  # this is already done for v1
             sleep(0.01)
             self.wr_reg("LPGBT.RWF.POWERUP.DLLCONFIGDONE", 0x1)  # NOTE untested change
             self.wr_reg("LPGBT.RWF.POWERUP.PLLCONFIGDONE", 0x1)
@@ -181,7 +184,10 @@ class LPGBT(RegParser):
         # this could be extended to run over the configuration in lpgbt_config.yaml file
         # BUT this still needs to be tested. the two settings below seems to be enough for now
         # NOTE: maybe some config is still missing for proper SCA communication for lpGBT v1
-        self.wr_reg("LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT", 0x1)  # this is already done for v1
+        if self.trigger and self.rb==0:
+            self.wr_reg("LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT", 0x0)  # this is already done for v1
+        else:
+            self.wr_reg("LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT", 0x1)  # this is already done for v1
         self.wr_reg("LPGBT.RWF.POWERUP.DLLCONFIGDONE", 0x1)  # NOTE untested change
         self.wr_reg("LPGBT.RWF.POWERUP.PLLCONFIGDONE", 0x1)
 
@@ -933,7 +939,10 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.CALIBRATION.VREFENABLE", 0x0)
 
     def initialize(self, verbose=False):
-        self.wr_reg("LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT", 0x1)  # this is already done for v1
+        #if self.trigger and self.rb==0:
+        #    self.wr_reg("LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT", 0x0)  # this is already done for v1
+        #else:
+        #    self.wr_reg("LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT", 0x1)  # this is already done for v1
 
         # turn on clock outputs
         if (verbose):
