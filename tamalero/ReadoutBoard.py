@@ -15,7 +15,7 @@ from time import sleep
 
 class ReadoutBoard:
 
-    def __init__(self, rb=0, trigger=True, flavor='small', kcu=None, config='default'):
+    def __init__(self, rb=0, trigger=True, flavor='small', kcu=None, config='default', alignment=False, data_mode=True, etroc='ETROC2', verbose=False, allow_bad_links=False):
         '''
         create a readout board.
         trigger: if true, also configure a trigger lpGBT
@@ -32,6 +32,11 @@ class ReadoutBoard:
         #for adr in [0x06, 0x0A, 0x0E, 0x12]:
         #    self.VTRX.wr_adr(adr, 0x20)
         self.SCA = SCA(rb=rb, flavor=flavor, ver=self.DAQ_LPGBT.ver, config=self.config)
+
+        self.alignment = alignment
+        self.data_mode = data_mode
+        self.etroc = etroc
+        self.verbose = verbose
 
         if kcu != None:
             self.kcu = kcu
@@ -50,6 +55,24 @@ class ReadoutBoard:
         self.configuration = get_config(self.config, version=f'v{self.ver}')
 
         self.enable_etroc_readout()  # enable readout of all ETROCs by default
+        self.enable_etroc_readout(slave=True)  # enable readout of all ETROCs by default
+
+        self.is_configured = self.DAQ_LPGBT.is_configured()
+        #if not self.is_configured:
+
+        self.VTRX.get_version()
+
+        if trigger:
+            self.get_trigger()
+
+            if not self.TRIG_LPGBT.power_up_done():
+                self.TRIG_LPGBT.power_up_init()
+
+        if not self.is_configured:
+            self.configure()
+
+        self.reset_problematic_links(max_retries=10, allow_bad_links=allow_bad_links)
+
 
     def get_trigger(self):
         # Self-check if a trigger lpGBT is present, if trigger is not explicitely set to False
@@ -294,7 +317,7 @@ class ReadoutBoard:
         self.DAQ_LPGBT.set_gpio(3, 0)
         sleep(1)
 
-    def configure(self, alignment=None, data_mode=False, etroc='ETROC1', verbose=False):
+    def configure(self):
 
         # configure the VTRX
         self.VTRX.configure(trigger=self.trigger)
@@ -303,22 +326,22 @@ class ReadoutBoard:
         # dict -> load the provided alignment
         # none -> rerun alignment scan
         # anything else (e.g. False) -> don't touch the uplink alignment
-        if isinstance(alignment, dict):
-            self.load_uplink_alignment(alignment)
-        elif alignment is None:
-            _ = self.find_uplink_alignment(data_mode=data_mode, etroc=etroc)
+        if isinstance(self.alignment, dict):
+            self.load_uplink_alignment(self.alignment)
+        elif self.alignment is None:
+            _ = self.find_uplink_alignment(data_mode=self.data_mode, etroc=self.etroc)
         else:
             pass
 
         # SCA init
         #self.
         self.sca_hard_reset()
-        self.sca_setup(verbose=verbose)
+        self.sca_setup(verbose=self.verbose)
         self.SCA.reset()
         self.SCA.connect()
         try:
-            print("version in SCA", self.SCA.ver)
-            print("config in SCA", self.SCA.config)
+            #print("version in SCA", self.SCA.ver)
+            #print("config in SCA", self.SCA.config)
             self.SCA.config_gpios()  # this sets the directions etc according to the mapping
         except TimeoutError:
             print ("SCA config failed. Will continue without SCA.")
@@ -355,18 +378,19 @@ class ReadoutBoard:
 
         self.reset_FEC_error_count(quiet=True)
 
-    def reset_problematic_links(self, max_retries=10, allow_bad_links=False, verbose=False):
+    def reset_problematic_links(self, max_retries=10, allow_bad_links=False):
         '''
         First check DAQ link, then trigger link.
         '''
         for link in ['DAQ', 'Trigger'] if self.trigger else ['DAQ']:
             for i in range(max_retries):
+                sleep(0.1)  # this is actually needed for low error rates
                 if link == 'DAQ':
                     good_link = self.DAQ_LPGBT.link_status(verbose=False)
                 else:
                     good_link = self.TRIG_LPGBT.link_status(verbose=False)
                 if good_link:
-                    if verbose:
+                    if self.verbose:
                         print (f"No FEC errors detected on {link} link")
                     break
                 else:

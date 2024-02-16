@@ -193,6 +193,17 @@ if __name__ == '__main__':
                 print(f'Connecting to ReadoutBoard {i} failed')
 
         temp.status()
+
+    if args.alignment:
+        if isinstance(args.alignment, str):
+            print ("Loading uplink alignemnt from file:", args.alignment)
+            from tamalero.utils import load_alignment_from_file
+            alignment = load_alignment_from_file(args.alignment)
+        else:
+            alignment = None
+    else:
+        alignment = False
+
     # write to the loopback node of the KCU105 to check ethernet communication
     kcu = get_kcu(args.kcu, control_hub=True, host=args.host, verbose=args.verbose)
     if (kcu == 0):
@@ -200,20 +211,31 @@ if __name__ == '__main__':
         # this would cause the RB init to fail.
         sys.exit(1)
 
-    print(f'Utilizing ReadoutBoard {args.rb}')
-    rb = ReadoutBoard(args.rb, trigger=(not args.force_no_trigger), kcu=kcu, config=args.configuration)
-    
-    # IDEA Loop over boards for configuration?
-    print(kcu.readout_boards)
-
+    # check that the KCU is actually connected
     data = 0xabcd1234
     kcu.write_node("LOOPBACK.LOOPBACK", data)
     if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
         print("No communications with KCU105... quitting")
         sys.exit(1)
 
-    is_configured = rb.DAQ_LPGBT.is_configured()
-    header(configured=is_configured)
+    print(f'Utilizing ReadoutBoard {args.rb}')
+    rb = ReadoutBoard(
+        args.rb,
+        trigger=(not args.force_no_trigger),
+        kcu=kcu,
+        config=args.configuration,
+        alignment=alignment,
+        data_mode=data_mode,
+        etroc=args.etroc,
+        verbose=args.verbose,
+        allow_bad_links = args.allow_bad_links,
+    )
+    
+    # IDEA Loop over boards for configuration?
+    print(kcu.readout_boards)
+
+    #is_configured = rb.DAQ_LPGBT.is_configured()
+    header(configured=rb.is_configured)
 
     if args.recal_lpgbt:
         rb.DAQ_LPGBT.calibrate_adc(recalibrate=True)
@@ -254,21 +276,8 @@ if __name__ == '__main__':
         rb.get_trigger()
 
     if args.power_up or args.reconfigure:
-
-        if args.alignment:
-            if isinstance(args.alignment, str):
-                print ("Loading uplink alignemnt from file:", args.alignment)
-                from tamalero.utils import load_alignment_from_file
-                alignment = load_alignment_from_file(args.alignment)
-            else:
-                alignment = None
-        else:
-            alignment = False
-
-        #if rb.trigger:
-        #    rb.TRIG_LPGBT.power_up_init()
         print("Configuring readout board")
-        rb.configure(alignment=alignment, data_mode=data_mode, etroc=args.etroc, verbose=args.verbose)
+        rb.configure()
 
     res = rb.DAQ_LPGBT.get_board_id()
     res['trigger'] = 'yes' if rb.trigger else 'no'
@@ -279,9 +288,9 @@ if __name__ == '__main__':
     if args.power_up or args.reconfigure:
         # FIXME this is taken out because it sometimes sends the RB into the Nirvana.
         # Daniel will fix it when he has time.
-        rb.reset_problematic_links(
-            max_retries=10,
-            allow_bad_links=args.allow_bad_links)
+        #rb.reset_problematic_links(
+        #    max_retries=10,
+        #    allow_bad_links=args.allow_bad_links)
         if verbose:
             rb.status()
 
