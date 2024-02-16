@@ -369,17 +369,26 @@ def get_config(config, version='v2', verbose=False):
     if config != 'default':
         updated_cfg = load_yaml(os.path.join(here, f'../configs/{config}_{version}.yaml'))
         for chip in ['SCA', 'LPGBT']:
+            if chip not in updated_cfg:
+                continue
             for interface in ['adc', 'gpio']:
+                if interface not in updated_cfg[chip]:
+                    continue
                 if updated_cfg[chip][interface] is not None:
                     for k in updated_cfg[chip][interface]:
                         if verbose:
                             print(f"\n - Updating configuration for {chip}, {interface}, {k} to:")
                             print(updated_cfg[chip][interface][k])
+                        if k in default_cfg[chip][interface] and k not in updated_cfg[chip][interface]:
+                            del default_cfg[chip][interface][k]
                         default_cfg[chip][interface][k] = updated_cfg[chip][interface][k]
-        for links in ['trigger', 'clocks', 'downlink', 'uplink']:
-            default_cfg['inversions'][links] = updated_cfg['inversions'][links]
+        if 'inversions' in updated_cfg:
+            for links in ['trigger', 'clocks', 'downlink', 'uplink']:
+                default_cfg['inversions'][links] = updated_cfg['inversions'][links]
         if 'modules' in updated_cfg:
             default_cfg['modules'] = updated_cfg['modules']
+        if 'mux64' in updated_cfg:
+            default_cfg['mux64'] = updated_cfg['mux64']
     return default_cfg
 
 def majority_vote(values, majority=None):
