@@ -214,13 +214,11 @@ def auto_threshold_scan(etroc, args):
     print ("Info: if progress is slow, probably most pixel threshold calibrations time out because of high noise levels.")
     baseline = np.empty([16, 16])
     noise_width = np.empty([16, 16])
-    acc =  np.empty([16, 16, 0]).tolist()
     with tqdm(total=256, bar_format='{l_bar}{bar:20}{r_bar}{bar:-20b}') as pbar:
         for pixel in range(256):
             row = pixel & 0xF
             col = (pixel & 0xF0) >> 4
             baseline[row][col], noise_width[row][col] = etroc.auto_threshold_scan(row=row, col=col, broadcast=False)
-            print(acc[row][col])
             pbar.update()
 
     print ("Done with threshold scan")
