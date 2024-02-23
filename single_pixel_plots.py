@@ -75,14 +75,28 @@ if len(files) == 0:
 print(f'Loading the following files from {path}')
 
 df = pd.DataFrame()
+if any(['.json' in f for f in files]):
+    files = [f for f in files if '.json' in f]
+elif any(['.pkl' in f for f in files]):
+    files = [f for f in files if '.pkl' in f]
+
 for f in files:
     print(f)
     charge = int(f.split('_')[4].split('.')[0])
     if '.pkl' in f:
         sub = pickle.load(open(path+f, 'rb'))
-    else:
+        outfile = f.replace('.pkl', '.json')
+        with open(path + outfile, 'w') as out:
+            json.dump(sub.to_dict(), out)
+    elif '.yaml' in f:
         with open(path + f, 'r') as infile:
             sub = pd.DataFrame(yaml.load(infile, Loader = yaml.FullLoader))
+        outfile = f.replace('.yaml', '.json')
+        with open(path + outfile, 'w') as out:
+            json.dump(sub.to_dict(), out)
+    else:
+        with open(path + f, 'r') as infile:
+            sub = pd.DataFrame(json.load(infile))
     sub['charge'] = [charge]*len(sub.vth)
     if not len(np.unique(sub.hits)) == 1:
         df = pd.concat([df, sub])
@@ -173,7 +187,7 @@ for q in tqdm(np.unique(df.charge)):
     plt.savefig(f'{store}/DAC_v_Hits_q{q}_redux.png')
     plt.close()
 
-
+'''
 fig, ax = plt.subplots(figsize = figsize)
 charges = []
 firstbest = []
@@ -189,7 +203,7 @@ x = np.linspace(np.min(charges), np.max(charges), 1000)
 y = x*model.slope + model.intercept
 ax.plot(x, y, label = 'Fit', color = 'b')
 
-'''
+
 p = 0.05
 ts = np.abs(stats.t.ppf(p/2, len(charges) - 2))
 slopeerr = ts*model.slope
@@ -198,7 +212,7 @@ print(model.slope, model.intercept, ts)
 high = x*(model.slope + slopeerr) + (model.intercept+interr)
 low = x*(model.slope - slopeerr) + (model.intercept-interr)
 ax.fill_between(x, low, high, label = '95% Conf. Int.', alpha = 0.4, color = 'c')
-'''
+
 
 ax.set_title('S-Curve End Points')
 ax.set_xlabel('Qinj')
@@ -356,7 +370,7 @@ plt.close()
 
 
 # Polynomial Regression of TOA SD data
-'''
+
 for q in np.unique(df.charge):
     idx = df.charge == q
     vth = df.vth[idx]
@@ -411,7 +425,7 @@ for q in np.unique(df.charge):
         plt.close()
         
 
-'''
+
 fig = plt.figure(figsize = figsize)
 for q in np.unique(df.charge):
     idx = df.charge == q
@@ -441,62 +455,81 @@ plt.savefig(f'{store}/DAC_v_TOASD.pdf')
 plt.savefig(f'{store}/DAC_v_TOASD.png')
 plt.show()
 plt.close()
-
-
 '''
 # TOA v. TOT 
 
+u, c = np.unique(ak.flatten(df.cal), return_counts = True)
+calcut = u[np.argmax(c)]
+toalim = 8
+totlim = 8
+callim = 0.5
 for q in np.unique(df.charge):
     x = []
     y = []
-    a = []
-    idx = [df.hits.iloc[i] > 0 and df.charge.iloc[i] == q for i in range(len(df.hits))]
-    keptvths = []
-    for d in np.unique(df.vth[idx]):
-        idx = [df.charge.iloc[i] == q and df.vth.iloc[i] == d for i in range(len(df.charge))]
-        lim = np.max(df.hits[idx])
-        idx =  [df.charge.iloc[i] == q and df.vth.iloc[i] == d and df.hits.iloc[i] == lim for i in range(len(df.charge))]
-        if any(idx):
-            x.append([np.mean(df.tot[idx].iloc[0])])
-            y.append([np.mean(df.toa[idx].iloc[0])])
-            a.append(len(df.toa[idx].iloc[0]))
-            keptvths.append(d)
-    a = np.array(a)
-    a = a - np.min(a)
-    a = a/np.max(a)
-    fig, ax = plt.subplots(figsize = figsize)
-    color = plt.cm.get_cmap('winter')
-    c = [i/len(x) for i in range(len(x))]
-    pos = ax.scatter(x, y, c = c, vmin = 0, vmax = 1, alpha = a, cmap = color)
-    cbar = plt.colorbar(pos, ax = ax, label = 'Threshold DAC')
-    cbar.set_ticks([0, 1])
-    cbar.set_ticklabels([np.min(keptvths), np.max(keptvths)])
-    ax.set_title(f'Mean TOT values v. Mean TOA Values {loc_title}\nDelay = {delay}, Qinj = {q}')
+    chargeidx = df.charge== q
+    i = df[(chargeidx)].hits.argmax()
+    n = int(np.min([30, len(df[(chargeidx)].hits) - i - 1]))
+    while df[(chargeidx)].hits.iloc[i] > df[(chargeidx)].hits.iloc[i+n]:
+        n = n//2
+    i+=n
+    x = np.array(df.toa.iloc[i])
+    y = np.array(df.tot.iloc[i])
+    cal = np.array(df.cal.iloc[i])
+    caldiff = np.abs(cal - calcut) < callim
+    toadiff = np.abs(x - np.mean(x)) < toalim*np.std(x)
+    totdiff = np.abs(y - np.mean(y)) < totlim*np.std(y)
+    idx = caldiff*totdiff*toadiff
+    x = x[idx]
+    y = y[idx]
+    cal = cal[idx]
+    tbin = 3.125/cal
+    x = tbin*x
+    y = tbin*(2*y-y//32)
+    fig, ax = plt.subplots()
+    h = ax.hist2d(x, y, bins = [50, 50], norm = 'log')
+    fig.colorbar(h[3], ax = ax)
+    ax.set_title(f'TOT v. TOA {loc_title}\nHits = {len(x)}/{df.hits.iloc[i]}, Qinj = {q}\nDAC = {df.vth.iloc[i]}')
     ax.set_xlabel('Mean TOT')
     ax.set_ylabel('Mean TOA')
-    plt.savefig(f'{store}/TOT_v_TOA_{q}.png')
-    plt.savefig(f'{store}/TOT_v_TOA_q{q}.pdf')
+    plt.show()
+    plt.savefig(f'{store}/TOT_v_TOA_single_q{q}.png')
+    plt.savefig(f'{store}/TOT_v_TOA_single_q{q}.pdf')
     plt.close()
 
-fig, ax = plt.subplots(figsize = figsize)
+
+
 for q in np.unique(df.charge):
     x = []
     y = []
-    idx = [df.charge.iloc[i] == q for i in range(len(df.hits))]
-    lim = np.max(df.hits[idx])
-    idx = [df.charge.iloc[i] == q and df.hits.iloc[i] == lim for i in range(len(df.hits))]
-    sub = df[idx]
-    for i in range(len(sub.vth)):
-        if np.abs(sub.hits.iloc[i] -  np.max(sub.hits))/np.max(sub.hits) < 0.05:
-            x += sub.tot.iloc[i]
-            y += sub.toa.iloc[i]
-    plt.plot(x, y, 'o-', label = f'Qinj = {q}')
-    
-ax.set_title(f'TOT values v. TOA Values {loc_title}\nDelay = {delay}')
-ax.set_xlabel('Time over Threshold')
-ax.set_ylabel('Time of Arrival')
-plt.legend()
-plt.savefig(f'{store}/TOT_v_TOA_full.png')
-plt.savefig(f'{store}/TOT_v_TOA_full.pdf')
-plt.close()
-'''
+    cal = []
+    chargeidx = df.charge== q
+    i = df[(chargeidx)].hits.argmax()
+    for i in range(len(df[(chargeidx)].hits)):
+        x += df[(chargeidx)].toa.iloc[i]
+        y += df[(chargeidx)].tot.iloc[i]
+        cal += df[(chargeidx)].cal.iloc[i]
+    x = np.array(x)
+    y = np.array(y)
+    cal = np.array(cal)
+    caldiff = np.abs(cal - calcut) < callim
+    toadiff = np.abs(x - np.mean(x)) < toalim*np.std(x)
+    totdiff = np.abs(y - np.mean(y)) < totlim*np.std(y)
+    idx = caldiff*totdiff*toadiff
+    x = x[idx]
+    y = y[idx]
+    cal = cal[idx]
+    tbin = 3.125/cal
+    x = tbin*x
+    y = tbin*(2*y-y//32)
+    fig, ax = plt.subplots()
+    h = ax.hist2d(x, y, bins = [50, 50], norm = 'log')
+    fig.colorbar(h[3], ax = ax)
+    ax.set_title(f'TOT v. TOA {loc_title}\nHits = {len(x)}/{df.hits.iloc[i]}, Qinj = {q}\nDAC = {df.vth.iloc[i]}')
+    ax.set_xlabel('Mean TOT')
+    ax.set_ylabel('Mean TOA')
+    plt.show()
+    plt.savefig(f'{store}/TOT_v_TOA_single_q{q}.png')
+    plt.savefig(f'{store}/TOT_v_TOA_single_q{q}.pdf')
+    plt.close()
+
+

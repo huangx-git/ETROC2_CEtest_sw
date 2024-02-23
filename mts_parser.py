@@ -17,6 +17,7 @@ argParser.add_argument('--filepath', '-f',  action='store', help="path to file")
 argParser.add_argument('--module', '-m',  action='store', help="path to file")
 argParser.add_argument('--timestamp', '-t',  action='store', help="timestamp")
 argParser.add_argument('--pix_hists',  action='store_true', help="1d hists for each pixel")
+
 args = argParser.parse_args()
 
 
@@ -70,6 +71,7 @@ for pix in range(N_pix):
         if not os.path.exists(outpath + '/mts_individual_pixels'):
             os.mkdir(outpath + '/mts_individual_pixels')
         plt.savefig(outpath + '/mts_individual_pixels/' + f'r{r}c{c}_mts_results.png')
+        plt.show()
         plt.close()
 # 2D histogram of the mean
 # this is based on the code for automatic sigmoid fits

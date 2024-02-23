@@ -214,11 +214,13 @@ def auto_threshold_scan(etroc, args):
     print ("Info: if progress is slow, probably most pixel threshold calibrations time out because of high noise levels.")
     baseline = np.empty([16, 16])
     noise_width = np.empty([16, 16])
+    acc =  np.empty([16, 16, 0]).tolist()
     with tqdm(total=256, bar_format='{l_bar}{bar:20}{r_bar}{bar:-20b}') as pbar:
         for pixel in range(256):
             row = pixel & 0xF
             col = (pixel & 0xF0) >> 4
             baseline[row][col], noise_width[row][col] = etroc.auto_threshold_scan(row=row, col=col, broadcast=False)
+            print(acc[row][col])
             pbar.update()
 
     print ("Done with threshold scan")
@@ -387,6 +389,12 @@ def isolate(etrocs, n):
         if i != n:
            e.wr_reg("disDataReadout", 0x1, broadcast=True)
 
+def check_temp(etroc):
+    etroc.power_up_TempSen()
+    temp = etroc.check_temp()
+    etroc.power_down_TempSen()
+    return temp
+
 def readout_tests(etroc, masked_pixels, rb_0, args, result_dir = None, out_dir = None):
     etroc.deactivate_hot_pixels(pixels=masked_pixels)
     
@@ -408,6 +416,8 @@ def readout_tests(etroc, masked_pixels, rb_0, args, result_dir = None, out_dir =
                 print("FIFO state is unexpected.")
                 raise
     etroc.reset()
+
+    print('Current ETROC Temperature Reading:', check_temp(etroc))
     
     etroc.wr_reg("DAC", 0, broadcast=True)  # make sure that we're not additionally picking up any noise
     etroc.wr_reg("selfTestOccupancy", 2, broadcast=True)
@@ -560,9 +570,13 @@ def readout_tests(etroc, masked_pixels, rb_0, args, result_dir = None, out_dir =
     # Set the chip back into well-defined workMode 0
     etroc.wr_reg("workMode", 0x0, broadcast=True)
     if args.threshold == 'auto':
+        print('Current ETROC Temperature Reading:', check_temp(etroc))
         threshold_matrix = auto_threshold_scan(etroc, args)
+        print('Current ETROC Temperature Reading:', check_temp(etroc))
     elif args.threshold == "manual":
+        print('Current ETROC Temperature Reading:', check_temp(etroc))
         threshold_matrix = manual_threshold_scan(etroc, fifo, rb_0, args)
+        print('Current ETROC Temperature Reading:', check_temp(etroc))
     else:
         print(f"Trying to load tresholds from the following file: {args.threshold}")
         with open(args.threshold, 'r') as f:
