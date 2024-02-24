@@ -136,14 +136,14 @@ class FIFO:
         while success == False:
             try:
                 if dispatch:
-                    reads = self.rb.kcu.hw.getNode("DAQ_RB0").readBlock(block)
+                    reads = self.rb.kcu.hw.getNode(f"DAQ_RB{self.rb.rb}").readBlock(block)
 
                     # this was tested with 5M pulses
                     self.rb.kcu.dispatch()  # changed from more udp error prone self.rb.kcu.hw.dispatch()
 
                     return reads
                 else:
-                    return self.rb.kcu.hw.getNode("DAQ_RB0").readBlock(block)
+                    return self.rb.kcu.hw.getNode(f"DAQ_RB{self.rb.rb}").readBlock(block)
             except uhal_exception:
                 print(f"uhal UDP error in FIFO.read_block, block size is {block}")
                 raise
