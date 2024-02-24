@@ -501,6 +501,28 @@ class ETROC():
 
         return good
 
+    def test_config(self, occupancy=5):
+        '''
+        custom made test configuration
+        '''
+        test_pixels = [
+            (0,0),
+            (7,7),
+            (7,8),
+            (8,8),
+            (8,7),
+            (0,15),
+            (15,0),
+            (15,15),
+        ]
+        self.disable_data_readout(broadcast=True)
+        self.wr_reg("workMode", 0, broadcast=True)
+        self.wr_reg("selfTestOccupancy", 0, broadcast=True)
+        for row, col in test_pixels:
+            self.enable_data_readout(row=row, col=col, broadcast=False)
+            self.wr_reg("workMode", 1, row=row, col=col, broadcast=False)
+            self.wr_reg("selfTestOccupancy", occupancy, row=row, col=col, broadcast=False)
+
 
     # =======================
     # === HIGH-LEVEL FUNC ===
