@@ -394,9 +394,9 @@ class ReadoutBoard:
             for i in range(max_retries):
                 sleep(0.1)  # this is actually needed for low error rates
                 if link == 'DAQ':
-                    good_link = self.DAQ_LPGBT.link_status(verbose=False)
+                    good_link = self.DAQ_LPGBT.link_status()
                 else:
-                    good_link = self.TRIG_LPGBT.link_status(verbose=False)
+                    good_link = self.TRIG_LPGBT.link_status()
                 if good_link:
                     if self.verbose:
                         print (f"No FEC errors detected on {link} link")
