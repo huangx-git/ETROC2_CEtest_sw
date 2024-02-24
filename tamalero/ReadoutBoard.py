@@ -5,6 +5,7 @@ from tamalero.utils import get_temp, chunk, get_temp_direct, get_config
 from tamalero.VTRX import VTRX
 from tamalero.utils import read_mapping
 from tamalero.colors import red, green
+from tamalero.Module import Module
 
 try:
     from tabulate import tabulate
@@ -12,6 +13,12 @@ except ModuleNotFoundError:
     print ("Package `tabulate` not found.")
 
 from time import sleep
+
+flavors = {
+    'small': 3,
+    'medium': 6,
+    'large': 7,
+}
 
 class ReadoutBoard:
 
@@ -23,6 +30,7 @@ class ReadoutBoard:
         self.rb = rb
         self.flavor = flavor
         self.ver = 2
+        self.nmodules = flavors[flavor]
         self.config = config
 
         self.trigger = trigger
@@ -672,3 +680,8 @@ class ReadoutBoard:
         reset the event counter
         '''
         self.kcu.write_node(f"READOUT_BOARD_{self.rb}.EVENT_CNT_RESET", 0x1)
+
+    def connect_modules(self, power_board=False):
+        self.modules = []
+        for i in range(self.nmodules):
+            self.modules.append(Module(self, i+1, enable_power_board=power_board))
