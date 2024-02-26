@@ -5,6 +5,7 @@ from tamalero.utils import get_temp, chunk, get_temp_direct, get_config, load_ya
 from tamalero.VTRX import VTRX
 from tamalero.utils import read_mapping
 from tamalero.colors import red, green
+import time, datetime, json
 
 try:
     from tabulate import tabulate
@@ -431,6 +432,27 @@ class ReadoutBoard:
             print(tabulate(table, headers=["Channel","Voltage", "Sig_Name"],  tablefmt="simple_outline"))
 
         return table
+
+    def read_selected_mux64(self, chs):
+        volts = {}
+        for i in chs:
+            volts[str(i)] = self.read_mux_test_board(i)
+        return volts
+
+    def mux64_monitoring(self, chs, tmax = 60, lat = 5, plot = False):
+        # time is given in seconds
+        mntr = {}
+        mntr['record'] = []
+        t = 0.0
+        while (t<tmax):
+            print(f'Monitoring: {t}/{tmax} secs')
+            mntr['record'].append(self.read_selected_mux64(chs))
+            mntr['record'][-1]['time'] = datetime.datetime.now().isoformat()
+            time.sleep(lat)
+            t+=lat
+        with open("mux64_mntr.json", "w") as f:
+            json.dump(mntr, f)
+        return mntr
 
     def read_vtrx_temp(self):
 
