@@ -417,14 +417,14 @@ class ReadoutBoard:
         assert 'mux64' in self.configuration, "MUX64 configuration not correctly loaded: Check configuration"
         table=[]
         v_data=[]
-        for i in self.configuration['mux64'].keys():
-            if self.configuration['mux64'][i]['terminal_input']:
+        for i in self.configuration['mux64']['input'].keys():
+            if self.configuration['mux64']['input'][i]['terminal_input']:
                 volt=self.read_mux_test_board(i)
                 v_data.append(volt)
             else:
                 volt=None
                 v_data.append(volt)
-            sig_name=self.mux64_tb_dict[i]['sig_name']
+            sig_name=self.configuration['mux64']['input'][i]['sig_name']
             table.append([i, volt, sig_name])
         
         if (show):
