@@ -1465,25 +1465,42 @@ class LPGBT(RegParser):
             json.dump(eye_scan_data, outfile)
         print("Data saved to eye_scan_results/%s.json\n" %filename)
 
+
+        import matplotlib.pyplot as plt
+        import mplhep as hep
+        plt.style.use(hep.style.CMS)
+        (fig, axs) = plt.subplots(1, 1, figsize=(10, 8))
+        print ("fig type = " + str(type(fig)))
+        print ("axs type = " + str(type(axs)))
+        axs.set_title("LpGBT 2.56 Gbps RX Eye Opening Monitor")
+        plot = axs.imshow(eye_scan_data, alpha=0.9, vmin=0, vmax=100, cmap='jet',interpolation="nearest", aspect="auto",extent=[-384.52/2,384.52/2,-0.6,0.6,])
+        plt.xlabel('ps')
+        plt.ylabel('volts')
+        fig.colorbar(plot, ax=axs)
+
+        #plt.show()
+        fig.savefig(f'eye_scan_results/{filename}.png')
+        print("Eye diagram saved to eye_scan_results/%s.json\n" %filename)
+
         # print results to bash
         try:
             from colored import fg, bg, attr
+            color_scale = [124,196,202,214,190,82,50,38,21,19]
+            sys.stdout.write("Color Scale: ")
+            for i in range(10):
+                sys.stdout.write("%s%01d%s" % (bg(color_scale[i]),i,attr('reset')))
+            sys.stdout.write("\n\n")
+
+            for y_axis in range(ymin, ymax):
+                for x_axis in range(xmin, xmax):
+                    printval = int(eyeimage[y_axis][x_axis]/1000)
+                    sys.stdout.write("%s%01d%s" % (bg(color_scale[printval]), printval, attr('reset')))
+                    sys.stdout.flush()
+                sys.stdout.write("\n")
         except:
             print("Need to pip install colored to print out results.")
             print("Eye scan results were still saved and can be plotted.")
 
-        color_scale = [124,196,202,214,190,82,50,38,21,19]
-        sys.stdout.write("Color Scale: ")
-        for i in range(10):
-            sys.stdout.write("%s%01d%s" % (bg(color_scale[i]),i,attr('reset')))
-        sys.stdout.write("\n\n")
-
-        for y_axis in range(ymin, ymax):
-            for x_axis in range(xmin, xmax):
-                printval = int(eyeimage[y_axis][x_axis]/1000)
-                sys.stdout.write("%s%01d%s" % (bg(color_scale[printval]), printval, attr('reset')))
-                sys.stdout.flush()
-            sys.stdout.write("\n")
 
     def get_chip_userid(self):
         return self.rd_reg("LPGBT.RWF.CHIPID.USERID3") << 24 |\

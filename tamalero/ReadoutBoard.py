@@ -79,7 +79,9 @@ class ReadoutBoard:
         if not self.is_configured:
             self.configure()
 
-        self.reset_problematic_links(max_retries=10, allow_bad_links=allow_bad_links)
+        if self.ver == 2:
+            # this method does not work for RB v1 / lpGBT v0
+            self.reset_problematic_links(max_retries=10, allow_bad_links=allow_bad_links)
 
 
     def get_trigger(self):
@@ -371,7 +373,7 @@ class ReadoutBoard:
                 print ("Don't know how to reset VTRX version", self.VTRX.ver)
             self.VTRX.configure(trigger=trigger)
             self.DAQ_LPGBT.reset_trigger_mgts()
-            self.TRIG_LPGBT.power_up_init(verbose=False)
+            self.TRIG_LPGBT.power_up_init()
         else:
             if self.VTRX.ver == 'production':
                 self.VTRX.reset()
@@ -681,7 +683,7 @@ class ReadoutBoard:
         '''
         self.kcu.write_node(f"READOUT_BOARD_{self.rb}.EVENT_CNT_RESET", 0x1)
 
-    def connect_modules(self, power_board=False):
+    def connect_modules(self, power_board=False, moduleids=[9996,9997,9998,9999]):
         self.modules = []
         for i in range(self.nmodules):
-            self.modules.append(Module(self, i+1, enable_power_board=power_board))
+            self.modules.append(Module(self, i+1, enable_power_board=power_board, moduleid=moduleids[i]))
