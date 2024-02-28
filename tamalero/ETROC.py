@@ -501,28 +501,38 @@ class ETROC():
 
         return good
 
-    def test_config(self, occupancy=5):
+    def test_config(self, occupancy=5, full_chip=False):
         '''
         custom made test configuration
         '''
-        test_pixels = [
-            (0,0),
-            (7,7),
-            (7,8),
-            (8,8),
-            (8,7),
-            (0,15),
-            (15,0),
-            (15,15),
-        ]
-        self.disable_data_readout(broadcast=True)
-        self.wr_reg("workMode", 0, broadcast=True)
-        self.wr_reg("selfTestOccupancy", 0, broadcast=True)
-        for row, col in test_pixels:
-            self.enable_data_readout(row=row, col=col, broadcast=False)
-            self.wr_reg("workMode", 1, row=row, col=col, broadcast=False)
-            self.wr_reg("selfTestOccupancy", occupancy, row=row, col=col, broadcast=False)
+        if full_chip:
+            self.enable_data_readout(broadcast=True)
+            self.wr_reg("workMode", 1, broadcast=True)
+            self.wr_reg("selfTestOccupancy", occupancy, broadcast=True)
 
+        else:
+            test_pixels = [
+                (0,0),
+                (7,7),
+                (7,8),
+                (8,8),
+                (8,7),
+                (0,15),
+                (15,0),
+                (15,15),
+            ]
+            self.disable_data_readout(broadcast=True)
+            self.wr_reg("workMode", 0, broadcast=True)
+            self.wr_reg("selfTestOccupancy", 0, broadcast=True)
+            for row, col in test_pixels:
+                self.enable_data_readout(row=row, col=col, broadcast=False)
+                self.wr_reg("workMode", 1, row=row, col=col, broadcast=False)
+                self.wr_reg("selfTestOccupancy", occupancy, row=row, col=col, broadcast=False)
+
+    def physics_config(self):
+        self.enable_data_readout(broadcast=True)
+        self.wr_reg("workMode", 0, broadcast=True)
+        self.run_threshold_scan()
 
     # =======================
     # === HIGH-LEVEL FUNC ===
@@ -566,6 +576,22 @@ class ETROC():
             return qinj
         else:
             return self.get_QInj(row=row, col=col)
+
+    def run_threshold_scan(self):
+        from tqdm import tqdm
+        baseline = np.empty([16, 16])
+        noise_width = np.empty([16, 16])
+        print("Running threshold scan")
+        with tqdm(total=256, bar_format='{l_bar}{bar:20}{r_bar}{bar:-20b}') as pbar:
+            for pixel in range(256):
+                row = pixel & 0xF
+                col = (pixel & 0xF0) >> 4
+                #print(pixel, row, col)
+                baseline[row][col], noise_width[row][col] = self.auto_threshold_scan(row=row, col=col, broadcast=False)
+                #print(pixel)
+                pbar.update()
+        return baseline, noise_width
+
 
     def auto_threshold_scan(self, row=0, col=0, broadcast=False, offset='auto', time_out=3, verbose=False):
         '''
