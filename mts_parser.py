@@ -27,12 +27,20 @@ if args.filepath:
    names = args.filepath.split('/')
    args.module = names[1]
    args.timestamp = names[2]
-   outpath = args.filpath.split('/manual_thresh_scan_data.json')[0]
+   if '/manual_thresh_scan_data.json' in args.filpath:
+       outpath = args.filpath.split('/manual_thresh_scan_data.json')[0]
+   else:
+       outpath = args.filpath.split('/thresh_scan_data.json')[0]
    print('Found file at ' + args.filepath)
 elif args.module and args.timestamp:
-    with open(f'outputs/{args.module}/{args.timestamp}/manual_thresh_scan_data.json', 'r') as f:
-       data = json.load(f)
-    outpath = f'outputs/{args.module}/{args.timestamp}/'
+    try:
+        with open(f'outputs/{args.module}/{args.timestamp}/manual_thresh_scan_data.json', 'r') as f:
+            data = json.load(f)
+        outpath = f'outputs/{args.module}/{args.timestamp}/'
+    except:
+        with open(f'outputs/{args.module}/{args.timestamp}/thresh_scan_data.json', 'r') as f:
+            data = json.load(f)
+        outpath = f'outputs/{args.module}/{args.timestamp}/'
 else:
     print('Insufficient info to load data.')
     adsfasdfadf
@@ -71,7 +79,9 @@ for pix in range(N_pix):
         if not os.path.exists(outpath + '/mts_individual_pixels'):
             os.mkdir(outpath + '/mts_individual_pixels')
         plt.savefig(outpath + '/mts_individual_pixels/' + f'r{r}c{c}_mts_results.png')
-        plt.show()
+        if r == 15 and c == 0:
+            print(r, c)
+            plt.show()
         plt.close()
 # 2D histogram of the mean
 # this is based on the code for automatic sigmoid fits
