@@ -52,9 +52,12 @@ if __name__ == '__main__':
 
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--input', action='store', default='output_test2', help="Binary file to read from")
+    argParser.add_argument('--skip_trigger_check', action='store_true', help="Skip the double trigger check.")
     args = argParser.parse_args()
 
     df = DataFrame('ETROC2')
+
+    do_double_trigger_check = not args.skip_trigger_check  # default is to run it
 
     f_in = f'output/{args.input}.dat'
 
@@ -108,7 +111,7 @@ if __name__ == '__main__':
             else:
                 #if (abs(d['bcid']-bcid_t)<40) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
                 #if (abs(d['bcid']-bcid_t)<500) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
-                if ((abs(d['bcid']-bcid_t)<150) or (abs(d['bcid']+3564-bcid_t)<50)) and not (d['bcid'] == bcid_t):
+                if ((abs(d['bcid']-bcid_t)<150) or (abs(d['bcid']+3564-bcid_t)<50)) and not (d['bcid'] == bcid_t) and do_double_trigger_check:
                     skip_event = True
                     print("Skipping event", d['l1counter'], d['bcid'], bcid_t)
                     skip_counter += 1
@@ -161,6 +164,7 @@ if __name__ == '__main__':
                 raw[-1].append(d['raw'])
                 crc[-1].append(d['crc'])
 
+
     print("Zipping")
     events = ak.Array({
         'event': event,
@@ -182,6 +186,12 @@ if __name__ == '__main__':
         'nhits_trail': ak.sum(ak.Array(nhits_trail), axis=-1),
     })
 
+    total_events = len(events)
+    # NOTE the check below is only valid for single ETROC
+    consistent_events = len(events[((events.nheaders==2)&(events.ntrailers==2)&(events.nhits==events.nhits_trail))])
+
+    print(total_events, consistent_events)
+
     print(f"Done with {len(events)} events. " + emojize(":check_mark_button:"))
     print(f" - skipped {skip_counter/events.nheaders[0]} events that were identified as double-triggered " + emojize(":check_mark_button:"))
     if header_counter == trailer_counter:
@@ -191,3 +201,23 @@ if __name__ == '__main__':
 
     with open(f"output/{args.input}.json", "w") as f:
         json.dump(ak.to_json(events), f)
+
+
+    # make some plots
+    import matplotlib.pyplot as plt
+    import mplhep as hep
+    plt.style.use(hep.style.CMS)
+
+    hits = np.zeros([16, 16])
+
+    for ev in events:
+        for row, col in zip(ev.row, ev.col):
+            hits[row][col] += 1
+
+    fig, ax = plt.subplots(1,1,figsize=(7,7))
+    cax = ax.matshow(hits)
+    ax.set_ylabel(r'$Row$')
+    ax.set_xlabel(r'$Column$')
+    fig.colorbar(cax,ax=ax)
+    fig.savefig(f"output/{args.input}_heatmap.pdf")
+    fig.savefig(f"output/{args.input}_heatmap.png")
