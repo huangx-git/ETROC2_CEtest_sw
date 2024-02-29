@@ -91,7 +91,7 @@ def vth_scan(ETROC2, vth_min=693, vth_max=709, vth_step=1, decimal=False, fifo=N
 
     vth_axis    = np.linspace(vth_min, vth_max, N_steps)
     run_results = np.empty([N_steps, N_pix])
-
+    
     for vth in vth_axis:
         print(f"Working on threshold {vth=}")
         if decimal:
@@ -101,7 +101,7 @@ def vth_scan(ETROC2, vth_min=693, vth_max=709, vth_step=1, decimal=False, fifo=N
             ETROC2.set_Vth_mV(vth)
         i = int((vth-vth_min)/vth_step)
         run_results[i] = parse_data(run(ETROC2, N_l1a, fifo=fifo), N_pix)
-
+        
     # transpose so each 1d list is for a pixel & normalize
     if absolute:
         run_results = run_results.transpose()
@@ -612,14 +612,29 @@ if __name__ == '__main__':
             if d[0] == 'data':
                 hit_matrix.fill(row=d[1]['row_id'], col=d[1]['col_id'])
                 hits_total[d[1]['row_id']][d[1]['col_id']] += 1
-                if d[1]['row_id'] != d[1]['row_id2']:
+
+                try:
+                    if d[1]['row_id'] != d[1]['row_id2']:
+                        print("Unpacking error in row ID")
+                        n_events_err += 1
+                except KeyError:
                     print("Unpacking error in row ID")
                     n_events_err += 1
-                if d[1]['col_id'] != d[1]['col_id2']:
+
+                try:
+                    if d[1]['col_id'] != d[1]['col_id2']:
+                        print("Unpacking error in col ID")
+                        n_events_err += 1
+                except KeyError:
                     print("Unpacking error in col ID")
                     n_events_err += 1
-                if d[1]['test_pattern'] != 0xaa:
-                    print(f"Unpacking error in test pattern, expected 0xAA but got {d[1]['test_pattern']=}")
+
+                try:
+                    if d[1]['test_pattern'] != 0xaa:
+                        print(f"Unpacking error in test pattern, expected 0xAA but got {d[1]['test_pattern']=}")
+                        n_events_err += 1
+                except KeyError:
+                    print(f"Unpacking error in test pattern: didn't find a test pattern!")
                     n_events_err += 1
 
         print(f"Got number of total events {n_events_total=}")
@@ -799,6 +814,14 @@ if __name__ == '__main__':
 
             with open(f'{result_dir}/thresholds.yaml', 'w') as f:
                 dump((baseline+noise_width).tolist(), f)
+            
+            with open(f'{result_dir}/baseline.yaml', 'w') as f:
+                dump((baseline).tolist(), f)
+
+            with open(f'{result_dir}/noise_width.yaml', 'w') as f:
+                dump((noise_width).tolist(), f)
+
+
 
         elif args.threshold == "manual":
 
@@ -861,6 +884,10 @@ if __name__ == '__main__':
             max_matrix  = np.empty([N_pix_w, N_pix_w])
             noise_matrix  = np.empty([N_pix_w, N_pix_w])
             threshold_matrix = np.empty([N_pix_w, N_pix_w])
+            
+            rawout = {vth_axis[i]:hit_rate.T[i].tolist() for i in range(len(vth_axis))}
+            with open(out_dir + '/manual_thresh_scan_data.json', 'w') as f:
+                json.dump(rawout, f)
 
             for pix in range(N_pix):
                 r, c = fromPixNum(pix, N_pix_w)
@@ -931,6 +958,12 @@ if __name__ == '__main__':
 
             with open(f'{result_dir}/thresholds.yaml', 'w') as f:
                 dump(threshold_matrix.tolist(), f)
+
+            with open(f'{result_dir}/baseline.yaml', 'w') as f:
+                dump(max_matrix.tolist(), f)
+            
+            with open(f'{result_dir}/noise_width.yaml', 'w') as f:
+                dump(noise_matrix.tolist(), f)
 
         else:
 
