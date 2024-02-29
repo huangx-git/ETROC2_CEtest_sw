@@ -171,19 +171,24 @@ if __name__ == '__main__':
     rb_0.enable_external_trigger()
     offset_from_baseline = int(args.offset)
     etroc.wr_reg("disDataReadout", 1, broadcast=True)
-    for i in [0,1,2,3]:
+    for i in [3]:
         etroc.wr_reg("disDataReadout", 0, row=15, col=i, broadcast=False)
-        current_offset = etroc.get_THoffset(row = 15, col = i)
+        # current_offset = etroc.get_THoffset(row = 15, col = i)
         threshold = etroc.auto_threshold_scan(15, i, offset="auto")
+        etroc.add_THoffset(offset_from_baseline, row = 15, col = i)
+        print(sum(threshold) + int(offset_from_baseline)) #  (sum(threshold) + offset_from_baseline)
+        etroc.wr_reg("DAC", sum(threshold), row=15, col=i)
+
         # print(f"Old threshold offset: {current_offset}, Matrix threshold value: {int(threshold_matrix[15][i])}.")
         # print(f"Setting up threshold values: {int(threshold[0])} for row: {15}, col: {i}.")
-        etroc.add_THoffset(offset_from_baseline, row = 15, col = i)
+        # etroc.add_THoffset(offset_from_baseline, row = 15, col = i)
+        # etroc.add_THoffset(-10, row = 15, col = i)
         # etroc.add_THoffset(-10 , row = 15, col = i)
         current_offset = (etroc.get_THoffset(row = 15, col = i))
         # print(f"New threshold offset: {current_offset}")
-        print(threshold)
+        # print(threshold)
         print(current_offset)
-        # etroc.wr_reg("DAC", sum(threshold), row=15, col=i)
+        # threshold = 120
         # int(threshold_matrix[15][i])
         # etroc.wr_reg("DAC", 120, row=15, col=i)
 

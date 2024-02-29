@@ -73,7 +73,7 @@ if __name__ == '__main__':
             # setVector(raw_,         event["raw"])
             setVector(crc_,         event["crc"])
             setVector(chipid_,      event["chipid"])
-            print(event["bcid"])
+            # print(event["bcid"])
             bcid_[0] =              int(event["bcid"][0])
             # setVector(bcid_,        event["bcid"])
             setVector(counter_a_,   event["counter_a"])

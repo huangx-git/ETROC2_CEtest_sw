@@ -4,7 +4,7 @@ echo $index
 
 ipython3 fnal_laser_test.py -- --kcu 192.168.0.10 --hard_reset --offset $2
 echo -n "True" > running_ETROC_acquisition.txt
-(python3 daq.py --l1a_rate 0 --ext_l1a --kcu 192.168.0.10 --run $index) &
+(ipython -i laser_test_ETROC.py -- --test_chip --hard_reset --partial --configuration modulev0b --module 1 --rad_source_vth_scan  --row 15 --col 3) &
 (sleep 15
 python3 ~/ETROC2_Test_Stand/ScopeHandler/Lecroy/Acquisition/acquisition_wrapper.py $1)
 python3 data_dumper.py --input $index

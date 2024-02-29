@@ -77,6 +77,7 @@ def parse_data(data, N_pix):
 
 
 def vth_scan(ETROC2, vth_min=693, vth_max=709, vth_step=1, decimal=False, fifo=None, absolute=False):
+    # N_l1a    =  3200 # how many L1As to send
     N_l1a    =  3200 # how many L1As to send
     vth_min  =   vth_min # scan range
     vth_max  =   vth_max
@@ -735,6 +736,11 @@ if __name__ == '__main__':
             noise_matrix  = np.empty([N_pix_w, N_pix_w])
             threshold_matrix = np.empty([N_pix_w, N_pix_w])
 
+            # for pix in range(N_pix):
+            #     plt.plot(vth_axis[hit_rate[pix] > 0], hit_rate[pix][hit_rate[pix] > 0])
+            #     plt.savefig(f"./hit_rate/hit_rate_{pix}.png")
+            #     plt.close()
+
             for pix in range(N_pix):
                 r, c = fromPixNum(pix, N_pix_w)
                 max_matrix[r][c] = maximums[pix]
@@ -773,7 +779,7 @@ if __name__ == '__main__':
 
                     text1 = ax[1].text(j, i, int(noise_matrix[i,j]),
                             ha="center", va="center", color="w", fontsize="xx-small")
-                    
+            
             #fig.savefig(f'results/peak_thresholds.png')
             fig.savefig(f'results/peak_and_noiseWidth_thresholds.png')
             plt.show()
@@ -926,8 +932,8 @@ if __name__ == '__main__':
             vth_axis    = np.linspace(0, 405, 406)
             # vth_axis    = np.linspace(0, 810, 811)
             #charges = [1,5,10,15,20,25,30,32]
-            charges = [10,12,15,20,25,30,32]
-            # charges = [4,6,8,10,12,15,20,25,30,32]
+            # charges = [10,12,15,20,25,30,32]
+            charges = [4,6,8,10,12,15,20,25,30,32]
             # charges = [25]
             results =[[] for i in range(0,len(charges))]
             TOA = [[] for i in range(0,len(charges))]

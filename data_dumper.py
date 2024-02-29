@@ -93,6 +93,7 @@ if __name__ == '__main__':
     skip_event = False
     skip_counter = 0
     for t, d in unpacked_data:
+        print(l1a)
         if t == 'header':
             header_counter += 1
             #if (abs(d['bcid']-bcid_t)<50) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
