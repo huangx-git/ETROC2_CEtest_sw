@@ -75,7 +75,7 @@ class ETROC():
 
         if self.connected:
             if not self.is_good():
-                raise (RuntimeError, f"ETROC is not in the expected status! {self.controllerState=}")
+                raise RuntimeError(f"ETROC is not in the expected status! {self.controllerState=}")
 
         if strict:
             self.consistency(verbose=verbose)
@@ -529,10 +529,10 @@ class ETROC():
                 self.wr_reg("workMode", 1, row=row, col=col, broadcast=False)
                 self.wr_reg("selfTestOccupancy", occupancy, row=row, col=col, broadcast=False)
 
-    def physics_config(self):
+    def physics_config(self, offset=3):
         self.enable_data_readout(broadcast=True)
         self.wr_reg("workMode", 0, broadcast=True)
-        self.run_threshold_scan()
+        self.run_threshold_scan(offset=offset)  # want to get some noise
 
     # =======================
     # === HIGH-LEVEL FUNC ===
@@ -577,7 +577,7 @@ class ETROC():
         else:
             return self.get_QInj(row=row, col=col)
 
-    def run_threshold_scan(self):
+    def run_threshold_scan(self, offset='auto'):
         from tqdm import tqdm
         baseline = np.empty([16, 16])
         noise_width = np.empty([16, 16])
@@ -587,7 +587,7 @@ class ETROC():
                 row = pixel & 0xF
                 col = (pixel & 0xF0) >> 4
                 #print(pixel, row, col)
-                baseline[row][col], noise_width[row][col] = self.auto_threshold_scan(row=row, col=col, broadcast=False)
+                baseline[row][col], noise_width[row][col] = self.auto_threshold_scan(row=row, col=col, broadcast=False, offset=offset)
                 #print(pixel)
                 pbar.update()
         return baseline, noise_width
