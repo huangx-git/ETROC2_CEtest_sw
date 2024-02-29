@@ -17,16 +17,19 @@ if __name__ == '__main__':
 
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--kcu', action='store', default='192.168.0.10', help="KCU address")
-    argParser.add_argument('--rb', action='store', default=0, type=int, help="RB number (default 0)")
-    argParser.add_argument('--l1a_rate', action='store', default=1000, type=int, help="L1A rate in Hz")
+    argParser.add_argument('--l1a_rate', action='store', default=0, type=int, help="L1A rate in Hz")
     argParser.add_argument('--ext_l1a', action='store_true', help="Enable external trigger input")
+    argParser.add_argument('--run_physics', action='store_true', help="Run on physics data / noise")
     argParser.add_argument('--run_time', action='store', default=10, type=int, help="Time in [s] to take data")
     argParser.add_argument('--run', action='store', default=1, type=int, help="Run number")
     args = argParser.parse_args()
 
     power_down = False
     kcu = args.kcu
-    run_physics = True
+    run_physics = args.run_physics
+    run_time = args.run_time
+    run = args.run
+    l1a_rate = args.l1a_rate
 
     print("Getting the KCU")
 
@@ -63,17 +66,15 @@ if __name__ == '__main__':
     rb_0.modules[0].show_status()
     rb_1.modules[0].show_status()
 
-    run_time = 50
-    run = 117
 
     stream_0 = stream_daq_multi(
         stream_daq,
-        {'kcu':kcu, 'rb':0, 'l1a_rate':0, 'run_time':run_time, 'run':run, 'ext_l1a':True},
+        {'kcu':kcu, 'rb':0, 'l1a_rate':l1a_rate, 'run_time':run_time, 'run':run, 'ext_l1a':True},
     )
 
     stream_1 = stream_daq_multi(
         stream_daq,
-        {'kcu':kcu, 'rb':1, 'l1a_rate':0, 'run_time':run_time, 'run':run, 'ext_l1a':True},
+        {'kcu':kcu, 'rb':1, 'l1a_rate':l1a_rate, 'run_time':run_time+0.2, 'run':run, 'ext_l1a':True},
     )
 
     print("Taking data")

@@ -61,6 +61,8 @@ def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, superblock=100, block
 
     rate_setting = l1a_rate / 25E-9 / (0xffffffff) * 10000
 
+    print(f"Start data taking with rb {rb}")
+
     kcu.write_node(f"READOUT_BOARD_{rb}.EVENT_CNT_RESET", 0x1)
     # reset fifo
     hw.getClient().write(hw.getNode(f"READOUT_BOARD_{rb}.FIFO_RESET").getAddress(), 0x1)
@@ -113,6 +115,7 @@ def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, superblock=100, block
         hw.getNode("SYSTEM.L1A_RATE").write(0)
         hw.dispatch()
 
+        print(f"Done with data taking with rb {rb}")
         # Read data that might still be in the FIFO
         occupancy = get_occupancy(hw, rb)
         print(f"Occupancy before last read: {occupancy}")
@@ -171,7 +174,7 @@ def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, superblock=100, block
         hw.getNode("SYSTEM.EN_EXT_TRIGGER").write(0x0)
         hw.dispatch()
 
-    print(f"Data stored in {f_out}")
+    print(f"Data stored in {f_out}\n")
     return f_out
 
 
