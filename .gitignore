@@ -11,6 +11,8 @@
 *.swp
 *.jou
 *.root
+thresholds*.yaml
+*.patch
 tmp/
 address_table/*
 !address_table/generic
