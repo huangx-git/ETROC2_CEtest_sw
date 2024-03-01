@@ -10,6 +10,7 @@
 *.pkl
 *.swp
 *.jou
+*.root
 tmp/
 address_table/*
 !address_table/generic
