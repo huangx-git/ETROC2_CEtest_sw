@@ -486,7 +486,7 @@ for q in np.unique(df.charge):
     x = tbin*x
     y = tbin*(2*y-y//32)
     fig, ax = plt.subplots()
-    h = ax.hist2d(x, y, bins = [50, 50], norm = 'log')
+    h = ax.hist2d(x, y, bins = [50, 50])#, norm = 'log')
     fig.colorbar(h[3], ax = ax)
     ax.set_title(f'TOT v. TOA {loc_title}\nHits = {len(x)}/{df.hits.iloc[i]}, Qinj = {q}\nDAC = {df.vth.iloc[i]}')
     ax.set_xlabel('Mean TOT')
@@ -522,14 +522,14 @@ for q in np.unique(df.charge):
     x = tbin*x
     y = tbin*(2*y-y//32)
     fig, ax = plt.subplots()
-    h = ax.hist2d(x, y, bins = [50, 50], norm = 'log')
+    h = ax.hist2d(x, y, bins = [50, 50])#, norm = 'log')
     fig.colorbar(h[3], ax = ax)
     ax.set_title(f'TOT v. TOA {loc_title}\nHits = {len(x)}/{df.hits.iloc[i]}, Qinj = {q}\nDAC = {df.vth.iloc[i]}')
     ax.set_xlabel('Mean TOT')
     ax.set_ylabel('Mean TOA')
     plt.show()
-    plt.savefig(f'{store}/TOT_v_TOA_single_q{q}.png')
-    plt.savefig(f'{store}/TOT_v_TOA_single_q{q}.pdf')
+    plt.savefig(f'{store}/TOT_v_TOA_q{q}.png')
+    plt.savefig(f'{store}/TOT_v_TOA_q{q}.pdf')
     plt.close()
 
 
