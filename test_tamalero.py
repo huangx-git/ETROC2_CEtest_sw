@@ -51,6 +51,15 @@ def create_app(rb, modules=[]):
         temp['time'] = datetime.datetime.now().isoformat()
         return temp
 
+    @app.route('/rb_mux64/<ch>')
+    def get_mux64_output(ch):
+        volts = {}
+        # mux64 should have 64 entries anyway but could be nice check configuration maybe? 
+        for i in [ch]:
+            volts[str(ch)] = rb.read_mux_test_board(int(ch))
+        volts['time'] = datetime.datetime.now().isoformat()
+        return volts
+
     @app.route('/module_links')
     def get_link_status():
         link_status = {}
@@ -425,3 +434,4 @@ if __name__ == '__main__':
             from tamalero.Monitoring import Monitoring, blink_rhett
             print("RB configured successfully. Rhett is happy " + emojize(":dog_face:"))
             b = blink_rhett(rb, iterations=3)
+
