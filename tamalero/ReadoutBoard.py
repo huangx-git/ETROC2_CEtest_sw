@@ -6,6 +6,8 @@ from tamalero.VTRX import VTRX
 from tamalero.utils import read_mapping
 from tamalero.colors import red, green
 import time, datetime, json
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 
 try:
     from tabulate import tabulate
@@ -445,14 +447,36 @@ class ReadoutBoard:
         mntr['record'] = []
         t = 0.0
         while (t<tmax):
-            print(f'Monitoring: {t}/{tmax} secs')
-            mntr['record'].append(self.read_selected_mux64(chs))
-            mntr['record'][-1]['time'] = datetime.datetime.now().isoformat()
-            time.sleep(lat)
+            if (t%(60*5)==0):
+                print(f'Monitoring: {t}/{tmax} secs')
+            try:
+                mntr['record'].append(self.read_selected_mux64(chs))
+                mntr['record'][-1]['time'] = datetime.datetime.now().isoformat()
+                time.sleep(lat)
+            except:
+                print("NonValidatedMemory exception: sleeping 0.1 secs...")
+                time.sleep(0.1)
             t+=lat
-        with open("mux64_mntr.json", "w") as f:
+        with open("mux64_mntr_%.2fmin.json".format(tmax/60.0), "w") as f:
             json.dump(mntr, f)
-        return mntr
+        if plot:
+            fig, ax = plt.subplots(figsize=(10, 4))
+            plt.title("MUX64 monitoring")
+            plt.xlabel("Time")
+            plt.ylabel("Voltage (V)")
+            for ch in chs:
+                vec = [mntr['record'][x][str(ch)] for x in range(len(mntr['record']))]
+                vtime = [datetime.datetime.fromisoformat(mntr['record'][x]['time']) for x in range(len(mntr['record']))]
+                plt.plot(vtime, vec, '.-', label=f"Channel: {ch}")
+            locator = mdates.AutoDateLocator(minticks=3, maxticks=7)
+            formatter = mdates.ConciseDateFormatter(locator)
+            ax.xaxis.set_major_locator(locator)
+            ax.xaxis.set_major_formatter(formatter)
+            plt.grid(True)
+            plt.legend(loc='best')
+            fig.savefig('mux64_mntr_{:.2f}min.png'.format(tmax/60.0), dpi=600)
+            plt.close(fig) 
+        return 1
 
     def read_vtrx_temp(self):
 
