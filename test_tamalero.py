@@ -20,6 +20,15 @@ import numpy as np
 from emoji import emojize
 from flask import Flask, request
 
+
+summary_tests = {}
+def add_test_to_summary(test_name: str, module: int, etroc: int, test_results) -> dict:
+    # Initialize summary_tests if necessary
+    summary_tests.setdefault(module, {}).setdefault(etroc, {})
+    # Add or update the test results
+    summary_tests[module][etroc][test_name] = test_results
+
+
 def create_app(rb, modules=[]):
     # FIXME this should live somewhere else in the future
     # create and configure the app
@@ -28,6 +37,13 @@ def create_app(rb, modules=[]):
         SECRET_KEY='dev',
         DATABASE=os.path.join(app.instance_path, 'flaskr.sqlite'),
     )
+
+    @app.route('/summary_tests')
+    def get_summary_tests():
+        global summary_tests #YIKES but I think this is the only way haha
+        posted_summary_tests = summary_tests
+        summary_tests = {} #empty it after this is hit
+        return posted_summary_tests
 
     @app.route('/rb_temp')
     def temperatures():
@@ -66,6 +82,9 @@ def create_app(rb, modules=[]):
                 if etroc.is_connected():
                     stat = etroc.pixel_sanity_check(return_matrix=True)
                     etroc_status[i][j] = stat.astype(int).tolist()
+                    #add it to the summmary of tests dictionary
+                    add_test_to_summary('etroc_status',i,j,etroc_status[i][j])
+        
         return etroc_status
 
     @app.route('/threshold_scan', methods=['POST'])
@@ -79,8 +98,8 @@ def create_app(rb, modules=[]):
 
         vth_scan_data = vth_scan(
             etroc,
-            vth_min = 220,
-            vth_max = 290,
+            vth_min = 0,
+            vth_max = 200,
             decimal = True,
             fifo = fifo,
             absolute = True,
@@ -129,9 +148,8 @@ if __name__ == '__main__':
     argParser.add_argument('--etroc', action='store', default="ETROC2", help='Specify ETROC version.')
     argParser.add_argument('--eyescan', action='store_true', default=False, help="Run eyescan?")
     argParser.add_argument('--recal_lpgbt', action='store_true', default=False, help="Recalibrate ADC in LPGBT? (instead of using saved values)")
-    argParser.add_argument('--control_hub', action='store_true', default=False, help="Use control hub for communication?")
     argParser.add_argument('--host', action='store', default='localhost', help="Specify host for control hub")
-    argParser.add_argument('--configuration', action='store', default='default', choices=['default', 'emulator', 'modulev0', 'modulev0b'], help="Specify a configuration of the RB, e.g. emulator or modulev0")
+    argParser.add_argument('--configuration', action='store', default='default', choices=['default', 'emulator', 'modulev0', 'modulev0b', 'multimodule'], help="Specify a configuration of the RB, e.g. emulator or modulev0")
     argParser.add_argument('--devel', action='store_true', default=False, help="Don't check repo status (not recommended)")
     argParser.add_argument('--monitor', action='store_true', default=False, help="Start up montoring threads in the background")
     argParser.add_argument('--strict', action='store_true', default=False, help="Enforce strict limits on ADC reads for SCA and LPGBT")
@@ -139,6 +157,7 @@ if __name__ == '__main__':
     argParser.add_argument('--port', action='store', default=5000, type=int, help="Port to use for server")
     argParser.add_argument('--rb', action='store', default=0, type=int, help="Specify Readout Board")
     argParser.add_argument('--multi_board', action = 'store_true')
+    argParser.add_argument('--power_board', action='store_true', help="Enable power board usage, and show status.")
     args = argParser.parse_args()
 
 
@@ -155,7 +174,7 @@ if __name__ == '__main__':
     rb = None
 
     if args.multi_board:
-        temp = get_kcu(args.kcu, control_hub=args.control_hub, host=args.host, verbose=args.verbose)
+        temp = get_kcu(args.kcu, control_hub=True, host=args.host, verbose=args.verbose)
         if temp == 0:
             sys.exit(1)
         for i in range(3):
@@ -175,7 +194,7 @@ if __name__ == '__main__':
 
         temp.status()
     # write to the loopback node of the KCU105 to check ethernet communication
-    kcu = get_kcu(args.kcu, control_hub=args.control_hub, host=args.host, verbose=args.verbose)
+    kcu = get_kcu(args.kcu, control_hub=True, host=args.host, verbose=args.verbose)
     if (kcu == 0):
         # if not basic connection was established the get_kcu function returns 0
         # this would cause the RB init to fail.
@@ -284,11 +303,18 @@ if __name__ == '__main__':
     # Module Status
     #-------------------------------------------------------------------------------
 
+    rb.enable_etroc_readout()
+    rb.enable_etroc_readout(slave=True)
+
     modules = []
+    pb_channel = []
     if args.configuration == 'emulator' or args.configuration.count('modulev0'):
         print("Configuring ETROCs")
         for i in range(res['n_module']):
-            modules.append(Module(rb, i+1))
+            modules.append(Module(rb, i+1, enable_power_board=args.power_board))
+
+            if args.power_board:
+                pb_channel.append(modules[-1].get_power_good())
 
         print()
         print("Querying module status")

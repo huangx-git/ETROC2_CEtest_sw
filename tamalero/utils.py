@@ -319,9 +319,27 @@ def get_kcu(kcu_address, control_hub=True, host='localhost', verbose=False):
                         adr_table="address_table/generic/etl_test_fw.xml")
             break
         except uhal.exception or uhal._core.exception:
+            if control_hub:
+                # we could be checking if control hub is running earlier, but since the control hub path is hardcoded
+                # I only want to do it if really necessary. if controlhub is running happily from another directory, that's fine too
+                try:
+                    control_hub_running = os.popen("/opt/cactus/bin/controlhub_status").readlines()[0].count("ControlHub is up")
+                except IndexError:
+                    control_hub_running = False
+                    print(f"Trying to run using controlhub, but it seems to not be installed in /opt/cactus/bin/")
+
+                if control_hub_running:
+                    # if control hub is running, try again to establish a connection
+                    pass
+                else:
+                    print("Controlhub is not running. Start it with: /opt/cactus/bin/controlhub_start")
+                    print("Exiting.")
+                    return 0
+
             trycnt += 1
             time.sleep(1)
             if (trycnt > 10):
+                if control_hub: print("controlhub status:", "running" if control_hub_running else "not running")
                 print ("Could not establish connection with KCU. Exiting.")
                 return 0
 

@@ -178,6 +178,9 @@ if __name__ == '__main__':
     kcu = get_kcu(args.kcu)
     unit_time = 0.1
 
+    print(f"Resetting global event counter if RB #{rb}")
+    kcu.write_node(f"READOUT_BOARD_{rb}.EVENT_CNT_RESET", 0x1)
+
     print(f"Taking data now.\n ...")
 
     print(f"Resetting global event counter if RB #{rb}")
@@ -188,5 +191,5 @@ if __name__ == '__main__':
     print(f"Run {args.run} has ended.")
     print(f"Stored data in file: {f_out}")
     nevents = kcu.read_node(f"READOUT_BOARD_{rb}.EVENT_CNT").value()
-    print(f"Recorded nevents={nevents}")
+    print(f"Recorded {nevents=}")
     # NOTE this would be the place to also dump the ETROC configs

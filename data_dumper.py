@@ -190,5 +190,5 @@ if __name__ == '__main__':
     else:
         print(f" - found {header_counter} headers and {trailer_counter} trailers. Please check. " + emojize(":warning:"))
 
-    with open(f"ETROC_output/output_run_{args.input}.json", "w") as f:
+    with open(f"output/{args.input}.json", "w") as f:
         json.dump(ak.to_json(events), f)

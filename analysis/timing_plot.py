@@ -34,6 +34,7 @@ if __name__ == '__main__':
     toa_mean = np.mean(toa)
 
     time_axis = hist.axis.Regular(100, toa_mean-2, toa_mean+2, name="time", label="time")
+    delta_time_axis = hist.axis.Regular(100, -0.5, 0.5, name="time", label=r"$\Delta t_{o.A.}\ (ns)$")
     time_axis_ext = hist.axis.Regular(100, 0, 15, name="time", label="time")
     cal_axis = hist.axis.Regular(2**10, 0, 2**10, name="cal", label="cal")
     #nhits_axis = hist.axis.Regular(257, -0.5, 256.5, name='n', label=r"$N_{hits}$")
@@ -41,6 +42,12 @@ if __name__ == '__main__':
     pixel_axis = hist.axis.StrCategory([], name="pixel", label="Pixel", growth=True)
 
     toa_hist = hist.Hist(time_axis_ext)
+    toa_0_1_hist = hist.Hist(delta_time_axis)
+    toa_1_2_hist = hist.Hist(delta_time_axis)
+    toa_2_3_hist = hist.Hist(delta_time_axis)
+    toa_0_2_hist = hist.Hist(delta_time_axis)
+    toa_0_3_hist = hist.Hist(delta_time_axis)
+    toa_1_3_hist = hist.Hist(delta_time_axis)
     toa_hist_perf = hist.Hist(time_axis_ext, pixel_axis)
     tot_hist = hist.Hist(time_axis_ext)
     tot_hist_perf = hist.Hist(time_axis_ext, pixel_axis)
@@ -270,3 +277,75 @@ if __name__ == '__main__':
     )
 
     fig.savefig(f'{plot_dir}/toa_0_0.png')
+
+
+    #events = events[((events.cal_code>150)&(events.cal_code<210))]
+    #selector_15_0 = ((events.nhits==4)&(events.row==15)&(events.col==0)&(events.cal_code>150)&(events.cal_code<210))
+    #selector_15_1 = ((events.nhits==4)&(events.row==15)&(events.col==1)&(events.cal_code>150)&(events.cal_code<210))
+    selector_15_0 = ((events.nhits==4)&(events.row==15)&(events.col==0))
+    selector_15_1 = ((events.nhits==4)&(events.row==15)&(events.col==1))
+    selector_15_2 = ((events.nhits==4)&(events.row==15)&(events.col==2))
+    selector_15_3 = ((events.nhits==4)&(events.row==15)&(events.col==3))
+    cal_code_15_0 = events.cal_code[selector_15_0]
+    cal_code_15_1 = events.cal_code[selector_15_1]
+    cal_code_15_2 = events.cal_code[selector_15_2]
+    cal_code_15_3 = events.cal_code[selector_15_3]
+    bin_15_0 = 3.125/cal_code_15_0
+    bin_15_1 = 3.125/cal_code_15_1
+    bin_15_2 = 3.125/cal_code_15_2
+    bin_15_3 = 3.125/cal_code_15_3
+    toa_15_0 = 12.5 - bin_15_0 * events.toa_code[selector_15_0]
+    toa_15_1 = 12.5 - bin_15_1 * events.toa_code[selector_15_1]
+    toa_15_2 = 12.5 - bin_15_2 * events.toa_code[selector_15_2]
+    toa_15_3 = 12.5 - bin_15_3 * events.toa_code[selector_15_3]
+
+    delta_toa_0_1 = ak.flatten(toa_15_0) - ak.flatten(toa_15_1)
+    delta_toa_1_2 = ak.flatten(toa_15_1) - ak.flatten(toa_15_2)
+    delta_toa_2_3 = ak.flatten(toa_15_2) - ak.flatten(toa_15_3)
+    delta_toa_0_2 = ak.flatten(toa_15_0) - ak.flatten(toa_15_2)
+    delta_toa_0_3 = ak.flatten(toa_15_0) - ak.flatten(toa_15_3)
+    delta_toa_1_3 = ak.flatten(toa_15_1) - ak.flatten(toa_15_3)
+
+    toa_0_1_hist.fill(time=delta_toa_0_1-0.45)
+    toa_1_2_hist.fill(time=delta_toa_1_2-0.3)
+    toa_2_3_hist.fill(time=delta_toa_2_3-0.15)
+    toa_0_2_hist.fill(time=delta_toa_0_2-0.15)
+    toa_0_3_hist.fill(time=delta_toa_0_3+0.)
+    toa_1_3_hist.fill(time=delta_toa_1_3+0.2)
+
+    fig, ax = plt.subplots()
+
+    sigma_0_1 = np.std(delta_toa_0_1[abs(delta_toa_0_1)<0.5])*1000
+    sigma_1_2 = np.std(delta_toa_1_2[abs(delta_toa_1_2)<0.5])*1000
+    sigma_2_3 = np.std(delta_toa_2_3[abs(delta_toa_2_3)<0.5])*1000
+    sigma_0_2 = np.std(delta_toa_0_2[abs(delta_toa_0_2)<0.5])*1000
+    sigma_0_3 = np.std(delta_toa_0_3[abs(delta_toa_0_3)<0.5])*1000
+    sigma_1_3 = np.std(delta_toa_1_3[abs(delta_toa_1_3)<0.5])*1000
+
+    toa_0_1_hist.plot1d(ax=ax, label=r"$T_{0}-T_{1}-0.45, \sigma=%.1fps$"%sigma_0_1)
+    toa_1_2_hist.plot1d(ax=ax, label=r"$T_{1}-T_{2}-0.30, \sigma=%.1fps$"%sigma_1_2)
+    toa_2_3_hist.plot1d(ax=ax, label=r"$T_{2}-T_{3}-0.15, \sigma=%.1fps$"%sigma_2_3)
+    toa_0_2_hist.plot1d(ax=ax, label=r"$T_{0}-T_{2}-0.15, \sigma=%.1fps$"%sigma_0_2)
+    toa_0_3_hist.plot1d(ax=ax, label=r"$T_{0}-T_{3}, \sigma=%.1fps$"%sigma_0_3)
+    toa_1_3_hist.plot1d(ax=ax, label=r"$T_{1}-T_{3}+0.20, \sigma=%.1fps$"%sigma_1_3)
+
+    plt.legend(loc=0)
+
+    fig.savefig(f'{plot_dir}/toa_res.png')
+
+
+    sigma_0      = np.sqrt(0.5*(sigma_0_1**2 + sigma_0_2**2 - sigma_1_2**2))
+    sigma_0_alt  = np.sqrt(0.5*(sigma_0_3**2 + sigma_0_2**2 - sigma_2_3**2))  # worst because larger jump in clock tree?
+    sigma_0_alt2 = np.sqrt(0.5*(sigma_0_3**2 + sigma_0_1**2 - sigma_1_3**2))
+
+    sigma_1      = np.sqrt(0.5*(sigma_0_1**2 + sigma_1_2**2 - sigma_0_2**2))
+    sigma_1_alt  = np.sqrt(0.5*(sigma_1_3**2 + sigma_1_2**2 - sigma_2_3**2))  # worst because larger jump in clock tree?
+    sigma_1_alt2 = np.sqrt(0.5*(sigma_0_1**2 + sigma_1_3**2 - sigma_1_3**2))
+
+    sigma_2      = np.sqrt(0.5*(sigma_0_2**2 + sigma_1_2**2 - sigma_0_1**2))  # worst because larger jump in clock tree?
+    sigma_2_alt  = np.sqrt(0.5*(sigma_2_3**2 + sigma_1_2**2 - sigma_2_3**2))
+    sigma_2_alt2 = np.sqrt(0.5*(sigma_0_2**2 + sigma_2_3**2 - sigma_0_3**2))
+
+    sigma_3      = np.sqrt(0.5*(sigma_0_3**2 + sigma_2_3**2 - sigma_0_2**2))
+    sigma_3_alt  = np.sqrt(0.5*(sigma_1_3**2 + sigma_2_3**2 - sigma_1_2**2))
+    sigma_3_alt2 = np.sqrt(0.5*(sigma_0_3**2 + sigma_1_3**2 - sigma_0_1**2))  # worst because larger jump in clock tree?
