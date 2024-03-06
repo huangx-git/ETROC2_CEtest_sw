@@ -2,6 +2,7 @@ import numpy as np
 import json
 import argparse
 import matplotlib.pyplot as plt
+import os
 
 def toPixNum(row, col, w):
     return col*w+row
@@ -16,15 +17,30 @@ argParser.add_argument('--filepath', '-f',  action='store', help="path to file")
 argParser.add_argument('--module', '-m',  action='store', help="path to file")
 argParser.add_argument('--timestamp', '-t',  action='store', help="timestamp")
 argParser.add_argument('--pix_hists',  action='store_true', help="1d hists for each pixel")
+
 args = argParser.parse_args()
 
 
 if args.filepath:
    with open(args.filepath, 'r') as f:
        data = json.load(f)
+   names = args.filepath.split('/')
+   args.module = names[1]
+   args.timestamp = names[2]
+   if '/manual_thresh_scan_data.json' in args.filpath:
+       outpath = args.filpath.split('/manual_thresh_scan_data.json')[0]
+   else:
+       outpath = args.filpath.split('/thresh_scan_data.json')[0]
+   print('Found file at ' + args.filepath)
 elif args.module and args.timestamp:
-    with open(f'outputs/{args.module}/{args.timestamp}/manual_thresh_scan_data.json', 'r') as f:
-       data = json.load(f)
+    try:
+        with open(f'outputs/{args.module}/{args.timestamp}/manual_thresh_scan_data.json', 'r') as f:
+            data = json.load(f)
+        outpath = f'outputs/{args.module}/{args.timestamp}/'
+    except:
+        with open(f'outputs/{args.module}/{args.timestamp}/thresh_scan_data.json', 'r') as f:
+            data = json.load(f)
+        outpath = f'outputs/{args.module}/{args.timestamp}/'
 else:
     print('Insufficient info to load data.')
     adsfasdfadf
@@ -51,8 +67,22 @@ for pix in range(N_pix):
         threshold_matrix[r][c] = zero_dac_values[0] + 2
     else:
         threshold_matrix[r][c] = dac_max + 2
-
-
+    if args.pix_hists:
+        fig = plt.figure(figsize = (9, 7))
+        pixdat = hit_rate[pix, :]
+        width = 25
+        idxlim = [np.min([0, np.argmin(pixdat - width)]), np.max([len(pixdat), np.argmax(pixdat + width)])]
+        x = vth_axis[idxlim[0]:idxlim[1]]
+        y = pixdat[idxlim[0]:idxlim[1]]
+        plt.plot(x, y, '-o')
+        plt.title(f'Row {r} Col {c} Manual Threshold Scan\n3200 L1As, Module {args.module}')
+        if not os.path.exists(outpath + '/mts_individual_pixels'):
+            os.mkdir(outpath + '/mts_individual_pixels')
+        plt.savefig(outpath + '/mts_individual_pixels/' + f'r{r}c{c}_mts_results.png')
+        if r == 15 and c == 0:
+            print(r, c)
+            plt.show()
+        plt.close()
 # 2D histogram of the mean
 # this is based on the code for automatic sigmoid fits
 # for software emulator data below
