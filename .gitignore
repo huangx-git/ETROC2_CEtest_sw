@@ -18,3 +18,4 @@ address_table/*
 __pycache__
 lpgbt_cal_*.json
 *.parquet
+tamalero.egg-info

@@ -1,7 +1,7 @@
 import os
 from tamalero.LPGBT import LPGBT
 from tamalero.SCA import SCA
-from tamalero.utils import get_temp, chunk, get_temp_direct, get_config
+from tamalero.utils import get_temp, chunk, get_temp_direct, get_config, load_yaml
 from tamalero.VTRX import VTRX
 from tamalero.utils import read_mapping
 from tamalero.colors import red, green
@@ -382,7 +382,9 @@ class ReadoutBoard:
     
     #creates dict for mux64 testboard pins
     def init_mux_tb_dict(self):
-        self.mux64_tb_dict = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/MUX64_testboard_mapping.yaml'), 'mux64_testboard')
+        for x in [0x16, 0x19, 0x10, 0x13, 0xA, 0x4]:
+            self.SCA.set_gpio_direction(x, 1)
+        self.mux64_tb_dict = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/MUX64_testboard_mapping.yaml'))['mux64_testboard']
         return
 
     # Uses MUX64-testboard dictionary to convert integar to voltage
@@ -417,7 +419,7 @@ class ReadoutBoard:
         integer_volt = self.SCA.read_adc(0x12)
         gi = self.volt_conver_mux64(integer_volt,ch)
 
-        return volt
+        return gi
     
     def read_all_mux64_data(self, show = False):
         table=[]

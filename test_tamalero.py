@@ -20,6 +20,15 @@ import numpy as np
 from emoji import emojize
 from flask import Flask, request
 
+
+summary_tests = {}
+def add_test_to_summary(test_name: str, module: int, etroc: int, test_results) -> dict:
+    # Initialize summary_tests if necessary
+    summary_tests.setdefault(module, {}).setdefault(etroc, {})
+    # Add or update the test results
+    summary_tests[module][etroc][test_name] = test_results
+
+
 def create_app(rb, modules=[]):
     # FIXME this should live somewhere else in the future
     # create and configure the app
@@ -28,6 +37,13 @@ def create_app(rb, modules=[]):
         SECRET_KEY='dev',
         DATABASE=os.path.join(app.instance_path, 'flaskr.sqlite'),
     )
+
+    @app.route('/summary_tests')
+    def get_summary_tests():
+        global summary_tests #YIKES but I think this is the only way haha
+        posted_summary_tests = summary_tests
+        summary_tests = {} #empty it after this is hit
+        return posted_summary_tests
 
     @app.route('/rb_temp')
     def temperatures():
@@ -66,6 +82,9 @@ def create_app(rb, modules=[]):
                 if etroc.is_connected():
                     stat = etroc.pixel_sanity_check(return_matrix=True)
                     etroc_status[i][j] = stat.astype(int).tolist()
+                    #add it to the summmary of tests dictionary
+                    add_test_to_summary('etroc_status',i,j,etroc_status[i][j])
+        
         return etroc_status
 
     @app.route('/threshold_scan', methods=['POST'])
@@ -79,8 +98,8 @@ def create_app(rb, modules=[]):
 
         vth_scan_data = vth_scan(
             etroc,
-            vth_min = 220,
-            vth_max = 290,
+            vth_min = 0,
+            vth_max = 200,
             decimal = True,
             fifo = fifo,
             absolute = True,
