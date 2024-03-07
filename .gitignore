@@ -9,6 +9,8 @@
 *.swp
 *.jou
 *.root
+*.png
+*.dat
 thresholds*.yaml
 *.patch
 tmp/
