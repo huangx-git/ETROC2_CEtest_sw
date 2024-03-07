@@ -17,8 +17,12 @@ from tamalero.utils import get_kcu
 IPB_PATH = "ipbusudp-2.0://192.168.0.10:50001"
 ADR_TABLE = "./address_table/generic/etl_test_fw.xml"
 
-def get_kcu_flag():
-    return open(f"/home/daq/ETROC2_Test_Stand/ScopeHandler/Lecroy/Acquisition/running_acquitision.txt").read()
+def get_kcu_flag(lock=os.path.expandvars('$TAMALERO_BASE/../ScopeHandler/Lecroy/Acquisition/running_acquitision.txt')):
+    # NOTE where to put the locks?
+    with open(lock) as f:
+        res = f.read()
+    return res
+    #return open(f"/home/daq/ETROC2_Test_Stand/ScopeHandler/Lecroy/Acquisition/running_acquitision.txt").read()
 
 def get_occupancy(hw, rb):
     try:
@@ -30,7 +34,7 @@ def get_occupancy(hw, rb):
         occ = 0
     return occ * 4  # not sure where the factor of 4 comes from, but it's needed
 
-def stream_daq(kcu, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superblock=100, block=250, run=1, ext_l1a=False):
+def stream_daq(kcu, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superblock=100, block=250, run=1, ext_l1a=False, lock=None):
 
     uhal.disableLogging()
     hw = kcu.hw  #uhal.getDevice("kcu105_daq", IPB_PATH, "file://" + ADR_TABLE)
@@ -61,48 +65,72 @@ def stream_daq(kcu, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superblock=
     occupancy_block = []
     # blocks = 0
     with open(f_out, mode="wb") as f:
-        # while (start + run_time > time.time()):
-        iteration = 0
-        Running = get_kcu_flag()
-        while (Running == "False"):
-            if iteration == 0:
-                print("Waiting for the scope.")
-            Running = get_kcu_flag()
-            iteration += 1
+        if lock is not None:
+            iteration = 0
+            Running = get_kcu_flag(lock=lock)
+            while (Running == "False"):
+                if iteration == 0:
+                    print("Waiting for the scope.")
+                Running = get_kcu_flag(lock=lock)
+                iteration += 1
 
-        Running = get_kcu_flag()
-        print(Running)
-        while (Running != "False"):
-            Running = get_kcu_flag()
-            # print(Running)
-            # print(f"Event: {ev_index} / {n_events}")
-            num_blocks_to_read = 0
-            occupancy = get_occupancy(hw, rb)
-            num_blocks_to_read = occupancy // block
-            occupancy_block.append(num_blocks_to_read)
-            # blocks += num_blocks_to_read
-            # print(f"Number of blocks: {blocks}.")
+            Running = get_kcu_flag(lock=lock)
+            print(Running)
+            while (Running != "False"):
+                Running = get_kcu_flag(lock=lock)
+                # print(Running)
+                # print(f"Event: {ev_index} / {n_events}")
+                num_blocks_to_read = 0
+                occupancy = get_occupancy(hw, rb)
+                num_blocks_to_read = occupancy // block
+                occupancy_block.append(num_blocks_to_read)
+                # blocks += num_blocks_to_read
+                # print(f"Number of blocks: {blocks}.")
 
-            # print(occupancy)
-            # if (occupancy >= block):
-            #     ev_index += 1
+                # print(occupancy)
+                # if (occupancy >= block):
+                #     ev_index += 1
 
-            # read the blocks
-            if (num_blocks_to_read):
-                try:
-                    reads = num_blocks_to_read * [hw.getNode("DAQ_RB0").readBlock(block)]
-                    hw.dispatch()
-                    for read in reads:
-                        data += read.value()
-                except uhal._core.exception:
-                    print("uhal UDP error in reading FIFO")
+                # read the blocks
+                if (num_blocks_to_read):
+                    try:
+                        reads = num_blocks_to_read * [hw.getNode("DAQ_RB0").readBlock(block)]
+                        hw.dispatch()
+                        for read in reads:
+                            data += read.value()
+                    except uhal._core.exception:
+                        print("uhal UDP error in reading FIFO")
 
-                # Write data to disk
-                try:
-                    f.write(struct.pack('<{}I'.format(len(data)), *data))
-                    data = []
-                except:
-                    print("Error writing to file")
+                    # Write data to disk
+                    try:
+                        f.write(struct.pack('<{}I'.format(len(data)), *data))
+                        data = []
+                    except:
+                        print("Error writing to file")
+        else:
+            while (start + run_time > time.time()):
+                num_blocks_to_read = 0
+                occupancy = get_occupancy(hw, rb)
+                num_blocks_to_read = occupancy // block
+                occupancy_block.append(num_blocks_to_read)
+
+                # read the blocks
+                if (num_blocks_to_read):
+                    try:
+                        reads = num_blocks_to_read * [hw.getNode("DAQ_RB0").readBlock(block)]
+                        hw.dispatch()
+                        for read in reads:
+                            data += read.value()
+                    except uhal._core.exception:
+                        print("uhal UDP error in reading FIFO")
+
+                    # Write data to disk
+                    try:
+                        f.write(struct.pack('<{}I'.format(len(data)), *data))
+                        data = []
+                    except:
+                        print("Error writing to file")
+
         
         print("Resetting L1A rate back to 0")
         hw.getNode("SYSTEM.L1A_RATE").write(0)
@@ -171,12 +199,12 @@ if __name__ == '__main__':
     argParser.add_argument('--ext_l1a', action='store_true', help="Enable external trigger input")
     argParser.add_argument('--run_time', action='store', default=10, type=int, help="Time in [s] to take data")
     argParser.add_argument('--n_events', action='store', default=1000, type=int, help="N events")
+    argParser.add_argument('--lock', action='store', default=None, help="Lock file for the scope acquisition status (relative or absolute path)")
     argParser.add_argument('--run', action='store', default=1, type=int, help="Run number")
     args = argParser.parse_args()
 
     rb = int(args.rb)
     kcu = get_kcu(args.kcu)
-    unit_time = 0.1
 
     print(f"Resetting global event counter if RB #{rb}")
     kcu.write_node(f"READOUT_BOARD_{rb}.EVENT_CNT_RESET", 0x1)
@@ -186,7 +214,15 @@ if __name__ == '__main__':
     print(f"Resetting global event counter if RB #{rb}")
     kcu.write_node(f"READOUT_BOARD_{rb}.EVENT_CNT_RESET", 0x1)
 
-    f_out = stream_daq(kcu, l1a_rate=args.l1a_rate, run_time=unit_time*args.n_events, n_events = args.n_events, run=args.run, ext_l1a=args.ext_l1a)
+    f_out = stream_daq(
+        kcu,
+        l1a_rate = args.l1a_rate,
+        run_time = args.run_time,
+        n_events = args.n_events,
+        run = args.run,
+        ext_l1a = args.ext_l1a,
+        lock = args.lock,
+    )
 
     print(f"Run {args.run} has ended.")
     print(f"Stored data in file: {f_out}")
