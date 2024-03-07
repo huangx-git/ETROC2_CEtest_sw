@@ -206,13 +206,10 @@ if __name__ == '__main__':
     rb = int(args.rb)
     kcu = get_kcu(args.kcu)
 
-    print(f"Resetting global event counter if RB #{rb}")
+    print(f"Resetting global event counter of RB #{rb}")
     kcu.write_node(f"READOUT_BOARD_{rb}.EVENT_CNT_RESET", 0x1)
 
     print(f"Taking data now.\n ...")
-
-    print(f"Resetting global event counter if RB #{rb}")
-    kcu.write_node(f"READOUT_BOARD_{rb}.EVENT_CNT_RESET", 0x1)
 
     f_out = stream_daq(
         kcu,
