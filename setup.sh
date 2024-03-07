@@ -11,3 +11,4 @@ echo $LD_LIBRARY_PATH
 mkdir -p output
 mkdir -p ETROC_output
 mkdir -p results
+mkdir -p fit_results
