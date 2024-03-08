@@ -664,6 +664,7 @@ class ETROC():
         self.wr_reg('ScanStart_THCal', 0, row=row, col=col, broadcast=broadcast)
         if offset == 'auto':
             if broadcast:
+                # Don't care about this, broken anyway
                 for i in range(16):
                     for j in range(16):
                         nw = self.get_noisewidth(row=i, col=j)
@@ -673,9 +674,13 @@ class ETROC():
             else:
                 noise_width = self.get_noisewidth(row=row, col=col)
                 baseline = self.get_baseline(row=row, col=col)
+                self.wr_reg('Bypass_THCal', 1, row=row, col=col, broadcast=broadcast)
+                self.wr_reg('DAC', baseline+noise_width, row=row, col=col, broadcast=broadcast)
+
         else:
-            self.wr_reg('TH_offset', offset, row=row, col=col, broadcast=broadcast)
+            #self.wr_reg('TH_offset', offset, row=row, col=col, broadcast=broadcast)
             if broadcast:
+                # broken anyway
                 for i in range(16):
                     for j in range(16):
                         noise_width[i][j] = self.get_noisewidth(row=i, col=j)
@@ -683,6 +688,8 @@ class ETROC():
             else:
                 noise_width = self.get_noisewidth(row=row, col=col)
                 baseline = self.get_baseline(row=row, col=col)
+                self.wr_reg('Bypass_THCal', 1, row=row, col=col, broadcast=broadcast)
+                self.wr_reg('DAC', baseline+offset, row=row, col=col, broadcast=broadcast)
 
         return baseline, noise_width
 
