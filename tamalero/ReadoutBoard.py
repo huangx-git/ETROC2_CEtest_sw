@@ -83,7 +83,6 @@ class ReadoutBoard:
             # this method does not work for RB v1 / lpGBT v0
             self.reset_problematic_links(max_retries=10, allow_bad_links=allow_bad_links)
 
-
     def get_trigger(self):
         # Self-check if a trigger lpGBT is present, if trigger is not explicitely set to False
         sleep(0.5)
@@ -689,3 +688,5 @@ class ReadoutBoard:
         self.modules = []
         for i in range(self.nmodules):
             self.modules.append(Module(self, i+1, enable_power_board=power_board, moduleid=moduleids[i]))
+            if self.modules[-1].connected:
+                print(f"Readout Board {self.rb}: Found connected Module {i}")

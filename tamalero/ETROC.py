@@ -56,6 +56,7 @@ class ETROC():
         for i in range(2):
             if self.is_connected():
                 break
+            print("Resetting ETROC")
             self.reset(hard=True)
             time.sleep(0.1)
 
@@ -529,10 +530,25 @@ class ETROC():
                 self.wr_reg("workMode", 1, row=row, col=col, broadcast=False)
                 self.wr_reg("selfTestOccupancy", occupancy, row=row, col=col, broadcast=False)
 
-    def physics_config(self, offset=3):
-        self.enable_data_readout(broadcast=True)
-        self.wr_reg("workMode", 0, broadcast=True)
-        self.run_threshold_scan(offset=offset)  # want to get some noise
+    def physics_config(self, subset=False, offset=3, L1Adelay=None):
+        '''
+        subset is either False or a list of pixels, [(1,1), (1,2), ..]
+        '''
+        if L1Adelay == None:
+            L1Adelay = self.QINJ_delay
+        if not subset:
+            self.enable_data_readout(broadcast=True)
+            self.wr_reg("workMode", 0, broadcast=True)
+            self.set_L1Adelay(delay=L1Adelay, broadcast=True)
+            self.run_threshold_scan(offset=offset)  # want to get some noise
+        else:
+            self.disable_data_readout(broadcast=True)
+            self.wr_reg("workMode", 0, broadcast=True)
+            self.set_L1Adelay(delay=L1Adelay, broadcast=True)
+            for row, col in subset:
+                self.enable_data_readout(row=row, col=col, broadcast=False)
+                self.auto_threshold_scan(row=row, col=col, broadcast=False, offset=offset)
+
 
     # =======================
     # === HIGH-LEVEL FUNC ===
@@ -627,12 +643,18 @@ class ETROC():
             if broadcast:
                 for i in range(16):
                     for j in range(16):
-                        tmp = self.rd_reg("ScanDone", row=i, col=j)
-                        done &= tmp
+                        try:
+                            tmp = self.rd_reg("ScanDone", row=i, col=j)
+                            done &= tmp
+                        except:
+                            print("ScanDone read failed.")
 
                 #if not done: print("not done")
             else:
-                done = self.rd_reg("ScanDone", row=row, col=col)
+                try:
+                    done = self.rd_reg("ScanDone", row=row, col=col)
+                except:
+                    print("ScanDone read failed.")
                 time.sleep(0.001)
                 if time.time() - start_time > time_out:
                     if verbose:

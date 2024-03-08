@@ -85,7 +85,8 @@ class LPGBT(RegParser):
         # Get LPGBT Version
         timeout = 0
         if not hasattr(self, 'ver'):
-            print ("Figuring out lpGBT version by reading from ROMREG")
+            if self.verbose:
+                print ("Figuring out lpGBT version by reading from ROMREG")
             while True:
                 # https://lpgbt.web.cern.ch/lpgbt/v0/registermap.html#x1c5-rom
                 # Writing to addresses directly because readback will still fail here

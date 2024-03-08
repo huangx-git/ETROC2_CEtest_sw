@@ -53,13 +53,15 @@ if __name__ == '__main__':
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--input', action='store', default='output_test2', help="Binary file to read from")
     argParser.add_argument('--skip_trigger_check', action='store_true', help="Skip the double trigger check.")
+    argParser.add_argument('--verbose', action='store_true', help="Print every event number.")
     args = argParser.parse_args()
 
+    verbose = args.verbose
     df = DataFrame('ETROC2')
 
-    do_double_trigger_check = not args.skip_trigger_check  # default is to run it
+    do_double_trigger_check = not args.skip_trigger_check
 
-    f_in = f'output/{args.input}.dat'
+    f_in = f'ETROC_output/output_run_{args.input}.dat'
 
     with open(f_in, 'rb') as f:
         print("Reading from {}".format(f_in))
@@ -96,6 +98,7 @@ if __name__ == '__main__':
     skip_event = False
     skip_counter = 0
     for t, d in unpacked_data:
+        sus = False
         if t == 'header':
             header_counter += 1
             #if (abs(d['bcid']-bcid_t)<50) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
@@ -119,6 +122,9 @@ if __name__ == '__main__':
                 else:
                     skip_event = False
                 bcid_t = d['bcid']
+                if (abs(l1a - d['l1counter'])>1) and abs(l1a - d['l1counter'])!=255 and verbose:
+                    print("SUS")
+                    sus = True
                 l1a = d['l1counter']
                 event.append(i)
                 counter_h.append(1)
@@ -138,6 +144,8 @@ if __name__ == '__main__':
                 bcid.append([d['bcid']])
                 counter_a.append([])
                 i += 1
+                if verbose or sus:
+                    print("New event:", l1a, i, d['bcid'])
 
         if t == 'data' and not skip_event:
             if 'tot' in d:

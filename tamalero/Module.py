@@ -54,6 +54,8 @@ class Module:
                         chip_id = (self.id << 2) | j  # this gives every ETROC a unique ID, based on module ID and ETROC number on the module
                     ))
 
+        self.connected = any([etroc.is_connected() for etroc in self.ETROCs])
+
     #def configure(self):
     #    if self.connected:
     #        self.wr_reg('singlePort', 0)

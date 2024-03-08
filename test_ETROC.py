@@ -79,6 +79,7 @@ def parse_data(data, N_pix):
 
 
 def vth_scan(ETROC2, vth_min=693, vth_max=709, vth_step=1, decimal=False, fifo=None, absolute=False):
+    # N_l1a    =  3200 # how many L1As to send
     N_l1a    =  3200 # how many L1As to send
     vth_min  =   vth_min # scan range
     vth_max  =   vth_max
@@ -889,6 +890,11 @@ if __name__ == '__main__':
             with open(out_dir + '/manual_thresh_scan_data.json', 'w') as f:
                 json.dump(rawout, f)
 
+            # for pix in range(N_pix):
+            #     plt.plot(vth_axis[hit_rate[pix] > 0], hit_rate[pix][hit_rate[pix] > 0])
+            #     plt.savefig(f"./hit_rate/hit_rate_{pix}.png")
+            #     plt.close()
+
             for pix in range(N_pix):
                 r, c = fromPixNum(pix, N_pix_w)
                 max_matrix[r][c] = maximums[pix]
@@ -1108,7 +1114,7 @@ if __name__ == '__main__':
             k=0
             for q in charges:
                 print(f"\n - Will send L1a/QInj pulse with delay of {delay} cycles and charge of {q} fC")
-                print(f"\n - to pixel at Row {i}, Col {j}.")
+                print(f"\n - to pixel at Row {row}, Col {col}.")
 
                 for vth in vth_axis:
                     worked = False
