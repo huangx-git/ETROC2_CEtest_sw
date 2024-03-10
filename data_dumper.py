@@ -92,6 +92,9 @@ if __name__ == '__main__':
     header_counter = 0
     trailer_counter = 0
 
+
+    headers = []
+    trailers = []
     i = 0
     l1a = -1
     bcid_t = 9999
@@ -100,21 +103,29 @@ if __name__ == '__main__':
     for t, d in unpacked_data:
         sus = False
         if t == 'header':
+            headers.append(d['raw'])
             header_counter += 1
             #if (abs(d['bcid']-bcid_t)<50) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
             #    skip_event = True
             #    print("Skipping event")
             #    continue
             if d['l1counter'] == l1a:
+                # this just skips additional headers for the same event
                 counter_h[-1] += 1
                 if skip_event:
                     print("Skipping event", d['l1counter'], d['bcid'], bcid_t)
                     continue
                 pass
+            #elif d['l1counter'] < l1a and d['l1counter']!=0:
+            # # NOTE this part is experimental, and removes duplicate events
+            # # However, we should instead re-implement full consistency checks of header - data - trailer style
+            #    skip_event = True
+            #    print("Skipping event", d['l1counter'], d['bcid'], bcid_t)
+
             else:
                 #if (abs(d['bcid']-bcid_t)<40) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
                 #if (abs(d['bcid']-bcid_t)<500) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
-                if ((abs(d['bcid']-bcid_t)<150) or (abs(d['bcid']+3564-bcid_t)<50)) and not (d['bcid'] == bcid_t) and do_double_trigger_check:
+                if (((abs(d['bcid']-bcid_t)<150) or (abs(d['bcid']+3564-bcid_t)<50)) and not (d['bcid'] == bcid_t) and do_double_trigger_check):
                     skip_event = True
                     print("Skipping event", d['l1counter'], d['bcid'], bcid_t)
                     skip_counter += 1
@@ -164,6 +175,7 @@ if __name__ == '__main__':
             nhits[-1] += 1
 
         if t == 'trailer':
+            trailers.append(d['raw'])
             trailer_counter += 1
             if not skip_event:
                 counter_t[-1] += 1
