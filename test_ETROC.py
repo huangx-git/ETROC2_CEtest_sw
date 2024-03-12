@@ -141,6 +141,7 @@ if __name__ == '__main__':
     argParser.add_argument('--fitplots', action='store_true', default=False, help="Create individual vth fit plots for all pixels?")
     argParser.add_argument('--kcu', action='store', default='192.168.0.10', help="IP Address of KCU105 board")
     argParser.add_argument('--module', action='store', default=0, choices=['1','2','3'], help="Module to test")
+    argParser.add_argument('--rb', action='store', default=0, choices=['0','1','2','3'], help="Module to test")
     argParser.add_argument('--host', action='store', default='localhost', help="Hostname for control hub")
     argParser.add_argument('--partial', action='store_true', default=False, help="Only read data from corners and edges")
     argParser.add_argument('--qinj_scan', action='store_true', default=False, help="Run the phase scan for Qinj")
@@ -236,7 +237,7 @@ if __name__ == '__main__':
             # this would cause the RB init to fail.
             sys.exit(1)
 
-        rb_0 = ReadoutBoard(0, kcu=kcu, config=args.configuration)
+        rb_0 = ReadoutBoard(int(args.rb), kcu=kcu, config=args.configuration)
         data = 0xabcd1234
         kcu.write_node("LOOPBACK.LOOPBACK", data)
         if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
@@ -301,7 +302,7 @@ if __name__ == '__main__':
             sys.exit(1)
 
         int_time = time.time()
-        rb_0 = ReadoutBoard(0, kcu=kcu, config=args.configuration)
+        rb_0 = ReadoutBoard(int(args.rb), kcu=kcu, config=args.configuration)
         data = 0xabcd1234
         kcu.write_node("LOOPBACK.LOOPBACK", data)
         if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
@@ -336,7 +337,7 @@ if __name__ == '__main__':
             # this would cause the RB init to fail.
             sys.exit(1)
 
-        rb_0 = ReadoutBoard(0, kcu=kcu, config=args.configuration)
+        rb_0 = ReadoutBoard(int(args.rb), kcu=kcu, config=args.configuration)
         data = 0xabcd1234
         kcu.write_node("LOOPBACK.LOOPBACK", data)
         if (data != kcu.read_node("LOOPBACK.LOOPBACK")):

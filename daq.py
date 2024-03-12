@@ -116,7 +116,7 @@ def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superb
                 occupancy_block.append(num_blocks_to_read)
 
                 # read the blocks
-                if (num_blocks_to_read):
+                if (num_blocks_to_read)>0:
                     try:
                         reads = num_blocks_to_read * [hw.getNode(f"DAQ_RB{rb}").readBlock(block)]
                         hw.dispatch()
@@ -125,12 +125,12 @@ def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superb
                     except uhal._core.exception:
                         print("uhal UDP error in reading FIFO")
 
-                    ## Write data to disk
-                    #try:
-                    #    f.write(struct.pack('<{}I'.format(len(data)), *data))
-                    #    data = []
-                    #except:
-                    #    print("Error writing to file")
+                    # Write data to disk
+                    try:
+                        f.write(struct.pack('<{}I'.format(len(data)), *data))
+                        data = []
+                    except:
+                        print("Error writing to file")
         else:
             while (start + run_time > time.time()):
                 num_blocks_to_read = 0
@@ -139,7 +139,7 @@ def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superb
                 occupancy_block.append(num_blocks_to_read)
 
                 # read the blocks
-                if (num_blocks_to_read):
+                if (num_blocks_to_read)>0:
                     if num_blocks_to_read>1 and verbose:
                         print(occupancy, num_blocks_to_read)
                     try:
@@ -150,12 +150,12 @@ def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superb
                     except uhal._core.exception:
                         print("uhal UDP error in reading FIFO")
 
-                    ## Write data to disk
-                    #try:
-                    #    f.write(struct.pack('<{}I'.format(len(data)), *data))
-                    #    data = []
-                    #except:
-                    #    print("Error writing to file")
+                    # Write data to disk
+                    try:
+                        f.write(struct.pack('<{}I'.format(len(data)), *data))
+                        data = []
+                    except:
+                        print("Error writing to file")
 
         
         print("Resetting L1A rate back to 0")
@@ -264,41 +264,42 @@ if __name__ == '__main__':
 
     print(f"Taking data now.\n ...")
 
-    streams = []
-    for rb in rbs:
+    #streams = []
+    #for rb in rbs:
 
-        streams.append(
-            stream_daq_multi(
-                stream_daq,
-                {
-                    'kcu':kcu,
-                    'rb':rb,
-                    'l1a_rate':args.l1a_rate,
-                    'run_time':args.run_time,
-                    'run':args.run,
-                    'ext_l1a':args.ext_l1a,
-                    'lock': args.lock,
-                },
-            )
-        )
+    #    streams.append(
+    #        stream_daq_multi(
+    #            stream_daq,
+    #            {
+    #                'kcu':kcu,
+    #                'rb':rb,
+    #                'l1a_rate':args.l1a_rate,
+    #                'run_time':args.run_time,
+    #                'run':args.run,
+    #                'ext_l1a':args.ext_l1a,
+    #                'lock': args.lock,
+    #            },
+    #        )
+    #    )
 
-    print("Taking data")
+    #print("Taking data")
 
-    while any([stream._running for stream in streams]):
-       # stream_0._running or stream_1._running:
-        time.sleep(1)
-    print("Done with all streams")
+    #while any([stream._running for stream in streams]):
+    #   # stream_0._running or stream_1._running:
+    #    time.sleep(1)
+    #print("Done with all streams")
 
 
-    #f_out = stream_daq(
-    #    kcu=kcu,
-    #    l1a_rate = args.l1a_rate,
-    #    run_time = args.run_time,
-    #    n_events = args.n_events,
-    #    run = args.run,
-    #    ext_l1a = args.ext_l1a,
-    #    lock = args.lock,
-    #)
+    f_out = stream_daq(
+        kcu=kcu,
+        rb=0,
+        l1a_rate = args.l1a_rate,
+        run_time = args.run_time,
+        n_events = args.n_events,
+        run = args.run,
+        ext_l1a = args.ext_l1a,
+        lock = args.lock,
+    )
 
     #print(f"Run {args.run} has ended.")
     #print(f"Stored data in file: {f_out}")

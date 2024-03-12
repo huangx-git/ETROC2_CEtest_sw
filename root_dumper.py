@@ -22,7 +22,7 @@ if __name__ == '__main__':
         jsonString = json.load(f_in)
         jsonData = json.loads(jsonString)
 
-        output = f"/home/daq/ETROC2_Test_Stand/ScopeHandler/ScopeData/ETROCData/output_run_{args.input}.root"
+        output = f"/home/etl/Test_Stand/ETROC2_Test_Stand/ScopeHandler/ScopeData/ETROCData/output_run_{args.input}.root"
         print(output)
         f = rt.TFile(output, "RECREATE")
         tree = rt.TTree("pulse", "pulse")

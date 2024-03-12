@@ -393,7 +393,7 @@ class ReadoutBoard:
         '''
         for link in ['DAQ', 'Trigger'] if self.trigger else ['DAQ']:
             for i in range(max_retries):
-                sleep(0.1)  # this is actually needed for low error rates
+                sleep(0.01)  # this is actually needed for low error rates
                 if link == 'DAQ':
                     good_link = self.DAQ_LPGBT.link_status()
                 else:

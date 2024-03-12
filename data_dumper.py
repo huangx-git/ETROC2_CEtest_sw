@@ -112,6 +112,7 @@ if __name__ == '__main__':
             if d['l1counter'] == l1a:
                 # this just skips additional headers for the same event
                 counter_h[-1] += 1
+                raw[-1].append(d['raw'])
                 if skip_event:
                     print("Skipping event", d['l1counter'], d['bcid'], bcid_t)
                     continue
@@ -219,7 +220,7 @@ if __name__ == '__main__':
     else:
         print(f" - found {header_counter} headers and {trailer_counter} trailers. Please check. " + emojize(":warning:"))
 
-    with open(f"output/{args.input}.json", "w") as f:
+    with open(f"ETROC_output/output_run_{args.input}.json", "w") as f:
         json.dump(ak.to_json(events), f)
 
 
@@ -239,5 +240,5 @@ if __name__ == '__main__':
     ax.set_ylabel(r'$Row$')
     ax.set_xlabel(r'$Column$')
     fig.colorbar(cax,ax=ax)
-    fig.savefig(f"output/{args.input}_heatmap.pdf")
-    fig.savefig(f"output/{args.input}_heatmap.png")
+    fig.savefig(f"ETROC_output/output_run_{args.input}_heatmap.pdf")
+    fig.savefig(f"ETROC_output/output_run_{args.input}_heatmap.png")
