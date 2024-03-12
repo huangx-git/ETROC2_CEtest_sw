@@ -56,7 +56,7 @@ if __name__ == '__main__':
 
     df = DataFrame('ETROC2')
 
-    f_in = f'output/{args.input}.dat'
+    f_in = f'ETROC_output/output_run_{args.input}.dat'
 
     with open(f_in, 'rb') as f:
         print("Reading from {}".format(f_in))
@@ -93,6 +93,7 @@ if __name__ == '__main__':
     skip_event = False
     skip_counter = 0
     for t, d in unpacked_data:
+        print(l1a)
         if t == 'header':
             header_counter += 1
             #if (abs(d['bcid']-bcid_t)<50) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):

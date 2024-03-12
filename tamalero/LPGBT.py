@@ -37,7 +37,7 @@ def gpio_byname(gpio_func):
 
 class LPGBT(RegParser):
 
-    def __init__(self, rb=0, trigger=False, flavor='small', master=None, kcu=None, do_adc_calibration=False, config='default'):
+    def __init__(self, rb=0, trigger=False, flavor='small', master=None, kcu=None, do_adc_calibration=False, config='default', debug=False, ver=None):
         '''
         Initialize lpGBT for a certain readout board number (rb).
         The trigger lpGBT is accessed through I2C of the master (= DAQ lpGBT).
@@ -48,6 +48,9 @@ class LPGBT(RegParser):
         self.calibrated = False
         self.gain = 1.85
         self.offset = 512
+        if ver is not None:
+            self.ver = ver
+
         if self.trigger:
             assert isinstance(master, LPGBT), "Trying to initialize a trigger lpGBT but got no lpGBT master."
             self.master = master
@@ -57,7 +60,13 @@ class LPGBT(RegParser):
             self.kcu = kcu
 
         self.config = config
-        self.configure(do_adc_calibration=do_adc_calibration)
+        if not debug:
+            self.configure(do_adc_calibration=do_adc_calibration)
+        else:
+            print("Warning: Initializing lpGBT in debug mode.")
+            self.kcu.write_node("READOUT_BOARD_%d.SC.FRAME_FORMAT" % self.rb, self.ver)
+            self.parse_xml(ver=self.ver)
+
 
     def configure(self, do_adc_calibration=True):
         if not hasattr(self, 'kcu'):
