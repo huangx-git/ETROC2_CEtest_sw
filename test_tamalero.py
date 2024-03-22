@@ -51,6 +51,15 @@ def create_app(rb, modules=[]):
         temp['time'] = datetime.datetime.now().isoformat()
         return temp
 
+    @app.route('/rb_mux64/<ch>')
+    def get_mux64_output(ch):
+        volts = {}
+        # mux64 should have 64 entries anyway but could be nice check configuration maybe? 
+        for i in [ch]:
+            volts[str(ch)] = rb.read_mux_test_board(int(ch))
+        volts['time'] = datetime.datetime.now().isoformat()
+        return volts
+
     @app.route('/module_links')
     def get_link_status():
         link_status = {}
@@ -149,7 +158,7 @@ if __name__ == '__main__':
     argParser.add_argument('--eyescan', action='store_true', default=False, help="Run eyescan?")
     argParser.add_argument('--recal_lpgbt', action='store_true', default=False, help="Recalibrate ADC in LPGBT? (instead of using saved values)")
     argParser.add_argument('--host', action='store', default='localhost', help="Specify host for control hub")
-    argParser.add_argument('--configuration', action='store', default='default', choices=['default', 'emulator', 'modulev0', 'modulev0b', 'multimodule'], help="Specify a configuration of the RB, e.g. emulator or modulev0")
+    argParser.add_argument('--configuration', action='store', default='default', choices=['default', 'emulator', 'modulev0', 'modulev0b', 'multimodule', 'mux64'], help="Specify a configuration of the RB, e.g. emulator or modulev0")
     argParser.add_argument('--devel', action='store_true', default=False, help="Don't check repo status (not recommended)")
     argParser.add_argument('--monitor', action='store_true', default=False, help="Start up montoring threads in the background")
     argParser.add_argument('--strict', action='store_true', default=False, help="Enforce strict limits on ADC reads for SCA and LPGBT")
@@ -434,3 +443,4 @@ if __name__ == '__main__':
             from tamalero.Monitoring import Monitoring, blink_rhett
             print("RB configured successfully. Rhett is happy " + emojize(":dog_face:"))
             b = blink_rhett(rb, iterations=3)
+
