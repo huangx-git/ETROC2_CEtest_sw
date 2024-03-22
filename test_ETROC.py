@@ -18,6 +18,7 @@ import time
 import datetime
 from yaml import load, dump
 import traceback
+import pickle
 
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -828,8 +829,8 @@ if __name__ == '__main__':
         elif args.threshold == "manual":
 
             # Prescanning a random pixel to get an idea of the threshold
-            row = 4
-            col = 3
+            row = int(args.row)
+            col = int(args.col)
 
             elink, slave = etroc.get_elink_for_pixel(row, col)
 
@@ -1115,7 +1116,7 @@ if __name__ == '__main__':
             k=0
             for q in charges:
                 print(f"\n - Will send L1a/QInj pulse with delay of {delay} cycles and charge of {q} fC")
-                print(f"\n - to pixel at Row {row}, Col {col}.")
+                print(f"\n - to pixel at Row {i}, Col {j}.")
 
                 for vth in vth_axis:
                     worked = False
@@ -1157,6 +1158,8 @@ if __name__ == '__main__':
                            'toa' : TOA[k-1],
                            'tot' : TOT[k-1],
                            'cal' : CAL[k-1]}
+                #with open(f"{out_dir}/Qinj_scan_L1A_504_{q}.pkl", 'w') as f:
+                #    pickle.dump(scan_df, f)
                 with open(f"{out_dir}/Qinj_scan_L1A_504_{q}.yaml", 'w') as f:
                     dump(scan_df, f)
             fig, ax = plt.subplots()

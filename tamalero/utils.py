@@ -225,7 +225,7 @@ def get_last_commit_sha(version):
     last_commit_sha = log[0]['id'][:7]
     return last_commit_sha
 
-def download_address_table(version):
+def download_address_table(version, quiet=False):
     import os
     import requests
     import json
@@ -236,7 +236,8 @@ def download_address_table(version):
     r = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/tree?ref={version}&&path=address_tables&&recursive=True")
     tree = json.loads(r.content)
     if isinstance(tree, list):
-        print ("Successfully got list of address table files from gitlab.")
+        if not quiet:
+            print ("Successfully got list of address table files from gitlab.")
     else:
         version = last_commit_sha
         if os.path.isdir(f'address_table/{version}/'):
@@ -247,8 +248,9 @@ def download_address_table(version):
         print (f"Local firmware version detected. Will download address table corresponding to commit {version}.")
 
     if not os.path.isdir(f"address_table/{version}"):
-        print (f"Downloading latest firmware version address table to address_table/{version}")
-        print(f"Making directory: address_table/{version}")
+        if not quiet:
+            print (f"Downloading latest firmware version address table to address_table/{version}")
+            print(f"Making directory: address_table/{version}")
         os.makedirs(f"address_table/{version}")
         for f in tree:
             if f['type'] == 'tree':
@@ -295,7 +297,7 @@ def check_repo_status(kcu_version=None):
         else:
             print (red("Please pull a more recent version from gitlab.\n"))
 
-def get_kcu(kcu_address, control_hub=True, host='localhost', verbose=False):
+def get_kcu(kcu_address, control_hub=True, host='localhost', verbose=False, quiet=False):
     # Get the current firmware version number
     if verbose:
         if control_hub:
@@ -309,7 +311,8 @@ def get_kcu(kcu_address, control_hub=True, host='localhost', verbose=False):
         ipb_path = f"chtcp-2.0://{host}:10203?target={kcu_address}:50001"
     else:
         ipb_path = f"ipbusudp-2.0://{kcu_address}:50001"
-    print (f"IPBus address: {ipb_path}")
+    if not quiet:
+        print (f"IPBus address: {ipb_path}")
 
     trycnt = 0
     while (True):
@@ -350,7 +353,7 @@ def get_kcu(kcu_address, control_hub=True, host='localhost', verbose=False):
 
     last_commit = get_last_commit_sha(xml_sha)
     if not os.path.isdir(f"address_table/{last_commit}"):
-        xml_sha = download_address_table(xml_sha)
+        xml_sha = download_address_table(xml_sha, quiet=quiet)
     else:
         xml_sha = last_commit
 
@@ -360,7 +363,8 @@ def get_kcu(kcu_address, control_hub=True, host='localhost', verbose=False):
 
     kcu.get_firmware_version(string=False)
 
-    print(f"KCU firmware version: {kcu.firmware_version['major']}.{kcu.firmware_version['minor']}.{kcu.firmware_version['patch']}")
+    if not quiet:
+        print(f"KCU firmware version: {kcu.firmware_version['major']}.{kcu.firmware_version['minor']}.{kcu.firmware_version['patch']}")
 
     return kcu
 
