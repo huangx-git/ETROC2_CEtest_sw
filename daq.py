@@ -264,42 +264,42 @@ if __name__ == '__main__':
 
     print(f"Taking data now.\n ...")
 
-    #streams = []
-    #for rb in rbs:
+    streams = []
+    for rb in rbs:
 
-    #    streams.append(
-    #        stream_daq_multi(
-    #            stream_daq,
-    #            {
-    #                'kcu':kcu,
-    #                'rb':rb,
-    #                'l1a_rate':args.l1a_rate,
-    #                'run_time':args.run_time,
-    #                'run':args.run,
-    #                'ext_l1a':args.ext_l1a,
-    #                'lock': args.lock,
-    #            },
-    #        )
-    #    )
+        streams.append(
+            stream_daq_multi(
+                stream_daq,
+                {
+                    'kcu':kcu,
+                    'rb':rb,
+                    'l1a_rate':args.l1a_rate,
+                    'run_time':args.run_time,
+                    'run':args.run,
+                    'ext_l1a':args.ext_l1a,
+                    'lock': args.lock,
+                },
+            )
+        )
 
-    #print("Taking data")
+    print("Taking data")
 
-    #while any([stream._running for stream in streams]):
-    #   # stream_0._running or stream_1._running:
-    #    time.sleep(1)
-    #print("Done with all streams")
+    while any([stream._running for stream in streams]):
+       # stream_0._running or stream_1._running:
+        time.sleep(1)
+    print("Done with all streams")
 
 
-    f_out = stream_daq(
-        kcu=kcu,
-        rb=0,
-        l1a_rate = args.l1a_rate,
-        run_time = args.run_time,
-        n_events = args.n_events,
-        run = args.run,
-        ext_l1a = args.ext_l1a,
-        lock = args.lock,
-    )
+    #f_out = stream_daq(
+    #    kcu=kcu,
+    #    rb=0,
+    #    l1a_rate = args.l1a_rate,
+    #    run_time = args.run_time,
+    #    n_events = args.n_events,
+    #    run = args.run,
+    #    ext_l1a = args.ext_l1a,
+    #    lock = args.lock,
+    #)
 
     #print(f"Run {args.run} has ended.")
     #print(f"Stored data in file: {f_out}")
