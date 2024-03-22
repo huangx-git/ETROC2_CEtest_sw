@@ -4,12 +4,15 @@
 *.zip
 *.gz
 *.pdf
-*.png
 *.json
-*.dat
 *.pkl
 *.swp
 *.jou
+*.root
+*.png
+*.dat
+thresholds*.yaml
+*.patch
 tmp/
 address_table/*
 !address_table/generic

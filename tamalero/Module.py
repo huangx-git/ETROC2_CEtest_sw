@@ -7,7 +7,7 @@ from tamalero.Monitoring import Lock
 from time import sleep
 
 class Module:
-    def __init__(self, rb, i=1, strict=False, enable_power_board=False, moduleid=0):
+    def __init__(self, rb, i=1, strict=False, enable_power_board=False, moduleid=0, poke=False):
         # don't like that this also needs a RB
         # think about a better solution
         self.config = rb.configuration['modules'][i]
@@ -51,8 +51,11 @@ class Module:
                         vref = self.config['vref'][j],
                         vref_pd = self.config['disable_vref_gen'][j],
                         vtemp = self.config['vtemp'][j],
-                        chip_id = (self.id << 2) | j  # this gives every ETROC a unique ID, based on module ID and ETROC number on the module
+                        chip_id = (self.id << 2) | j,  # this gives every ETROC a unique ID, based on module ID and ETROC number on the module
+                        no_init = poke,
                     ))
+
+        self.connected = any([etroc.is_connected() for etroc in self.ETROCs])
 
     #def configure(self):
     #    if self.connected:

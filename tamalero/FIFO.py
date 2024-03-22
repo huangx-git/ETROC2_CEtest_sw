@@ -45,7 +45,7 @@ class FIFO:
             self.reset()
 
     def ready(self):
-        self.rb.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 0x1)
+        self.rb.kcu.write_node("READOUT_BOARD_%s.ERR_CNT_RESET"%self.rb.rb, 0x1)
         tmp_err_cnt = self.rb.kcu.read_node("READOUT_BOARD_%s.ERROR_CNT"%self.rb.rb).value()
         start_time = time.time()
         while tmp_err_cnt != self.rb.kcu.read_node("READOUT_BOARD_%s.ERROR_CNT"%self.rb.rb).value():
@@ -54,7 +54,7 @@ class FIFO:
             self.enable_bitslip()
             time.sleep(0.1)
             self.disable_bitslip()
-            self.rb.kcu.write_node("READOUT_BOARD_0.ERR_CNT_RESET", 0x1)
+            self.rb.kcu.write_node("READOUT_BOARD_%s.ERR_CNT_RESET"%self.rb.rb, 0x1)
             tmp_err_cnt = self.rb.kcu.read_node("READOUT_BOARD_%s.ERROR_CNT"%self.rb.rb).value()
 
             if time.time() > start_time + 2:
@@ -106,12 +106,18 @@ class FIFO:
         rate = self.rb.kcu.read_node("SYSTEM.L1A_RATE_CNT").value()
         return rate
 
-    def send_l1a(self, count=1):
+    def send_l1a(self, count=1, quiet=True):
+        start_time = time.time()
         for i in range(count):
             try:
                 self.rb.kcu.write_node("SYSTEM.L1A_PULSE", 1)
             except:
                 print("Couldn't send pulse.")
+        timediff = time.time() - start_time
+        rate = count/timediff
+        if not quiet:
+            print(f"Sent {count} L1As at a rate of {rate}Hz")
+        return rate
 
     def send_QInj(self, count=1, delay=0):
         self.rb.kcu.write_node("READOUT_BOARD_%s.L1A_INJ_DLY"%self.rb.rb, delay)
@@ -136,14 +142,14 @@ class FIFO:
         while success == False:
             try:
                 if dispatch:
-                    reads = self.rb.kcu.hw.getNode("DAQ_RB0").readBlock(block)
+                    reads = self.rb.kcu.hw.getNode(f"DAQ_RB{self.rb.rb}").readBlock(block)
 
                     # this was tested with 5M pulses
                     self.rb.kcu.dispatch()  # changed from more udp error prone self.rb.kcu.hw.dispatch()
 
                     return reads
                 else:
-                    return self.rb.kcu.hw.getNode("DAQ_RB0").readBlock(block)
+                    return self.rb.kcu.hw.getNode(f"DAQ_RB{self.rb.rb}").readBlock(block)
             except uhal_exception:
                 print(f"uhal UDP error in FIFO.read_block, block size is {block}")
                 raise

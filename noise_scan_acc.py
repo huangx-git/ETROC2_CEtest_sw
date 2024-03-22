@@ -12,6 +12,7 @@ from scipy.optimize import curve_fit
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 import pandas as pd
+import ROOT
 import os
 import sys
 import json
@@ -22,8 +23,6 @@ try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
     from yaml import Loader, Dumper
-
-
 
 DF = DataFrame('ETROC2')
 
@@ -171,27 +170,28 @@ if __name__ == '__main__':
     rb_0.enable_external_trigger()
     offset_from_baseline = int(args.offset)
     etroc.wr_reg("disDataReadout", 1, broadcast=True)
-    for i in [3]:
-        etroc.wr_reg("disDataReadout", 0, row=15, col=i, broadcast=False)
-        # current_offset = etroc.get_THoffset(row = 15, col = i)
-        threshold = etroc.auto_threshold_scan(15, i, offset="auto")
-        etroc.add_THoffset(offset_from_baseline, row = 15, col = i)
-        print(sum(threshold) + int(offset_from_baseline)) #  (sum(threshold) + offset_from_baseline)
-        etroc.wr_reg("DAC", sum(threshold), row=15, col=i)
-
-        # print(f"Old threshold offset: {current_offset}, Matrix threshold value: {int(threshold_matrix[15][i])}.")
-        # print(f"Setting up threshold values: {int(threshold[0])} for row: {15}, col: {i}.")
-        # etroc.add_THoffset(offset_from_baseline, row = 15, col = i)
-        # etroc.add_THoffset(-10, row = 15, col = i)
-        # etroc.add_THoffset(-10 , row = 15, col = i)
-        current_offset = (etroc.get_THoffset(row = 15, col = i))
-        # print(f"New threshold offset: {current_offset}")
-        # print(threshold)
-        print(current_offset)
-        # threshold = 120
-        # int(threshold_matrix[15][i])
-        # etroc.wr_reg("DAC", 120, row=15, col=i)
-
+    w = 1000
+    scan_canvas = ROOT.TCanvas("Autocalibration", "Autocalibration")
+    scan_canvas.SetCanvasSize(w, 2*w)
+    baseline    = ROOT.TH2I("Autocalibration baseline", "Autocalibration baseline", 16, 0, 16, 16, -16, 0)
+    noise_width = ROOT.TH2I("Noise width", "Noise width", 16, 0, 16, 16, -16, 0)
+    ROOT.gStyle.SetOptStat(0)
+    scan_canvas.Divide(1, 2)
+    for i in range(16):
+        for j in range(16):
+            etroc.wr_reg("disDataReadout", 0, row=i, col=j, broadcast=False)
+            # current_offset = etroc.get_THoffset(row = i, col = j)
+            threshold = etroc.auto_threshold_scan(row=i, col=j, offset="auto")
+            print(i+1, j+1, threshold)
+            baseline.SetBinContent(j+1, i+1, threshold[0])
+            noise_width.SetBinContent(j+1, i+1, threshold[1])
+            etroc.wr_reg("disDataReadout", 1, row=i, col=j, broadcast=False)
+    noise_width.GetZaxis().SetRangeUser(-2, 20)
+    scan_canvas.cd(1)
+    baseline.Draw("colz TEXT")
+    scan_canvas.cd(2)
+    noise_width.Draw("colz TEXT")
+    scan_canvas.SaveAs("Autocalibration.png")
     L1Adelay = 14  # NOTE this is what we've found for the laser setup at FNAL.
     # We previously found a value of 17. Needs to be checked why it is different now.
     if args.timing_scan:
