@@ -19,7 +19,7 @@ if __name__ == '__main__':
     all_events = []
     #for i in range(5588,5706):
     #for i in range(5707,6100):
-    for i in range(6200,6300):
+    for i in range(5707,6300):
     #for i in range(5707,5708):
         in_file = f"{here}/../ETROC_output/{i}_merged.json"
         if os.path.isfile(in_file):
