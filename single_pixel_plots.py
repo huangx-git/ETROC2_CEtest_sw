@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import awkward as ak
 
-from sklearn.preprocessing import PolynomialFeatures
-from sklearn.linear_model import LinearRegression
+#from sklearn.preprocessing import PolynomialFeatures
+#from sklearn.linear_model import LinearRegression
 
 import pickle
 import json
@@ -211,7 +211,7 @@ plt.close()
 #Slide 5 TOT, etc. Distributions at indivudial QSel, 5 different Threshold DACs
 
 print('Working on TOT, TOA, and Cal hists for individual settings')
-for q in [25]:#tqdm(np.unique(df.charge)):
+for q in tqdm(np.unique(df.charge)):
     for d in tqdm(args.plotted_vths, leave = False, desc = f'Working on QSel = {q}'):
         #if not d in df.vth: d = np.random.choice(df.vth, 1)
         idx = [df.charge.iloc[i] == q and df.vth.iloc[i] == d for i in range(len(df.vth))]
@@ -356,28 +356,38 @@ plt.close()
 
 
 # Polynomial Regression of TOA SD data
-'''
+
+u, c = np.unique(cal, return_counts = True)
+print(u)
+print(c)
+print(u[np.argmax(c)])
+
+
 for q in np.unique(df.charge):
     idx = df.charge == q
     vth = df.vth[idx]
     toa = df.toa[idx]
+    cal = df.cal[idx]
     x = []
     y = []
     
     for i in range(len(vth)):
-        #print(df.hits[idx].iloc[i], len(toa.iloc[i]))
+        print(df.hits[idx].iloc[i], len(toa.iloc[i]), len(cal.iloc[i]))
         if len(toa.iloc[i]) > .98*nl1a:# and np.std(toa.iloc[i]) < 2:#> .98*nl1a :
             x.append(vth.iloc[i])
-            y.append(np.std(toa.iloc[i]))
+            tbin = 3.3/np.array(cal.iloc[i])
+            ttoa = 12.5 - np.array(toa.iloc[i])/tbin
+            y.append(np.std(ttoa))
     
-    if len(x) > 10: 
+    fig = plt.figure(figsize = figsize)
+    plt.plot(x, y, 'o-', alpha = 0.8, label = 'Data')
+    
+    if False:#len(x) > 10: 
         fig = plt.figure(figsize = figsize) 
 
         transformer = PolynomialFeatures(degree = 4)
         model = LinearRegression(fit_intercept = True)
 
-        plt.plot(x, y, 'o-', alpha = 0.8, label = 'Data')
-        
         X = transformer.fit_transform(np.array(x).reshape(-1, 1))
         model.fit(X, y)
          
@@ -398,25 +408,27 @@ for q in np.unique(df.charge):
         y = np.linspace(0, 2, 10).tolist() + [0] + np.linspace(0, 2, 10).tolist()
         plt.plot(x, y, label = 'Boundaries')
         
-        plt.plot([x[0], x[len(x) - 1]], [0.5, 0.5], label = 'TOA SD = 0.5')
-        plt.plot([x[0], x[len(x) - 1]], [1, 1], label = 'TOA SD = 1')
+        #plt.plot([x[0], x[len(x) - 1]], [0.5, 0.5], label = 'TOA SD = 0.5')
+        #plt.plot([x[0], x[len(x) - 1]], [1, 1], label = 'TOA SD = 1')
         
-        plt.ylim([0, 2])
-        plt.xlabel('Threshold DAC')
-        plt.ylabel('CAL Std Dev.')
-        plt.legend()
-        plt.title(f'Standard Deviation of TOA vs. Theshold DAC for Delay = {delay}\n {loc_title}, Qinj = {q}')
-        plt.savefig(f'{store}/DAC_v_TOASD_q{q}.pdf')
-        plt.savefig(f'{store}/DAC_v_TOASD_q{q}.png')
-        plt.close()
+    plt.ylim([0, 150])
+    plt.xlabel('Threshold DAC')
+    plt.ylabel('TOA Std Dev.')
+    plt.legend()
+    plt.title(f'Standard Deviation of TOA vs. Theshold DAC for Delay = {delay}\n {loc_title}, Qinj = {q}')
+    plt.show()
+    plt.savefig(f'{store}/DAC_v_TOASD_q{q}.pdf')
+    plt.savefig(f'{store}/DAC_v_TOASD_q{q}.png')
+    plt.close()
         
 
-'''
+
 fig = plt.figure(figsize = figsize)
 for q in np.unique(df.charge):
     idx = df.charge == q
     vth = df.vth[idx]
     toa = df.toa[idx]
+    cal = df.cal[idx]
     x = []
     y = []
 
@@ -424,17 +436,19 @@ for q in np.unique(df.charge):
         #print(df.hits[idx].iloc[i], len(toa.iloc[i]))
         if len(toa.iloc[i]) >= hitslim:# and np.std(toa.iloc[i]) < 2:#> .98*nl1a :
             x.append(vth.iloc[i])
-            y.append(np.std(toa.iloc[i]))
+            tbin = 3.3/np.array(cal.iloc[i])
+            ttoa = 12.5 - np.array(toa.iloc[i])/tbin
+            y.append(np.std(ttoa))
 
     if len(x) > 10:
         plt.plot(x, y, 'o-', alpha = 0.8, label = f'Qinj = {q}')
         
-plt.plot([x[0], x[len(x) - 1]], [0.5, 0.5], label = 'TOA SD = 0.5')
-plt.plot([x[0], x[len(x) - 1]], [1, 1], label = 'TOA SD = 1')
+#plt.plot([x[0], x[len(x) - 1]], [0.5, 0.5], label = 'TOA SD = 0.5')
+#plt.plot([x[0], x[len(x) - 1]], [1, 1], label = 'TOA SD = 1')
 
-plt.ylim([0, 2])
+plt.ylim([0, 150])
 plt.xlabel('Threshold DAC')
-plt.ylabel('CAL Std Dev.')
+plt.ylabel('TOA Std Dev.')
 plt.legend()
 plt.title(f'Standard Deviation of TOA vs. Theshold DAC for Delay = {delay}\n {loc_title}')
 plt.savefig(f'{store}/DAC_v_TOASD.pdf')
