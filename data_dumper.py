@@ -52,6 +52,7 @@ if __name__ == '__main__':
 
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--input', action='store', default='output_test2', help="Binary file to read from")
+    argParser.add_argument('--rbs', action='store', default='0', help="Which RBs")
     argParser.add_argument('--skip_trigger_check', action='store_true', help="Skip the double trigger check.")
     argParser.add_argument('--verbose', action='store_true', help="Print every event number.")
     args = argParser.parse_args()
@@ -61,183 +62,327 @@ if __name__ == '__main__':
 
     do_double_trigger_check = not args.skip_trigger_check
 
-    f_in = f'ETROC_output/output_run_{args.input}.dat'
+    events_all_rb = []
 
-    with open(f_in, 'rb') as f:
-        print("Reading from {}".format(f_in))
-        bin_data = f.read()
-        raw_data = struct.unpack('<{}I'.format(int(len(bin_data)/4)), bin_data)
+    rbs = args.rbs.split(',')
 
-    merged_data = merge_words(raw_data)
-    unpacked_data = map(df.read, merged_data)
+    for rb in rbs:
 
-    event       = []
-    counter_h   = []  # double check the number of headers
-    counter_t   = []  # double check the number of trailers
-    l1counter   = []
-    row         = []
-    col         = []
-    tot_code    = []
-    toa_code    = []
-    cal_code    = []
-    elink       = []
-    raw         = []
-    nhits       = []
-    nhits_trail = []
-    chipid      = []
-    crc         = []
-    bcid        = []
-    counter_a   = []
+        print(f"Working on output of RB {rb}")
 
-    header_counter = 0
-    trailer_counter = 0
+        f_in = f'ETROC_output/output_run_{args.input}_rb{rb}.dat'
+
+        with open(f_in, 'rb') as f:
+            print("Reading from {}".format(f_in))
+            bin_data = f.read()
+            raw_data = struct.unpack('<{}I'.format(int(len(bin_data)/4)), bin_data)
+
+        merged_data = merge_words(raw_data)
+        unpacked_data = map(df.read, merged_data)
+
+        event       = []
+        counter_h   = []  # double check the number of headers
+        counter_t   = []  # double check the number of trailers
+        l1counter   = []
+        row         = []
+        col         = []
+        tot_code    = []
+        toa_code    = []
+        cal_code    = []
+        elink       = []
+        raw         = []
+        nhits       = []
+        nhits_trail = []
+        chipid      = []
+        crc         = []
+        bcid        = []
+        counter_a   = []
+
+        header_counter = 0
+        trailer_counter = 0
 
 
-    headers = []
-    trailers = []
-    i = 0
-    l1a = -1
-    bcid_t = 9999
-    skip_event = False
-    skip_counter = 0
-    for t, d in unpacked_data:
-        sus = False
-        if t == 'header':
-            headers.append(d['raw'])
-            header_counter += 1
-            #if (abs(d['bcid']-bcid_t)<50) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
-            #    skip_event = True
-            #    print("Skipping event")
-            #    continue
-            if d['l1counter'] == l1a:
-                # this just skips additional headers for the same event
-                counter_h[-1] += 1
-                if skip_event:
-                    print("Skipping event", d['l1counter'], d['bcid'], bcid_t)
-                    continue
-                pass
-            #elif d['l1counter'] < l1a and d['l1counter']!=0:
-            # # NOTE this part is experimental, and removes duplicate events
-            # # However, we should instead re-implement full consistency checks of header - data - trailer style
-            #    skip_event = True
-            #    print("Skipping event", d['l1counter'], d['bcid'], bcid_t)
+        headers = []
+        trailers = []
+        i = 0
+        l1a = -1
+        bcid_t = 9999
+        skip_event = False
+        skip_counter = 0
+        for t, d in unpacked_data:
+            sus = False
+            if t == 'header':
+                headers.append(d['raw'])
+                header_counter += 1
+                #if (abs(d['bcid']-bcid_t)<50) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
+                #    skip_event = True
+                #    print("Skipping event")
+                #    continue
+                if d['l1counter'] == l1a:
+                    # this just skips additional headers for the same event
+                    counter_h[-1] += 1
+                    if skip_event:
+                        print("Skipping event", d['l1counter'], d['bcid'], bcid_t)
+                        continue
+                    pass
+                #elif d['l1counter'] < l1a and d['l1counter']!=0:
+                # # NOTE this part is experimental, and removes duplicate events
+                # # However, we should instead re-implement full consistency checks of header - data - trailer style
+                #    skip_event = True
+                #    print("Skipping event", d['l1counter'], d['bcid'], bcid_t)
+
+                else:
+                    #if (abs(d['bcid']-bcid_t)<40) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
+                    #if (abs(d['bcid']-bcid_t)<500) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
+                    if (((abs(d['bcid']-bcid_t)<150) or (abs(d['bcid']+3564-bcid_t)<50)) and not (d['bcid'] == bcid_t) and do_double_trigger_check):
+                        skip_event = True
+                        print("Skipping event", d['l1counter'], d['bcid'], bcid_t)
+                        skip_counter += 1
+                        continue
+                    else:
+                        skip_event = False
+                    bcid_t = d['bcid']
+                    if (abs(l1a - d['l1counter'])>1) and abs(l1a - d['l1counter'])!=255 and verbose:
+                        print("SUS")
+                        sus = True
+                    l1a = d['l1counter']
+                    event.append(i)
+                    counter_h.append(1)
+                    counter_t.append(0)
+                    l1counter.append(d['l1counter'])
+                    row.append([])
+                    col.append([])
+                    tot_code.append([])
+                    toa_code.append([])
+                    cal_code.append([])
+                    elink.append([])
+                    raw.append([d['raw']])
+                    nhits.append(0)
+                    nhits_trail.append([])
+                    chipid.append([])
+                    crc.append([])
+                    bcid.append(d['bcid'])
+                    counter_a.append([])
+                    i += 1
+                    if verbose or sus:
+                        print("New event:", l1a, i, d['bcid'])
+
+            if t == 'data' and not skip_event:
+                if 'tot' in d:
+                    tot_code[-1].append(d['tot'])
+                    toa_code[-1].append(d['toa'])
+                    cal_code[-1].append(d['cal'])
+                elif 'counter_a' in d:
+                    bcid[-1].append(d['bcid'])
+                    counter_a[-1].append(d['counter_a'])
+                elif 'counter_b' in d:
+                    pass
+                row[-1].append(d['row_id'])
+                col[-1].append(d['col_id'])
+                elink[-1].append(d['elink'])
+                raw[-1].append(d['raw'])
+                nhits[-1] += 1
+
+            if t == 'trailer':
+                trailers.append(d['raw'])
+                trailer_counter += 1
+                if not skip_event:
+                    counter_t[-1] += 1
+                    if d['hits']>0:
+                        chipid[-1] += d['hits']*[d['chipid']]
+                    nhits_trail[-1].append(d['hits'])
+                    raw[-1].append(d['raw'])
+                    crc[-1].append(d['crc'])
+
+
+        print("Zipping")
+        events = ak.Array({
+            'event': event,
+            'l1counter': l1counter,
+            'nheaders': counter_h,
+            'ntrailers': counter_t,
+            'row': row,
+            'col': col,
+            'tot_code': tot_code,
+            'toa_code': toa_code,
+            'cal_code': cal_code,
+            'elink': elink,
+            'raw': raw,
+            'crc': crc,
+            'chipid': chipid,
+            'bcid': bcid,
+            'counter_a': counter_a,
+            'nhits': ak.singletons(nhits),
+            'nhits_trail': ak.sum(ak.Array(nhits_trail), axis=-1),
+        })
+
+        total_events = len(events)
+        # NOTE the check below is only valid for single ETROC
+        #consistent_events = len(events[((events.nheaders==2)&(events.ntrailers==2)&(events.nhits==events.nhits_trail))])
+        #
+        #print(total_events, consistent_events)
+
+        print(f"Done with {len(events)} events. " + emojize(":check_mark_button:"))
+        #print(f" - skipped {skip_counter/events.nheaders[0]} events that were identified as double-triggered " + emojize(":check_mark_button:"))
+        if header_counter == trailer_counter:
+            print(f" - found same number of headers and trailers! " + emojize(":check_mark_button:"))
+        else:
+            print(f" - found {header_counter} headers and {trailer_counter} trailers. Please check. " + emojize(":warning:"))
+
+        with open(f"ETROC_output/{args.input}_rb{rb}.json", "w") as f:
+            json.dump(ak.to_json(events), f)
+
+        events_all_rb.append(events)
+
+        # make some plots
+        import matplotlib.pyplot as plt
+        import mplhep as hep
+        plt.style.use(hep.style.CMS)
+
+        hits = np.zeros([16, 16])
+
+
+        if rb=='2':
+            mask = [(11,5)]
+        else:
+            mask = []
+        for ev in events:
+            for row, col in zip(ev.row, ev.col):
+                if (row, col) not in mask:
+                    hits[row][col] += 1
+
+        fig, ax = plt.subplots(1,1,figsize=(7,7))
+        cax = ax.matshow(hits)
+        ax.set_ylabel(r'$Row$')
+        ax.set_xlabel(r'$Column$')
+        fig.colorbar(cax,ax=ax)
+        fig.savefig(f"ETROC_output/{args.input}_rb{rb}_heatmap.pdf")
+        fig.savefig(f"ETROC_output/{args.input}_rb{rb}_heatmap.png")
+
+
+    if len(events_all_rb)>0:
+        event_number = []
+        bcid = []
+        nhits = []
+        row = []
+        col = []
+        chipid = []
+
+        sel = ak.flatten(events_all_rb[0].nhits>0)
+        events_with_hits = len(events_all_rb[0][sel])
+
+        for rb, events in enumerate(events_all_rb):
+            if rb == 0:
+                #sel = ak.flatten(events.nhits)>0
+                event_number = ak.to_list(events[sel].event)
+                l1counter = ak.to_list(events[sel].l1counter)
+                bcid = ak.to_list(events[sel].bcid)
+                nhits = ak.to_list(events[sel].nhits)
+                row = ak.to_list(events[sel].row)
+                col = ak.to_list(events[sel].col)
+                toa = ak.to_list(events[sel].toa_code)
+                tot = ak.to_list(events[sel].tot_code)
+                cal = ak.to_list(events[sel].cal_code)
+                elink = ak.to_list(events[sel].elink)
+                chipid = ak.to_list(events[sel].chipid)
 
             else:
-                #if (abs(d['bcid']-bcid_t)<40) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
-                #if (abs(d['bcid']-bcid_t)<500) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
-                if (((abs(d['bcid']-bcid_t)<150) or (abs(d['bcid']+3564-bcid_t)<50)) and not (d['bcid'] == bcid_t) and do_double_trigger_check):
-                    skip_event = True
-                    print("Skipping event", d['l1counter'], d['bcid'], bcid_t)
-                    skip_counter += 1
-                    continue
-                else:
-                    skip_event = False
-                bcid_t = d['bcid']
-                if (abs(l1a - d['l1counter'])>1) and abs(l1a - d['l1counter'])!=255 and verbose:
-                    print("SUS")
-                    sus = True
-                l1a = d['l1counter']
-                event.append(i)
-                counter_h.append(1)
-                counter_t.append(0)
-                l1counter.append(d['l1counter'])
-                row.append([])
-                col.append([])
-                tot_code.append([])
-                toa_code.append([])
-                cal_code.append([])
-                elink.append([])
-                raw.append([d['raw']])
-                nhits.append(0)
-                nhits_trail.append([])
-                chipid.append([])
-                crc.append([])
-                bcid.append([d['bcid']])
-                counter_a.append([])
-                i += 1
-                if verbose or sus:
-                    print("New event:", l1a, i, d['bcid'])
+                # loop through rb0 events, and find corresponding entries in the other layers
 
-        if t == 'data' and not skip_event:
-            if 'tot' in d:
-                tot_code[-1].append(d['tot'])
-                toa_code[-1].append(d['toa'])
-                cal_code[-1].append(d['cal'])
-            elif 'counter_a' in d:
-                bcid[-1].append(d['bcid'])
-                counter_a[-1].append(d['counter_a'])
-            elif 'counter_b' in d:
-                pass
-            row[-1].append(d['row_id'])
-            col[-1].append(d['col_id'])
-            elink[-1].append(d['elink'])
-            raw[-1].append(d['raw'])
-            nhits[-1] += 1
+                print(f"Merging events from RB {rb}")
 
-        if t == 'trailer':
-            trailers.append(d['raw'])
-            trailer_counter += 1
-            if not skip_event:
-                counter_t[-1] += 1
-                chipid[-1].append(d['hits']*d['chipid'])
-                nhits_trail[-1].append(d['hits'])
-                raw[-1].append(d['raw'])
-                crc[-1].append(d['crc'])
+                from tqdm import tqdm
+                with tqdm(total=events_with_hits, bar_format='{l_bar}{bar:20}{r_bar}{bar:-20b}') as pbar:
+                    for i, ev in enumerate(event_number):
+                        for j, tmp_evt in enumerate(events_all_rb[rb][events_all_rb[rb].bcid == events_all_rb[0].bcid[ev]]):
+                        #for j in events_all_rb[rb].event:
+                            if abs(tmp_evt.event - ev)<100:
+                            #if events_all_rb[rb].l1counter[j] == events_all_rb[0].l1counter[i] and events_all_rb[rb].bcid[j] == events_all_rb[0].bcid[i] and abs(j-i) < 100:
+                            #if events_all_rb[rb].bcid[j] == events_all_rb[0].bcid[ev] and abs(j-ev) < 100:
+                                nhits[i] += ak.to_list(tmp_evt.nhits)
+                                row[i] += ak.to_list(tmp_evt.row)
+                                col[i] += ak.to_list(tmp_evt.col)
+                                tot[i] += ak.to_list(tmp_evt.tot_code)
+                                toa[i] += ak.to_list(tmp_evt.toa_code)
+                                cal[i] += ak.to_list(tmp_evt.cal_code)
+                                elink[i] += ak.to_list(tmp_evt.elink)
+                                chipid[i] += ak.to_list(tmp_evt.chipid)
+                                #print(f"Found matching event for event {i} in rb {rb} stream")
+                                break
+
+                        pbar.update()
+
+                #for j in events.event:
+                #    if events.l1counter[j] == events_all_rb[0].l1counter[j] and events.bcid[j] == events_all_rb[0].bcid[j]:
+                #        nhits[j].append(events.nhits)
+                #        row[j].append(events.row)
+                #        col[j].append(events.col)
+                #        chipid[j].append(events.chipid)
+                #
+                #
+        print("Zipping again")
+        events = ak.Array({
+            'event': event_number,
+            'l1counter': l1counter,
+            #'nheaders': counter_h,
+            #'ntrailers': counter_t,
+            'row': row,
+            'col': col,
+            'tot_code': tot,
+            'toa_code': toa,
+            'cal_code': cal,
+            'elink': elink,
+            #'raw': raw,
+            #'crc': crc,
+            'chipid': chipid,
+            'bcid': bcid,
+            #'counter_a': counter_a,
+            'nhits': nhits,
+            #'nhits_trail': ak.sum(ak.Array(nhits_trail), axis=-1),
+        })
+
+        with open(f"ETROC_output/{args.input}_merged.json", "w") as f:
+            json.dump(ak.to_json(events), f)
 
 
-    print("Zipping")
-    events = ak.Array({
-        'event': event,
-        'l1counter': l1counter,
-        'nheaders': counter_h,
-        'ntrailers': counter_t,
-        'row': row,
-        'col': col,
-        'tot_code': tot_code,
-        'toa_code': toa_code,
-        'cal_code': cal_code,
-        'elink': elink,
-        'raw': raw,
-        'crc': crc,
-        'chipid': chipid,
-        'bcid': bcid,
-        'counter_a': counter_a,
-        'nhits': nhits,
-        'nhits_trail': ak.sum(ak.Array(nhits_trail), axis=-1),
-    })
+        all_layer_hit_candidates = events[ak.all(events.nhits==1, axis=1)]
+        all_layer_hit_candidates_no_noise_selection = (ak.num(all_layer_hit_candidates.col[((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] < 5))]) >0)
 
-    total_events = len(events)
-    # NOTE the check below is only valid for single ETROC
-    consistent_events = len(events[((events.nheaders==2)&(events.ntrailers==2)&(events.nhits==events.nhits_trail))])
-
-    print(total_events, consistent_events)
-
-    print(f"Done with {len(events)} events. " + emojize(":check_mark_button:"))
-    print(f" - skipped {skip_counter/events.nheaders[0]} events that were identified as double-triggered " + emojize(":check_mark_button:"))
-    if header_counter == trailer_counter:
-        print(f" - found same number of headers and trailers! " + emojize(":check_mark_button:"))
-    else:
-        print(f" - found {header_counter} headers and {trailer_counter} trailers. Please check. " + emojize(":warning:"))
-
-    with open(f"output/{args.input}.json", "w") as f:
-        json.dump(ak.to_json(events), f)
+        ((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] == 0) & ((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] == 10)))
+        # events[ak.all(events.nhits, axis=1)].toa_code
+        #
+        #
 
 
-    # make some plots
-    import matplotlib.pyplot as plt
-    import mplhep as hep
-    plt.style.use(hep.style.CMS)
+        hits0 = np.zeros([16, 16])
+        hits1 = np.zeros([16, 16])
+        hits2 = np.zeros([16, 16])
+        for ev in all_layer_hit_candidates[all_layer_hit_candidates_no_noise_selection]:
+            for row, col in zip(ev.row[ev.chipid==(38 << 2)], ev.col[ev.chipid==(38 << 2)]):
+                hits0[row,col]+=1
+            for row, col in zip(ev.row[ev.chipid==(36 << 2)], ev.col[ev.chipid==(36 << 2)]):
+                hits1[row,col]+=1
+            for row, col in zip(ev.row[ev.chipid==(37 << 2)], ev.col[ev.chipid==(37 << 2)]):
+                hits2[row,col]+=1
 
-    hits = np.zeros([16, 16])
+        
 
-    for ev in events:
-        for row, col in zip(ev.row, ev.col):
-            hits[row][col] += 1
+        # make some plots
+        import matplotlib.pyplot as plt
+        import mplhep as hep
+        plt.style.use(hep.style.CMS)
 
-    fig, ax = plt.subplots(1,1,figsize=(7,7))
-    cax = ax.matshow(hits)
-    ax.set_ylabel(r'$Row$')
-    ax.set_xlabel(r'$Column$')
-    fig.colorbar(cax,ax=ax)
-    fig.savefig(f"output/{args.input}_heatmap.pdf")
-    fig.savefig(f"output/{args.input}_heatmap.png")
+        fig, ax = plt.subplots(1,3,figsize=(15,5))
+        cax = ax[2].matshow(hits0)
+        ax[2].set_title("Module 38")
+        cax = ax[1].matshow(hits1)
+        ax[1].set_title("Module 36")
+        cax = ax[0].matshow(hits2)
+        ax[0].set_title("Module 37")
+        ax[0].set_ylabel(r'$Row$')
+        ax[0].set_xlabel(r'$Column$')
+        ax[1].set_xlabel(r'$Column$')
+        ax[2].set_xlabel(r'$Column$')
+        fig.colorbar(cax,ax=ax)
+        fig.savefig(f"ETROC_output/{args.input}_layers_heatmap.pdf")
+        fig.savefig(f"ETROC_output/{args.input}_layers_heatmap.png")
