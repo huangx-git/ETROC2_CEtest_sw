@@ -8,7 +8,7 @@ import copy
 from emoji import emojize
 
 from tamalero.ReadoutBoard import ReadoutBoard
-from tamalero.utils import get_kcu
+from tamalero.utils import get_kcu, load_yaml
 from tamalero.FIFO import FIFO
 from tamalero.DataFrame import DataFrame
 
@@ -19,16 +19,25 @@ Configuration of the telescope
 '''
 layers = [
     [
-        [12],
+        [37],
         [],
-        [25],
-        #[],
+        [],
     ],
     [
-        [20],
+        [36],  # 36
+        [],
+        [],
+    ],
+    [
+        [38],  # 38
         [],
         []
-    ]
+    ],
+#    [
+#        [39],
+#        [],
+#        []
+#    ],
 ]
 
 if __name__ == '__main__':
@@ -45,6 +54,7 @@ if __name__ == '__main__':
     argParser.add_argument('--power_down', action='store_true', help="Turn power off (BU setup only)")
     argParser.add_argument('--subset', action='store_true', help="Use subset of pixels for tests")
     argParser.add_argument('--offset', action='store', default='auto', help="The offset from the baseline")
+    argParser.add_argument('--delay', action='store', default=15, type=int, help="Set the L1A delay")
     args = argParser.parse_args()
 
 
@@ -70,6 +80,7 @@ if __name__ == '__main__':
     print("Configuring Readout Boards")
     rbs = {}
     for i, layer in enumerate(layers):
+        print(i)
         rbs[i] = ReadoutBoard(rb=i, trigger=True, kcu=kcu, config=args.configuration, verbose=False)
 
 
@@ -130,15 +141,24 @@ if __name__ == '__main__':
                             offset = args.offset
                         else:
                             offset = int(args.offset)
-                        mod.ETROCs[0].physics_config(offset=offset, L1Adelay=14, subset=test_pixels)
+                        mod.ETROCs[0].physics_config(offset=offset, L1Adelay=int(args.delay), subset=test_pixels)
+                    mod.ETROCs[0].reset()
 
         fifo_0 = FIFO(rbs[0])
         fifo_1 = FIFO(rbs[1])
+        fifo_2 = FIFO(rbs[2])
         df = DataFrame("ETROC2")
 
         fifo_0.send_l1a(1)
         fifo_0.reset()
         fifo_1.reset()
+        fifo_2.reset()
+
+        rbs[1].modules[0].ETROCs[0].wr_reg("readoutClockDelayGlobal", 1)
+
+        rbs[0].modules[0].ETROCs[0].reset()
+        rbs[1].modules[0].ETROCs[0].reset()
+        rbs[2].modules[0].ETROCs[0].reset()
 
         # doesn't matter which FIFO to choose, the L1A is universial
         print(emojize(':factory:'), " Producing some test data")
@@ -154,9 +174,69 @@ if __name__ == '__main__':
             #if x[0] == 'data': print ('!!!!!!!!!!', x)
             print(x)
 
+        print(emojize(':closed_mailbox_with_raised_flag:'), " Data in FIFO 2:")
+        for x in fifo_2.pretty_read(df):
+            #if x[0] == 'data': print ('!!!!!!!!!!', x)
+            print(x)
+
         # This script was verified to work with noise at the BU test stands
         # and it actually sees noise on the wirebonded pixels, as expected
 
+    ## code below is specific for module 40, please change to your convenience
+    #thresholds = load_yaml('results/40/2024-03-12-02-19-28/thresholds.yaml')
+
+    ## deactivate hot pixels in Module 40
+    #rbs[0].modules[0].ETROCs[0].reset()  # soft reset
+    #rbs[0].modules[0].ETROCs[0].disable_data_readout(row=2, col=10, broadcast=False)
+    #rbs[0].modules[0].ETROCs[0].disable_data_readout(row=1, col=15, broadcast=False)
+    #rbs[0].modules[0].ETROCs[0].disable_data_readout(row=7, col=15, broadcast=False)
+
+    ##rbs[0].modules[0].ETROCs[0].wr_reg("Bypass_THCal", 1, broadcast=True)
+    # for row in range(16):
+    #    for col in range(16):
+    #        rbs[0].modules[0].ETROCs[0].wr_reg('DAC', int(thresholds[row][col]), row=row, col=col)
+    #pixels = [
+    #    (10,6),
+    #    (10,7),
+    #    #(10,8),
+    #    #(9,6),
+    #    #(9,7),
+    #    #(9,8),
+    #]
+    #rbs[0].modules[0].ETROCs[0].disable_data_readout(broadcast=True)
+    #for row, col in pixels:
+    #    rbs[0].modules[0].ETROCs[0].enable_data_readout(row=row, col=col, broadcast=False)
+    #    rbs[0].modules[0].ETROCs[0].wr_reg('DAC', int(thresholds[row][col])+25, row=row, col=col)
+
+    run_timing_scan = False
+    #rbs[0].modules[0].ETROCs[0].disable_data_readout(broadcast=True)
+    #rbs[0].modules[0].ETROCs[0].enable_data_readout(row=8, col=8, broadcast=False)
+    #rbs[0].modules[0].ETROCs[0].wr_reg("DAC", 302, row=8, col=8, broadcast=False)
+    if run_timing_scan:
+        #rbs[0].modules[0].ETROCs[0].disable_data_readout(row=2, col=10, broadcast=False)
+        #rbs[0].modules[0].ETROCs[0].disable_data_readout(row=1, col=15, broadcast=False)
+        #rbs[0].modules[0].ETROCs[0].disable_data_readout(row=7, col=15, broadcast=False)
+        rbs[0].enable_external_trigger()
+        rbs[0].kcu.hw.dispatch()
+        for i in range(40):
+            rbs[0].modules[0].ETROCs[0].wr_reg("L1Adelay", i, broadcast=True)  # broadcast was missing before.
+            rbs[0].reset_data_error_count()
+            kcu.write_node(f"READOUT_BOARD_0.EVENT_CNT_RESET", 0x1)
+            fifo_0.reset()
+            print(kcu.read_node(f"READOUT_BOARD_0.EVENT_CNT").value())
+            # while kcu.read_node(f"READOUT_BOARD_0.EVENT_CNT").value()<30:
+            #     time.sleep(0.01)
+            #time.sleep(10)
+            #fifo_0.send_l1a(100)
+            #time.sleep(0.1)
+            #res = fifo_0.pretty_read(df)
+            data_count = rbs[0].read_data_count(elink=0, slave=False)
+            trigger_count = kcu.read_node(f"READOUT_BOARD_0.EVENT_CNT").value()
+            print(i, data_count, trigger_count)
+            #start_time = time.time()
+            #while time.time() - start_time < 10:
+
+        
     if args.power_down:
         psu1.power_down('ch1')
         psu1.power_down('ch2')

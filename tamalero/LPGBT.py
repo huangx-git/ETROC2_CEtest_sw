@@ -37,7 +37,7 @@ def gpio_byname(gpio_func):
 
 class LPGBT(RegParser):
 
-    def __init__(self, rb=0, trigger=False, flavor='small', master=None, kcu=None, do_adc_calibration=False, config='default', debug=False, ver=None, verbose=False):
+    def __init__(self, rb=0, trigger=False, flavor='small', master=None, kcu=None, do_adc_calibration=False, config='default', debug=False, ver=None, verbose=False, poke=False):
         '''
         Initialize lpGBT for a certain readout board number (rb).
         The trigger lpGBT is accessed through I2C of the master (= DAQ lpGBT).
@@ -61,10 +61,13 @@ class LPGBT(RegParser):
             self.kcu = kcu
 
         self.config = config
-        if not debug:
+        if not debug and not poke:
             self.configure(do_adc_calibration=do_adc_calibration)
         else:
-            print("Warning: Initializing lpGBT in debug mode.")
+            if debug:
+                print("Warning: Initializing lpGBT in debug mode.")
+            if poke:
+                self.ver = 1  # hard coded for now
             self.kcu.write_node("READOUT_BOARD_%d.SC.FRAME_FORMAT" % self.rb, self.ver)
             self.parse_xml(ver=self.ver)
 
@@ -825,7 +828,8 @@ class LPGBT(RegParser):
         if serial_valid(serial) and serial in cal_data and not recalibrate:
             gain = cal_data[serial]['gain']
             offset = cal_data[serial]['offset']
-            print("Loaded ADC calibration data for chip %s. Gain: %f / Offset: %d" % (serial, gain, offset))
+            if self.verbose:
+                print("Loaded ADC calibration data for chip %s. Gain: %f / Offset: %d" % (serial, gain, offset))
 
         # else, determine calibration constants
         else:

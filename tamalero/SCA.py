@@ -130,7 +130,7 @@ def gpio_byname(gpio_func):
 
 class SCA:
 
-    def __init__(self, rb=0, flavor='small', ver=0, config='default'):
+    def __init__(self, rb=0, flavor='small', ver=0, config='default', poke=False):
         self.rb = rb
         self.flavor = flavor
         self.err_count = 0

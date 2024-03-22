@@ -6,6 +6,9 @@ import awkward as ak
 import json
 from tamalero.DataFrame import DataFrame
 from emoji import emojize
+import os
+
+here = os.path.dirname(os.path.abspath(__file__))
 
 def merge_words(res):
     empty_frame_mask = np.array(res[0::2]) > (2**8)  # masking empty fifo entries
@@ -52,10 +55,13 @@ if __name__ == '__main__':
 
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--input', action='store', default='output_test2', help="Binary file to read from")
-    argParser.add_argument('--rbs', action='store', default='0', help="Which RBs")
+    argParser.add_argument('--rbs', action='store', default='0', help="RB numbers")
     argParser.add_argument('--skip_trigger_check', action='store_true', help="Skip the double trigger check.")
     argParser.add_argument('--verbose', action='store_true', help="Print every event number.")
+    argParser.add_argument('--force', action='store_true', help="Don't care about inconsistencies, force produce output.")
     args = argParser.parse_args()
+
+    rbs = args.rbs.split(',')
 
     verbose = args.verbose
     df = DataFrame('ETROC2')
@@ -63,14 +69,11 @@ if __name__ == '__main__':
     do_double_trigger_check = not args.skip_trigger_check
 
     events_all_rb = []
+    all_runs_good = True
 
-    rbs = args.rbs.split(',')
+    for irb, rb in enumerate(rbs):
 
-    for rb in rbs:
-
-        print(f"Working on output of RB {rb}")
-
-        f_in = f'ETROC_output/output_run_{args.input}_rb{rb}.dat'
+        f_in = f'{here}/ETROC_output/output_run_{args.input}_rb{rb}.dat'
 
         with open(f_in, 'rb') as f:
             print("Reading from {}".format(f_in))
@@ -109,9 +112,16 @@ if __name__ == '__main__':
         bcid_t = 9999
         skip_event = False
         skip_counter = 0
+        bad_run = False
+
+
+        uuid = []
+
         for t, d in unpacked_data:
             sus = False
             if t == 'header':
+                hit_counter = 0
+                uuid_tmp = d['l1counter'] | d['bcid']<<8
                 headers.append(d['raw'])
                 header_counter += 1
                 #if (abs(d['bcid']-bcid_t)<50) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
@@ -121,8 +131,9 @@ if __name__ == '__main__':
                 if d['l1counter'] == l1a:
                     # this just skips additional headers for the same event
                     counter_h[-1] += 1
+                    raw[-1].append(d['raw'])
                     if skip_event:
-                        print("Skipping event", d['l1counter'], d['bcid'], bcid_t)
+                        #print("Skipping event (same l1a counter)", d['l1counter'], d['bcid'], bcid_t)
                         continue
                     pass
                 #elif d['l1counter'] < l1a and d['l1counter']!=0:
@@ -132,11 +143,18 @@ if __name__ == '__main__':
                 #    print("Skipping event", d['l1counter'], d['bcid'], bcid_t)
 
                 else:
+                    if uuid_tmp in uuid and abs(i - np.where(np.array(uuid) == uuid_tmp)[0][-1]) < 150:
+                        #print("Skipping duplicate event")
+                        skip_counter += 1
+                        skip_event = True
+                        continue
+                    else:
+                        uuid.append(d['l1counter'] | d['bcid']<<8)
                     #if (abs(d['bcid']-bcid_t)<40) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
                     #if (abs(d['bcid']-bcid_t)<500) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
                     if (((abs(d['bcid']-bcid_t)<150) or (abs(d['bcid']+3564-bcid_t)<50)) and not (d['bcid'] == bcid_t) and do_double_trigger_check):
                         skip_event = True
-                        print("Skipping event", d['l1counter'], d['bcid'], bcid_t)
+                        #print("Skipping event", d['l1counter'], d['bcid'], bcid_t)
                         skip_counter += 1
                         continue
                     else:
@@ -161,13 +179,14 @@ if __name__ == '__main__':
                     nhits_trail.append([])
                     chipid.append([])
                     crc.append([])
-                    bcid.append(d['bcid'])
+                    bcid.append([d['bcid']])
                     counter_a.append([])
                     i += 1
                     if verbose or sus:
                         print("New event:", l1a, i, d['bcid'])
 
             if t == 'data' and not skip_event:
+                hit_counter += 1
                 if 'tot' in d:
                     tot_code[-1].append(d['tot'])
                     toa_code[-1].append(d['toa'])
@@ -182,82 +201,92 @@ if __name__ == '__main__':
                 elink[-1].append(d['elink'])
                 raw[-1].append(d['raw'])
                 nhits[-1] += 1
+                if nhits[-1] > 256:
+                    print("This event already has more than 256 events. Breaking.")
+                    bad_run = True
+                    break
 
             if t == 'trailer':
                 trailers.append(d['raw'])
                 trailer_counter += 1
                 if not skip_event:
                     counter_t[-1] += 1
-                    if d['hits']>0:
-                        chipid[-1] += d['hits']*[d['chipid']]
+                    if hit_counter > 0:
+                        chipid[-1].append(hit_counter*d['chipid'])
                     nhits_trail[-1].append(d['hits'])
                     raw[-1].append(d['raw'])
                     crc[-1].append(d['crc'])
 
 
-        print("Zipping")
-        events = ak.Array({
-            'event': event,
-            'l1counter': l1counter,
-            'nheaders': counter_h,
-            'ntrailers': counter_t,
-            'row': row,
-            'col': col,
-            'tot_code': tot_code,
-            'toa_code': toa_code,
-            'cal_code': cal_code,
-            'elink': elink,
-            'raw': raw,
-            'crc': crc,
-            'chipid': chipid,
-            'bcid': bcid,
-            'counter_a': counter_a,
-            'nhits': ak.singletons(nhits),
-            'nhits_trail': ak.sum(ak.Array(nhits_trail), axis=-1),
-        })
+        if not bad_run or args.force:
+            print("Zipping")
+            events = ak.Array({
+                'event': event,
+                'l1counter': l1counter,
+                'nheaders': counter_h,
+                'ntrailers': counter_t,
+                'row': row,
+                'col': col,
+                'tot_code': tot_code,
+                'toa_code': toa_code,
+                'cal_code': cal_code,
+                'elink': elink,
+                'raw': raw,
+                'crc': crc,
+                'chipid': chipid,
+                'bcid': bcid,
+                'counter_a': counter_a,
+                'nhits': ak.singletons(nhits),
+                'nhits_trail': ak.sum(ak.Array(nhits_trail), axis=-1),
+            })
 
-        total_events = len(events)
-        # NOTE the check below is only valid for single ETROC
-        #consistent_events = len(events[((events.nheaders==2)&(events.ntrailers==2)&(events.nhits==events.nhits_trail))])
-        #
-        #print(total_events, consistent_events)
+            total_events = len(events)
+            # NOTE the check below is only valid for single ETROC
+            #consistent_events = len(events[((events.nheaders==2)&(events.ntrailers==2)&(events.nhits==events.nhits_trail))])
+            #
+            #print(total_events, consistent_events)
 
-        print(f"Done with {len(events)} events. " + emojize(":check_mark_button:"))
-        #print(f" - skipped {skip_counter/events.nheaders[0]} events that were identified as double-triggered " + emojize(":check_mark_button:"))
-        if header_counter == trailer_counter:
-            print(f" - found same number of headers and trailers! " + emojize(":check_mark_button:"))
+            print(f"Done with {len(events)} events. " + emojize(":check_mark_button:"))
+            #print(f" - skipped {skip_counter/events.nheaders[0]} events that were identified as double-triggered " + emojize(":check_mark_button:"))
+            if header_counter == trailer_counter:
+                print(f" - found same number of headers and trailers! " + emojize(":check_mark_button:"))
+            else:
+                print(f" - found {header_counter} headers and {trailer_counter} trailers. Please check. " + emojize(":warning:"))
+
+            with open(f"ETROC_output/{args.input}_rb{rb}.json", "w") as f:
+                json.dump(ak.to_json(events), f)
+
+            events_all_rb.append(events)
+
+            # make some plots
+            import matplotlib.pyplot as plt
+            import mplhep as hep
+            plt.style.use(hep.style.CMS)
+
+            hits = np.zeros([16, 16])
+
+
+            if rb=='2':
+                mask = [(11,5)]
+            else:
+                mask = []
+            for ev in events:
+                for row, col in zip(ev.row, ev.col):
+                    if (row, col) not in mask:
+                        hits[row][col] += 1
+
+            fig, ax = plt.subplots(1,1,figsize=(7,7))
+            cax = ax.matshow(hits)
+            ax.set_ylabel(r'$Row$')
+            ax.set_xlabel(r'$Column$')
+            fig.colorbar(cax,ax=ax)
+            fig.savefig(f"ETROC_output/{args.input}_rb{rb}_heatmap.pdf")
+            fig.savefig(f"ETROC_output/{args.input}_rb{rb}_heatmap.png")
         else:
-            print(f" - found {header_counter} headers and {trailer_counter} trailers. Please check. " + emojize(":warning:"))
-
-        with open(f"ETROC_output/{args.input}_rb{rb}.json", "w") as f:
-            json.dump(ak.to_json(events), f)
-
-        events_all_rb.append(events)
-
-        # make some plots
-        import matplotlib.pyplot as plt
-        import mplhep as hep
-        plt.style.use(hep.style.CMS)
-
-        hits = np.zeros([16, 16])
-
-
-        if rb=='2':
-            mask = [(11,5)]
-        else:
-            mask = []
-        for ev in events:
-            for row, col in zip(ev.row, ev.col):
-                if (row, col) not in mask:
-                    hits[row][col] += 1
-
-        fig, ax = plt.subplots(1,1,figsize=(7,7))
-        cax = ax.matshow(hits)
-        ax.set_ylabel(r'$Row$')
-        ax.set_xlabel(r'$Column$')
-        fig.colorbar(cax,ax=ax)
-        fig.savefig(f"ETROC_output/{args.input}_rb{rb}_heatmap.pdf")
-        fig.savefig(f"ETROC_output/{args.input}_rb{rb}_heatmap.png")
+            print("Bad run detected. Not creating a json file.")
+            all_runs_good = False
+            if os.path.isfile(f"{here}/ETROC_output/output_run_{args.input}_rb{rb}.json"):
+                os.remove(f"{here}/ETROC_output/output_run_{args.input}_rb{rb}.json")
 
 
     if len(events_all_rb)>0:
@@ -294,7 +323,7 @@ if __name__ == '__main__':
                 from tqdm import tqdm
                 with tqdm(total=events_with_hits, bar_format='{l_bar}{bar:20}{r_bar}{bar:-20b}') as pbar:
                     for i, ev in enumerate(event_number):
-                        for j, tmp_evt in enumerate(events_all_rb[rb][events_all_rb[rb].bcid == events_all_rb[0].bcid[ev]]):
+                        for j, tmp_evt in enumerate(events_all_rb[rb][ak.flatten(events_all_rb[rb].bcid == events_all_rb[0].bcid[ev])]):
                         #for j in events_all_rb[rb].event:
                             if abs(tmp_evt.event - ev)<100:
                             #if events_all_rb[rb].l1counter[j] == events_all_rb[0].l1counter[i] and events_all_rb[rb].bcid[j] == events_all_rb[0].bcid[i] and abs(j-i) < 100:
@@ -344,6 +373,10 @@ if __name__ == '__main__':
         with open(f"ETROC_output/{args.input}_merged.json", "w") as f:
             json.dump(ak.to_json(events), f)
 
+        # make a copy that is called rb0 for the merger
+        with open(f"{here}/ETROC_output/output_run_{args.input}_rb0.json", "w") as f:
+            json.dump(ak.to_json(events), f)
+
 
         all_layer_hit_candidates = events[ak.all(events.nhits==1, axis=1)]
         all_layer_hit_candidates_no_noise_selection = (ak.num(all_layer_hit_candidates.col[((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] < 5))]) >0)
@@ -365,7 +398,7 @@ if __name__ == '__main__':
             for row, col in zip(ev.row[ev.chipid==(37 << 2)], ev.col[ev.chipid==(37 << 2)]):
                 hits2[row,col]+=1
 
-        
+
 
         # make some plots
         import matplotlib.pyplot as plt

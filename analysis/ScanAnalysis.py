@@ -11,17 +11,21 @@ import pdb
 import pandas as pd
 
 
-board_number     = 16
+board_number     = 40
 # base             = "/home/daq/ETROC2_Test_Stand/ScopeHandler/ScopeData/LecroyMerged"
-base             = "/media/daq/G-DRIVE/BACKUP_FILES/LecroyMerged"
+base             = "/home/etl/Test_Stand/ETROC2_Test_Stand/ScopeHandler/ScopeData/LecroyMerged"
+# base = "/home/etl/Test_Stand/ETROC2_Test_Stand/ScopeHandler/ScopeData/ETROCData"
+# base = "/home/etl/Test_Stand/ETROC2_Test_Stand/ScopeHandler/Lecroy/Merging"
 legend_label     = "Threshold offset"
 scanning_version = "Threshold_offset"
-output_folder    = f"/home/daq/ETROC2_Test_Stand/module_test_sw/analysis/plots_{scanning_version}_N{board_number}_laser_calibration_old_data"
+output_folder    = f"p_no_cuts/plots_{scanning_version}_N{board_number}_358_one_channel"
 unit             = "vth"
 os.system(f"mkdir -p {output_folder}")
 
-y_axis = [10983, 10985, 10986, 10987, 10988, 10989, 10990, 10991, 10992, 10993, 10994] #list(range(11074, 11104, 1)) # [10985, 10987, 10990]  # [10989, 10985, 10986, 10987, 10988, 10989, 10990] # [10983, 10985, 10986, 10987, 10988, 10989, 10990, 10991, 10992, 10993, 10994] # [10952, 10954, 10955, 10956] # , 10958, 10959, 10960, 10952, 10954, 10955, 10956 [10983, 10985, 10986, 10987, 10988, 10989, 
-x_axis = [8,     10   , 12   , 14   , 16   ,    18, 20   , 30   ,40,50,60] #list(range(0, 30, 1)) # [10, 14, 20]                # [8,10,12,14,16,18,20]                             # [8,     10   , 12   , 14   , 16   ,    18, 20   , 30   ,40,50,60] # [6,7,8,9] # 0,1,2,3,4,5,6,7,8,9
+y_axis = [358]
+x_axis = [8]
+
+PIXELS = [0]
 
 print(len(x_axis))
 print(len(y_axis))
@@ -29,6 +33,10 @@ print(len(y_axis))
 a = 10
 c = 1
 do_Delta_T_Gaussian_fit = True
+
+# argParser.add_argument('--one_pixel', action = 'store', default = False, type = bool, help = 'One pixel flag')
+# argParser.add_argument('--row', action = 'store', type = int, default = 8, help = 'Pixel row')
+# argParser.add_argument('--col', action='store', type = int, default = 8, help = "Pixel column")
 
 def merge_unique(list1, list2):
     merged_list = [(list1[i], list2[i]) for i in range(0, len(list1))]
@@ -45,7 +53,7 @@ def get_unique(row, col):
 def load_data(indices):
     output = []
     for i, index in enumerate(indices):
-        filename = f"{base}/run_{index}.root"
+        filename = f"{base}/run_{y_axis[i]}.root"
         output.append({})
         with uproot.open(filename) as f:
             tree = f["pulse"]
@@ -56,12 +64,14 @@ def load_data(indices):
             output[i]["CAL"]   = fill_empty_arrays(tree["cal_code"].array())
             output[i]["row"]   = fill_empty_arrays(tree["row"].array())
             output[i]["col"]   = fill_empty_arrays(tree["col"].array())
+            # output[i]["DT"] = output[i]["TOA"] - (tree[f"Clock"].array() - tree[f"LP2_1"].array()[:, 1])
+            
             # Get the timestamps
-            for c in [6, 7]:                        # The index of the scope channel
+            for c in [1, 2]:                        # The index of the scope channel
                 for p in [20]: # The percentage of amplitude value
-                    if c == 6:
+                    if c == 2:
                         output[i]["Clock"] = tree["Clock"].array() # tree[f"linear_RE_{p}"].array()[:, c]
-                    if c == 7:
+                    if c == 1:
                         output[i][f"LP2_{p}_{c}"] = tree[f"LP2_{p}"].array()[:, c]
     return output
 
@@ -143,17 +153,17 @@ def plots(data, x_axis):
     for d_i, d in enumerate(data):
         cutflow_tables = {}
         # -------------------------- EVENT LEVEL SELECTION --------------------------
-        sel = ((d["nhits"] > 0)) #  & (d["Clock"] < 0)) # Select events with at least one hit.
+        sel = np.ones(len(d["nhits"]), dtype = bool) # ((d["nhits"] > -1)) #  & (d["Clock"] < 0)) # Select events with at least one hit.
         row = d["row"][sel]
         col = d["col"][sel]
         toa = d["TOA"][sel]
         tot = d["TOT"][sel]
         cal = d["CAL"][sel]
         Clock_[d_i] = d["Clock"][sel] # np.array([rescale(i) for i in d["Clock"][sel]])
-        LP2_20_7_[d_i] = d["LP2_20_7"][sel]*10**9
+        LP2_20_7_[d_i] = d["LP2_20_1"][sel]*10**9
         hits_[d_i] = d["nhits"][sel]
 
-        elem_sel  = ((cal > 195) & (cal < 210) & (tot > 4.0)) # Select hits from a particular pixel.
+        elem_sel  = ((cal > 150) & (cal < 210) & (tot > 2.0) & (tot < 15.0)) # Select hits from a particular pixel.
 
         Clock_   [d_i] = Clock_   [d_i][ak.any(elem_sel, axis = 1)]
         LP2_20_7_[d_i] = LP2_20_7_[d_i][ak.any(elem_sel, axis = 1)]
@@ -170,13 +180,13 @@ def plots(data, x_axis):
         tot = remove_empty_arrays(tot)
         cal = remove_empty_arrays(cal)
         toa = remove_empty_arrays(toa)
-
-        for p in [0,1,2,3]:
+        p = 0
+        for p_i in PIXELS:
             cuts = {}
             # -------------------------- ELEMENT LEVEL SELECTION --------------------------
-            pixel_sel = ((row == 15) & (col == p))
+            pixel_sel = ((row > 0) & (col > 0))
             print(len(pixel_sel), len(Clock_[d_i]))
-            print(f"Row: 15, Col: {p}")
+            print(f"Row: 8, Col: {p_i}")
             row_ = row[(pixel_sel)]
             col_ = col[(pixel_sel)]
             toa_ = toa[(pixel_sel)]
@@ -215,6 +225,7 @@ def plots(data, x_axis):
             mean_DT    [p].append(np.mean(DT[p][d_i]))
             std_DT     [p].append(np.std (DT[p][d_i]))
             cutflow_tables[f"row_15_col_{p}"] = cuts
+            p+=1
 
     # Plot graphs.
     '''
@@ -274,7 +285,7 @@ def plots(data, x_axis):
     for v, var in enumerate(variables):
         if labels[v] == "TOA" or labels[v] == "TOT" or labels[v] == "CAL" or labels[v] == "DT":
             fig, ax = plt.subplots(2, 2, figsize = (2*a*c, 2*a))
-            for p in range(4):
+            for p in range(len(PIXELS)):
                 minimum = min([min(var[p][i]) if len(var[p][i]) != 0 else 10000 for i in range(len(x_axis))])
                 maximum = max([max(var[p][i]) if len(var[p][i]) != 0 else 0     for i in range(len(x_axis))])
                 x = int(np.floor(p / 2))
@@ -286,6 +297,9 @@ def plots(data, x_axis):
                     else:
                         bins = 70
                     # bins = np.linspace(minimum, maximum, 70)
+                    if labels[v] == "DT":
+                        minimum = 5
+                        maximum = 15
                     weights = np.ones(len(var[p][j])) / len(var[p][j])
                     ax[x][y].hist(var[p][j], label = f"{legend_label}: {x_axis[j]} {unit}", bins = bins, histtype = "step", weights = weights, linewidth=2.5)
                 ax[x][y].set_xlabel(f"{labels[v]} [{units[v]}]",loc='center')
@@ -295,6 +309,7 @@ def plots(data, x_axis):
                 handles, label = ax[x][y].get_legend_handles_labels()
                 idx = np.sort(np.unique(np.array(label), return_index=True)[1])
                 ax[x][y].legend(np.array(label)[idx])
+            plt.show()
             fig.savefig(f"{output_folder}/{labels[v]}_HIST.png")
             plt.close()
         else:
@@ -319,6 +334,7 @@ def plots(data, x_axis):
                     ax.hist(var[j], label = f"{legend_label}: {x_axis[j]} {unit}", bins = bins, histtype = "step", weights = weights, linewidth=2.5)
             ax.set_xlabel(f"{labels[v]} [{units[v]}]",loc='center')
             ax.set_ylabel("Events",loc='center')
+            plt.show()
             handles, label = ax.get_legend_handles_labels()
             idx = np.sort(np.unique(np.array(label), return_index=True)[1])
             ax.xaxis.set_major_formatter(mpl.ticker.ScalarFormatter(useOffset=False))
@@ -329,7 +345,7 @@ def plots(data, x_axis):
 
     for i in range(len(x_axis)): # toa vs tot
         fig, ax = plt.subplots(2, 2, figsize = (2*a*c, 2*a))
-        for p in range(4):
+        for p in range(len(PIXELS)):
             x = int(np.floor(p / 2))
             y = int(p % 2)
             ax[x][y].hist2d(np.array(variables[0][p][i]), np.array(variables[1][p][i]), bins = (50, 50))
@@ -339,6 +355,7 @@ def plots(data, x_axis):
             ax[x][y].set_xlim([2,12.5])
             ax[x][y].set_ylim([0,15])
             ax[x][y].xaxis.set_major_formatter(mpl.ticker.ScalarFormatter(useOffset=False))
+        plt.show()
         fig.savefig(f"{output_folder}/TOA_vs_TOT_row_15_col_{p}_{x_axis[i]}.png")
 
     # for i in range(len(x_axis)): # tot vs Clock
@@ -355,7 +372,7 @@ def plots(data, x_axis):
 
     if do_Delta_T_Gaussian_fit:
         fig, ax = plt.subplots(2, 2, figsize = (2*20*c, 2*20))
-        for p in range(4):
+        for p in range(len(PIXELS)):
             x = int(np.floor(p / 2))
             y = int(p % 2)
             bins = np.linspace(-3, -2, 55)
