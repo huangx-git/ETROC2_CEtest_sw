@@ -334,7 +334,7 @@ inversions:
 
 modules:
   1:
-    elinks: [[[0],[0]], [[1],[1]], [[2],[2]], [[3],[3]]]  # structure here is ETROC, LPGBT, ELINK
+    elinks: [[[0],[0]], [[2],[2]], [[20],[20]], [[22],[22]]]  # structure here is ETROC, LPGBT, ELINK
     addresses: [0x60, 0x61, 0x62, 0x63]
     i2c:
       master: lpgbt
@@ -346,7 +346,7 @@ modules:
     pgood: mod_d02
     vtemp: [mod_a0, mod_a1, mod_a2, mod_a3]
   2:
-    elinks: [[[4],[4]], [[5],[5]], [[6],[6]], [[7],[7]]]
+          elinks: [[[4],[4]], [[6],[6]], [[16],[16]], [[18],[18]]]
     addresses: [0x64, 0x65, 0x66, 0x67]
     i2c:
       master: sca
@@ -358,7 +358,7 @@ modules:
     pgood: mod_d10
     vtemp: [mod_a08, mod_a09, mod_a10, mod_a11]
   3:
-    elinks: [[[8],[8]], [[9],[9]], [[10],[10]], [[11],[11]]]
+    elinks: [[[8],[8]], [[10],[10]], [[12],[12]], [[14],[14]]]
     addresses: [0x68, 0x69, 0x6a, 0x6b]
     i2c:
       master: sca
