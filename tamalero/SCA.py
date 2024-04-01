@@ -115,13 +115,13 @@ class SCA_I2C:
 
 def gpio_byname(gpio_func):
     @wraps(gpio_func)
-    def wrapper(lpgbt, pin, direction=1):
+    def wrapper(sca, pin, direction=1):
         if isinstance(pin, str):
-            gpio_dict = lpgbt.gpio_mapping
+            gpio_dict = sca.gpio_mapping
             pin = gpio_dict[pin]['pin']
-            return gpio_func(lpgbt, pin, direction)
+            return gpio_func(sca, pin, direction)
         elif isinstance(pin, int):
-            return gpio_func(lpgbt, pin, direction)
+            return gpio_func(sca, pin, direction)
         else:
             invalid_type = type(pin)
             raise TypeError(f"{gpio_func.__name__} can only take positional arguments of type int or str, but argument of type {invalid_type} was given.")
@@ -130,7 +130,7 @@ def gpio_byname(gpio_func):
 
 class SCA:
 
-    def __init__(self, rb=0, flavor='small', ver=0, config='default'):
+    def __init__(self, rb=0, flavor='small', ver=0, config='default', verbose=True):
         self.rb = rb
         self.flavor = flavor
         self.err_count = 0
@@ -139,6 +139,7 @@ class SCA:
         self.locked = False
         self.set_adc_mapping()
         self.set_gpio_mapping()
+        self.verbose = verbose
 
     def connect_KCU(self, kcu):
         self.kcu = kcu
@@ -554,11 +555,12 @@ class SCA:
             direction   = int(gpio_dict[gpio_reg]['direction'] == 'out')
             comment     = gpio_dict[gpio_reg]['comment']
             default     = gpio_dict[gpio_reg]['default']
-            if verbose:
-                print("Setting SCA GPIO pin %s (%s) to %s"%(pin, comment, gpio_dict[gpio_reg]['direction']))
+            if self.verbose:
+                print("Setting SCA GPIO pin %s (%s) to %s with value %s"%(pin, comment, gpio_dict[gpio_reg]['direction'], default))
             self.set_gpio(pin, default)  # NOTE this is important because otherwise the GPIO pin can be set to a false default value when switched to output
             self.set_gpio_direction(pin, direction)
-            self.set_gpio(pin, default)  # redundant but keep it
+            if not self.read_gpio(pin) == default:
+                self.set_gpio(pin, default)  # redundant but keep it
 
     def get_I2C_channel(self, channel):
         channel_str = hex(channel).upper()[-1]
