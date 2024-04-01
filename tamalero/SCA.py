@@ -130,7 +130,7 @@ def gpio_byname(gpio_func):
 
 class SCA:
 
-    def __init__(self, rb=0, flavor='small', ver=0, config='default', verbose=True):
+    def __init__(self, rb=0, flavor='small', ver=0, config='default', poke=False, verbose=True):
         self.rb = rb
         self.flavor = flavor
         self.err_count = 0
@@ -140,6 +140,8 @@ class SCA:
         self.set_adc_mapping()
         self.set_gpio_mapping()
         self.verbose = verbose
+        if poke:
+            self.verbose = False
 
     def connect_KCU(self, kcu):
         self.kcu = kcu

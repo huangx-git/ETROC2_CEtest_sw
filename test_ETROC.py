@@ -18,6 +18,7 @@ import time
 import datetime
 from yaml import load, dump
 import traceback
+import pickle
 
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -79,6 +80,7 @@ def parse_data(data, N_pix):
 
 
 def vth_scan(ETROC2, vth_min=693, vth_max=709, vth_step=1, decimal=False, fifo=None, absolute=False):
+    # N_l1a    =  3200 # how many L1As to send
     N_l1a    =  3200 # how many L1As to send
     vth_min  =   vth_min # scan range
     vth_max  =   vth_max
@@ -140,6 +142,7 @@ if __name__ == '__main__':
     argParser.add_argument('--fitplots', action='store_true', default=False, help="Create individual vth fit plots for all pixels?")
     argParser.add_argument('--kcu', action='store', default='192.168.0.10', help="IP Address of KCU105 board")
     argParser.add_argument('--module', action='store', default=0, choices=['1','2','3'], help="Module to test")
+    argParser.add_argument('--rb', action='store', default=0, choices=['0','1','2','3'], help="Module to test")
     argParser.add_argument('--host', action='store', default='localhost', help="Hostname for control hub")
     argParser.add_argument('--partial', action='store_true', default=False, help="Only read data from corners and edges")
     argParser.add_argument('--qinj_scan', action='store_true', default=False, help="Run the phase scan for Qinj")
@@ -235,7 +238,7 @@ if __name__ == '__main__':
             # this would cause the RB init to fail.
             sys.exit(1)
 
-        rb_0 = ReadoutBoard(0, kcu=kcu, config=args.configuration)
+        rb_0 = ReadoutBoard(int(args.rb), kcu=kcu, config=args.configuration)
         data = 0xabcd1234
         kcu.write_node("LOOPBACK.LOOPBACK", data)
         if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
@@ -300,7 +303,7 @@ if __name__ == '__main__':
             sys.exit(1)
 
         int_time = time.time()
-        rb_0 = ReadoutBoard(0, kcu=kcu, config=args.configuration)
+        rb_0 = ReadoutBoard(int(args.rb), kcu=kcu, config=args.configuration)
         data = 0xabcd1234
         kcu.write_node("LOOPBACK.LOOPBACK", data)
         if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
@@ -335,7 +338,7 @@ if __name__ == '__main__':
             # this would cause the RB init to fail.
             sys.exit(1)
 
-        rb_0 = ReadoutBoard(0, kcu=kcu, config=args.configuration)
+        rb_0 = ReadoutBoard(int(args.rb), kcu=kcu, config=args.configuration)
         data = 0xabcd1234
         kcu.write_node("LOOPBACK.LOOPBACK", data)
         if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
@@ -826,8 +829,8 @@ if __name__ == '__main__':
         elif args.threshold == "manual":
 
             # Prescanning a random pixel to get an idea of the threshold
-            row = 4
-            col = 3
+            row = int(args.row)
+            col = int(args.col)
 
             elink, slave = etroc.get_elink_for_pixel(row, col)
 
@@ -888,6 +891,11 @@ if __name__ == '__main__':
             rawout = {vth_axis[i]:hit_rate.T[i].tolist() for i in range(len(vth_axis))}
             with open(out_dir + '/manual_thresh_scan_data.json', 'w') as f:
                 json.dump(rawout, f)
+
+            # for pix in range(N_pix):
+            #     plt.plot(vth_axis[hit_rate[pix] > 0], hit_rate[pix][hit_rate[pix] > 0])
+            #     plt.savefig(f"./hit_rate/hit_rate_{pix}.png")
+            #     plt.close()
 
             for pix in range(N_pix):
                 r, c = fromPixNum(pix, N_pix_w)
@@ -1150,6 +1158,8 @@ if __name__ == '__main__':
                            'toa' : TOA[k-1],
                            'tot' : TOT[k-1],
                            'cal' : CAL[k-1]}
+                #with open(f"{out_dir}/Qinj_scan_L1A_504_{q}.pkl", 'w') as f:
+                #    pickle.dump(scan_df, f)
                 with open(f"{out_dir}/Qinj_scan_L1A_504_{q}.yaml", 'w') as f:
                     dump(scan_df, f)
             fig, ax = plt.subplots()

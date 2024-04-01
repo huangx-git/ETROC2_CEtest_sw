@@ -5,6 +5,7 @@ from tamalero.utils import get_temp, chunk, get_temp_direct, get_config, load_ya
 from tamalero.VTRX import VTRX
 from tamalero.utils import read_mapping
 from tamalero.colors import red, green
+from tamalero.Module import Module
 
 try:
     from tabulate import tabulate
@@ -13,9 +14,15 @@ except ModuleNotFoundError:
 
 from time import sleep
 
+flavors = {
+    'small': 3,
+    'medium': 6,
+    'large': 7,
+}
+
 class ReadoutBoard:
 
-    def __init__(self, rb=0, trigger=True, flavor='small', kcu=None, config='default'):
+    def __init__(self, rb=0, trigger=True, flavor='small', kcu=None, config='default', alignment=False, data_mode=True, etroc='ETROC2', verbose=False, allow_bad_links=False, poke=False):
         '''
         create a readout board.
         trigger: if true, also configure a trigger lpGBT
@@ -23,15 +30,21 @@ class ReadoutBoard:
         self.rb = rb
         self.flavor = flavor
         self.ver = 2
+        self.nmodules = flavors[flavor]
         self.config = config
 
         self.trigger = trigger
-        self.DAQ_LPGBT = LPGBT(rb=rb, flavor=flavor, kcu=kcu, config=self.config)
+        self.DAQ_LPGBT = LPGBT(rb=rb, flavor=flavor, kcu=kcu, config=self.config, poke=poke)
         self.VTRX = VTRX(self.DAQ_LPGBT)
         # This is not yet recommended:
         #for adr in [0x06, 0x0A, 0x0E, 0x12]:
         #    self.VTRX.wr_adr(adr, 0x20)
-        self.SCA = SCA(rb=rb, flavor=flavor, ver=self.DAQ_LPGBT.ver, config=self.config)
+        self.SCA = SCA(rb=rb, flavor=flavor, ver=self.DAQ_LPGBT.ver, config=self.config, poke=poke)
+
+        self.alignment = alignment
+        self.data_mode = data_mode
+        self.etroc = etroc
+        self.verbose = verbose
 
         if kcu != None:
             self.kcu = kcu
@@ -49,16 +62,39 @@ class ReadoutBoard:
 
         self.configuration = get_config(self.config, version=f'v{self.ver}')
 
-        self.enable_etroc_readout()  # enable readout of all ETROCs by default
+        if poke:
+            self.get_trigger(poke=True)
+            return
 
-    def get_trigger(self):
+        self.enable_etroc_readout()  # enable readout of all ETROCs by default
+        self.enable_etroc_readout(slave=True)  # enable readout of all ETROCs by default
+
+        self.is_configured = self.DAQ_LPGBT.is_configured()
+        #if not self.is_configured:
+
+        self.VTRX.get_version()
+
+        if trigger:
+            self.get_trigger()
+
+            if not self.TRIG_LPGBT.power_up_done():
+                self.TRIG_LPGBT.power_up_init()
+
+        if not self.is_configured:
+            self.configure()
+
+        if self.ver == 2:
+            # this method does not work for RB v1 / lpGBT v0
+            self.reset_problematic_links(max_retries=10, allow_bad_links=allow_bad_links)
+
+    def get_trigger(self, poke=False):
         # Self-check if a trigger lpGBT is present, if trigger is not explicitely set to False
         sleep(0.5)
         try:
             test_read = self.DAQ_LPGBT.I2C_read(reg=0x0, master=2, slave_addr=0x70, verbose=False)
         except TimeoutError:
             test_read = None
-        if test_read is not None and self.trigger:
+        if test_read is not None and self.trigger and not poke:
             print ("Found trigger lpGBT, will configure it now.")
             self.trigger = True
             print (" > Enabling VTRX channel for trigger lpGBT")
@@ -68,10 +104,11 @@ class ReadoutBoard:
             print ("No trigger lpGBT found.")
             self.trigger = False
         else:
-            print ("Trigger lpGBT was found, but will not be added.")
+            if self.verbose:
+                print ("Trigger lpGBT was found, but will not be configured.")
 
         if self.trigger:
-            self.TRIG_LPGBT = LPGBT(rb=self.rb, flavor=self.flavor, trigger=True, master=self.DAQ_LPGBT, kcu=self.kcu, config=self.config)
+            self.TRIG_LPGBT = LPGBT(rb=self.rb, flavor=self.flavor, trigger=True, master=self.DAQ_LPGBT, kcu=self.kcu, config=self.config, poke=poke)
 
 
     def connect_KCU(self, kcu):
@@ -294,7 +331,7 @@ class ReadoutBoard:
         self.DAQ_LPGBT.set_gpio(3, 0)
         sleep(1)
 
-    def configure(self, alignment=None, data_mode=False, etroc='ETROC1', verbose=False):
+    def configure(self):
 
         # configure the VTRX
         self.VTRX.configure(trigger=self.trigger)
@@ -303,22 +340,22 @@ class ReadoutBoard:
         # dict -> load the provided alignment
         # none -> rerun alignment scan
         # anything else (e.g. False) -> don't touch the uplink alignment
-        if isinstance(alignment, dict):
-            self.load_uplink_alignment(alignment)
-        elif alignment is None:
-            _ = self.find_uplink_alignment(data_mode=data_mode, etroc=etroc)
+        if isinstance(self.alignment, dict):
+            self.load_uplink_alignment(self.alignment)
+        elif self.alignment is None:
+            _ = self.find_uplink_alignment(data_mode=self.data_mode, etroc=self.etroc)
         else:
             pass
 
         # SCA init
         #self.
         self.sca_hard_reset()
-        self.sca_setup(verbose=verbose)
+        self.sca_setup(verbose=self.verbose)
         self.SCA.reset()
         self.SCA.connect()
         try:
-            print("version in SCA", self.SCA.ver)
-            print("config in SCA", self.SCA.config)
+            #print("version in SCA", self.SCA.ver)
+            #print("config in SCA", self.SCA.config)
             self.SCA.config_gpios()  # this sets the directions etc according to the mapping
         except TimeoutError:
             print ("SCA config failed. Will continue without SCA.")
@@ -340,7 +377,7 @@ class ReadoutBoard:
                 print ("Don't know how to reset VTRX version", self.VTRX.ver)
             self.VTRX.configure(trigger=trigger)
             self.DAQ_LPGBT.reset_trigger_mgts()
-            self.TRIG_LPGBT.power_up_init(verbose=False)
+            self.TRIG_LPGBT.power_up_init()
         else:
             if self.VTRX.ver == 'production':
                 self.VTRX.reset()
@@ -355,18 +392,19 @@ class ReadoutBoard:
 
         self.reset_FEC_error_count(quiet=True)
 
-    def reset_problematic_links(self, max_retries=10, allow_bad_links=False, verbose=False):
+    def reset_problematic_links(self, max_retries=10, allow_bad_links=False):
         '''
         First check DAQ link, then trigger link.
         '''
         for link in ['DAQ', 'Trigger'] if self.trigger else ['DAQ']:
             for i in range(max_retries):
+                sleep(0.01)  # this is actually needed for low error rates
                 if link == 'DAQ':
-                    good_link = self.DAQ_LPGBT.link_status(verbose=False)
+                    good_link = self.DAQ_LPGBT.link_status()
                 else:
-                    good_link = self.TRIG_LPGBT.link_status(verbose=False)
+                    good_link = self.TRIG_LPGBT.link_status()
                 if good_link:
-                    if verbose:
+                    if self.verbose:
                         print (f"No FEC errors detected on {link} link")
                     break
                 else:
@@ -650,3 +688,22 @@ class ReadoutBoard:
         reset the event counter
         '''
         self.kcu.write_node(f"READOUT_BOARD_{self.rb}.EVENT_CNT_RESET", 0x1)
+
+    def connect_modules(self, power_board=False, moduleids=[9996,9997,9998,9999]):
+        self.modules = []
+        for i in range(self.nmodules):
+            self.modules.append(Module(self, i+1, enable_power_board=power_board, moduleid=moduleids[i]))
+            if self.modules[-1].connected:
+                print(f"Readout Board {self.rb}: Found connected Module {i}")
+
+    def dark_mode(self):
+        self.DAQ_LPGBT.set_gpio("LED_RHETT", 0)  # rhett
+        self.DAQ_LPGBT.set_gpio("LED_0", 0)  # Set LED0 after succesfull gpio configure
+        self.DAQ_LPGBT.set_gpio("LED_1", 0) # Set LED1 after tamalero finishes succesfully
+        self.SCA.set_gpio("sca_led", 0)
+
+    def light_mode(self):
+        self.DAQ_LPGBT.set_gpio("LED_RHETT", 1)  # rhett
+        self.DAQ_LPGBT.set_gpio("LED_0", 1)  # Set LED0 after succesfull gpio configure
+        self.DAQ_LPGBT.set_gpio("LED_1", 1) # Set LED1 after tamalero finishes succesfully
+        self.SCA.set_gpio("sca_led", 1)

@@ -28,6 +28,7 @@ class ETROC():
             vref_pd=False,
             vtemp = None,
             chip_id = 0,
+            no_init = False,
     ):
         self.QINJ_delay = 504  # this is a fixed value for the default settings of ETROC2
         self.isfake = False
@@ -51,11 +52,22 @@ class ETROC():
         self.chip_id = chip_id
         self.regs = load_yaml(os.path.join(here, '../address_table/ETROC2_example.yaml'))
 
+        self.DAC_min  = 600  # in mV
+        self.DAC_max  = 1000  # in mV
+        self.DAC_step = 400/2**10
+        self.invalid_FC_counter = 0
+
+        self.hot_pixels = []
+
+        if no_init:
+            return
+
         # NOTE: some ETROCs need to be hard reset, otherwise the I2C target does not come alive.
         # This actually solves this issue, so please don't take it out (Chesterton's Fence, anyone?)
         for i in range(2):
             if self.is_connected():
                 break
+            print("Resetting ETROC")
             self.reset(hard=True)
             time.sleep(0.1)
 
@@ -75,17 +87,11 @@ class ETROC():
 
         if self.connected:
             if not self.is_good():
-                raise (RuntimeError, f"ETROC is not in the expected status! {self.controllerState=}")
+                raise RuntimeError(f"ETROC is not in the expected status! {self.controllerState=}")
 
         if strict:
             self.consistency(verbose=verbose)
 
-        self.DAC_min  = 600  # in mV
-        self.DAC_max  = 1000  # in mV
-        self.DAC_step = 400/2**10
-        self.invalid_FC_counter = 0
-
-        self.hot_pixels = []
 
     # =========================
     # === UTILITY FUNCTIONS ===
@@ -501,6 +507,66 @@ class ETROC():
 
         return good
 
+    def test_config(self, occupancy=5, full_chip=False):
+        '''
+        custom made test configuration
+        '''
+        if full_chip:
+            self.enable_data_readout(broadcast=True)
+            self.wr_reg("workMode", 1, broadcast=True)
+            self.wr_reg("selfTestOccupancy", occupancy, broadcast=True)
+
+        else:
+            test_pixels = [
+                (0,0),
+                (7,7),
+                (7,8),
+                (8,8),
+                (8,7),
+                (0,15),
+                (15,0),
+                (15,15),
+            ]
+            self.disable_data_readout(broadcast=True)
+            self.wr_reg("workMode", 0, broadcast=True)
+            self.wr_reg("selfTestOccupancy", 0, broadcast=True)
+            for row, col in test_pixels:
+                self.enable_data_readout(row=row, col=col, broadcast=False)
+                self.wr_reg("workMode", 1, row=row, col=col, broadcast=False)
+                self.wr_reg("selfTestOccupancy", occupancy, row=row, col=col, broadcast=False)
+
+    def physics_config(self, subset=False, offset=3, L1Adelay=None, thresholds=None, powerMode='high'):
+        '''
+        subset is either False or a list of pixels, [(1,1), (1,2), ..]
+        '''
+        if powerMode == 'high':
+            print("Making ETROC go wroom!")
+            self.wr_reg("IBSel", 0, broadcast=True)  # set into high power mode (I1 in the manual)
+        else:
+            self.wr_reg("IBSel", 7, broadcast=True)  # set into low power mode (I4 in the manual, default)
+
+        if L1Adelay == None:
+            L1Adelay = self.QINJ_delay
+        if not subset:
+            self.enable_data_readout(broadcast=True)
+            self.wr_reg("workMode", 0, broadcast=True)
+            self.set_L1Adelay(delay=L1Adelay, broadcast=True)
+            if thresholds == None :
+                self.run_threshold_scan(offset=offset) 
+            else:
+                for row in range(16):
+                    for col in range(16):
+                      self.wr_reg('DAC', int(thresholds[row][col]), row=row, col=col) # want to get some noise
+        else:
+            self.disable_data_readout(broadcast=True)
+            self.wr_reg("workMode", 0, broadcast=True)
+            self.set_L1Adelay(delay=L1Adelay, broadcast=True)
+            for row, col in subset:
+                self.enable_data_readout(row=row, col=col, broadcast=False)
+                if thresholds == None:
+                    self.auto_threshold_scan(row=row, col=col, broadcast=False, offset=offset)
+                else:
+                    self.wr_reg('DAC', int(thresholds[row][col]), row=row, col=col)
 
     # =======================
     # === HIGH-LEVEL FUNC ===
@@ -545,7 +611,41 @@ class ETROC():
         else:
             return self.get_QInj(row=row, col=col)
 
-    def auto_threshold_scan(self, row=0, col=0, broadcast=False, offset='auto', time_out=3, verbose=False):
+    def run_threshold_scan(self, offset='auto', use=True):
+        from tqdm import tqdm
+        baseline = np.empty([16, 16])
+        noise_width = np.empty([16, 16])
+        print("Running threshold scan")
+        with tqdm(total=256, bar_format='{l_bar}{bar:20}{r_bar}{bar:-20b}') as pbar:
+            for pixel in range(256):
+                row = pixel & 0xF
+                col = (pixel & 0xF0) >> 4
+                #print(pixel, row, col)
+                baseline[row][col], noise_width[row][col] = self.auto_threshold_scan(row=row, col=col, broadcast=False, offset=offset, use=use)
+                #print(pixel)
+                pbar.update()
+        self.baseline = baseline
+        self.noise_width = noise_width
+        return baseline, noise_width
+
+    def plot_threshold(self, outdir='../results/', noise_width=False):
+        from matplotlib import pyplot as plt
+        fig, ax = plt.subplots(1,1,figsize=(7,7))
+        matrix = self.baseline if not noise_width else self.noise_width
+        cax = ax.matshow(matrix)
+        fig.colorbar(cax,ax=ax)
+        for i in range(16):
+            for j in range(16):
+                text = ax.text(j, i, int(matrix[i,j]),
+                        ha="center", va="center", color="w", fontsize="xx-small")
+
+        if noise_width:
+            fig.savefig(f'{outdir}/noise_width.png')
+        else:
+            fig.savefig(f'{outdir}/baseline.png')
+
+
+    def auto_threshold_scan(self, row=0, col=0, broadcast=False, offset='auto', time_out=3, verbose=False, use=True):
         '''
         From the manual:
         1. set "Bypass" low.
@@ -579,12 +679,18 @@ class ETROC():
             if broadcast:
                 for i in range(16):
                     for j in range(16):
-                        tmp = self.rd_reg("ScanDone", row=i, col=j)
-                        done &= tmp
+                        try:
+                            tmp = self.rd_reg("ScanDone", row=i, col=j)
+                            done &= tmp
+                        except:
+                            print("ScanDone read failed.")
 
                 #if not done: print("not done")
             else:
-                done = self.rd_reg("ScanDone", row=row, col=col)
+                try:
+                    done = self.rd_reg("ScanDone", row=row, col=col)
+                except:
+                    print("ScanDone read failed.")
                 time.sleep(0.001)
                 if time.time() - start_time > time_out:
                     if verbose:
@@ -594,6 +700,7 @@ class ETROC():
         self.wr_reg('ScanStart_THCal', 0, row=row, col=col, broadcast=broadcast)
         if offset == 'auto':
             if broadcast:
+                # Don't care about this, broken anyway
                 for i in range(16):
                     for j in range(16):
                         nw = self.get_noisewidth(row=i, col=j)
@@ -603,9 +710,14 @@ class ETROC():
             else:
                 noise_width = self.get_noisewidth(row=row, col=col)
                 baseline = self.get_baseline(row=row, col=col)
+                self.wr_reg('Bypass_THCal', 1, row=row, col=col, broadcast=broadcast)
+                if use:
+                    self.wr_reg('DAC', min(baseline+noise_width, 1023), row=row, col=col, broadcast=broadcast)
+
         else:
-            self.wr_reg('TH_offset', offset, row=row, col=col, broadcast=broadcast)
+            #self.wr_reg('TH_offset', offset, row=row, col=col, broadcast=broadcast)
             if broadcast:
+                # broken anyway
                 for i in range(16):
                     for j in range(16):
                         noise_width[i][j] = self.get_noisewidth(row=i, col=j)
@@ -613,6 +725,9 @@ class ETROC():
             else:
                 noise_width = self.get_noisewidth(row=row, col=col)
                 baseline = self.get_baseline(row=row, col=col)
+                self.wr_reg('Bypass_THCal', 1, row=row, col=col, broadcast=broadcast)
+                if use:
+                    self.wr_reg('DAC', min(baseline+offset, 1023), row=row, col=col, broadcast=broadcast)
 
         return baseline, noise_width
 

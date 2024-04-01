@@ -67,7 +67,6 @@ for pix in range(N_pix):
         threshold_matrix[r][c] = zero_dac_values[0] + 2
     else:
         threshold_matrix[r][c] = dac_max + 2
-        #threshold_matrix[r][c] = max(vth_axis) + 2  # probably this is the correct one??
     if args.pix_hists:
         fig = plt.figure(figsize = (9, 7))
         pixdat = hit_rate[pix, :]
@@ -84,8 +83,6 @@ for pix in range(N_pix):
             print(r, c)
             plt.show()
         plt.close()
-
-
 # 2D histogram of the mean
 # this is based on the code for automatic sigmoid fits
 # for software emulator data below
@@ -116,22 +113,5 @@ plt.show()
 
 plt.close(fig)
 
-fig, ax = plt.subplots()
-plt.title("Thresholds from manual scan")
-cax = ax.matshow(threshold_matrix)
-fig.colorbar(cax)
-ax.set_xticks(np.arange(N_pix_w))
-ax.set_yticks(np.arange(N_pix_w))
 
-for i in range(N_pix_w):
-    for j in range(N_pix_w):
-        text = ax.text(j, i, int(threshold_matrix[i,j]),
-            ha="center", va="center", color="w", fontsize="xx-small")
-
-ax.set_xlabel("Column")
-ax.set_ylabel("Row")
-
-#fig.savefig(f'{result_dir}/thresholds.png')
-plt.show()
-plt.close(fig)
 

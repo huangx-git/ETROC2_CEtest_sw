@@ -37,7 +37,7 @@ def gpio_byname(gpio_func):
 
 class LPGBT(RegParser):
 
-    def __init__(self, rb=0, trigger=False, flavor='small', master=None, kcu=None, do_adc_calibration=False, config='default', debug=False, ver=None):
+    def __init__(self, rb=0, trigger=False, flavor='small', master=None, kcu=None, do_adc_calibration=False, config='default', debug=False, ver=None, verbose=False, poke=False):
         '''
         Initialize lpGBT for a certain readout board number (rb).
         The trigger lpGBT is accessed through I2C of the master (= DAQ lpGBT).
@@ -48,6 +48,7 @@ class LPGBT(RegParser):
         self.calibrated = False
         self.gain = 1.85
         self.offset = 512
+        self.verbose = verbose
         if ver is not None:
             self.ver = ver
 
@@ -60,10 +61,13 @@ class LPGBT(RegParser):
             self.kcu = kcu
 
         self.config = config
-        if not debug:
+        if not debug and not poke:
             self.configure(do_adc_calibration=do_adc_calibration)
         else:
-            print("Warning: Initializing lpGBT in debug mode.")
+            if debug:
+                print("Warning: Initializing lpGBT in debug mode.")
+            if poke:
+                self.ver = 1  # hard coded for now
             self.kcu.write_node("READOUT_BOARD_%d.SC.FRAME_FORMAT" % self.rb, self.ver)
             self.parse_xml(ver=self.ver)
 
@@ -84,7 +88,8 @@ class LPGBT(RegParser):
         # Get LPGBT Version
         timeout = 0
         if not hasattr(self, 'ver'):
-            print ("Figuring out lpGBT version by reading from ROMREG")
+            if self.verbose:
+                print ("Figuring out lpGBT version by reading from ROMREG")
             while True:
                 # https://lpgbt.web.cern.ch/lpgbt/v0/registermap.html#x1c5-rom
                 # Writing to addresses directly because readback will still fail here
@@ -94,7 +99,10 @@ class LPGBT(RegParser):
                 self.wr_adr(0x118, 0xC0) # https://lpgbt.web.cern.ch/lpgbt/v0/registermap.html#x118-uldatasource0
                 sleep(0.01)
                 self.wr_adr(0x118, 0) # https://lpgbt.web.cern.ch/lpgbt/v0/registermap.html#x118-uldatasource0
-                self.wr_adr(0x036, 0x80)
+                if self.rb == 0 and self.trigger:
+                    self.wr_adr(0x036, 0x00)
+                else:
+                    self.wr_adr(0x036, 0x80)  # we might want to go back to the inversion with the next FW version
                 self.wr_adr(0x0ef, 0x6)
                 sleep(0.01)
                 is_v0 = (self.rd_adr(0x1c5) == 0xa5)
@@ -104,7 +112,11 @@ class LPGBT(RegParser):
                 self.wr_adr(0x128, 0xC0) # https://lpgbt.web.cern.ch/lpgbt/v1/registermap.html#x128-uldatasource0
                 sleep(0.01)
                 self.wr_adr(0x128, 0) # https://lpgbt.web.cern.ch/lpgbt/v1/registermap.html#x128-uldatasource0
-                self.wr_adr(0x036, 0x80)
+                if self.rb == 0 and self.trigger:
+                    self.wr_adr(0x036, 0x00)
+                else:
+                    self.wr_adr(0x036, 0x80)  # we might want to go back to the inversion with the next FW version
+                #self.wr_adr(0x036, 0x80)
                 self.wr_adr(0x0fb, 0x6)
                 sleep(0.01)
                 is_v1 = (self.rd_adr(0x1d7) == 0xa6)
@@ -135,7 +147,10 @@ class LPGBT(RegParser):
 
         if self.trigger:
             self.init_trigger_links()
-            self.wr_reg("LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT", 0x1)  # this is already done for v1
+            if self.rb == 0 and False:
+                self.wr_reg("LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT", 0x0)  # this is already done for v1
+            else:
+                self.wr_reg("LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT", 0x1)  # this is already done for v1
             sleep(0.01)
             self.wr_reg("LPGBT.RWF.POWERUP.DLLCONFIGDONE", 0x1)  # NOTE untested change
             self.wr_reg("LPGBT.RWF.POWERUP.PLLCONFIGDONE", 0x1)
@@ -170,20 +185,23 @@ class LPGBT(RegParser):
             colored = green if res == self.base_config[reg] else red
             print (colored("{:80}{:<10}{:<10}".format(reg, res, self.base_config[reg])))
 
-    def base_configuration(self, verbose=False):
+    def base_configuration(self):
         # this could be extended to run over the configuration in lpgbt_config.yaml file
         # BUT this still needs to be tested. the two settings below seems to be enough for now
         # NOTE: maybe some config is still missing for proper SCA communication for lpGBT v1
-        self.wr_reg("LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT", 0x1)  # this is already done for v1
+        if self.trigger and self.rb==0 and False:
+            self.wr_reg("LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT", 0x0)  # this is already done for v1
+        else:
+            self.wr_reg("LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT", 0x1)  # this is already done for v1
         self.wr_reg("LPGBT.RWF.POWERUP.DLLCONFIGDONE", 0x1)  # NOTE untested change
         self.wr_reg("LPGBT.RWF.POWERUP.PLLCONFIGDONE", 0x1)
 
-    def set_adc_mapping(self, verbose=False):
+    def set_adc_mapping(self):
         assert self.ver in [0, 1], f"Unrecognized version {self.ver}"
         self.adc_mapping = get_config(self.config, version=f'v{self.ver+1}')['LPGBT']['adc']
         for channel in self.adc_mapping:
             if self.adc_mapping[channel]['current'] == 1:
-                if verbose:
+                if self.verbose:
                     print(f'Setting {channel} to current DAC')
                 self.set_current_adc(self.adc_mapping[channel]['pin'])
         #if self.ver == 0:
@@ -205,9 +223,9 @@ class LPGBT(RegParser):
         self.set_adc_mapping()
         self.set_gpio_mapping()
 
-    def link_status(self, verbose=False):
+    def link_status(self):
         if self.trigger:
-            if verbose:
+            if self.verbose:
                 print ("Checking trigger link status")
                 print ("Uplink ready:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.UPLINK_1.READY"%self.rb).value()==1 )
                 print ("FEC count:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.UPLINK_1.FEC_ERR_CNT"%self.rb).value())
@@ -216,7 +234,7 @@ class LPGBT(RegParser):
                 (self.kcu.read_node("READOUT_BOARD_%i.LPGBT.UPLINK_1.READY"%self.rb).value() == 1)
             )
         else:
-            if verbose:
+            if self.verbose:
                 print ("Checking DAQ link status")
                 print ("Uplink ready:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.UPLINK_0.READY"%self.rb).value()==1 )
                 print ("FEC count:", self.kcu.read_node("READOUT_BOARD_%i.LPGBT.UPLINK_0.FEC_ERR_CNT"%self.rb).value())
@@ -280,7 +298,7 @@ class LPGBT(RegParser):
 
         self.reset_trigger_mgts()
 
-    def power_up_init(self, verbose=True):
+    def power_up_init(self):
         if not self.trigger:
 
             # toggle the uplink to and from 40MHz clock, for some reason this is
@@ -308,14 +326,14 @@ class LPGBT(RegParser):
             # toggle the uplink to and from 40MHz clock, for some reason this is
             # needed for the mgt to lock
 
-        self.base_configuration(verbose=True)
+        self.base_configuration()
 
         if not self.trigger:
-            self.configure_gpios(verbose=verbose)
+            self.configure_gpios()
             self.set_gpio(1, 1)  # Set LED0 after succesfull gpio configure
-            self.initialize(verbose=verbose)
-            self.config_eport_dlls(verbose=verbose)
-            self.configure_eptx(verbose=verbose)
+            self.initialize()
+            self.config_eport_dlls()
+            self.configure_eptx()
             self.configure_eprx()
 
         self.set_power_up_done()
@@ -410,16 +428,16 @@ class LPGBT(RegParser):
 #
 #        return wrapper
 
-    def configure_gpios(self, verbose=False): #read and print all adc values
+    def configure_gpios(self): #read and print all adc values
         gpio_dict = self.gpio_mapping
-        if verbose:
+        if self.verbose:
             print("Configuring LPGBT GPIO Pins...")
         for gpio_reg in gpio_dict.keys():
             pin         = gpio_dict[gpio_reg]['pin']
             direction   = int(gpio_dict[gpio_reg]['direction'] == 'out')
             comment     = gpio_dict[gpio_reg]['comment']
             default     = gpio_dict[gpio_reg]['default']
-            if verbose:
+            if self.verbose:
                 print("Setting LPGBT GPIO pin %s (%s) to %s"%(pin, comment, gpio_dict[gpio_reg]['direction']))
             self.set_gpio(pin, default)               # Defaults must be set first
             self.set_gpio_direction(pin, direction)   # Then switch to directions otherwise we reset the VTRx+
@@ -553,8 +571,8 @@ class LPGBT(RegParser):
                 self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dFREQ" % i, 1)
                 self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dDRIVESTRENGTH" % i, 4)
 
-    def config_eport_dlls(self, verbose=False):
-        if verbose:
+    def config_eport_dlls(self):
+        if self.verbose:
             print("Configuring eport dlls...")
         if self.ver == 0:
             self.wr_reg("LPGBT.RWF.CLOCKGENERATOR.EPRXDLLCURRENT", 0x1)
@@ -571,7 +589,7 @@ class LPGBT(RegParser):
             self.wr_reg("LPGBT.RWF.EPORTRX.EPRXENABLEREINIT", 0x0)
             self.wr_reg("LPGBT.RWF.EPORTRX.EPRXDATAGATINGDISABLE", 0x0)
 
-    def configure_eptx(self, verbose=False):
+    def configure_eptx(self):
 
         for i in range(4):
             # [0x0a7] EPTXDataRate
@@ -586,16 +604,16 @@ class LPGBT(RegParser):
             link = str(i % 4)
             self.wr_reg("LPGBT.RWF.EPORTTX.EPTX%s%sENABLE" % (group, link), 0x1)
             self.wr_reg("LPGBT.RWF.EPORTTX.EPTX_CHN_CONTROL.EPTX%dDRIVESTRENGTH" % i, 0x3)
-            if verbose:
+            if self.verbose:
                 print("LPGBT.RWF.EPORTTX.EPTX%s%sENABLE" % (group, link))
 
         # enable mirror feature
         for i in range(4):
             self.wr_reg("LPGBT.RWF.EPORTTX.EPTX%dMIRRORENABLE" % i, 0x1)
 
-    def configure_eprx(self, verbose=False):
+    def configure_eprx(self):
 
-        if verbose:
+        if self.verbose:
             print("Configuring elink inputs...")
         # Enable Elink-inputs
 
@@ -810,7 +828,8 @@ class LPGBT(RegParser):
         if serial_valid(serial) and serial in cal_data and not recalibrate:
             gain = cal_data[serial]['gain']
             offset = cal_data[serial]['offset']
-            print("Loaded ADC calibration data for chip %s. Gain: %f / Offset: %d" % (serial, gain, offset))
+            if self.verbose:
+                print("Loaded ADC calibration data for chip %s. Gain: %f / Offset: %d" % (serial, gain, offset))
 
         # else, determine calibration constants
         else:
@@ -845,11 +864,11 @@ class LPGBT(RegParser):
         self.cal_offset = offset
         self.calibrated = True
 
-    def set_current_adc(self, channel, verbose=False):
+    def set_current_adc(self, channel):
         assert channel in range(8), f"Can only choose from ADC0 to ADC7; ADC{channel} was given instead"
 
         self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE", 0x1)
-        if verbose:
+        if self.verbose:
             print("Enable DAC current source...", self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE"))
 
         if channel == 0:
@@ -873,18 +892,18 @@ class LPGBT(RegParser):
 
         currently_set = self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE")
 
-        if verbose:
+        if self.verbose:
             print(f"LPGBT.RWF.CUR_DAC.CURDACCHNENABLE currently set: {bin(currently_set)}")
             print(f"Want to set {bin(adc_chn)}")
             print(f"LPGBT.RWF.CUR_DAC.CURDACCHNENABLE new set: {bin(adc_chn | currently_set)}")
 
         self.wr_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE", adc_chn | currently_set) # Set pin ADC channel to current source
-        if verbose:
+        if self.verbose:
             print(f"Set current source to pin ADC{channel}...", bin(self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE")))
 
         current = 100 # Desired current of 100 uA
         self.set_current_dac_uA(current)
-        if verbose:
+        if self.verbose:
             print(f"Set current source value to {current} uA")
 
     def set_dac(self, v_out):
@@ -925,11 +944,14 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.VOLDACENABLE", 0x0)
         self.wr_reg("LPGBT.RWF.CALIBRATION.VREFENABLE", 0x0)
 
-    def initialize(self, verbose=False):
-        self.wr_reg("LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT", 0x1)  # this is already done for v1
+    def initialize(self):
+        #if self.trigger and self.rb==0:
+        #    self.wr_reg("LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT", 0x0)  # this is already done for v1
+        #else:
+        #    self.wr_reg("LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT", 0x1)  # this is already done for v1
 
         # turn on clock outputs
-        if (verbose):
+        if (self.verbose):
             print ("Configuring clocks now.")
         self.configure_clocks(0x0fffffff)
 
@@ -1307,15 +1329,16 @@ class LPGBT(RegParser):
         else:
             return read_values
 
-    def program_slave_from_file (self, filename, master=2, slave_addr=0x70, verbose=False):
-        print(" > Programming Trigger lpGBT from file.")
+    def program_slave_from_file (self, filename, master=2, slave_addr=0x70):
+        if self.verbose:
+            print(" > Programming Trigger lpGBT from file.")
         f = open(filename, "r")
         for line in f:
             adr, data = line.split(" ")
             adr = int(adr)
             wr = int(data.replace("0x",""), 16)
             if (wr != 0):
-                if verbose:
+                if self.verbose:
                     print("Writing address: %d, value: 0x%02x" % (adr, wr))
                 self.I2C_write(reg=adr, val=wr, master=master, slave_addr=slave_addr, ignore_response=True)
                 #rd = self.I2C_read(reg=adr, master=master, slave_addr=slave_addr)
@@ -1447,25 +1470,42 @@ class LPGBT(RegParser):
             json.dump(eye_scan_data, outfile)
         print("Data saved to eye_scan_results/%s.json\n" %filename)
 
+
+        import matplotlib.pyplot as plt
+        import mplhep as hep
+        plt.style.use(hep.style.CMS)
+        (fig, axs) = plt.subplots(1, 1, figsize=(10, 8))
+        print ("fig type = " + str(type(fig)))
+        print ("axs type = " + str(type(axs)))
+        axs.set_title("LpGBT 2.56 Gbps RX Eye Opening Monitor")
+        plot = axs.imshow(eye_scan_data, alpha=0.9, vmin=0, vmax=100, cmap='jet',interpolation="nearest", aspect="auto",extent=[-384.52/2,384.52/2,-0.6,0.6,])
+        plt.xlabel('ps')
+        plt.ylabel('volts')
+        fig.colorbar(plot, ax=axs)
+
+        #plt.show()
+        fig.savefig(f'eye_scan_results/{filename}.png')
+        print("Eye diagram saved to eye_scan_results/%s.json\n" %filename)
+
         # print results to bash
         try:
             from colored import fg, bg, attr
+            color_scale = [124,196,202,214,190,82,50,38,21,19]
+            sys.stdout.write("Color Scale: ")
+            for i in range(10):
+                sys.stdout.write("%s%01d%s" % (bg(color_scale[i]),i,attr('reset')))
+            sys.stdout.write("\n\n")
+
+            for y_axis in range(ymin, ymax):
+                for x_axis in range(xmin, xmax):
+                    printval = int(eyeimage[y_axis][x_axis]/1000)
+                    sys.stdout.write("%s%01d%s" % (bg(color_scale[printval]), printval, attr('reset')))
+                    sys.stdout.flush()
+                sys.stdout.write("\n")
         except:
             print("Need to pip install colored to print out results.")
             print("Eye scan results were still saved and can be plotted.")
 
-        color_scale = [124,196,202,214,190,82,50,38,21,19]
-        sys.stdout.write("Color Scale: ")
-        for i in range(10):
-            sys.stdout.write("%s%01d%s" % (bg(color_scale[i]),i,attr('reset')))
-        sys.stdout.write("\n\n")
-
-        for y_axis in range(ymin, ymax):
-            for x_axis in range(xmin, xmax):
-                printval = int(eyeimage[y_axis][x_axis]/1000)
-                sys.stdout.write("%s%01d%s" % (bg(color_scale[printval]), printval, attr('reset')))
-                sys.stdout.flush()
-            sys.stdout.write("\n")
 
     def get_chip_userid(self):
         return self.rd_reg("LPGBT.RWF.CHIPID.USERID3") << 24 |\
