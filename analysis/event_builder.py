@@ -18,13 +18,16 @@ if __name__ == '__main__':
 
     all_events = []
     #for i in range(5588,5706):
-    #for i in range(5707,6100):
-    for i in range(5707,6300):
+    for i in range(5707,6106):
+    #for i in range(6307,6506):
+    #for i in range(5707,6500):
     #for i in range(5707,5708):
         in_file = f"{here}/../ETROC_output/{i}_merged.json"
         if os.path.isfile(in_file):
             with open(in_file, "r") as f:
                 all_events.append(ak.from_json(json.load(f)))
+        else:
+            print(f'Missing file: {in_file}')
 
     events = ak.concatenate(all_events)
     events['bin'] = 3.125 / events.cal_code
@@ -37,7 +40,7 @@ if __name__ == '__main__':
     all_layer_hit_candidates = events[ak.all(events.nhits==1, axis=1)]
     all_layer_hit_candidates_no_noise_selection = (ak.num(all_layer_hit_candidates.col[((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] < 5))]) >0)
 
-    ((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] == 0) & ((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] == 10)))
+    #((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] == 1) & ((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] == 12)))
     # events[ak.all(events.nhits, axis=1)].toa_code
     #
     #
@@ -72,7 +75,7 @@ if __name__ == '__main__':
 
 
 
-    all_layer_hit_candidates_single_pixel = (ak.num(all_layer_hit_candidates.col[((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] ==0)&((all_layer_hit_candidates.col[all_layer_hit_candidates.chipid==(38<<2)] ==10)))]) >0)
+    all_layer_hit_candidates_single_pixel = (ak.num(all_layer_hit_candidates.col[((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] ==1)&((all_layer_hit_candidates.col[all_layer_hit_candidates.chipid==(38<<2)] ==12)))]) >0)
     hits0 = np.zeros([16, 16])
     hits1 = np.zeros([16, 16])
     hits2 = np.zeros([16, 16])
@@ -128,20 +131,20 @@ if __name__ == '__main__':
     fig.savefig(f"{here}/../ETROC_output/merged_layers_delta_t.png")
 
     # do some simple alignment
-    single_pixel = (ak.num(all_layer_hit_candidates.col[((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] ==1)&((all_layer_hit_candidates.col[all_layer_hit_candidates.chipid==(38<<2)] ==12)))]) >0)
+    single_pixel = (ak.num(all_layer_hit_candidates.col[((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] ==0)&((all_layer_hit_candidates.col[all_layer_hit_candidates.chipid==(38<<2)] ==10)))]) >0)
     sel_events = all_layer_hit_candidates[single_pixel]
     x_ref = np.mean(ak.flatten(sel_events.x[sel_events.chipid==(38<<2)]))
     y_ref = np.mean(ak.flatten(sel_events.y[sel_events.chipid==(38<<2)]))
 
     x_corr_2 = x_ref - ak.mean(sel_events.x[sel_events.chipid==(36<<2)])
-    y_corr_2 = x_ref - ak.mean(sel_events.y[sel_events.chipid==(36<<2)])
+    y_corr_2 = y_ref - ak.mean(sel_events.y[sel_events.chipid==(36<<2)])
 
     x_corr_3 = x_ref - ak.mean(sel_events.x[sel_events.chipid==(37<<2)])
-    y_corr_3 = x_ref - ak.mean(sel_events.y[sel_events.chipid==(37<<2)])
+    y_corr_3 = y_ref - ak.mean(sel_events.y[sel_events.chipid==(37<<2)])
 
 
     # apply alignment to different pixel
-    single_pixel = (ak.num(all_layer_hit_candidates.col[((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] ==0)&((all_layer_hit_candidates.col[all_layer_hit_candidates.chipid==(38<<2)] ==11)))]) >0)
+    single_pixel = (ak.num(all_layer_hit_candidates.col[((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] ==1)&((all_layer_hit_candidates.col[all_layer_hit_candidates.chipid==(38<<2)] ==12)))]) >0)
     sel_events = all_layer_hit_candidates[single_pixel]
 
 
@@ -177,7 +180,10 @@ if __name__ == '__main__':
     ax.set_ylabel('y (mm)')
     ax.set_zlabel('z (mm)')
 
-    plt.show()
+    fig.savefig(f"{here}/../ETROC_output/hits_aligned.pdf")
+    fig.savefig(f"{here}/../ETROC_output/hits_aligned.png")
+
+    #plt.show()
 
 
     #fig = plt.figure()
@@ -218,4 +224,6 @@ if __name__ == '__main__':
     ax.set_ylabel('y (mm)')
     ax.set_zlabel('z (mm)')
 
-    plt.show()
+    fig.savefig(f"{here}/../ETROC_output/hits_original.pdf")
+    fig.savefig(f"{here}/../ETROC_output/hits_original.png")
+    #plt.show()
