@@ -116,9 +116,20 @@ if __name__ == '__main__':
 
 
         uuid = []
+        all_raw = []
+
+        t_tmp = None
 
         for t, d in unpacked_data:
             sus = False
+            if d['raw_full'] in all_raw[-50:] and not t in ['trailer', 'filler']:  # trailers often look the same
+                #print("Potential double counting", t, d)
+                #all_raw.append(d['raw_full'])
+                continue
+            if t not in ['trailer', 'filler']:
+                all_raw.append(d['raw_full'])
+
+
             if t == 'header':
                 hit_counter = 0
                 uuid_tmp = d['l1counter'] | d['bcid']<<8
@@ -131,7 +142,7 @@ if __name__ == '__main__':
                 if d['l1counter'] == l1a:
                     # this just skips additional headers for the same event
                     counter_h[-1] += 1
-                    raw[-1].append(d['raw'])
+                    raw[-1].append(d['raw_full'])
                     if skip_event:
                         #print("Skipping event (same l1a counter)", d['l1counter'], d['bcid'], bcid_t)
                         continue
@@ -150,6 +161,7 @@ if __name__ == '__main__':
                         continue
                     else:
                         uuid.append(d['l1counter'] | d['bcid']<<8)
+                    #hit_counter = 0
                     #if (abs(d['bcid']-bcid_t)<40) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
                     #if (abs(d['bcid']-bcid_t)<500) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
                     if (((abs(d['bcid']-bcid_t)<150) or (abs(d['bcid']+3564-bcid_t)<50)) and not (d['bcid'] == bcid_t) and do_double_trigger_check):
@@ -174,7 +186,7 @@ if __name__ == '__main__':
                     toa_code.append([])
                     cal_code.append([])
                     elink.append([])
-                    raw.append([d['raw']])
+                    raw.append([d['raw_full']])
                     nhits.append(0)
                     nhits_trail.append([])
                     chipid.append([])
@@ -199,23 +211,33 @@ if __name__ == '__main__':
                 row[-1].append(d['row_id'])
                 col[-1].append(d['col_id'])
                 elink[-1].append(d['elink'])
-                raw[-1].append(d['raw'])
+                raw[-1].append(d['raw_full'])
                 nhits[-1] += 1
                 if nhits[-1] > 256:
                     print("This event already has more than 256 events. Breaking.")
                     bad_run = True
                     break
 
-            if t == 'trailer':
-                trailers.append(d['raw'])
+            if t == 'trailer' and t_tmp != 'trailer':
+                trailers.append(d['raw_full'])
                 trailer_counter += 1
                 if not skip_event:
-                    counter_t[-1] += 1
-                    if hit_counter > 0:
-                        chipid[-1].append(hit_counter*d['chipid'])
-                    nhits_trail[-1].append(d['hits'])
-                    raw[-1].append(d['raw'])
-                    crc[-1].append(d['crc'])
+                    try:
+                        counter_t[-1] += 1
+                        if hit_counter > 0:
+                            #print(hit_counter)
+                            #chipid[-1].append(hit_counter*d['chipid'])
+                            chipid[-1] += hit_counter*[d['chipid']]
+                            #print(l1counter[-1], bcid[-1], chipid[-1])
+                        #else:
+                        #    chipid[-1].append()
+                        nhits_trail[-1].append(d['hits'])
+                        raw[-1].append(d['raw'])
+                        crc[-1].append(d['crc'])
+                    except IndexError:
+                        print("Data stream started with a trailer, that is weird.")
+
+            t_tmp = t
 
 
         if not bad_run or args.force:
@@ -289,7 +311,7 @@ if __name__ == '__main__':
                 os.remove(f"{here}/ETROC_output/output_run_{args.input}_rb{rb}.json")
 
 
-    if len(events_all_rb)>0:
+    if len(events_all_rb)>1:
         event_number = []
         bcid = []
         nhits = []
@@ -377,11 +399,12 @@ if __name__ == '__main__':
         with open(f"{here}/ETROC_output/output_run_{args.input}_rb0.json", "w") as f:
             json.dump(ak.to_json(events), f)
 
+        print("Done.")
 
         all_layer_hit_candidates = events[ak.all(events.nhits==1, axis=1)]
         all_layer_hit_candidates_no_noise_selection = (ak.num(all_layer_hit_candidates.col[((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] < 5))]) >0)
 
-        ((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] == 0) & ((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] == 10)))
+        #((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] == 0) & ((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] == 10)))
         # events[ak.all(events.nhits, axis=1)].toa_code
         #
         #
