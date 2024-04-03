@@ -520,6 +520,12 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dINVERT" % link, invert)
 
     def invert_links(self, trigger=False):
+        for link in range(28):
+            self.set_uplink_invert(link, invert=False)
+        for link in range(13):
+            self.set_downlink_invert(link, invert=False)
+        for link in [0,1,2,3,4,5,22,23,24,25,26,27]:
+            self.set_clock_invert(link, invert=False)
         if trigger:
             for link in self.link_inversions['trigger']:
                 self.set_uplink_invert(link)
