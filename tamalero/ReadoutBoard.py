@@ -694,7 +694,7 @@ class ReadoutBoard:
         for i in range(self.nmodules):
             self.modules.append(Module(self, i+1, enable_power_board=power_board, moduleid=moduleids[i]))
             if self.modules[-1].connected:
-                print(f"Readout Board {self.rb}: Found connected Module {i}")
+                print(f"Readout Board {self.rb}: Found connected Module {i+1}")
 
     def dark_mode(self):
         self.DAQ_LPGBT.set_gpio("LED_RHETT", 0)  # rhett
