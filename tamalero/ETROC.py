@@ -29,6 +29,7 @@ class ETROC():
             vtemp = None,
             chip_id = 0,
             no_init = False,
+            no_hard_reset_on_init = False,
     ):
         self.QINJ_delay = 504  # this is a fixed value for the default settings of ETROC2
         self.isfake = False
@@ -67,7 +68,12 @@ class ETROC():
         for i in range(2):
             if self.is_connected():
                 break
-            print("Resetting ETROC")
+            if no_hard_reset_on_init:
+                if verbose:
+                    print("I would have to hard reset the ETROC, but was instructed not to do so!")
+                break
+            if verbose:
+                print("Resetting ETROC")
             self.reset(hard=True)
             time.sleep(0.1)
 
@@ -79,7 +85,7 @@ class ETROC():
 
         self.get_elink_status()
         try:
-            self.default_config()
+            self.default_config(no_reset=no_hard_reset_on_init)
         except TimeoutError:
             if verbose or True:
                 print("Warning: ETROC default configuration failed!")
@@ -87,7 +93,7 @@ class ETROC():
 
         if self.connected:
             if not self.is_good():
-                raise RuntimeError(f"ETROC is not in the expected status! {self.controllerState=}")
+                raise RuntimeError(f"ETROC {self.chip_id} is not in the expected status! {self.controllerState=}")
 
         if strict:
             self.consistency(verbose=verbose)

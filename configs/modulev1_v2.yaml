@@ -313,7 +313,6 @@ inversions:
       - 22
       - 23
       - 25
-      - 26
       - 27
    downlink:
       - 2
@@ -323,24 +322,13 @@ inversions:
       - 12
    uplink:
       - 6
+   trigger:
       - 12
       - 14
-      - 16
-      - 18
-      - 20
-      - 22
-   trigger:
-      - 2
-      - 6
-      - 10
-      - 16
-      - 18
-      - 20
-      - 22
 
 modules:
   1:
-    elinks: [[[0],[0]], [[2],[2]], [[20],[20]], [[22],[22]]]  # structure here is ETROC, LPGBT, ELINK
+    elinks: [[[2],[0]], [[20],[22]], [[0],[2]], [[22],[20]]]  # structure here is ETROC, LPGBT, ELINK
     addresses: [0x60, 0x61, 0x62, 0x63]
     i2c:
       master: lpgbt
@@ -352,24 +340,24 @@ modules:
     pgood: mod_d02
     vtemp: [mod_a0, mod_a1, mod_a2, mod_a3]
   2:
-    elinks: [[[4],[4]], [[5],[5]], [[6],[6]], [[7],[7]]]
+    elinks: [[[6],[4]], [[16],[18]], [[4],[6]], [[18],[16]]]
     addresses: [0x64, 0x65, 0x66, 0x67]
     i2c:
       master: sca
       channel: 3
-    reset: mod_d15
+    reset: mod_d08
     vref: [mod_a12, mod_a13, mod_a14, mod_a15]
     disable_vref_gen: [True, True, True, True]
     power_board: mod_d09
     pgood: mod_d10
     vtemp: [mod_a08, mod_a09, mod_a10, mod_a11]
   3:
-    elinks: [[[8],[8]], [[9],[9]], [[10],[10]], [[11],[11]]]
+    elinks: [[[10],[8]], [[12],[14]], [[8],[10]], [[14],[12]]]
     addresses: [0x68, 0x69, 0x6a, 0x6b]
     i2c:
       master: sca
       channel: 0
-    reset: mod_d23
+    reset: mod_d16
     vref: [mod_a20, mod_a21, mod_a22, mod_a23]
     disable_vref_gen: [True, True, True, True]
     power_board: mod_d17
