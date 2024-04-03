@@ -433,4 +433,11 @@ if __name__ == '__main__':
         if args.power_up:
             from tamalero.Monitoring import Monitoring, blink_rhett
             print("RB configured successfully. Rhett is happy " + emojize(":dog_face:"))
-            b = blink_rhett(rb, iterations=3)
+            rb.disable_rhett()
+            time.sleep(0.5)
+            rb.enable_rhett()
+            time.sleep(0.5)
+            rb.disable_rhett()
+            time.sleep(0.5)
+            rb.enable_rhett()
+            #b = blink_rhett(rb, iterations=3)
