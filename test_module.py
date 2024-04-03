@@ -700,7 +700,7 @@ if __name__ == '__main__':
     argParser = argparse.ArgumentParser(description = "Argument parser")
     
     #Setup Options
-    argParser.add_argument('--configuration', action='store', default='modulev0', choices=['modulev0', 'modulev0b', 'multimodule'], help="Board configuration to be loaded")
+    argParser.add_argument('--configuration', action='store', default='modulev1', choices=['modulev0b', 'modulev1'], help="Board configuration to be loaded")
     argParser.add_argument('--kcu', action='store', default='192.168.0.10', help="IP Address of KCU105 board")
     argParser.add_argument('--host', action='store', default='localhost', help="Hostname for control hub")
     argParser.add_argument('--module', action='store', default=0, choices=['1','2','3'], help="Module to test")
@@ -758,23 +758,35 @@ if __name__ == '__main__':
     
     if len(args.pixel_masks) == 1 and len(args.etrocs) > 1:
         args.pixel_masks *= len(args.etrocs)
-    
+
+    print("Getting KCU")
+    kcu = get_kcu(args.kcu, control_hub=True, host=args.host, verbose=False)
+    print("Getting RB")
+    rb = ReadoutBoard(0, kcu=kcu, config=args.configuration)
+    print("Connecting modules")
+    rb.connect_modules(moduleids=[0,3,0])
+    for mod in rb.modules:
+        mod.show_status()
+
+    for mod in rb.modules:
+        if mod.connected:
+            for etroc in mod.ETROCs:
+                etroc.test_config(occupancy=0)
+
+    fifo = FIFO(rb)
+    df = DataFrame('ETROC2')
+
+    fifo.send_l1a(1)
+    for x in fifo.pretty_read(df):
+        print(x)
+
+    raise RuntimeError("This is how far this script is tested")
+
     if args.config_chip:
 
         start_time = time.time()
-        kcu = get_kcu(args.kcu, control_hub=True, host=args.host, verbose=False)
-        if (kcu == 0):
-            # if not basic connection was established the get_kcu function returns 0
-            # this would cause the RB init to fail.
-            sys.exit(1)
 
         int_time = time.time()
-        rb_0 = ReadoutBoard(0, kcu=kcu, config=args.configuration)
-        data = 0xabcd1234
-        kcu.write_node("LOOPBACK.LOOPBACK", data)
-        if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
-            print("No communications with KCU105... quitting")
-            sys.exit(1)
 
         is_configured = rb_0.DAQ_LPGBT.is_configured()
         if not is_configured:
@@ -787,7 +799,7 @@ if __name__ == '__main__':
         # FIXME the below code is still pretty stupid
         modules = []
         for i in [1,2,3]:
-            m_tmp = Module(rb=rb_0, i=i)
+            m_tmp = Module(rb=rb, i=i)
             if m_tmp.ETROCs[0].connected:  # NOTE assume that module is connected if first ETROC is connected
                 modules.append(m_tmp)
 
