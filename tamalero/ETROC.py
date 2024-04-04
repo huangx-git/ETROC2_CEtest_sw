@@ -29,6 +29,7 @@ class ETROC():
             vtemp = None,
             chip_id = 0,
             no_init = False,
+            hard_reset = False,
             no_hard_reset_on_init = False,
     ):
         self.QINJ_delay = 504  # this is a fixed value for the default settings of ETROC2
@@ -51,6 +52,8 @@ class ETROC():
             self.ver = "X-X-X"
 
         self.chip_id = chip_id
+        self.module_id = chip_id >> 2
+        self.chip_no = chip_id & 0x3
         self.regs = load_yaml(os.path.join(here, '../address_table/ETROC2_example.yaml'))
 
         self.DAC_min  = 600  # in mV
@@ -62,6 +65,13 @@ class ETROC():
 
         if no_init:
             return
+
+        if hard_reset and not no_hard_reset_on_init:
+            print(f"Hard resetting the ETROCs on module {self.module_id}")
+            self.reset(hard=True)
+            time.sleep(1)
+        #    self.reset(hard=True)
+        #    time.sleep(1)
 
         # NOTE: some ETROCs need to be hard reset, otherwise the I2C target does not come alive.
         # This actually solves this issue, so please don't take it out (Chesterton's Fence, anyone?)
@@ -636,7 +646,7 @@ class ETROC():
 
     def plot_threshold(self, outdir='../results/', noise_width=False):
         from matplotlib import pyplot as plt
-        fig, ax = plt.subplots(1,1,figsize=(7,7))
+        fig, ax = plt.subplots(1,1,figsize=(15,15))
         matrix = self.baseline if not noise_width else self.noise_width
         cax = ax.matshow(matrix)
         fig.colorbar(cax,ax=ax)
@@ -646,9 +656,9 @@ class ETROC():
                         ha="center", va="center", color="w", fontsize="xx-small")
 
         if noise_width:
-            fig.savefig(f'{outdir}/noise_width.png')
+            fig.savefig(f'{outdir}/module_{self.module_id}_etroc_{self.chip_no}_noise_width.png')
         else:
-            fig.savefig(f'{outdir}/baseline.png')
+            fig.savefig(f'{outdir}/module_{self.module_id}_etroc_{self.chip_no}_baseline.png')
 
 
     def auto_threshold_scan(self, row=0, col=0, broadcast=False, offset='auto', time_out=3, verbose=False, use=True):

@@ -7,7 +7,7 @@ from tamalero.Monitoring import Lock
 from time import sleep
 
 class Module:
-    def __init__(self, rb, i=1, strict=False, enable_power_board=False, moduleid=0, poke=False):
+    def __init__(self, rb, i=1, strict=False, enable_power_board=False, moduleid=0, poke=False, hard_reset=False):
         # don't like that this also needs a RB
         # think about a better solution
         self.config = rb.configuration['modules'][i]
@@ -54,6 +54,7 @@ class Module:
                             vtemp = self.config['vtemp'][j],
                             chip_id = (self.id << 2) | j,  # this gives every ETROC a unique ID, based on module ID and ETROC number on the module
                             no_init = poke,
+                            hard_reset = hard_reset,
                             no_hard_reset_on_init = (j != 0),
                         ))
                 except RuntimeError:
