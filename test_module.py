@@ -737,7 +737,7 @@ if __name__ == '__main__':
     rb = ReadoutBoard(0, kcu=kcu, config=args.configuration)
     int2_time = time.time()
     print("Connecting modules")
-    rb.connect_modules(moduleids=[0,3,0], hard_reset=True)
+    rb.connect_modules(moduleids=[3,0,0], hard_reset=True)
     for mod in rb.modules:
         mod.show_status()
 
