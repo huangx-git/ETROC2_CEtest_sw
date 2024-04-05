@@ -167,6 +167,8 @@ class LPGBT(RegParser):
             print("Running power up within LPGBT.configure()")
             self.power_up_init()
 
+        self.invert_links()
+
         self.set_dac(1.0)  # set the DAC / Vref to 1.0V.
         # Callibrate ADCs
         # will automatically load from the config file if it is found
@@ -322,6 +324,7 @@ class LPGBT(RegParser):
             elif self.ver == 1:
                 self.master.program_slave_from_file('configs/config_slave_v1.txt')
             sleep(0.1)
+            self.invert_links()
 
             # toggle the uplink to and from 40MHz clock, for some reason this is
             # needed for the mgt to lock
@@ -511,6 +514,9 @@ class LPGBT(RegParser):
     def set_uplink_invert(self, link, invert=True):
         self.wr_reg("LPGBT.RWF.EPORTRX.EPRX_CHN_CONTROL.EPRX%dINVERT" % link, invert)
 
+    #def set_downlink_invert(self, link, invert=True):
+    #    self.wr_reg("LPGBT.RWF.EPORTTX.EPTX{:02d}INVERT".format(link), invert)
+
     def set_downlink_invert(self, link, invert=True):
         group = link // 4
         elink = link % 4
@@ -519,14 +525,19 @@ class LPGBT(RegParser):
     def set_clock_invert(self, link, invert=True):
         self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dINVERT" % link, invert)
 
-    def invert_links(self, trigger=False):
-        for link in range(28):
-            self.set_uplink_invert(link, invert=False)
-        for link in range(13):
-            self.set_downlink_invert(link, invert=False)
-        for link in [0,1,2,3,4,5,22,23,24,25,26,27]:
-            self.set_clock_invert(link, invert=False)
-        if trigger:
+    def invert_links(self):
+        if self.trigger:
+            for link in range(28):
+                self.set_uplink_invert(link, invert=False)
+        else:
+            for link in range(28):
+                self.set_uplink_invert(link, invert=False)
+            #for link in [0,2,10,20,22,30]:
+            for link in [0,2,4,8,10,12]:
+                self.set_downlink_invert(link, invert=False)
+            for link in [0,1,2,3,4,5,22,23,24,25,26,27]:
+                self.set_clock_invert(link, invert=False)
+        if self.trigger:
             for link in self.link_inversions['trigger']:
                 self.set_uplink_invert(link)
         else:
@@ -572,7 +583,7 @@ class LPGBT(RegParser):
         #    return self.rd_adr(0xcc+link).value()
 
     def configure_clocks(self, en_mask):
-        for i in range(27):
+        for i in range(28):
             if 0x1 & (en_mask >> i):
                 self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dFREQ" % i, 1)
                 self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dDRIVESTRENGTH" % i, 4)
