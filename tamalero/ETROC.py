@@ -385,7 +385,7 @@ class ETROC():
             self.connected = False
         return self.connected
 
-    def get_elink_status(self):
+    def get_elink_status(self, summary=False):
         if self.isfake:
             for i in self.elinks:
                 self.links_locked = {i: [True for x in self.elinks[i]]}
@@ -402,7 +402,13 @@ class ETROC():
 
             #self.trig_locked = ((locked_slave >> self.elink) & 1) == True
             #self.daq_locked = ((locked >> self.elink) & 1) == True
-        return self.links_locked
+        if summary:
+            all_good = True
+            for link in self.links_locked:
+                all_good &= self.links_locked[link][0]
+            return all_good
+        else:
+            return self.links_locked
 
     def get_ver(self):
         try:
