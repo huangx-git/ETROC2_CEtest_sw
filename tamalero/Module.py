@@ -24,6 +24,7 @@ class Module:
             sleep(0.1)  # enough time to let the ETROC power up?
 
         self.ETROCs = []
+        all_good = True
         for j in range(len(self.config['addresses'])):
             if self.config['i2c']['master']=='fake':
                 self.ETROCs.append(
@@ -57,10 +58,18 @@ class Module:
                             hard_reset = hard_reset,
                             no_hard_reset_on_init = (j != 0),
                         ))
+                    all_good &= self.ETROCs[-1].get_elink_status(summary=True)
                 except RuntimeError:
                     print("Couldn't add ETROC", j)
 
         self.connected = any([etroc.is_connected() for etroc in self.ETROCs])
+
+        if not all_good and self.connected:
+            for etroc in self.ETROCs:
+                etroc.default_config()
+            for etroc in self.ETROCs:
+                etroc.default_config(no_reset=True)
+
 
     #def configure(self):
     #    if self.connected:
