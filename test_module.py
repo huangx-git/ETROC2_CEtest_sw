@@ -750,6 +750,9 @@ if __name__ == '__main__':
         df = DataFrame('ETROC2')
 
         fifo.send_l1a(1)
+        fifo.reset()
+
+        fifo.send_l1a(1)
         for x in fifo.pretty_read(df):
             print(x)
 

@@ -504,6 +504,7 @@ class ETROC():
             self.wr_reg("lowerCalTrig", 0, broadcast=True)
 
             self.reset()  # soft reset of the global readout, 2nd reset needed for some ETROCs
+            self.reset_fast_command()
             #
             # FIXME this is where the module_reset should happen if links are not locked??
             if not no_reset:
