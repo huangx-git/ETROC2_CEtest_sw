@@ -306,7 +306,7 @@ if __name__ == '__main__':
         print("Link inversions")
         rb.DAQ_LPGBT.invert_links()
         if rb.trigger:
-            rb.TRIG_LPGBT.invert_links(trigger=rb.trigger)
+            rb.TRIG_LPGBT.invert_links()
 
     #-------------------------------------------------------------------------------
     # Module Status
