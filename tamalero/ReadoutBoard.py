@@ -5,6 +5,9 @@ from tamalero.utils import get_temp, chunk, get_temp_direct, get_config, load_ya
 from tamalero.VTRX import VTRX
 from tamalero.utils import read_mapping
 from tamalero.colors import red, green
+import time, datetime, json
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 from tamalero.Module import Module
 
 try:
@@ -420,25 +423,16 @@ class ReadoutBoard:
                     else:
                         raise RuntimeError(f"{link} link does not have a stable connection after {max_retries} retries")
     
-    #creates dict for mux64 testboard pins
-    def init_mux_tb_dict(self):
-        for x in [0x16, 0x19, 0x10, 0x13, 0xA, 0x4]:
-            self.SCA.set_gpio_direction(x, 1)
-        self.mux64_tb_dict = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/MUX64_testboard_mapping.yaml'))['mux64_testboard']
-        return
-
-    # Uses MUX64-testboard dictionary to convert integar to voltage
+    # Uses MUX64 configuration to convert integer to voltage
     def volt_conver_mux64(self,num,ch):
-        voltage = (num / (2**12 - 1) ) * self.mux64_tb_dict[ch]['conv']
+        voltage = (num / (2**12 - 1) ) * self.configuration['mux64']['input'][ch]['conv']
         return voltage
     
     def read_mux_test_board(self, ch):
+        #checks to make sure that the mux64 configuration is available
+        assert 'mux64' in self.configuration, "MUX64 configuration not correctly loaded: Check configuration"
         #checks to see RB mapping version (RB ver = 1, SCA ver = RB.ver + 1)
         assert self.SCA.ver in [2], f"MUX64 testboard only works with 2v RB\nRB 1v detected"
-
-        #checks to see if MUX64 testboard dict has already been initialized
-        if not self.mux64_tb_dict:
-            self.init_mux_tb_dict()
 
         #channel select
         s0 = (ch & 0x01)
@@ -448,12 +442,12 @@ class ReadoutBoard:
         s4 = (ch & 0x10) >> 4
         s5 = (ch & 0x20) >> 5
 
-        self.SCA.set_gpio(0x16, s0) #mod_d08
-        self.SCA.set_gpio(0x19, s1) #mod_d09
-        self.SCA.set_gpio(0x13, s2) #mod_d10
-        self.SCA.set_gpio(0x10, s3) #mod_d11
-        self.SCA.set_gpio(0x0A, s4) #mod_d12
-        self.SCA.set_gpio(0x04, s5) #mod_d13
+        self.SCA.set_gpio('mux_addr0', s0) #mod_d08
+        self.SCA.set_gpio('mux_addr1', s1) #mod_d09
+        self.SCA.set_gpio('mux_addr2', s2) #mod_d10
+        self.SCA.set_gpio('mux_addr3', s3) #mod_d11
+        self.SCA.set_gpio('mux_addr4', s4) #mod_d12
+        self.SCA.set_gpio('mux_addr5', s5) #mod_d13
 
         #read integar value and covert it to a voltge
         integer_volt = self.SCA.read_adc(0x12)
@@ -462,22 +456,67 @@ class ReadoutBoard:
         return gi
     
     def read_all_mux64_data(self, show = False):
+        #checks to make sure that the mux64 configuration is available
+        assert 'mux64' in self.configuration, "MUX64 configuration not correctly loaded: Check configuration"
         table=[]
         v_data=[]
-        for i in self.mux64_tb_dict.keys():
-            if self.mux64_tb_dict[i]['terminal_input']:
+        for i in self.configuration['mux64']['input'].keys():
+            if self.configuration['mux64']['input'][i]['terminal_input']:
                 volt=self.read_mux_test_board(i)
                 v_data.append(volt)
             else:
                 volt=None
                 v_data.append(volt)
-            sig_name=self.mux64_tb_dict[i]['sig_name']
+            sig_name=self.configuration['mux64']['input'][i]['sig_name']
             table.append([i, volt, sig_name])
         
         if (show):
             print(tabulate(table, headers=["Channel","Voltage", "Sig_Name"],  tablefmt="simple_outline"))
 
         return table
+
+    def read_selected_mux64(self, chs):
+        volts = {}
+        for i in chs:
+            volts[str(i)] = self.read_mux_test_board(i)
+        return volts
+
+    def mux64_monitoring(self, chs, tmax = 60, lat = 5, plot = False):
+        # time is given in seconds
+        mntr = {}
+        mntr['record'] = []
+        t = 0.0
+        while (t<tmax):
+            if (t%(60*5)==0):
+                print(f'Monitoring: {t}/{tmax} secs')
+            try:
+                mntr['record'].append(self.read_selected_mux64(chs))
+                mntr['record'][-1]['time'] = datetime.datetime.now().isoformat()
+                time.sleep(lat)
+            except:
+                print("NonValidatedMemory exception: sleeping 0.1 secs...")
+                time.sleep(0.1)
+            t+=lat
+        with open("mux64_mntr_%.2fmin.json".format(tmax/60.0), "w") as f:
+            json.dump(mntr, f)
+        if plot:
+            fig, ax = plt.subplots(figsize=(10, 4))
+            plt.title("MUX64 monitoring")
+            plt.xlabel("Time")
+            plt.ylabel("Voltage (V)")
+            for ch in chs:
+                vec = [mntr['record'][x][str(ch)] for x in range(len(mntr['record']))]
+                vtime = [datetime.datetime.fromisoformat(mntr['record'][x]['time']) for x in range(len(mntr['record']))]
+                plt.plot(vtime, vec, '.-', label=f"Channel: {ch}")
+            locator = mdates.AutoDateLocator(minticks=3, maxticks=7)
+            formatter = mdates.ConciseDateFormatter(locator)
+            ax.xaxis.set_major_locator(locator)
+            ax.xaxis.set_major_formatter(formatter)
+            plt.grid(True)
+            plt.legend(loc='best')
+            fig.savefig('mux64_mntr_{:.2f}min.png'.format(tmax/60.0), dpi=600)
+            plt.close(fig) 
+        return 1
 
     def read_vtrx_temp(self):
 
