@@ -337,7 +337,7 @@ modules:
     disable_vref_gen: [False, False, False, False]
     power_board: mod_d01
     pgood: mod_d02
-    vtemp: [mod_a0, mod_a1, mod_a2, mod_a3]
+    vtemp: [mod_a00, mod_a01, mod_a02, mod_a03]
   2:
     elinks: [[[6],[4]], [[16],[18]], [[4],[6]], [[18],[16]]]
     addresses: [0x64, 0x65, 0x66, 0x67]

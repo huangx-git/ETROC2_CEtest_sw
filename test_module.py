@@ -365,15 +365,19 @@ def readout_tests(etroc, masked_pixels, rb_0, args, result_dir = None, out_dir =
                 print("FIFO state is unexpected.")
                 raise
     etroc.reset()
+    fifo.reset()
 
     print('Current ETROC Temperature Reading:', check_temp(etroc))
     
     etroc.wr_reg("DAC", 0, broadcast=True)  # make sure that we're not additionally picking up any noise
     etroc.wr_reg("selfTestOccupancy", 2, broadcast=True)
     etroc.wr_reg("workMode", 0x1, broadcast=True)
+    # maybe need to reset??
     etroc.deactivate_hot_pixels(pixels=masked_pixels)
     etroc.wr_reg("onChipL1AConf", 0x2)  # NOTE: internal L1A is around 1MHz, so we're only turning this on for the shortest amount of time.
+    time.sleep(0.1)
     etroc.wr_reg("onChipL1AConf", 0x0)
+    print("FIFO occupancy:", fifo.get_occupancy())
     test_data = []
     while fifo.get_occupancy() > 0:
         test_data += fifo.pretty_read(df)
@@ -386,6 +390,7 @@ def readout_tests(etroc, masked_pixels, rb_0, args, result_dir = None, out_dir =
     n_events_hit   = 0
     n_events_err   = 0
     for d in test_data:
+        #print(d[1]['raw'])
         if d[0] == 'trailer':
             n_events_total += 1
             if d[1]['hits'] > 0:
@@ -670,7 +675,7 @@ if __name__ == '__main__':
     argParser.add_argument('--configuration', action='store', default='modulev1', choices=['modulev0b', 'modulev1'], help="Board configuration to be loaded")
     argParser.add_argument('--kcu', action='store', default='192.168.0.10', help="IP Address of KCU105 board")
     argParser.add_argument('--host', action='store', default='localhost', help="Hostname for control hub")
-    argParser.add_argument('--module', action='store', default=0, choices=['1','2','3'], help="Module to test")
+    argParser.add_argument('--module', action='store', default=1, choices=['1','2','3'], help="Module to test")
     argParser.add_argument('--enable_power_board', action='store_true', help="Enable Power Board (all modules). Jumpers must still be set as well.")
     argParser.add_argument('--moduleid', action='store', default=0, help="")
     argParser.add_argument('--multi', action='store_true', help="Run multiple modules at once (for data taking only!)")
@@ -711,7 +716,7 @@ if __name__ == '__main__':
         args.pixel_masks = ['None']*12
 
     assert int(args.moduleid)>0, "Module ID is not specified. This is a new feature, please run with --moduleid MODULEID, where MODULEID is the number on the module test board."
-    MID = args.moduleid
+    MID = int(args.moduleid)
     timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
     if args.run_tag:
         timestamp += '_' + args.run_tag
@@ -737,7 +742,9 @@ if __name__ == '__main__':
     rb = ReadoutBoard(0, kcu=kcu, config=args.configuration)
     int2_time = time.time()
     print("Connecting modules")
-    rb.connect_modules(moduleids=[3,0,0], hard_reset=True)
+    moduleids = [0,0,0]
+    moduleids[int(args.module)-1] = MID
+    rb.connect_modules(moduleids=moduleids, hard_reset=True)
     for mod in rb.modules:
         mod.show_status()
 
