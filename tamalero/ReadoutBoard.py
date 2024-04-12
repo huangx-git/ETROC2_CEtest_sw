@@ -1,6 +1,7 @@
 import os
 from tamalero.LPGBT import LPGBT
 from tamalero.SCA import SCA
+from tamalero.MUX64 import MUX64
 from tamalero.utils import get_temp, chunk, get_temp_direct, get_config, load_yaml
 from tamalero.VTRX import VTRX
 from tamalero.utils import read_mapping
@@ -25,24 +26,23 @@ flavors = {
 
 class ReadoutBoard:
 
-    def __init__(self, rb=0, trigger=True, flavor='small', kcu=None, config='default', alignment=False, data_mode=True, etroc='ETROC2', verbose=False, allow_bad_links=False, poke=False):
+    def __init__(self, rb=0, trigger=True, flavor='small', kcu=None, config='default', alignment=False, data_mode=True, etroc='ETROC2', verbose=False, allow_bad_links=False, poke=False, ver = None):
         '''
         create a readout board.
         trigger: if true, also configure a trigger lpGBT
         '''
         self.rb = rb
         self.flavor = flavor
-        self.ver = 2
+        self.ver = ver
         self.nmodules = flavors[flavor]
         self.config = config
 
         self.trigger = trigger
-        self.DAQ_LPGBT = LPGBT(rb=rb, flavor=flavor, kcu=kcu, config=self.config, poke=poke)
+        self.DAQ_LPGBT = LPGBT(rb=rb, flavor=flavor, kcu=kcu, config=self.config, poke=poke, rbver=self.ver)
         self.VTRX = VTRX(self.DAQ_LPGBT)
         # This is not yet recommended:
         #for adr in [0x06, 0x0A, 0x0E, 0x12]:
         #    self.VTRX.wr_adr(adr, 0x20)
-        self.SCA = SCA(rb=rb, flavor=flavor, ver=self.DAQ_LPGBT.ver, config=self.config, poke=poke)
 
         self.alignment = alignment
         self.data_mode = data_mode
@@ -53,15 +53,21 @@ class ReadoutBoard:
             self.kcu = kcu
             self.kcu.readout_boards.append(self)
             self.DAQ_LPGBT.configure()
-            if self.DAQ_LPGBT.ver == 1:
-                self.ver = 2
-                self.SCA.update_ver(self.ver)
-                self.DAQ_LPGBT.update_ver(self.ver-1)  #  FIXME we need to disentangle lpGBT version from RB version
-            elif self.DAQ_LPGBT.ver == 0:
-                self.ver = 1
-                self.SCA.update_ver(self.ver)
-                self.DAQ_LPGBT.update_ver(self.ver-1)  # FIXME we need to disentangle lpGBT version from RB version
-            self.SCA.connect_KCU(kcu)
+            # If version is undetermined or older than 3, get version from LPGBT and try to connect SCA to KCU
+            if self.ver==None or self.ver<3:
+                self.SCA = SCA(rb=rb, flavor=flavor, ver=self.DAQ_LPGBT.ver, config=self.config, poke=poke)
+                if self.DAQ_LPGBT.ver == 1:
+                    self.ver = 2
+                    self.SCA.update_ver(self.ver)
+                    self.DAQ_LPGBT.update_ver(self.ver-1)  #  FIXME we need to disentangle lpGBT version from RB version
+                elif self.DAQ_LPGBT.ver == 0:
+                    self.ver = 1
+                    self.SCA.update_ver(self.ver)
+                    self.DAQ_LPGBT.update_ver(self.ver-1)  # FIXME we need to disentangle lpGBT version from RB version
+                self.SCA.connect_KCU(kcu)
+            # If version newer than 3, connect MUX64
+            if self.ver > 2:
+                self.MUX64 = MUX64(rb=self.rb, ver=1, config=self.config, rbver=self.ver, LPGBT=self.DAQ_LPGBT)
 
         self.configuration = get_config(self.config, version=f'v{self.ver}')
 
@@ -111,7 +117,7 @@ class ReadoutBoard:
                 print ("Trigger lpGBT was found, but will not be configured.")
 
         if self.trigger:
-            self.TRIG_LPGBT = LPGBT(rb=self.rb, flavor=self.flavor, trigger=True, master=self.DAQ_LPGBT, kcu=self.kcu, config=self.config, poke=poke)
+            self.TRIG_LPGBT = LPGBT(rb=self.rb, flavor=self.flavor, trigger=True, master=self.DAQ_LPGBT, kcu=self.kcu, config=self.config, poke=poke, rbver=self.ver)
 
 
     def connect_KCU(self, kcu):
@@ -350,18 +356,20 @@ class ReadoutBoard:
         else:
             pass
 
-        # SCA init
+        # SCA init (only if version is newer than 2)
         #self.
-        self.sca_hard_reset()
-        self.sca_setup(verbose=self.verbose)
-        self.SCA.reset()
-        self.SCA.connect()
-        try:
-            #print("version in SCA", self.SCA.ver)
-            #print("config in SCA", self.SCA.config)
-            self.SCA.config_gpios()  # this sets the directions etc according to the mapping
-        except TimeoutError:
-            print ("SCA config failed. Will continue without SCA.")
+        if self.ver < 3:
+            self.sca_hard_reset()
+            self.sca_setup(verbose=self.verbose)
+            self.SCA.reset()
+            self.SCA.connect()
+            try:
+                #print("version in SCA", self.SCA.ver)
+                #print("config in SCA", self.SCA.config)
+                self.SCA.config_gpios()  # this sets the directions etc according to the mapping
+            except TimeoutError:
+                print ("SCA config failed. Will continue without SCA.")
+
         #if self.trigger:
         #    self.DAQ_LPGBT.reset_trigger_mgts() 
 

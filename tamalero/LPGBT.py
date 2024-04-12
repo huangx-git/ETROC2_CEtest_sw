@@ -37,7 +37,7 @@ def gpio_byname(gpio_func):
 
 class LPGBT(RegParser):
 
-    def __init__(self, rb=0, trigger=False, flavor='small', master=None, kcu=None, do_adc_calibration=False, config='default', debug=False, ver=None, verbose=False, poke=False):
+    def __init__(self, rb=0, trigger=False, flavor='small', master=None, kcu=None, do_adc_calibration=False, config='default', debug=False, ver=None, verbose=False, poke=False, rbver=None):
         '''
         Initialize lpGBT for a certain readout board number (rb).
         The trigger lpGBT is accessed through I2C of the master (= DAQ lpGBT).
@@ -49,6 +49,7 @@ class LPGBT(RegParser):
         self.gain = 1.85
         self.offset = 512
         self.verbose = verbose
+        self.rbver=rbver
         if ver is not None:
             self.ver = ver
 
@@ -70,6 +71,9 @@ class LPGBT(RegParser):
                 self.ver = 1  # hard coded for now
             self.kcu.write_node("READOUT_BOARD_%d.SC.FRAME_FORMAT" % self.rb, self.ver)
             self.parse_xml(ver=self.ver)
+
+        if self.rbver is None:
+            print("RB version could not be correctly identified by LPGBT")
 
 
     def configure(self, do_adc_calibration=True):
@@ -139,6 +143,9 @@ class LPGBT(RegParser):
                 print (" > unsure about lpGBT version. This case should have been impossible to reach.")
                 raise Exception("Spurious lpGBT version.")
 
+        if self.rbver is None:
+            self.rbver = self.ver + 1
+
         self.base_config = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/lpgbt_config.yaml'))['base'][f'v{self.ver}']
         self.ec_config = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/lpgbt_config.yaml'))['ec'][f'v{self.ver}']
 
@@ -198,7 +205,7 @@ class LPGBT(RegParser):
 
     def set_adc_mapping(self):
         assert self.ver in [0, 1], f"Unrecognized version {self.ver}"
-        self.adc_mapping = get_config(self.config, version=f'v{self.ver+1}')['LPGBT']['adc']
+        self.adc_mapping = get_config(self.config, version=f'v{self.rbver}')['LPGBT']['adc']
         for channel in self.adc_mapping:
             if self.adc_mapping[channel]['current'] == 1:
                 if self.verbose:
@@ -211,7 +218,7 @@ class LPGBT(RegParser):
 
     def set_gpio_mapping(self):
         assert self.ver in [0, 1], f"Unrecognized version {self.ver}"
-        self.gpio_mapping = get_config(self.config, version=f'v{self.ver+1}')['LPGBT']['gpio']
+        self.gpio_mapping = get_config(self.config, version=f'v{self.rbver}')['LPGBT']['gpio']
         #if self.ver == 0:
         #    self.gpio_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping.yaml'), 'gpio')
         #elif self.ver == 1:
@@ -447,7 +454,7 @@ class LPGBT(RegParser):
         return int((val >> pin) & 1)
 
     @gpio_byname
-    def set_gpio(self, pin, direction=1):
+    def set_gpio(self, pin, value=1):
         assert pin < 16 and pin >= 0
 
         if pin < 8:
@@ -463,9 +470,9 @@ class LPGBT(RegParser):
         else:
             currently_set = self.rd_reg(out_reg)
 
-        if (currently_set & (1 << pin)) and direction==0:
+        if (currently_set & (1 << pin)) and value==0:
             currently_set ^= (1 << pin)
-        elif direction==1:
+        elif value==1:
             currently_set |= (1 << pin)
 
         self.wr_reg(out_reg, currently_set)

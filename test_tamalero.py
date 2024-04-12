@@ -165,6 +165,7 @@ if __name__ == '__main__':
     argParser.add_argument('--server', action='store_true', default=False, help="Start server")
     argParser.add_argument('--port', action='store', default=5000, type=int, help="Port to use for server")
     argParser.add_argument('--rb', action='store', default=0, type=int, help="Specify Readout Board")
+    argParser.add_argument('--rbver', action='store', type=int, help="Specify Readout Board version")
     argParser.add_argument('--multi_board', action = 'store_true')
     argParser.add_argument('--power_board', action='store_true', help="Enable power board usage, and show status.")
     args = argParser.parse_args()
@@ -238,6 +239,7 @@ if __name__ == '__main__':
         etroc=args.etroc,
         verbose=args.verbose,
         allow_bad_links = args.allow_bad_links,
+        ver=args.rbver,
     )
     
     # IDEA Loop over boards for configuration?
@@ -437,7 +439,8 @@ if __name__ == '__main__':
     # Success LEDs
     #-------------------------------------------------------------------------------
     if rb.DAQ_LPGBT.ver == 1:
-        rb.DAQ_LPGBT.set_gpio("LED_1", 1) # Set LED1 after tamalero finishes succesfully
+        if rb.ver < 3:
+            rb.DAQ_LPGBT.set_gpio("LED_1", 1) # Set LED1 after tamalero finishes succesfully
         t_end = time.time() + 10
         if args.power_up:
             from tamalero.Monitoring import Monitoring, blink_rhett
