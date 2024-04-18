@@ -16,3 +16,4 @@ emoji==2.2.0
 flask==2.2.5
 hist==2.6.3
 git+https://github.com/danbarto/cocina.git@v0.1.0
+colored==1.4.4
