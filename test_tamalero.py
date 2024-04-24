@@ -51,6 +51,15 @@ def create_app(rb, modules=[]):
         temp['time'] = datetime.datetime.now().isoformat()
         return temp
 
+    @app.route('/rb_mux64/<ch>')
+    def get_mux64_output(ch):
+        volts = {}
+        # mux64 should have 64 entries anyway but could be nice check configuration maybe? 
+        for i in [ch]:
+            volts[str(ch)] = rb.read_mux_test_board(int(ch))
+        volts['time'] = datetime.datetime.now().isoformat()
+        return volts
+
     @app.route('/module_links')
     def get_link_status():
         link_status = {}
@@ -149,7 +158,7 @@ if __name__ == '__main__':
     argParser.add_argument('--eyescan', action='store_true', default=False, help="Run eyescan?")
     argParser.add_argument('--recal_lpgbt', action='store_true', default=False, help="Recalibrate ADC in LPGBT? (instead of using saved values)")
     argParser.add_argument('--host', action='store', default='localhost', help="Specify host for control hub")
-    argParser.add_argument('--configuration', action='store', default='default', choices=['default', 'emulator', 'modulev0', 'modulev0b', 'multimodule'], help="Specify a configuration of the RB, e.g. emulator or modulev0")
+    argParser.add_argument('--configuration', action='store', default='default', choices=['default', 'emulator', 'modulev0', 'modulev0b', 'multimodule', 'mux64', 'modulev1'], help="Specify a configuration of the RB, e.g. emulator or modulev0")
     argParser.add_argument('--devel', action='store_true', default=False, help="Don't check repo status (not recommended)")
     argParser.add_argument('--monitor', action='store_true', default=False, help="Start up montoring threads in the background")
     argParser.add_argument('--strict', action='store_true', default=False, help="Enforce strict limits on ADC reads for SCA and LPGBT")
@@ -193,6 +202,17 @@ if __name__ == '__main__':
                 print(f'Connecting to ReadoutBoard {i} failed')
 
         temp.status()
+
+    if args.alignment:
+        if isinstance(args.alignment, str):
+            print ("Loading uplink alignemnt from file:", args.alignment)
+            from tamalero.utils import load_alignment_from_file
+            alignment = load_alignment_from_file(args.alignment)
+        else:
+            alignment = None
+    else:
+        alignment = False
+
     # write to the loopback node of the KCU105 to check ethernet communication
     kcu = get_kcu(args.kcu, control_hub=True, host=args.host, verbose=args.verbose)
     if (kcu == 0):
@@ -200,20 +220,31 @@ if __name__ == '__main__':
         # this would cause the RB init to fail.
         sys.exit(1)
 
-    print(f'Utilizing ReadoutBoard {args.rb}')
-    rb = ReadoutBoard(args.rb, trigger=(not args.force_no_trigger), kcu=kcu, config=args.configuration)
-    
-    # IDEA Loop over boards for configuration?
-    print(kcu.readout_boards)
-
+    # check that the KCU is actually connected
     data = 0xabcd1234
     kcu.write_node("LOOPBACK.LOOPBACK", data)
     if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
         print("No communications with KCU105... quitting")
         sys.exit(1)
 
-    is_configured = rb.DAQ_LPGBT.is_configured()
-    header(configured=is_configured)
+    print(f'Utilizing ReadoutBoard {args.rb}')
+    rb = ReadoutBoard(
+        args.rb,
+        trigger=(not args.force_no_trigger),
+        kcu=kcu,
+        config=args.configuration,
+        alignment=alignment,
+        data_mode=data_mode,
+        etroc=args.etroc,
+        verbose=args.verbose,
+        allow_bad_links = args.allow_bad_links,
+    )
+    
+    # IDEA Loop over boards for configuration?
+    print(kcu.readout_boards)
+
+    #is_configured = rb.DAQ_LPGBT.is_configured()
+    header(configured=rb.is_configured)
 
     if args.recal_lpgbt:
         rb.DAQ_LPGBT.calibrate_adc(recalibrate=True)
@@ -254,21 +285,8 @@ if __name__ == '__main__':
         rb.get_trigger()
 
     if args.power_up or args.reconfigure:
-
-        if args.alignment:
-            if isinstance(args.alignment, str):
-                print ("Loading uplink alignemnt from file:", args.alignment)
-                from tamalero.utils import load_alignment_from_file
-                alignment = load_alignment_from_file(args.alignment)
-            else:
-                alignment = None
-        else:
-            alignment = False
-
-        #if rb.trigger:
-        #    rb.TRIG_LPGBT.power_up_init()
         print("Configuring readout board")
-        rb.configure(alignment=alignment, data_mode=data_mode, etroc=args.etroc, verbose=args.verbose)
+        rb.configure()
 
     res = rb.DAQ_LPGBT.get_board_id()
     res['trigger'] = 'yes' if rb.trigger else 'no'
@@ -279,9 +297,9 @@ if __name__ == '__main__':
     if args.power_up or args.reconfigure:
         # FIXME this is taken out because it sometimes sends the RB into the Nirvana.
         # Daniel will fix it when he has time.
-        rb.reset_problematic_links(
-            max_retries=10,
-            allow_bad_links=args.allow_bad_links)
+        #rb.reset_problematic_links(
+        #    max_retries=10,
+        #    allow_bad_links=args.allow_bad_links)
         if verbose:
             rb.status()
 
@@ -297,7 +315,7 @@ if __name__ == '__main__':
         print("Link inversions")
         rb.DAQ_LPGBT.invert_links()
         if rb.trigger:
-            rb.TRIG_LPGBT.invert_links(trigger=rb.trigger)
+            rb.TRIG_LPGBT.invert_links()
 
     #-------------------------------------------------------------------------------
     # Module Status
@@ -424,4 +442,11 @@ if __name__ == '__main__':
         if args.power_up:
             from tamalero.Monitoring import Monitoring, blink_rhett
             print("RB configured successfully. Rhett is happy " + emojize(":dog_face:"))
-            b = blink_rhett(rb, iterations=3)
+            rb.disable_rhett()
+            time.sleep(0.5)
+            rb.enable_rhett()
+            time.sleep(0.5)
+            rb.disable_rhett()
+            time.sleep(0.5)
+            rb.enable_rhett()
+            #b = blink_rhett(rb, iterations=3)

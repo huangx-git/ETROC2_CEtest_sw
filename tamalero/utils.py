@@ -225,7 +225,7 @@ def get_last_commit_sha(version):
     last_commit_sha = log[0]['id'][:7]
     return last_commit_sha
 
-def download_address_table(version):
+def download_address_table(version, quiet=False):
     import os
     import requests
     import json
@@ -236,7 +236,8 @@ def download_address_table(version):
     r = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/tree?ref={version}&&path=address_tables&&recursive=True")
     tree = json.loads(r.content)
     if isinstance(tree, list):
-        print ("Successfully got list of address table files from gitlab.")
+        if not quiet:
+            print ("Successfully got list of address table files from gitlab.")
     else:
         version = last_commit_sha
         if os.path.isdir(f'address_table/{version}/'):
@@ -247,8 +248,9 @@ def download_address_table(version):
         print (f"Local firmware version detected. Will download address table corresponding to commit {version}.")
 
     if not os.path.isdir(f"address_table/{version}"):
-        print (f"Downloading latest firmware version address table to address_table/{version}")
-        print(f"Making directory: address_table/{version}")
+        if not quiet:
+            print (f"Downloading latest firmware version address table to address_table/{version}")
+            print(f"Making directory: address_table/{version}")
         os.makedirs(f"address_table/{version}")
         for f in tree:
             if f['type'] == 'tree':
@@ -295,7 +297,7 @@ def check_repo_status(kcu_version=None):
         else:
             print (red("Please pull a more recent version from gitlab.\n"))
 
-def get_kcu(kcu_address, control_hub=True, host='localhost', verbose=False):
+def get_kcu(kcu_address, control_hub=True, host='localhost', verbose=False, quiet=False):
     # Get the current firmware version number
     if verbose:
         if control_hub:
@@ -309,7 +311,8 @@ def get_kcu(kcu_address, control_hub=True, host='localhost', verbose=False):
         ipb_path = f"chtcp-2.0://{host}:10203?target={kcu_address}:50001"
     else:
         ipb_path = f"ipbusudp-2.0://{kcu_address}:50001"
-    print (f"IPBus address: {ipb_path}")
+    if not quiet:
+        print (f"IPBus address: {ipb_path}")
 
     trycnt = 0
     while (True):
@@ -332,16 +335,13 @@ def get_kcu(kcu_address, control_hub=True, host='localhost', verbose=False):
                     # if control hub is running, try again to establish a connection
                     pass
                 else:
-                    print("Controlhub is not running. Start it with: /opt/cactus/bin/controlhub_start")
-                    print("Exiting.")
-                    return 0
+                    raise RuntimeError("Controlhub is not running. Start it with: /opt/cactus/bin/controlhub_start")
 
             trycnt += 1
             time.sleep(1)
             if (trycnt > 10):
                 if control_hub: print("controlhub status:", "running" if control_hub_running else "not running")
-                print ("Could not establish connection with KCU. Exiting.")
-                return 0
+                raise RuntimeError(f"Could not establish connection with KCU board {ipb_path}")
 
         #raise
     xml_sha     = kcu_tmp.get_xml_sha()
@@ -350,7 +350,7 @@ def get_kcu(kcu_address, control_hub=True, host='localhost', verbose=False):
 
     last_commit = get_last_commit_sha(xml_sha)
     if not os.path.isdir(f"address_table/{last_commit}"):
-        xml_sha = download_address_table(xml_sha)
+        xml_sha = download_address_table(xml_sha, quiet=quiet)
     else:
         xml_sha = last_commit
 
@@ -358,9 +358,15 @@ def get_kcu(kcu_address, control_hub=True, host='localhost', verbose=False):
               ipb_path=ipb_path,
               adr_table=f"address_table/{xml_sha}/etl_test_fw.xml")
 
+    data = 0xabcd1234
+    kcu.write_node("LOOPBACK.LOOPBACK", data)
+    if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
+        raise RuntimeError(f"No communication with KCU board {ipb_path} established.")
+
     kcu.get_firmware_version(string=False)
 
-    print(f"KCU firmware version: {kcu.firmware_version['major']}.{kcu.firmware_version['minor']}.{kcu.firmware_version['patch']}")
+    if not quiet:
+        print(f"KCU firmware version: {kcu.firmware_version['major']}.{kcu.firmware_version['minor']}.{kcu.firmware_version['patch']}")
 
     return kcu
 
@@ -369,17 +375,26 @@ def get_config(config, version='v2', verbose=False):
     if config != 'default':
         updated_cfg = load_yaml(os.path.join(here, f'../configs/{config}_{version}.yaml'))
         for chip in ['SCA', 'LPGBT']:
+            if chip not in updated_cfg:
+                continue
             for interface in ['adc', 'gpio']:
+                if interface not in updated_cfg[chip]:
+                    continue
                 if updated_cfg[chip][interface] is not None:
                     for k in updated_cfg[chip][interface]:
                         if verbose:
                             print(f"\n - Updating configuration for {chip}, {interface}, {k} to:")
                             print(updated_cfg[chip][interface][k])
+                        if k in default_cfg[chip][interface] and k not in updated_cfg[chip][interface]:
+                            del default_cfg[chip][interface][k]
                         default_cfg[chip][interface][k] = updated_cfg[chip][interface][k]
-        for links in ['trigger', 'clocks', 'downlink', 'uplink']:
-            default_cfg['inversions'][links] = updated_cfg['inversions'][links]
+        if 'inversions' in updated_cfg:
+            for links in ['trigger', 'clocks', 'downlink', 'uplink']:
+                default_cfg['inversions'][links] = updated_cfg['inversions'][links]
         if 'modules' in updated_cfg:
             default_cfg['modules'] = updated_cfg['modules']
+        if 'mux64' in updated_cfg:
+            default_cfg['mux64'] = updated_cfg['mux64']
     return default_cfg
 
 def majority_vote(values, majority=None):

@@ -6,7 +6,7 @@ try:
 except ModuleNotFoundError:
     print("Running without uhal (ipbus not installed with correct python bindings)")
 from tamalero.colors import red, green
-
+import time
 
 class KCU:
 
@@ -171,6 +171,11 @@ class KCU:
                 print(red('Warning: No elink is locked.'))
             print()
 
+    def reset_FEC_error_count(self):
+        for i in range(5):
+            self.write_node("READOUT_BOARD_%s.LPGBT.FEC_ERR_RESET" % i, 0x1)
+
+
     def print_reg(self, reg, threshold=1, maxval=0xFFFFFFFF, use_color=False, invert=False):
         from tamalero.colors import green, red, dummy
         val = reg.read()
@@ -224,3 +229,18 @@ class KCU:
                 self.print_reg(self.hw.getNode(clock[0]), use_color=True, threshold=clock[1] - tolerance, maxval=clock[1] + tolerance)
 
         return errs
+
+    def send_l1a(self, count=1, quiet=True, max_rate=-1):
+        sleeper = 1./max_rate if max_rate>0 else 0
+        start_time = time.time()
+        for i in range(count):
+            time.sleep(sleeper)
+            try:
+                self.write_node("SYSTEM.L1A_PULSE", 1)
+            except:
+                print("Couldn't send pulse.")
+        timediff = time.time() - start_time
+        rate = count/timediff
+        if not quiet:
+            print(f"Sent {count} L1As at a rate of {rate}Hz")
+        return rate

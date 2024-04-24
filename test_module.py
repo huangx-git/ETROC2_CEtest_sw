@@ -126,89 +126,33 @@ def vth_scan_internal(ETROC2, row=0, col=0, dac_min=0, dac_max=500, dac_step=1):
     run_results = np.array(results)
     return [dac_axis, run_results]
 
-def setup(args):
-    kcu = get_kcu(args.kcu, control_hub=True, host=args.host, verbose=False)
-    if (kcu == 0):
-    	# if not basic connection was established the get_kcu function returns 0
-    	# this would cause the RB init to fail.
-    	sys.exit(1)
+def setup(rb, args):
 
-    rb_0 = ReadoutBoard(0, kcu=kcu, config=args.configuration)
-    data = 0xabcd1234
-    kcu.write_node("LOOPBACK.LOOPBACK", data)
-    if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
-        print("No communications with KCU105... quitting")
-        sys.exit(1)      
+    modules = rb.modules
+    connected_modules = [ mod for mod in modules if mod.connected ]
 
-    is_configured = rb_0.DAQ_LPGBT.is_configured()
-    if not is_configured:
-        print("RB is not configured, exiting.")
-        exit(0)
-        
-    # FIXME the below code is still pretty stupid
-    modules = []
-    connected_modules = []
-
-    for i in [1,2,3]:
-    	# FIXME we might want to hard reset all ETROCs at this point?
-        moduleid = int(args.moduleid) if i==int(args.module) else (i+200)
-        m_tmp = Module(rb=rb_0, i=i, enable_power_board=args.enable_power_board, moduleid = moduleid)
-        modules.append(m_tmp)
-        if m_tmp.ETROCs[0].is_connected():  # NOTE assume that module is connected if first ETROC is connected
-            connected_modules.append(i)
-            for e_tmp in m_tmp.ETROCs:
-                if args.hard_reset:
-                    print(f"Running hard reset and default config on module {i}")
-                    e_tmp.reset(hard=True)
-                    e_tmp.default_config()
-                    time.sleep(1.1)
-                    #e_tmp.default_config()
-                    #
-                print("Setting ETROCs into workMode 0")
-                e_tmp.wr_reg("workMode", 0, broadcast=True)
-                
-         #Make sure all ETROCs are turned off 
-		
-    print(f"Found {len(connected_modules)} connected modules")
     if int(args.module) > 0:
-        module = int(args.module)
+        module = modules[int(args.module)-1]
     else:
         module = connected_modules[0]
 
-    print(f"Will proceed with testing Module {module}")
-    print("Module status:")
-    modules[module-1].show_status()
+    print(f"Will proceed with testing the following Module:")
+    module.show_status()
 
-    if args.hard_reset:
-        for etroc in modules[module-1].ETROCs:
-            etroc.reset(hard=True)
-            etroc.default_config()
-
-      
-    print('Using the following ETROCs: ', args.etrocs)
     etrocs = []
     masks = []
-    for i in args.etrocs:
-        etroc = modules[module-1].ETROCs[i]
-        if args.mode == 'single':
-            print(f"Setting the ETROC in single port mode ('right')")
-            etroc.set_singlePort("right")
-            etroc.set_mergeTriggerData("separate")
-        elif args.mode == 'dual':
-            print(f"Setting the ETROC in dual port mode ('both')")
-            etroc.set_singlePort("both")
-            etroc.set_mergeTriggerData("merge")
-        masked_pixels = []
+    for i, etroc in enumerate(module.ETROCs):
         if not args.pixel_masks[i] == 'None':
             mask = PixelMask.from_file(args.pixel_masks[i])
             masked_pixels = mask.get_masked_pixels()
 
             print(f"\n - Will apply the following pixel mask to ETROC {i}:")
             mask.show()
+        masked_pixels = []
         etrocs.append(etroc)
         masks.append(masked_pixels)
-    return rb_0, module, etrocs, masks
-      
+    return module, etrocs, masks
+
 def auto_threshold_scan(etroc, args):
     print ("\n - Using auto-threshold calibration for individual pixels")
     print ("Info: if progress is slow, probably most pixel threshold calibrations time out because of high noise levels.")
@@ -240,6 +184,8 @@ def manual_threshold_scan(etroc, fifo, rb_0, args):
     row = 4
     col = 3
 
+    prefix = f"module_{etroc.module_id}_etroc_{etroc.chip_no}_"
+
     elink, slave = etroc.get_elink_for_pixel(row, col)
 
     rb_0.reset_data_error_count()
@@ -261,6 +207,9 @@ def manual_threshold_scan(etroc, fifo, rb_0, args):
         if data_cnt > 0:
             print(i, data_cnt)
             first_val = i
+            if data_cnt == 65535:
+                print("Data count is overflowing, breaking coarse scan.")
+                break
         rb_0.reset_data_error_count()
         if i > (first_val + 10):
             # break the loop early because this scan is sloooow
@@ -294,7 +243,7 @@ def manual_threshold_scan(etroc, fifo, rb_0, args):
     noise_matrix  = np.empty([N_pix_w, N_pix_w])
 
     rawout = {vth_axis[i]:hit_rate.T[i].tolist() for i in range(len(vth_axis))}
-    with open(f'{out_dir}/thresh_scan_data.json', 'w') as f:
+    with open(f'{result_dir}/{prefix}thresh_scan_data.json', 'w') as f:
         json.dump(rawout, f)
 
     threshold_matrix = np.empty([N_pix_w, N_pix_w])
@@ -311,18 +260,19 @@ def manual_threshold_scan(etroc, fifo, rb_0, args):
         else:
             threshold_matrix[r][c] = dac_max + 2
             
-    plot_scan_results(max_matrix, noise_matrix, threshold_matrix, result_dir, out_dir, mode = 'manual')
+    plot_scan_results(etroc, max_matrix, noise_matrix, threshold_matrix, result_dir, out_dir, mode = 'manual')
     
-    with open(f'{result_dir}/thresholds.yaml', 'w') as f:
-        dump(threshold_matrix.tolist(), f)
-    with open(f'{result_dir}/baseline.yaml', 'w') as f:
-        dump(max_matrix.tolist(), f)
-    with open(f'{result_dir}/noise_width.yaml', 'w') as f:
-        dump(noise_matrix.tolist(), f)
+    #with open(f'{result_dir}/{prefix}thresholds.yaml', 'w') as f:
+    #    dump(threshold_matrix.tolist(), f)
+    #with open(f'{result_dir}/{prefix}baseline.yaml', 'w') as f:
+    #    dump(max_matrix.tolist(), f)
+    #with open(f'{result_dir}/{prefix}noise_width.yaml', 'w') as f:
+    #    dump(noise_matrix.tolist(), f)
         
-    return threshold_matrix
+    return max_matrix, noise_matrix
 
-def plot_scan_results(max_matrix, noise_matrix, threshold_matrix, result_dir, out_dir, mode = None):
+def plot_scan_results(etroc, max_matrix, noise_matrix, threshold_matrix, result_dir, out_dir, mode = None):
+    prefix = f"module_{etroc.module_id}_etroc_{etroc.chip_no}_"
 
     # 2D histogram of the mean
     # this is based on the code for automatic sigmoid fits
@@ -351,7 +301,7 @@ def plot_scan_results(max_matrix, noise_matrix, threshold_matrix, result_dir, ou
             text1 = ax[1].text(j, i, int(noise_matrix[i,j]),
 		        ha="center", va="center", color="w", fontsize="xx-small")
 
-    fig.savefig(f'{result_dir}/peak_and_noiseWidth_thresholds.png')
+    fig.savefig(f'{result_dir}/{prefix}peak_and_noiseWidth_thresholds.png')
     if args.show_plots:
         plt.show()
 
@@ -374,7 +324,7 @@ def plot_scan_results(max_matrix, noise_matrix, threshold_matrix, result_dir, ou
     ax.set_xlabel("Column")
     ax.set_ylabel("Row")
 
-    fig.savefig(f'{result_dir}/thresholds.png')
+    fig.savefig(f'{result_dir}/{prefix}thresholds_manual.png')
     if args.show_plots:
         plt.show()
 
@@ -384,6 +334,7 @@ def plot_scan_results(max_matrix, noise_matrix, threshold_matrix, result_dir, ou
     
 def isolate(etrocs, n):
     for i, e in enumerate(etrocs):
+        e.wr_reg("disDataReadout", 0x0, broadcast=True)
         if i != n:
            e.wr_reg("disDataReadout", 0x1, broadcast=True)
 
@@ -395,7 +346,7 @@ def check_temp(etroc):
 
 def readout_tests(etroc, masked_pixels, rb_0, args, result_dir = None, out_dir = None):
     etroc.deactivate_hot_pixels(pixels=masked_pixels)
-    
+
     df = DataFrame()
     fifo = FIFO(rb=rb_0)
     
@@ -471,7 +422,8 @@ def readout_tests(etroc, masked_pixels, rb_0, args, result_dir = None, out_dir =
             ax=ax,
             fontsize=15,
         )
-    name = 'hit_matrix_internal_test_pattern'
+    prefix = f'module_{etroc.module_id}_etroc_{etroc.chip_no}_'
+    name = prefix+'hit_matrix_internal_test_pattern'
     fig.savefig(os.path.join(result_dir, f"{name}.pdf"))
     fig.savefig(os.path.join(result_dir, f"{name}.png"))
     if args.show_plots:
@@ -553,7 +505,7 @@ def readout_tests(etroc, masked_pixels, rb_0, args, result_dir = None, out_dir =
                 ax=ax,
                 fontsize=15,
             )
-        name = 'hit_matrix_external_L1A'
+        name = prefix+'hit_matrix_external_L1A'
         fig.savefig(os.path.join(result_dir, "{}.pdf".format(name)))
         fig.savefig(os.path.join(result_dir, "{}.png".format(name)))
         if args.show_plots:
@@ -567,15 +519,19 @@ def readout_tests(etroc, masked_pixels, rb_0, args, result_dir = None, out_dir =
 
     # Set the chip back into well-defined workMode 0
     etroc.wr_reg("workMode", 0x0, broadcast=True)
+
     if args.threshold == 'auto':
         print('Current ETROC Temperature Reading:', check_temp(etroc))
-        threshold_matrix = auto_threshold_scan(etroc, args)
+        baseline, noise_width = etroc.run_threshold_scan()
+        etroc.plot_threshold(outdir=result_dir, noise_width=False)
+        etroc.plot_threshold(outdir=result_dir, noise_width=True)
         print('Current ETROC Temperature Reading:', check_temp(etroc))
     elif args.threshold == "manual":
         print('Current ETROC Temperature Reading:', check_temp(etroc))
-        threshold_matrix = manual_threshold_scan(etroc, fifo, rb_0, args)
+        baseline, noise_width = manual_threshold_scan(etroc, fifo, rb_0, args)
         print('Current ETROC Temperature Reading:', check_temp(etroc))
     else:
+        raise NotImplementedError("This option is currently not expected to work")
         print(f"Trying to load tresholds from the following file: {args.threshold}")
         with open(args.threshold, 'r') as f:
             threshold_matrix = load(f)
@@ -583,7 +539,18 @@ def readout_tests(etroc, masked_pixels, rb_0, args, result_dir = None, out_dir =
         for row in range(16):
             for col in range(16):
                 etroc.wr_reg('DAC', int(threshold_matrix[row][col]), row=row, col=col)
-    
+
+    threshold_matrix = baseline+noise_width
+    # store results
+    with open(f'{result_dir}/{prefix}baseline_{args.threshold}.yaml', 'w') as f:
+        dump(baseline.tolist(), f)
+
+    with open(f'{result_dir}/{prefix}noise_width_{args.threshold}.yaml', 'w') as f:
+        dump(noise_width.tolist(), f)
+
+    with open(f'{result_dir}/{prefix}thresholds_{args.threshold}.yaml', 'w') as f:
+        dump((baseline+noise_width).tolist(), f)
+
     return threshold_matrix
 
 def qinj(etroc, mask, rb, thresholds, out_dir, result_dir, args):
@@ -700,7 +667,7 @@ if __name__ == '__main__':
     argParser = argparse.ArgumentParser(description = "Argument parser")
     
     #Setup Options
-    argParser.add_argument('--configuration', action='store', default='modulev0', choices=['modulev0', 'modulev0b', 'multimodule'], help="Board configuration to be loaded")
+    argParser.add_argument('--configuration', action='store', default='modulev1', choices=['modulev0b', 'modulev1'], help="Board configuration to be loaded")
     argParser.add_argument('--kcu', action='store', default='192.168.0.10', help="IP Address of KCU105 board")
     argParser.add_argument('--host', action='store', default='localhost', help="Hostname for control hub")
     argParser.add_argument('--module', action='store', default=0, choices=['1','2','3'], help="Module to test")
@@ -716,6 +683,7 @@ if __name__ == '__main__':
     argParser.add_argument('--config_chip', action='store_true')    
     #run options
     argParser.add_argument('--hard_reset', action='store_true', help="")
+    argParser.add_argument('--test_data_stream', action='store_true', help="")
     argParser.add_argument('--mode', action='store', default='dual', choices=['dual', 'single'], help="Port mode for ETROC2")
     argParser.add_argument('--skip_sanity_checks', action='store_true', default=False, help="Don't run sanity checks of ETROC2 chip")
     argParser.add_argument('--threshold', action='store', default='auto', help="Use thresholds from manual or automatic scan?")
@@ -734,12 +702,14 @@ if __name__ == '__main__':
     #vth_axis
     #pixels
     #nl1a
-    
+
     argParser.add_argument('--config', action='store', default=None, help="config file to use")
     
     args = argParser.parse_args()
-    
-    
+
+    if len(args.pixel_masks)==1 and args.pixel_masks[0] == 'None':
+        args.pixel_masks = ['None']*12
+
     assert int(args.moduleid)>0, "Module ID is not specified. This is a new feature, please run with --moduleid MODULEID, where MODULEID is the number on the module test board."
     MID = args.moduleid
     timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
@@ -758,58 +728,50 @@ if __name__ == '__main__':
     
     if len(args.pixel_masks) == 1 and len(args.etrocs) > 1:
         args.pixel_masks *= len(args.etrocs)
-    
-    if args.config_chip:
 
-        start_time = time.time()
-        kcu = get_kcu(args.kcu, control_hub=True, host=args.host, verbose=False)
-        if (kcu == 0):
-            # if not basic connection was established the get_kcu function returns 0
-            # this would cause the RB init to fail.
-            sys.exit(1)
+    start_time = time.time()
+    print("Getting KCU")
+    kcu = get_kcu(args.kcu, control_hub=True, host=args.host, verbose=False)
+    int_time = time.time()
+    print("Getting RB")
+    rb = ReadoutBoard(0, kcu=kcu, config=args.configuration)
+    int2_time = time.time()
+    print("Connecting modules")
+    rb.connect_modules(moduleids=[3,0,0], hard_reset=True)
+    for mod in rb.modules:
+        mod.show_status()
 
-        int_time = time.time()
-        rb_0 = ReadoutBoard(0, kcu=kcu, config=args.configuration)
-        data = 0xabcd1234
-        kcu.write_node("LOOPBACK.LOOPBACK", data)
-        if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
-            print("No communications with KCU105... quitting")
-            sys.exit(1)
+    if args.test_data_stream:
+        for mod in rb.modules:
+            if mod.connected:
+                for etroc in mod.ETROCs:
+                    etroc.test_config(occupancy=0)
+        fifo = FIFO(rb)
+        df = DataFrame('ETROC2')
 
-        is_configured = rb_0.DAQ_LPGBT.is_configured()
-        if not is_configured:
-            print("RB is not configured, exiting.")
-            exit(0)
+        fifo.send_l1a(1)
+        fifo.reset()
 
-        from tamalero.Module import Module
+        fifo.send_l1a(1)
+        for x in fifo.pretty_read(df):
+            print(x)
 
-        int2_time = time.time()
-        # FIXME the below code is still pretty stupid
-        modules = []
-        for i in [1,2,3]:
-            m_tmp = Module(rb=rb_0, i=i)
-            if m_tmp.ETROCs[0].connected:  # NOTE assume that module is connected if first ETROC is connected
-                modules.append(m_tmp)
+    end_time = time.time()
 
-        end_time = time.time()
+    print("KCU init done in     {:.2f}s".format(int_time-start_time))
+    print("RB init done in      {:.2f}s".format(int2_time-int_time))
+    print("Module init done in  {:.2f}s".format(end_time-int2_time))  # default config is what's slow
 
-        print("KCU init done in     {:.2f}s".format(int_time-start_time))
-        print("RB init done in      {:.2f}s".format(int2_time-int_time))
-        print("Module init done in  {:.2f}s".format(end_time-int2_time))  # default config is what's slow
-        
-    elif args.test_chip:
-        rb, module, etrocs, masks = setup(args)
+    if args.test_chip:
+        module, etrocs, masks = setup(rb, args)
         #Check all etrocs off?
-        for i in range(len(etrocs)):
-            etroc = etrocs[i]
+        for i, etroc in enumerate(etrocs):
+            print(f"Testing ETROC {etroc.chip_no} on Module {etroc.module_id} now")
             mask = masks[i]
-            etroc.pixel_sanity_check(verbose = (not args.skip_sanity_checks))
+            if not args.skip_sanity_checks:
+                etroc.pixel_sanity_check()
             isolate(etrocs, i)
             thresholds = readout_tests(etroc, mask, rb, args, result_dir =  result_dir, out_dir = out_dir)
             if args.qinj:
-            	qinj(etroc, mask, rb, thresholds, out_dir, result_dir, args)
-            	    
-            
-        
-    
-    
+                qinj(etroc, mask, rb, thresholds, out_dir, result_dir, args)
+
