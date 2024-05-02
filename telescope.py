@@ -101,7 +101,8 @@ if __name__ == '__main__':
             for mod in rbs[rb].modules:
                 if mod.connected:
                     if args.test_config:
-                        mod.ETROCs[0].test_config(occupancy=10)
+                        for etroc in mod.ETROCs:
+                            etroc.test_config(occupancy=10)
                     else:
                         if args.subset:
                             test_pixels = [
@@ -121,8 +122,10 @@ if __name__ == '__main__':
                             offset = args.offset
                         else:
                             offset = int(args.offset)
-                        mod.ETROCs[0].physics_config(offset=offset, L1Adelay=int(args.delay), subset=test_pixels)
-                    mod.ETROCs[0].reset()
+                        for etroc in mod.ETROCs:
+                            etroc.physics_config(offset=offset, L1Adelay=int(args.delay), subset=test_pixels)
+                    for etroc in mod.ETROCs:
+                        etroc.reset()
 
         fifo_0 = FIFO(rbs[0])
         fifo_1 = FIFO(rbs[1])
