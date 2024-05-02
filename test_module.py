@@ -696,6 +696,7 @@ if __name__ == '__main__':
     argParser.add_argument('--col', action='store', default=3, help="Pixel column to be tested")
     argParser.add_argument('--pixel_masks', action='store', nargs = '*', default=['None'], help="Pixel mask to apply")
     argParser.add_argument('--show_plots', action = 'store_true')
+    argParser.add_argument('--external_vref', action = 'store_true')
 
     #Charge injection
     argParser.add_argument('--qinj', action='store_true')
@@ -744,7 +745,7 @@ if __name__ == '__main__':
     print("Connecting modules")
     moduleids = [0,0,0]
     moduleids[int(args.module)-1] = MID
-    rb.connect_modules(moduleids=moduleids, hard_reset=True)
+    rb.connect_modules(moduleids=moduleids, hard_reset=True, ext_vref=args.external_vref)
     for mod in rb.modules:
         mod.show_status()
 

@@ -730,7 +730,7 @@ class ReadoutBoard:
         '''
         self.kcu.write_node(f"READOUT_BOARD_{self.rb}.EVENT_CNT_RESET", 0x1)
 
-    def connect_modules(self, power_board=False, moduleids=[9996,9997,9998,9999], hard_reset=False):
+    def connect_modules(self, power_board=False, moduleids=[9996,9997,9998,9999], hard_reset=False, ext_vref=False):
         self.modules = []
         for i in range(self.nmodules):
             self.modules.append(
@@ -740,6 +740,7 @@ class ReadoutBoard:
                     enable_power_board=power_board,
                     moduleid=moduleids[i],
                     hard_reset = hard_reset,
+                    ext_vref=ext_vref,
                 ),
             )
             if self.modules[-1].connected:
