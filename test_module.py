@@ -639,7 +639,7 @@ def qinj(etroc, mask, rb, thresholds, out_dir, result_dir, args):
             'tot' : TOT[k-1],
             'cal' : CAL[k-1]}
 
-        with open(f"{out_dir}/Qinj_scan_L1A_504_{q}.json", 'w') as f:
+        with open(f"{out_dir}/Qinj_scan_ETROC_{etroc.chip_no}_L1A_504_{q}.json", 'w') as f:
             json.dump(scan_df, f)
         
     fig, ax = plt.subplots()
@@ -654,7 +654,7 @@ def qinj(etroc, mask, rb, thresholds, out_dir, result_dir, args):
     plt.grid(True)
     plt.legend(loc='best')
               
-    fig.savefig(f'{result_dir}/Scurve_Qinj.png')
+    fig.savefig(f'{result_dir}/Scurve_Qinj_ETROC_{etroc.chip_no}.png')
     if args.show_plots:
         plt.show()
     plt.close(fig)
