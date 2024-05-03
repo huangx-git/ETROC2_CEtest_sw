@@ -4,6 +4,7 @@ RB0 and RB1 connected to KCU 192.168.0.10
 on PSU 192.168.2.1 ch1 and ch2
 '''
 import time
+import os
 import copy
 from emoji import emojize
 
@@ -40,11 +41,24 @@ if __name__ == '__main__':
 
     shut_down = False
     connect_modules = True
+    timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
+    out_dir = f"telescope_config_data_{timestamp}"
+    if not os.path.isdir(out_dir):
+        os.makedirs(out_dir)
+
 
     print(emojize(':atom_symbol:'), " Telescope code draft")
+    print(f"Using time stamp: {timestamp}")
 
     if args.power_up:
         print(emojize(':battery:'), " Power Supply")
+        #for layer in config:
+        #    if "psu" in config[layer]:
+        #        for psu_ip, psu_ch in config[layer]["psu"]:
+        #            psu_tmp = PowerSupply(ip=psu_ip, name='PSU')
+        #            psu_tmp.power_up(psu_ch)
+        #            del psu_tmp  # ???
+
         psu1 = PowerSupply(ip='192.168.2.1', name='PS1')
         psu1.power_up('ch1')
         psu1.power_up('ch2')
@@ -123,7 +137,7 @@ if __name__ == '__main__':
                         else:
                             offset = int(args.offset)
                         for etroc in mod.ETROCs:
-                            etroc.physics_config(offset=offset, L1Adelay=int(args.delay), subset=test_pixels)
+                            etroc.physics_config(offset=offset, L1Adelay=int(args.delay), subset=test_pixels, out_dir=out_dir)
                     for etroc in mod.ETROCs:
                         etroc.reset()
 

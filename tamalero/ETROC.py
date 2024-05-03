@@ -6,6 +6,7 @@ import numpy as np
 
 from tamalero.utils import load_yaml, ffs, bit_count
 from tamalero.colors import red, green, yellow
+from yaml import load, dump
 import os
 from random import randrange
 
@@ -166,11 +167,15 @@ class ETROC():
             #print ("reading fake")
             return self.read_adr(adr)
         else:
+            start_time = time.time()
             while True:
                 try:
                     return self.I2C_read(adr)
                 except:
                     print(f"I2C read has failed in ETROC {self.chip_id}, retrying")
+                    if time.time() - start_time > 2:
+                        print("time out")
+                        return 0
 
     # read & write using register name & pix num
     def wr_reg(self, reg, val, row=0, col=0, broadcast=False):
@@ -568,7 +573,7 @@ class ETROC():
                 self.wr_reg("workMode", 1, row=row, col=col, broadcast=False)
                 self.wr_reg("selfTestOccupancy", occupancy, row=row, col=col, broadcast=False)
 
-    def physics_config(self, subset=False, offset=3, L1Adelay=None, thresholds=None, powerMode='high'):
+    def physics_config(self, subset=False, offset=3, L1Adelay=None, thresholds=None, powerMode='high', out_dir=None):
         '''
         subset is either False or a list of pixels, [(1,1), (1,2), ..]
         '''
@@ -585,7 +590,7 @@ class ETROC():
             self.wr_reg("workMode", 0, broadcast=True)
             self.set_L1Adelay(delay=L1Adelay, broadcast=True)
             if thresholds == None :
-                self.run_threshold_scan(offset=offset) 
+                self.run_threshold_scan(offset=offset, out_dir=out_dir)
             else:
                 for row in range(16):
                     for col in range(16):
@@ -644,7 +649,7 @@ class ETROC():
         else:
             return self.get_QInj(row=row, col=col)
 
-    def run_threshold_scan(self, offset='auto', use=True):
+    def run_threshold_scan(self, offset='auto', use=True, out_dir=None):
         from tqdm import tqdm
         baseline = np.empty([16, 16])
         noise_width = np.empty([16, 16])
@@ -659,6 +664,20 @@ class ETROC():
                 pbar.update()
         self.baseline = baseline
         self.noise_width = noise_width
+
+        if offset == 'auto':
+            thresholds = baseline + noise_width
+        else:
+            thresholds = baseline + offset
+
+        if out_dir is not None:
+            with open(f'{out_dir}/thresholds_module_{self.module_id}_etroc_{self.chip_no}.yaml', 'w') as f:
+                dump(thresholds.tolist(), f)
+            with open(f'{out_dir}/baseline_module_{self.module_id}_etroc_{self.chip_no}.yaml', 'w') as f:
+                dump(thresholds.tolist(), f)
+            with open(f'{out_dir}/noise_width_module_{self.module_id}_etroc_{self.chip_no}.yaml', 'w') as f:
+                dump(thresholds.tolist(), f)
+
         return baseline, noise_width
 
     def plot_threshold(self, outdir='../results/', noise_width=False):
