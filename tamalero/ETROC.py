@@ -153,14 +153,24 @@ class ETROC():
             #print ("writing fake")
             self.write_adr(adr, val)
         else:
-            self.I2C_write(adr, val)
+            success = False
+            while not success:
+                try:
+                    self.I2C_write(adr, val)
+                    success = True
+                except:
+                    print(f"I2C write has failed in ETROC {self.chip_id}, retrying")
 
     def rd_adr(self, adr):
         if self.isfake:
             #print ("reading fake")
             return self.read_adr(adr)
         else:
-            return self.I2C_read(adr)
+            while True:
+                try:
+                    return self.I2C_read(adr)
+                except:
+                    print(f"I2C read has failed in ETROC {self.chip_id}, retrying")
 
     # read & write using register name & pix num
     def wr_reg(self, reg, val, row=0, col=0, broadcast=False):

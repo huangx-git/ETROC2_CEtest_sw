@@ -1,0 +1,9 @@
+0:
+    type: "modulev1"
+    modules: [[104], [], []]
+1:
+    type: "modulev0b"
+    modules: [[20], [], []]
+2:
+    type: "modulev0b"
+    modules: [[12],  [], []]

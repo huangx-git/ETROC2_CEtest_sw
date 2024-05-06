@@ -16,8 +16,10 @@ if __name__ == '__main__':
     import argparse
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--kcu', action='store', default='192.168.0.10', help="IP Address of KCU105 board")
-    argParser.add_argument('--configuration', action='store', default='modulev0b', choices=['modulev0', 'modulev0b'], help="Board configuration to be loaded")
+    argParser.add_argument('--configuration', action='store', default='modulev0b', choices=['modulev0', 'modulev0b', 'modulev1'], help="Board configuration to be loaded")
     argParser.add_argument('--rb', action='store', default=0, type=int, choices=[0,1,2,3,4], help="Board configuration to be loaded")
+    argParser.add_argument('--module', action='store', default=1, type=int, help="Modules to read from")
+    argParser.add_argument('--etroc', action='store', default=0, type=int, help="ETROCs to read from")
     argParser.add_argument('--temperature', action='store_true', help="Read temperature from ETROC")
     argParser.add_argument('--dark_mode', action='store_true', help="Turn off all LEDs on the RB")
     argParser.add_argument('--light_mode', action='store_true', help="Turn on all LEDs on the RB")
@@ -28,8 +30,8 @@ if __name__ == '__main__':
 
     rb = ReadoutBoard(rb=int(args.rb), trigger=True, kcu=kcu, config=args.configuration, verbose=False, poke=True)
 
-    module = Module(rb, i=1, poke=True)
-    etroc = module.ETROCs[0]
+    module = Module(rb, i=args.module, poke=True)
+    etroc = module.ETROCs[args.etroc]
 
     if args.temperature:
         try:
