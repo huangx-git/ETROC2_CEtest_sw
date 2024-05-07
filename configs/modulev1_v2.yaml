@@ -366,3 +366,4 @@ modules:
     power_board: mod_d17
     pgood: mod_d18
     vtemp: [mod_a16, mod_a17, mod_a18, mod_a19]
+
