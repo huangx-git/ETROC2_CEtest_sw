@@ -336,7 +336,7 @@ def isolate(etrocs, n):
     for i, e in enumerate(etrocs):
         e.wr_reg("disDataReadout", 0x0, broadcast=True)
         if i != n:
-           e.wr_reg("disDataReadout", 0x1, broadcast=True)
+            e.wr_reg("disDataReadout", 0x1, broadcast=True)
 
 def check_temp(etroc):
     etroc.power_up_TempSen()
@@ -750,10 +750,13 @@ if __name__ == '__main__':
         mod.show_status()
 
     if args.test_data_stream:
+        print("Testing data stream now...")
         for mod in rb.modules:
             if mod.connected:
                 for etroc in mod.ETROCs:
-                    etroc.test_config(occupancy=0)
+                    if etroc.is_connected():
+                        print(f"Found connected ETROC {etroc.chip_no} on module {etroc.module_id}")
+                        etroc.test_config(occupancy=0)
         fifo = FIFO(rb)
         df = DataFrame('ETROC2')
 
@@ -763,6 +766,7 @@ if __name__ == '__main__':
         fifo.send_l1a(1)
         for x in fifo.pretty_read(df):
             print(x)
+        print("Done")
 
     end_time = time.time()
 
@@ -778,12 +782,12 @@ if __name__ == '__main__':
         module, etrocs, masks = setup(rb, args)
         #Check all etrocs off?
         for i, etroc in enumerate(etrocs):
-            print(f"Testing ETROC {etroc.chip_no} on Module {etroc.module_id} now")
-            mask = masks[i]
-            if not args.skip_sanity_checks:
-                etroc.pixel_sanity_check()
-            isolate(etrocs, i)
-            thresholds = readout_tests(etroc, mask, rb, args, result_dir =  result_dir, out_dir = out_dir)
-            if args.qinj:
-                qinj(etroc, mask, rb, thresholds, out_dir, result_dir, args)
-
+            if etroc.is_connected():
+                print(f"Testing ETROC {etroc.chip_no} on Module {etroc.module_id} now")
+                mask = masks[i]
+                if not args.skip_sanity_checks:
+                    etroc.pixel_sanity_check()
+                isolate(etrocs, i)
+                thresholds = readout_tests(etroc, mask, rb, args, result_dir =  result_dir, out_dir = out_dir)
+                if args.qinj:
+                    qinj(etroc, mask, rb, thresholds, out_dir, result_dir, args)
