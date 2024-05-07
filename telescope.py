@@ -49,7 +49,10 @@ if __name__ == '__main__':
 
     all_out_dir = glob.glob(f'telescope_config_data/{args.configuration}*')
     all_out_dir.sort(reverse=True)
-    latest_out_dir = all_out_dir[0]
+    if len(all_out_dir) > 0:
+        latest_out_dir = all_out_dir[0]
+    else:
+        out_dir = f"telescope_config_data/{args.configuration}_{timestamp}"
 
     if args.reuse_thresholds:
         print(f"Using thresholds from {latest_out_dir}")
@@ -158,41 +161,51 @@ if __name__ == '__main__':
                     for etroc in mod.ETROCs:
                         etroc.reset()
 
-        fifo_0 = FIFO(rbs[0])
-        fifo_1 = FIFO(rbs[1])
-        fifo_2 = FIFO(rbs[2])
+        fifos = []
+        for rb in rbs:
+            fifos.append(FIFO(rbs[rb]))
+        #fifo_0 = FIFO(rbs[0])
+        #fifo_1 = FIFO(rbs[1])
+        #fifo_2 = FIFO(rbs[2])
         df = DataFrame("ETROC2")
 
-        fifo_0.send_l1a(1)
-        fifo_0.reset()
-        fifo_1.reset()
-        fifo_2.reset()
+        fifos[0].send_l1a(1)
+        for fifo in fifos:
+            fifo.reset()
+        #fifo_0.reset()
+        #fifo_1.reset()
+        #fifo_2.reset()
 
         #rbs[1].modules[0].ETROCs[0].wr_reg("readoutClockDelayGlobal", 1)
         #rbs[0].modules[0].ETROCs[0].wr_reg("readoutClockDelayGlobal", 31)
 
-        rbs[0].modules[0].ETROCs[0].reset()
-        rbs[1].modules[0].ETROCs[0].reset()
-        rbs[2].modules[0].ETROCs[0].reset()
+        for rb in rbs:
+            for mod in rbs[rb].modules:
+                for etroc in mod.ETROCs:
+                    etroc.reset()
+        #rbs[0].modules[0].ETROCs[0].reset()
+        #rbs[1].modules[0].ETROCs[0].reset()
+        #rbs[2].modules[0].ETROCs[0].reset()
 
         # doesn't matter which FIFO to choose, the L1A is universial
         print(emojize(':factory:'), " Producing some test data")
-        fifo_0.send_l1a(10)
+        fifos[0].send_l1a(10)
 
-        print(emojize(':closed_mailbox_with_raised_flag:'), " Data in FIFO 0:")
-        for x in fifo_0.pretty_read(df):
-            #if x[0] == 'data': print ('!!!!!!!!!!', x)
-            print(x)
+        for i, fifo in enumerate(fifos):
+            print(emojize(':closed_mailbox_with_raised_flag:'), f" Data in FIFO {i}:")
+            for x in fifos[i].pretty_read(df):
+                #if x[0] == 'data': print ('!!!!!!!!!!', x)
+                print(x)
 
-        print(emojize(':closed_mailbox_with_raised_flag:'), " Data in FIFO 1:")
-        for x in fifo_1.pretty_read(df):
-            #if x[0] == 'data': print ('!!!!!!!!!!', x)
-            print(x)
+        #print(emojize(':closed_mailbox_with_raised_flag:'), " Data in FIFO 1:")
+        #for x in fifo_1.pretty_read(df):
+        #    #if x[0] == 'data': print ('!!!!!!!!!!', x)
+        #    print(x)
 
-        print(emojize(':closed_mailbox_with_raised_flag:'), " Data in FIFO 2:")
-        for x in fifo_2.pretty_read(df):
-            #if x[0] == 'data': print ('!!!!!!!!!!', x)
-            print(x)
+        #print(emojize(':closed_mailbox_with_raised_flag:'), " Data in FIFO 2:")
+        #for x in fifo_2.pretty_read(df):
+        #    #if x[0] == 'data': print ('!!!!!!!!!!', x)
+        #    print(x)
 
         # This script was verified to work with noise at the BU test stands
         # and it actually sees noise on the wirebonded pixels, as expected

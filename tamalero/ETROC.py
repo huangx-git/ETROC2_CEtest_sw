@@ -162,9 +162,9 @@ class ETROC():
                     self.I2C_write(adr, val)
                     success = True
                 except:
-                    print(f"I2C write has failed in ETROC {self.chip_id}, retrying")
+                    #print(f"I2C write has failed in ETROC {self.chip_id}, retrying")
                     if time.time() - start_time > 2:
-                        print("time out")
+                        print(f"I2C write has failed in ETROC {self.chip_id} and retries have timed out.")
                         return 0
 
     def rd_adr(self, adr):
@@ -177,9 +177,9 @@ class ETROC():
                 try:
                     return self.I2C_read(adr)
                 except:
-                    print(f"I2C read has failed in ETROC {self.chip_id}, retrying")
+                    #print(f"I2C read has failed in ETROC {self.chip_id}, retrying")
                     if time.time() - start_time > 2:
-                        print("time out")
+                        print(f"I2C read has failed in ETROC {self.chip_id} and retries have timed out")
                         return 0
 
     # read & write using register name & pix num
@@ -370,9 +370,10 @@ class ETROC():
                 time.sleep(0.1)
                 self.rb.SCA.set_gpio(self.reset_pin, 1)
             else:
-                self.wr_reg("asyResetGlobalReadout", 0)
-                time.sleep(0.1)
-                self.wr_reg("asyResetGlobalReadout", 1)
+                if self.is_connected():
+                    self.wr_reg("asyResetGlobalReadout", 0)
+                    time.sleep(0.1)
+                    self.wr_reg("asyResetGlobalReadout", 1)
         if not self.isfake:
             self.rb.rerun_bitslip()  # NOTE this is necessary to get the links to lock again
 
@@ -554,62 +555,64 @@ class ETROC():
         '''
         custom made test configuration
         '''
-        if full_chip:
-            self.enable_data_readout(broadcast=True)
-            self.wr_reg("workMode", 1, broadcast=True)
-            self.wr_reg("selfTestOccupancy", occupancy, broadcast=True)
+        if self.is_connected():
+            if full_chip:
+                self.enable_data_readout(broadcast=True)
+                self.wr_reg("workMode", 1, broadcast=True)
+                self.wr_reg("selfTestOccupancy", occupancy, broadcast=True)
 
-        else:
-            test_pixels = [
-                (0,0),
-                (7,7),
-                (7,8),
-                (8,8),
-                (8,7),
-                (0,15),
-                (15,0),
-                (15,15),
-            ]
-            self.disable_data_readout(broadcast=True)
-            self.wr_reg("workMode", 0, broadcast=True)
-            self.wr_reg("selfTestOccupancy", 0, broadcast=True)
-            for row, col in test_pixels:
-                self.enable_data_readout(row=row, col=col, broadcast=False)
-                self.wr_reg("workMode", 1, row=row, col=col, broadcast=False)
-                self.wr_reg("selfTestOccupancy", occupancy, row=row, col=col, broadcast=False)
+            else:
+                test_pixels = [
+                    (0,0),
+                    (7,7),
+                    (7,8),
+                    (8,8),
+                    (8,7),
+                    (0,15),
+                    (15,0),
+                    (15,15),
+                ]
+                self.disable_data_readout(broadcast=True)
+                self.wr_reg("workMode", 0, broadcast=True)
+                self.wr_reg("selfTestOccupancy", 0, broadcast=True)
+                for row, col in test_pixels:
+                    self.enable_data_readout(row=row, col=col, broadcast=False)
+                    self.wr_reg("workMode", 1, row=row, col=col, broadcast=False)
+                    self.wr_reg("selfTestOccupancy", occupancy, row=row, col=col, broadcast=False)
 
     def physics_config(self, subset=False, offset=3, L1Adelay=None, thresholds=None, powerMode='high', out_dir=None):
         '''
         subset is either False or a list of pixels, [(1,1), (1,2), ..]
         '''
-        if powerMode == 'high':
-            print("Making ETROC go wroom!")
-            self.wr_reg("IBSel", 0, broadcast=True)  # set into high power mode (I1 in the manual)
-        else:
-            self.wr_reg("IBSel", 7, broadcast=True)  # set into low power mode (I4 in the manual, default)
-
-        if L1Adelay == None:
-            L1Adelay = self.QINJ_delay
-        if not subset:
-            self.enable_data_readout(broadcast=True)
-            self.wr_reg("workMode", 0, broadcast=True)
-            self.set_L1Adelay(delay=L1Adelay, broadcast=True)
-            if thresholds == None :
-                self.run_threshold_scan(offset=offset, out_dir=out_dir)
+        if self.is_connected():
+            if powerMode == 'high':
+                print("Making ETROC go wroom!")
+                self.wr_reg("IBSel", 0, broadcast=True)  # set into high power mode (I1 in the manual)
             else:
-                for row in range(16):
-                    for col in range(16):
-                      self.wr_reg('DAC', int(thresholds[row][col]), row=row, col=col) # want to get some noise
-        else:
-            self.disable_data_readout(broadcast=True)
-            self.wr_reg("workMode", 0, broadcast=True)
-            self.set_L1Adelay(delay=L1Adelay, broadcast=True)
-            for row, col in subset:
-                self.enable_data_readout(row=row, col=col, broadcast=False)
-                if thresholds == None:
-                    self.auto_threshold_scan(row=row, col=col, broadcast=False, offset=offset)
+                self.wr_reg("IBSel", 7, broadcast=True)  # set into low power mode (I4 in the manual, default)
+
+            if L1Adelay == None:
+                L1Adelay = self.QINJ_delay
+            if not subset:
+                self.enable_data_readout(broadcast=True)
+                self.wr_reg("workMode", 0, broadcast=True)
+                self.set_L1Adelay(delay=L1Adelay, broadcast=True)
+                if thresholds == None :
+                    self.run_threshold_scan(offset=offset, out_dir=out_dir)
                 else:
-                    self.wr_reg('DAC', int(thresholds[row][col]), row=row, col=col)
+                    for row in range(16):
+                        for col in range(16):
+                            self.wr_reg('DAC', int(thresholds[row][col]), row=row, col=col) # want to get some noise
+            else:
+                self.disable_data_readout(broadcast=True)
+                self.wr_reg("workMode", 0, broadcast=True)
+                self.set_L1Adelay(delay=L1Adelay, broadcast=True)
+                for row, col in subset:
+                    self.enable_data_readout(row=row, col=col, broadcast=False)
+                    if thresholds == None:
+                        self.auto_threshold_scan(row=row, col=col, broadcast=False, offset=offset)
+                    else:
+                        self.wr_reg('DAC', int(thresholds[row][col]), row=row, col=col)
 
     # =======================
     # === HIGH-LEVEL FUNC ===
