@@ -64,7 +64,7 @@ class Module:
 
         self.connected = any([etroc.is_connected() for etroc in self.ETROCs])
 
-        if not all_good and self.connected:
+        if not all_good and self.connected and not poke:
             for etroc in self.ETROCs:
                 etroc.default_config()
             for etroc in self.ETROCs:
