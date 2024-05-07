@@ -6,8 +6,11 @@ on PSU 192.168.2.1 ch1 and ch2
 import time
 import os
 import copy
+import glob
 from emoji import emojize
 
+from yaml import load
+from yaml import CLoader as Loader, CDumper as Dumper
 from tamalero.ReadoutBoard import ReadoutBoard
 from tamalero.utils import get_kcu, load_yaml
 from tamalero.FIFO import FIFO
@@ -32,6 +35,7 @@ if __name__ == '__main__':
     argParser.add_argument('--power_up', action='store_true', help="Turn power on (BU setup only)")
     argParser.add_argument('--power_down', action='store_true', help="Turn power off (BU setup only)")
     argParser.add_argument('--subset', action='store_true', help="Use subset of pixels for tests")
+    argParser.add_argument('--reuse_thresholds', action='store_true', help="Reuse thresholds from last run")
     argParser.add_argument('--offset', action='store', default='auto', help="The offset from the baseline")
     argParser.add_argument('--delay', action='store', default=15, type=int, help="Set the L1A delay")
     args = argParser.parse_args()
@@ -42,9 +46,17 @@ if __name__ == '__main__':
     shut_down = False
     connect_modules = True
     timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
-    out_dir = f"telescope_config_data_{timestamp}"
-    if not os.path.isdir(out_dir):
-        os.makedirs(out_dir)
+
+    all_out_dir = glob.glob(f'telescope_config_data/{args.configuration}*')
+    all_out_dir.sort(reverse=True)
+    latest_out_dir = all_out_dir[0]
+
+    if args.reuse_thresholds:
+        print(f"Using thresholds from {latest_out_dir}")
+    else:
+        out_dir = f"telescope_config_data/{args.configuration}_{timestamp}"
+        if not os.path.isdir(out_dir):
+            os.makedirs(out_dir)
 
 
     print(emojize(':atom_symbol:'), " Telescope code draft")
@@ -137,7 +149,12 @@ if __name__ == '__main__':
                         else:
                             offset = int(args.offset)
                         for etroc in mod.ETROCs:
-                            etroc.physics_config(offset=offset, L1Adelay=int(args.delay), subset=test_pixels, out_dir=out_dir)
+                            if args.reuse_thresholds:
+                                with open(f'{latest_out_dir}/thresholds_module_{etroc.module_id}_etroc_{etroc.chip_no}.yaml', 'r') as f:
+                                    thresholds = load(f, Loader=Loader)
+                                etroc.physics_config(offset=offset, L1Adelay=int(args.delay), subset=test_pixels, thresholds=thresholds, out_dir=latest_out_dir)
+                            else:
+                                etroc.physics_config(offset=offset, L1Adelay=int(args.delay), subset=test_pixels, out_dir=out_dir)
                     for etroc in mod.ETROCs:
                         etroc.reset()
 
@@ -151,8 +168,8 @@ if __name__ == '__main__':
         fifo_1.reset()
         fifo_2.reset()
 
-        rbs[1].modules[0].ETROCs[0].wr_reg("readoutClockDelayGlobal", 1)
-        rbs[0].modules[0].ETROCs[0].wr_reg("readoutClockDelayGlobal", 31)
+        #rbs[1].modules[0].ETROCs[0].wr_reg("readoutClockDelayGlobal", 1)
+        #rbs[0].modules[0].ETROCs[0].wr_reg("readoutClockDelayGlobal", 31)
 
         rbs[0].modules[0].ETROCs[0].reset()
         rbs[1].modules[0].ETROCs[0].reset()

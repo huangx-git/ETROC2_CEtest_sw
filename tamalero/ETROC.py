@@ -7,6 +7,7 @@ import numpy as np
 from tamalero.utils import load_yaml, ffs, bit_count
 from tamalero.colors import red, green, yellow
 from yaml import load, dump
+from yaml import CLoader as Loader, CDumper as Dumper
 import os
 from random import randrange
 
@@ -672,11 +673,11 @@ class ETROC():
 
         if out_dir is not None:
             with open(f'{out_dir}/thresholds_module_{self.module_id}_etroc_{self.chip_no}.yaml', 'w') as f:
-                dump(thresholds.tolist(), f)
+                dump(thresholds.tolist(), f, Dumper=Dumper,)
             with open(f'{out_dir}/baseline_module_{self.module_id}_etroc_{self.chip_no}.yaml', 'w') as f:
-                dump(thresholds.tolist(), f)
+                dump(baseline.tolist(), f, Dumper=Dumper,)
             with open(f'{out_dir}/noise_width_module_{self.module_id}_etroc_{self.chip_no}.yaml', 'w') as f:
-                dump(thresholds.tolist(), f)
+                dump(noise_width.tolist(), f, Dumper=Dumper,)
 
         return baseline, noise_width
 
