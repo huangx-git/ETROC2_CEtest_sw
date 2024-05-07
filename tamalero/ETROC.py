@@ -156,12 +156,16 @@ class ETROC():
             self.write_adr(adr, val)
         else:
             success = False
+            start_time = time.time()
             while not success:
                 try:
                     self.I2C_write(adr, val)
                     success = True
                 except:
                     print(f"I2C write has failed in ETROC {self.chip_id}, retrying")
+                    if time.time() - start_time > 2:
+                        print("time out")
+                        return 0
 
     def rd_adr(self, adr):
         if self.isfake:
