@@ -7,6 +7,7 @@ if __name__ == '__main__':
 
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--verbose', action='store_true', default=False, help="Verbose PSU monitor")
+    argParser.add_argument('--power_down', action='store_true', default=False, help="Just power down")
     argParser.add_argument('--ip', action='store', default="192.168.2.3", help="IP address of PSU to power cycle")
     argParser.add_argument('--ch', action='store', default="ch1,ch2", help="Channels of PSU to power cycle")
     args = argParser.parse_args()
@@ -26,8 +27,12 @@ if __name__ == '__main__':
    
     print (f"PS -- {name}")
     channels = [ch for ch in args.ch.split(',')]
+
     for ch in channels:
-        psu.cycle(channel=ch)
+        if args.power_down:
+            psu.power_down(channel=ch)
+        else:
+            psu.cycle(channel=ch)
     if args.verbose:
         psu.monitor()
 

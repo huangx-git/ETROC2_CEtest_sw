@@ -1530,6 +1530,12 @@ class LPGBT(RegParser):
                self.rd_reg("LPGBT.RWF.CHIPID.USERID1") << 8 |\
                self.rd_reg("LPGBT.RWF.CHIPID.USERID0")
 
+    def get_chip_id(self):
+        return self.rd_reg("LPGBT.RWF.CHIPID.CHIPID3") << 24 |\
+               self.rd_reg("LPGBT.RWF.CHIPID.CHIPID2") << 16 |\
+               self.rd_reg("LPGBT.RWF.CHIPID.CHIPID1") << 8 |\
+               self.rd_reg("LPGBT.RWF.CHIPID.CHIPID0")
+
     def get_chip_serial(self):
         if self.ver == 1:
             # NOTE we have to read from the fuses directly.
