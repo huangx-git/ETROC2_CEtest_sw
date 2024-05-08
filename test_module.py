@@ -334,9 +334,10 @@ def plot_scan_results(etroc, max_matrix, noise_matrix, threshold_matrix, result_
     
 def isolate(etrocs, n):
     for i, e in enumerate(etrocs):
-        e.wr_reg("disDataReadout", 0x0, broadcast=True)
-        if i != n:
-            e.wr_reg("disDataReadout", 0x1, broadcast=True)
+        if e.is_connected():
+            e.wr_reg("disDataReadout", 0x0, broadcast=True)
+            if i != n:
+                e.wr_reg("disDataReadout", 0x1, broadcast=True)
 
 def check_temp(etroc):
     etroc.power_up_TempSen()
