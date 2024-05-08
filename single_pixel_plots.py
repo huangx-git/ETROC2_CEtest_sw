@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import awkward as ak
 
-#from sklearn.preprocessing import PolynomialFeatures
-#from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
 
 import pickle
 import json
@@ -15,16 +15,299 @@ from scipy import stats
 import sys
 import yaml
 
+def loadData(path):
+    fileform = f'Qinj_scan_L1A_'
+    files = [f for f in os.listdir(path) if fileform in f]
+    
+    #Loading In Data
+    if len(files) == 0:
+        print('No files here.')
+        sys.exit(0)
+
+    print(f'Loading the following files from {path}')
+
+    df = pd.DataFrame()
+    if any(['.json' in f for f in files]):
+        files = [f for f in files if '.json' in f]
+    elif any(['.pkl' in f for f in files]):
+        files = [f for f in files if '.pkl' in f]
+
+    for f in files:
+        print(f)
+        charge = int(f.split('_')[4].split('.')[0])
+        if '.pkl' in f:
+            sub = pickle.load(open(path+f, 'rb'))
+            outfile = f.replace('.pkl', '.json')
+            with open(path + outfile, 'w') as out:
+                json.dump(sub.to_dict(), out)
+        elif '.yaml' in f:
+            with open(path + f, 'r') as infile:
+                sub = pd.DataFrame(yaml.load(infile, Loader = yaml.FullLoader))
+            outfile = f.replace('.yaml', '.json')
+            with open(path + outfile, 'w') as out:
+                json.dump(sub.to_dict(), out)
+        else:
+            with open(path + f, 'r') as infile:
+                sub = pd.DataFrame(json.load(infile))
+        sub['charge'] = [charge]*len(sub.vth)
+        if not len(np.unique(sub.hits)) == 1:
+            df = pd.concat([df, sub])
+    return df
+
+def makeDFCuts(df, args):
+    new = pd.DataFrame(columns = df.columns)
+    for q in np.unique(df.charge):
+        sub = df[df.charge == q]
+        idx = True
+
+        idx = idx&(sub.hits > args.hits_cut*args.nl1a)
+        idx = idx&(sub.vth > args.vth_low)
+        idx = idx&(sub.vth < args.vth_high)
+        new = pd.concat([new, sub[idx]])
+    return new
+
+def makeCodeCuts(df, args):
+    new = pd.DataFrame(columns = df.columns.tolist() + ['toacode', 'totcode'])
+    n = 0
+    for q in np.unique(df.charge):
+        sub = df[df.charge == q]
+        for i in range(len(sub)):
+            idx = True
+            totcode = np.array(sub.tot.iloc[i])
+            toacode = np.array(sub.toa.iloc[i])
+            cal = np.array(sub.cal.iloc[i])
+            u, c = np.unique(cal, return_counts = True)
+            calmode = u[np.argmax(c)]
+            #idx = idx&(np.abs(cal - calmode) < 2)
+            idx = idx&(totcode < args.tot_high)
+            idx = idx&(totcode > args.tot_low)
+            idx = idx&(toacode < args.toa_high)
+            idx = idx&(toacode > args.toa_low)
+            if np.sum(idx) > 10:
+                tbin = 3.125/cal[idx]
+                toa = tbin*toacode[idx]
+                tot = (2*totcode[idx] - totcode[idx]//32)/tbin
+                row = {
+                    'totcode':totcode[idx].tolist(),
+                    'toacode':toacode[idx].tolist(),
+                    'cal':cal[idx].tolist(),
+                    'tot':tot.tolist(),
+                    'toa':toa.tolist(),
+                    'hits':len(tot),
+                    'vth':sub.vth.iloc[i],
+                    'charge':q
+                    }
+                new.loc[n] = row
+                n += 1
+    return new
+
+def plotHitsvDAC(df, pa, args):
+    HitsvDACplotter(df, pa, args)
+    for q in np.unique(df.charge):
+        HitsvDACplotter(df, pa, args, charge = q)
+
+def HitsvDACplotter(df, pa, args, charge = None):
+    fig = plt.figure(figsize = pa['figsize'])
+    plt.title(f'Hits v. Threshold DAC {pa["loc_title"]}\nDelay = {args.delay}, # of L1A triggers: {args.nl1a}', fontsize = pa['titfontsize'])
+    plt.xlabel('Threshold DAC Values', fontsize = pa['labfontsize'])
+    plt.ylabel('Hits',  fontsize = pa['labfontsize'])
+    if not charge:
+        for q in tqdm(np.unique(df.charge)):
+            idx = df.charge == q
+            idx = idx&(df.vth > args.vth_low)
+            idx = idx&(df.vth < args.vth_high)
+            x = df.vth[idx]
+            y = df.hits[idx]
+            plt.plot(x, y, 'o-', label = f'Qinj = {q}')
+        plt.legend()
+        savename = f'{pa["store"]}/DAC_v_Hits.pdf'
+    else:
+        idx = df.charge == charge
+        x = df.vth[idx]
+        y = df.hits[idx]
+        plt.plot(x, y, 'o-')
+        savename = f'{pa["store"]}/DAC_v_Hits_q_{charge}.pdf'
+    plt.legend()
+    plt.savefig(savename)
+    plt.savefig(savename)
+    if args.show_plots:
+        plt.show()
+    plt.close()
+
+
+def plotFallingEdge(df, pa, args):
+    fig, ax = plt.subplots(figsize = pa['figsize'])
+    charges = []
+    firstbest = []
+    hitslim = args.hits_cut*args.nl1a
+    for q in np.unique(df.charge):
+        data = df[df.charge == q]
+        best = np.max(data.hits)
+        if best >= hitslim:
+            charges.append(q)
+            firstbest.append(data.vth[data.hits >= hitslim].iloc[-1])
+    ax.scatter(charges, firstbest, label = 'Data', color = 'r')
+    model = stats.linregress(charges, firstbest)
+    x = np.linspace(np.min(charges), np.max(charges), 1000)
+    y = x*model.slope + model.intercept
+    ax.plot(x, y, label = 'Fit', color = 'b')
+
+    ax.set_title('Start of S-Curve Falling Edge')
+    ax.set_xlabel('Injected Charge')
+    ax.set_ylabel('Threshold DAC')
+    plt.savefig(f'{pa["store"]}/Threshold_DAC_Limit.png')
+    plt.savefig(f'{pa["store"]}/Threshold_DAC_Limit.png')
+    if args.show_plots:
+        plt.show()
+    plt.close()
+
+def plotSingleVthDists(df, pa, args):
+    print('Working on TOT, TOA, and Cal hists for individual settings')
+    for q in tqdm(np.unique(df.charge)):
+        for d in tqdm(args.plotted_vths, leave = False, desc = f'Working on QSel = {q}'):
+            #if not d in df.vth: d = np.random.choice(df.vth, 1)
+            idx = (df.charge == q)&(df.vth == d)
+            if np.sum(idx) == 0:
+                continue
+            for att in ['tot', 'cal', 'toa']:
+                fig = plt.figure(figsize = pa['figsize'])
+                data = df[att][idx].iloc[0]
+                plt.hist(data, bins = args.nbins, density = True)#bins = range(np.min(tot), np.max(tot) + 1), density = True)
+                plt.title(f'{att.upper()} Codes for Threshold DAC = {d} {pa["loc_title"]}\nEntries: {args.nl1a}, Delay = {args.delay}, Qinj = {q}')
+                plt.xlabel(f'{att.upper()} Values')
+                plt.ylabel('Frequency')
+                plt.yscale('log')
+                plt.savefig(f'{pa["store"]}/{att.upper()}_vth_{d}_q{q}.pdf')
+                plt.savefig(f'{pa["store"]}/{att.upper()}_vth_{d}_q{q}.png')
+                plt.close()
+
+
+def plotCodesvDAC(df, pa, args, code):
+    print('Working on TOA v. DAC')
+
+    if code:
+        mode = 'Code'
+    else:
+        mode = 'Value'
+    data = {}
+    atts = ['tot', 'toa', 'cal']
+    for q in tqdm(np.unique(df.charge)):
+        idx = df.charge == q
+        data[q] = {}
+
+        data[q]['vth'] = df.vth[idx]
+
+        toa = df.toa[idx]
+        data[q]['toaavg'] = [np.mean(dat) for dat in toa]
+        data[q]['toastd'] = [np.std(dat) for dat in toa]
+
+        tot = df.tot[idx]
+        data[q]['totavg'] = [np.mean(dat) for dat in tot]
+        data[q]['totstd'] = [np.std(dat) for dat in tot]
+
+        cal = df.cal[idx]
+        data[q]['calavg'] = [np.mean(dat) for dat in cal]
+        data[q]['calstd'] = [np.std(dat) for dat in cal]
+        
+        for att in atts:
+            fig = plt.figure(figsize = pa['errorbarsize'])
+            plt.errorbar(data[q]['vth'], data[q][att + 'avg'], data[q][att + 'std'], fmt = 'o-', capsize = 3)
+            plt.xlabel('Threshold DAC', fontsize = pa['labfontsize'])
+            plt.ylabel(f'{att.upper()} {mode} Mean', fontsize = pa['labfontsize'])
+            plt.title(f'Mean {att.upper()} {mode} vs. Theshold DAC for Delay = {args.delay} {pa["loc_title"]}, Qinj = {q}', fontsize = pa['titfontsize'])
+            plt.savefig(f'{pa["store"]}/DAC_v_{att.upper()}{mode}_q{q}.pdf')
+            plt.savefig(f'{pa["store"]}/DAC_v_{att.upper()}{mode}_q{q}.png')
+            plt.close()
+
+    for att in atts:
+        fig = plt.figure(figsize = pa['errorbarsize'])
+        for q in tqdm(np.unique(df.charge)):
+            plt.errorbar(data[q]['vth'], data[q][att + 'avg'], data[q][att + 'std'], fmt = 'o-', capsize = 3, label = f'Qinj = {q}')
+        plt.xlabel('Threshold DAC', fontsize = pa['labfontsize'])
+        plt.ylabel(f'{att.upper()} {mode} Mean', fontsize = pa['labfontsize'])
+        plt.title(f'Mean {att.upper()} vs. Theshold DAC for Delay = {args.delay} {pa["loc_title"]}', fontsize = pa['titfontsize'])
+        plt.legend()
+        plt.savefig(f'{pa["store"]}/DAC_v_{att.upper()}{mode}.pdf')
+        plt.savefig(f'{pa["store"]}/DAC_v_{att.upper()}{mode}.png')
+        if args.show_plots:
+            plt.show()
+        plt.close()
+
+def plotTOASDvDAC(df, pa, args):
+    data = {}
+    atts = ['tot', 'toa', 'cal']
+    for q in tqdm(np.unique(df.charge)):
+        idx = df.charge == q
+        data[q] = {}
+        data[q]['vth'] = df.vth[idx].tolist()
+        data[q]['toastd'] = [np.std(dat) for dat in df[idx].toa]
+        data[q]['toacodestd'] = [np.std(dat) for dat in df[idx].toacode]
+        for dat in df[idx].toacode:
+            print(dat)
+        fig = plt.figure(figsize = pa['errorbarsize'])
+        plt.plot(data[q]['vth'], data[q]['toastd'], 'o-')
+        plt.xlabel('Threshold DAC', fontsize = pa['labfontsize'])
+        plt.ylabel('TOA Standard Deviation', fontsize = pa['labfontsize'])
+        plt.title(f'TOA Standard Deviation vs. Theshold DAC for Delay = {args.delay} {pa["loc_title"]}, Qinj = {q}', fontsize = pa['titfontsize'])
+        plt.savefig(f'{pa["store"]}/DAC_v_TOASD_q{q}.pdf')
+        plt.savefig(f'{pa["store"]}/DAC_v_TOASD_q{q}.png')
+        plt.close()
+
+        fig = plt.figure(figsize = pa['errorbarsize'])
+        plt.plot(data[q]['vth'], data[q]['toacodestd'], 'o-')
+        plt.xlabel('Threshold DAC', fontsize = pa['labfontsize'])
+        plt.ylabel('TOA Code Standard Deviation', fontsize = pa['labfontsize'])
+        plt.title(f'TOA Code Standard Deviation vs. Theshold DAC for Delay = {args.delay} {pa["loc_title"]}, Qinj = {q}', fontsize = pa['titfontsize'])
+        plt.savefig(f'{pa["store"]}/DAC_v_TOASD_q{q}.pdf')
+        plt.savefig(f'{pa["store"]}/DAC_v_TOASD_q{q}.png')
+        plt.close()
+
+
+    fig = plt.figure(figsize = pa['errorbarsize'])
+    for q in tqdm(np.unique(df.charge)):
+        plt.plot(data[q]['vth'], data[q]['toastd'], 'o-', label = f'Qinj = {q}')
+    plt.xlabel('Threshold DAC', fontsize = pa['labfontsize'])
+    plt.ylabel('TOA Standard Deviation', fontsize = pa['labfontsize'])
+    plt.title(f'TOA Standard Deviation vs. Theshold DAC for Delay = {args.delay} {pa["loc_title"]}, Qinj = {q}', fontsize = pa['titfontsize'])
+    plt.legend()
+    plt.savefig(f'{pa["store"]}/DAC_v_TOASD_q{q}.pdf')
+    plt.savefig(f'{pa["store"]}/DAC_v_TOASD_q{q}.png')
+    if args.show_plots:
+        plt.show()
+    plt.close()
+
+    fig = plt.figure(figsize = pa['errorbarsize'])
+    for q in tqdm(np.unique(df.charge)):
+        plt.plot(data[q]['vth'], data[q]['toacodestd'], 'o-', label = f'Qinj = {q}')
+    plt.xlabel('Threshold DAC', fontsize = pa['labfontsize'])
+    plt.ylabel('TOA Code Standard Deviation', fontsize = pa['labfontsize'])
+    plt.title(f'TOA Code Standard Deviation vs. Theshold DAC for Delay = {args.delay} {pa["loc_title"]}, Qinj = {q}', fontsize = pa['titfontsize'])
+    plt.legend()
+    plt.savefig(f'{pa["store"]}/DAC_v_TOASD_q{q}.pdf')
+    plt.savefig(f'{pa["store"]}/DAC_v_TOASD_q{q}.png')
+    if args.show_plots:
+        plt.show()
+    plt.close()
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--loc', action = 'store', default = '4,3')
 parser.add_argument('--input', action = 'store')
-parser.add_argument('--vth_cuts', action = 'store', nargs = 2, type = int, default = [0, 500])
+
+parser.add_argument('--vth_high', action = 'store', type = int, default = 1000)
+parser.add_argument('--vth_low', action = 'store', type = int, default = 0)
 parser.add_argument('--cal_cuts', action = 'store', nargs = 2, type = int, default = [5000])
+parser.add_argument('--tot_low', action = 'store', type = int, default = 0)
+parser.add_argument('--tot_high', action = 'store', type = int, default = 1000)
+parser.add_argument('--toa_low', action = 'store', type = int, default = 0)
+parser.add_argument('--toa_high', action = 'store', type = int, default = 1000)
+
 parser.add_argument('--nl1a', action = 'store', type = int, default = 3200)
 parser.add_argument('--delay', action = 'store', type = int, default = 504)
 parser.add_argument('--nbins', action = 'store', type = int, default = 10)
-parser.add_argument('--plotted_vths', action = 'store', nargs = '*', default = [250, 255, 260, 292, 299, 340], type = int)
-parser.add_argument('--hits_cut', action = 'store', type = float, default = 0)
+parser.add_argument('--plotted_vths', action = 'store', nargs = '*', default = [340], type = int)
+parser.add_argument('--hits_cut', action = 'store', type = float, default = 0.9)
+parser.add_argument('--etroc', action = 'store', default = '0')
+parser.add_argument('--show_plots', action = 'store_true')
 args = parser.parse_args()
 
 if args.loc == 'broadcast':
@@ -33,62 +316,26 @@ if args.loc == 'broadcast':
 else:
     i = int(args.loc.split(',')[0])
     j = int(args.loc.split(',')[1])
-    loc_title = f'Row {i} Col {j}'
-    pixpath = f'r{i}c{j}/'
+    loc_title = f'ETROC {args.etroc} Row {i} Col {j}'
+    pix_path = f'/r{i}c{j}/'
 
-#loc_title = ''
-delay = args.delay
-nl1a = args.nl1a
-nbins = args.nbins
-fileform = f'Qinj_scan_L1A_{delay}'
-low_cut = np.min(args.vth_cuts)
-high_cut = np.max(args.vth_cuts)
-low_cal = np.min(args.cal_cuts)
-high_cal = np.max(args.cal_cuts)
-labfontsize = 20
-titfontsize = 25
-hitslim = args.nl1a*args.hits_cut
-path = args.input + '/' #+ pixpath
-if len(args.vth_cuts) == 0 and len(args.cal_cuts) == 0 and args.hits_cut == 0: 
-    store = path + 'full_range_qinj_plots/'
-else:
-    store = path
-    if len(args.vth_cuts) > 0:
-        store += f'vth{low_cut}_{high_cut}_'
-    if len(args.cal_cuts):
-        store += f'cal{low_cal}_{high_cal}_'
-    if args.hits_cut > 0: 
-        store += f'hits_{args.hits_cut}_'.replace('.', 'p')
-    store += 'qinj_plots/'
-files = [f for f in os.listdir(path) if fileform in f]
-if not os.path.isdir(store):
-    os.mkdir(store)
+pa = {
+        'labfontsize':20,
+        'titfontsize':25,
+        'store':args.input + 'qinj_plots/',
+        'figsize':(9, 7),
+        'errorbarsize':(12, 7),
+        'loc_title':loc_title
+        }
 
-figsize = (9, 7)
-errorbarsize = (12, 7)
 
-#Loading In Data
-if len(files) == 0:
-    print('No files here.')
-    sys.exit(0)
+if not os.path.isdir(pa['store']):
+    os.mkdir(pa['store'])
 
-print(f'Loading the following files from {path}')
-
-df = pd.DataFrame()
-for f in files:
-    print(f)
-    charge = int(f.split('_')[4].split('.')[0])
-    if '.pkl' in f:
-        sub = pickle.load(open(path+f, 'rb'))
-    else:
-        with open(path + f, 'r') as infile:
-            sub = pd.DataFrame(yaml.load(infile, Loader = yaml.FullLoader))
-    sub['charge'] = [charge]*len(sub.vth)
-    if not len(np.unique(sub.hits)) == 1:
-        df = pd.concat([df, sub])
+df = loadData(args.input)
 
 print()
-print(df.head())
+print(df.head(30))
 if df.empty:
     print('Files found but no hits found.')
     sys.exit(0)
@@ -96,421 +343,103 @@ if df.empty:
 #Slide 3 S Curve Plots
 #Hits v. Threshold DAC Values, All QSel
 
-print('Working on Hits v. Threshold DAC')
-fig = plt.figure(figsize = figsize)
-plt.title(f'Hits v. Threshold DAC {loc_title}\nDelay = {delay}, # of L1A triggers: {nl1a}', fontsize = titfontsize)
-plt.xlabel('Threshold DAC Values', fontsize = labfontsize)
-plt.ylabel('Hits',  fontsize = labfontsize)
+plotHitsvDAC(df, pa, args)
 
-for q in tqdm(np.unique(df.charge)):
-    idx = df.charge == q
-    x = df.vth[idx]
-    y = df.hits[idx]
-    plt.plot(x, y, 'o-', label = f'Qinj = {q}')
-plt.legend()
-plt.savefig(f'{store}/DAC_v_Hits.pdf')
-plt.savefig(f'{store}/DAC_v_Hits.png')
-plt.show()
-plt.close()
+df = makeDFCuts(df, args)
 
-#Slide 4 S Curve Plots
-#Hits v. Threshold DAC, Individual QSel
+plotHitsvDAC(df, pa, args)
 
-for q in tqdm(np.unique(df.charge)):
-    fig = plt.figure(figsize = figsize)
-    plt.title(f'Hits v. Threshold DAC for Qinj = {q} {loc_title}\nDelay = {delay}, # of L1A triggers: {nl1a}')
-    plt.xlabel('Threshold DAC Values')
-    plt.ylabel('Hits')
+plotFallingEdge(df, pa, args)
 
-    idx = df.charge == q
-    x = df.vth[idx]
-    y = df.hits[idx]
-    plt.plot(x, y, 'o-')
-    plt.savefig(f'{store}/DAC_v_Hits_q{q}.pdf')
-    plt.savefig(f'{store}/DAC_v_Hits_q{q}.png')
-    plt.close()
+plotSingleVthDists(df, pa, args)
 
+plotCodesvDAC(df, pa, args, code = True)
 
-temp = pd.DataFrame()
-for q in np.unique(df.charge):
-    sub = df[df.charge == q]
-    idx = [df.charge.iloc[i] == q and df.hits.iloc[i] > hitslim and df.vth.iloc[i] < high_cut and df.vth.iloc[i] > low_cut for i in range(len(df.hits))]
-    sub = df[idx]
-    temp = pd.concat([temp, sub])
+df = makeCodeCuts(df, args)
+print(df.head(30))
+plotCodesvDAC(df, pa, args, code = False)
 
-del df
-df = temp
-
-print('Working on Hits v. Threshold DAC Redux')
-fig = plt.figure(figsize = figsize)
-plt.title(f'Hits v. Threshold DAC {loc_title}\nDelay = {delay}, # of L1A triggers: {nl1a}')
-plt.xlabel('Threshold DAC Values')
-plt.ylabel('Hits')
-
-for q in tqdm(np.unique(df.charge)):
-    idx = df.charge == q
-    x = df.vth[idx]
-    y = df.hits[idx]
-    plt.plot(x, y, 'o-', label = f'Qinj = {q}')
-
-plt.legend()
-plt.savefig(f'{store}/DAC_v_Hits_redux.pdf')
-plt.savefig(f'{store}/DAC_v_Hits_redux.png')
-plt.show()
-plt.close()
-
-for q in tqdm(np.unique(df.charge)):
-    fig = plt.figure(figsize = figsize)
-    plt.title(f'Hits v. Threshold DAC for Qinj = {q} {loc_title}\nDelay = {delay}, # of L1A triggers: {nl1a}')
-    plt.xlabel('Threshold DAC Values')
-    plt.ylabel('Hits')
-
-    idx = df.charge == q
-    x = df.vth[idx]
-    y = df.hits[idx]
-    plt.plot(x, y, 'o-')
-    plt.savefig(f'{store}/DAC_v_Hits_q{q}_redux.pdf')
-    plt.savefig(f'{store}/DAC_v_Hits_q{q}_redux.png')
-    plt.close()
-
-
-fig, ax = plt.subplots(figsize = figsize)
-charges = []
-firstbest = []
-for q in np.unique(df.charge):
-    data = df[df.charge == q]
-    best = np.max(data.hits)
-    if best >= hitslim:
-        charges.append(q)
-        firstbest.append(data.vth[data.hits >= hitslim].iloc[-1])
-ax.scatter(charges, firstbest, label = 'Data', color = 'r')
-model = stats.linregress(charges, firstbest)
-x = np.linspace(np.min(charges), np.max(charges), 1000)
-y = x*model.slope + model.intercept
-ax.plot(x, y, label = 'Fit', color = 'b')
+plotTOASDvDAC(df, pa, args)
 
 '''
-p = 0.05
-ts = np.abs(stats.t.ppf(p/2, len(charges) - 2))
-slopeerr = ts*model.slope
-interr = ts*model.intercept
-print(model.slope, model.intercept, ts)
-high = x*(model.slope + slopeerr) + (model.intercept+interr)
-low = x*(model.slope - slopeerr) + (model.intercept-interr)
-ax.fill_between(x, low, high, label = '95% Conf. Int.', alpha = 0.4, color = 'c')
-'''
-
-ax.set_title('S-Curve End Points')
-ax.set_xlabel('Qinj')
-ax.set_ylabel('Threshold DAC')
-plt.savefig(f'{store}/Threshold_DAC_Limit.png')
-plt.savefig(f'{store}/Threshold_DAC_Limit.png')
-plt.show()
-plt.close()
-
-#Slide 5 TOT, etc. Distributions at indivudial QSel, 5 different Threshold DACs
-
-print('Working on TOT, TOA, and Cal hists for individual settings')
-for q in tqdm(np.unique(df.charge)):
-    for d in tqdm(args.plotted_vths, leave = False, desc = f'Working on QSel = {q}'):
-        #if not d in df.vth: d = np.random.choice(df.vth, 1)
-        idx = [df.charge.iloc[i] == q and df.vth.iloc[i] == d for i in range(len(df.vth))]
-
-        fig = plt.figure(figsize = figsize)
-        tot = df.tot[idx].iloc[0]
-        plt.hist(tot, bins = nbins, density = True)#bins = range(np.min(tot), np.max(tot) + 1), density = True)
-        plt.title(f'TOT Values for Threshold DAC = {d} {loc_title}\nEntries: {nl1a}, Delay = {delay}, Qinj = {q}')
-        plt.xlabel('TOT Values')
-        plt.ylabel('Frequency')
-        plt.yscale('log')
-        plt.savefig(f'{store}/TOT_vth_{d}_q{q}.pdf')
-        plt.savefig(f'{store}/TOT_vth_{d}_q{q}.png')
-        plt.close()
-
-        fig = plt.figure(figsize = figsize)
-        toa = df.toa[idx].iloc[0]
-        plt.hist(toa, bins = nbins, density = True)#bins = range(np.min(toa), np.max(toa) + 1), density = True)
-        plt.title(f'TOA Values for Threshold DAC = {d} {loc_title}\nEntries: {nl1a}, Delay = {delay}, Qinj = {q}')
-        plt.xlabel('TOA Values')
-        plt.ylabel('Frequency')
-        plt.yscale('log')
-        plt.savefig(f'{store}/TOA_vth_{d}_q{q}.pdf')
-        plt.savefig(f'{store}/TOA_vth_{d}_q{q}.png')
-        plt.close()
-
-        fig = plt.figure(figsize = figsize)
-        cal = df.cal[idx].iloc[0]
-        plt.hist(cal, bins = nbins, density = True)#bins = range(np.min(cal), np.max(cal) + 1), density = True)
-        plt.title(f'CaL Values for Threshold DAC = {d} {loc_title}\nEntries: {nl1a}, Delay = {delay}, Qinj = {q}')
-        plt.xlabel('CAL Values')
-        plt.ylabel('Frequency')
-        plt.savefig(f'{store}/CAL_vth_{d}_q{q}.pdf')
-        plt.savefig(f'{store}/CAL_vth_{d}_q{q}.png')
-        plt.close()
-
-#Slide ^
-
-print('Working on TOA v. DAC')
-
-for q in tqdm(np.unique(df.charge)):
-    chargeidx = df.charge == q
-    hitsidx = df.hits[chargeidx] > hitslim
-
-    vth = df.vth[chargeidx][hitsidx]
-
-    toa = df.toa[chargeidx][hitsidx]
-    toaavg = [np.mean(dat) for dat in toa] 
-    toastd = [np.std(dat) for dat in toa]
-
-    tot = df.tot[chargeidx][hitsidx]
-    totavg = [np.mean(dat) for dat in tot]
-    totstd = [np.std(dat) for dat in tot]
-
-    cal = df.cal[chargeidx][hitsidx]
-    calavg = [np.mean(dat) for dat in cal]
-    calstd = [np.std(dat) for dat in cal]
-    
-    fig = plt.figure(figsize = errorbarsize)
-    plt.errorbar(vth, toaavg, toastd, fmt = 'o-', capsize = 3)
-    plt.xlabel('Threshold DAC', fontsize = labfontsize)
-    plt.ylabel('TOA Mean', fontsize = labfontsize)
-    plt.title(f'Mean TOA vs. Theshold DAC for Delay = {delay} {loc_title}, Qinj = {q}', fontsize = titfontsize) 
-    plt.savefig(f'{store}/DAC_v_TOA_q{q}.pdf')
-    plt.savefig(f'{store}/DAC_v_TOA_q{q}.png')
-    plt.close()
-
-    fig = plt.figure(figsize = errorbarsize)
-    plt.errorbar(vth, totavg, totstd, fmt = 'o-', capsize = 3)
-    plt.xlabel('Threshold DAC', fontsize = labfontsize)
-    plt.ylabel('TOA Mean', fontsize = labfontsize)
-    plt.title(f'Mean TOA vs. Theshold DAC for Delay = {delay} {loc_title}, Qinj = {q}', fontsize = titfontsize)
-    plt.savefig(f'{store}/DAC_v_TOT_q{q}.pdf')
-    plt.savefig(f'{store}/DAC_v_TOT_q{q}.png')
-    plt.close()
-
-    fig = plt.figure(figsize = errorbarsize)
-    plt.errorbar(vth, calavg, calstd, fmt = 'o-', capsize = 3)
-    plt.xlabel('Threshold DAC', fontsize = labfontsize)
-    plt.ylabel('CAL Mean', fontsize = labfontsize)
-    plt.title(f'Mean CAL vs. Theshold DAC for Delay = {delay} {loc_title}, Qinj = {q}', fontsize = labfontsize)
-    plt.savefig(f'{store}/DAC_v_CAL_q{q}.pdf')
-    plt.savefig(f'{store}/DAC_v_CAL_q{q}.png')
-    plt.close()
 
 
-fig = plt.figure(figsize = errorbarsize)
-for q in tqdm(np.unique(df.charge)):
-    chargeidx = df.charge == q
-    hitsidx = df.hits[chargeidx] >= hitslim#== nl1a
-    vth = df.vth[chargeidx][hitsidx]
-    toa = df.toa[chargeidx][hitsidx]
-    toaavg = [np.mean(dat) for dat in toa]
-    toastd = [np.std(dat) for dat in toa]
-    if len(toa) > 2:
-        plt.errorbar(vth, toaavg, toastd, alpha = 0.7, capsize = 5, label = f'Qinj = {q}')
-plt.xlabel('Threshold DAC', fontsize = labfontsize)
-plt.ylabel('TOA Mean', fontsize = labfontsize)
-plt.legend()
-plt.title(f'Mean TOA vs. Theshold DAC for Delay = {delay} {loc_title}', fontsize = titfontsize)
-plt.savefig(f'{store}/DAC_v_TOA.pdf')
-plt.savefig(f'{store}/DAC_v_TOA.png')
-plt.show()
-plt.close()
-
-fig = plt.figure(figsize = errorbarsize)
-for q in tqdm(np.unique(df.charge)):
-    chargeidx = df.charge == q
-    hitsidx = df.hits[chargeidx] >= hitslim#== nl1a
-    vth = df.vth[chargeidx][hitsidx]
-    tot = df.tot[chargeidx][hitsidx]
-    totavg = [np.mean(dat) for dat in tot]
-    totstd = [np.std(dat) for dat in tot]
-    if len(tot) > 2:
-        plt.errorbar(vth, totavg, totstd, alpha = 0.7, capsize = 5, label = f'Qinj = {q}')
-plt.xlabel('Threshold DAC', fontsize = labfontsize)
-plt.ylabel('TOT Mean', fontsize = labfontsize)
-plt.legend()
-plt.title(f'Mean TOT vs. Theshold DAC for Delay = {delay} {loc_title}', fontsize = titfontsize)
-plt.savefig(f'{store}/DAC_v_TOT.pdf')
-plt.savefig(f'{store}/DAC_v_TOT.png')
-plt.show()
-plt.close()
-
-fig = plt.figure(figsize = errorbarsize)
-for q in tqdm(np.unique(df.charge)):
-    chargeidx = df.charge == q
-    hitsidx = df.hits[chargeidx] >= hitslim
-    vth = df.vth[chargeidx][hitsidx]
-    cal = df.cal[chargeidx][hitsidx]
-    calavg = [np.mean(dat) for dat in cal]
-    calstd = [np.std(dat) for dat in cal]
-    if len(cal) > 2:
-        plt.errorbar(vth, calavg, calstd, alpha = 0.7, capsize = 5, label = f'Qinj = {q}')
-plt.xlabel('Threshold DAC', fontsize = labfontsize)
-plt.ylabel('CAL Mean', fontsize = labfontsize)
-plt.title(f'Mean CAL vs. Theshold DAC for Delay = {delay} {loc_title}', fontsize = titfontsize)
-plt.savefig(f'{store}/DAC_v_CAL.pdf')
-plt.savefig(f'{store}/DAC_v_CAL.png')
-plt.show()
-plt.close()
 
 
-# Polynomial Regression of TOA SD data
-
-u, c = np.unique(cal, return_counts = True)
-print(u)
-print(c)
-print(u[np.argmax(c)])
-
-
-for q in np.unique(df.charge):
-    idx = df.charge == q
-    vth = df.vth[idx]
-    toa = df.toa[idx]
-    cal = df.cal[idx]
-    x = []
-    y = []
-    
-    for i in range(len(vth)):
-        print(df.hits[idx].iloc[i], len(toa.iloc[i]), len(cal.iloc[i]))
-        if len(toa.iloc[i]) > .98*nl1a:# and np.std(toa.iloc[i]) < 2:#> .98*nl1a :
-            x.append(vth.iloc[i])
-            tbin = 3.3/np.array(cal.iloc[i])
-            ttoa = 12.5 - np.array(toa.iloc[i])/tbin
-            y.append(np.std(ttoa))
-    
-    fig = plt.figure(figsize = figsize)
-    plt.plot(x, y, 'o-', alpha = 0.8, label = 'Data')
-    
-    if False:#len(x) > 10: 
-        fig = plt.figure(figsize = figsize) 
-
-        transformer = PolynomialFeatures(degree = 4)
-        model = LinearRegression(fit_intercept = True)
-
-        X = transformer.fit_transform(np.array(x).reshape(-1, 1))
-        model.fit(X, y)
-         
-        x = np.array(vth).reshape(-1, 1)
-        X = transformer.fit_transform(x)
-        y = model.predict(X)
-        
-        plt.plot(x, y, label = 'Fit')
-
-        ydiff = [y[i] - y[i-1] for i in range(1, len(y))]
-        lim = 0.05
-        starter = [diff > -lim for diff in ydiff]
-        ender = [diff < lim for diff in ydiff]
-        startidx = starter.index(True)
-        ender.reverse()
-        endidx = len(ender) - ender.index(True)
-        x = [vth[startidx]]*10 + [np.nan] + [vth[endidx]]*10
-        y = np.linspace(0, 2, 10).tolist() + [0] + np.linspace(0, 2, 10).tolist()
-        plt.plot(x, y, label = 'Boundaries')
-        
-        #plt.plot([x[0], x[len(x) - 1]], [0.5, 0.5], label = 'TOA SD = 0.5')
-        #plt.plot([x[0], x[len(x) - 1]], [1, 1], label = 'TOA SD = 1')
-        
-    plt.ylim([0, 150])
-    plt.xlabel('Threshold DAC')
-    plt.ylabel('TOA Std Dev.')
-    plt.legend()
-    plt.title(f'Standard Deviation of TOA vs. Theshold DAC for Delay = {delay}\n {loc_title}, Qinj = {q}')
-    plt.show()
-    plt.savefig(f'{store}/DAC_v_TOASD_q{q}.pdf')
-    plt.savefig(f'{store}/DAC_v_TOASD_q{q}.png')
-    plt.close()
-        
-
-
-fig = plt.figure(figsize = figsize)
-for q in np.unique(df.charge):
-    idx = df.charge == q
-    vth = df.vth[idx]
-    toa = df.toa[idx]
-    cal = df.cal[idx]
-    x = []
-    y = []
-
-    for i in range(len(vth)):
-        #print(df.hits[idx].iloc[i], len(toa.iloc[i]))
-        if len(toa.iloc[i]) >= hitslim:# and np.std(toa.iloc[i]) < 2:#> .98*nl1a :
-            x.append(vth.iloc[i])
-            tbin = 3.3/np.array(cal.iloc[i])
-            ttoa = 12.5 - np.array(toa.iloc[i])/tbin
-            y.append(np.std(ttoa))
-
-    if len(x) > 10:
-        plt.plot(x, y, 'o-', alpha = 0.8, label = f'Qinj = {q}')
-        
-#plt.plot([x[0], x[len(x) - 1]], [0.5, 0.5], label = 'TOA SD = 0.5')
-#plt.plot([x[0], x[len(x) - 1]], [1, 1], label = 'TOA SD = 1')
-
-plt.ylim([0, 150])
-plt.xlabel('Threshold DAC')
-plt.ylabel('TOA Std Dev.')
-plt.legend()
-plt.title(f'Standard Deviation of TOA vs. Theshold DAC for Delay = {delay}\n {loc_title}')
-plt.savefig(f'{store}/DAC_v_TOASD.pdf')
-plt.savefig(f'{store}/DAC_v_TOASD.png')
-plt.show()
-plt.close()
-
-
-'''
 # TOA v. TOT 
 
+u, c = np.unique(ak.flatten(df.cal), return_counts = True)
+calcut = u[np.argmax(c)]
+toalim = 8
+totlim = 8
+callim = 0.5
 for q in np.unique(df.charge):
     x = []
     y = []
-    a = []
-    idx = [df.hits.iloc[i] > 0 and df.charge.iloc[i] == q for i in range(len(df.hits))]
-    keptvths = []
-    for d in np.unique(df.vth[idx]):
-        idx = [df.charge.iloc[i] == q and df.vth.iloc[i] == d for i in range(len(df.charge))]
-        lim = np.max(df.hits[idx])
-        idx =  [df.charge.iloc[i] == q and df.vth.iloc[i] == d and df.hits.iloc[i] == lim for i in range(len(df.charge))]
-        if any(idx):
-            x.append([np.mean(df.tot[idx].iloc[0])])
-            y.append([np.mean(df.toa[idx].iloc[0])])
-            a.append(len(df.toa[idx].iloc[0]))
-            keptvths.append(d)
-    a = np.array(a)
-    a = a - np.min(a)
-    a = a/np.max(a)
-    fig, ax = plt.subplots(figsize = figsize)
-    color = plt.cm.get_cmap('winter')
-    c = [i/len(x) for i in range(len(x))]
-    pos = ax.scatter(x, y, c = c, vmin = 0, vmax = 1, alpha = a, cmap = color)
-    cbar = plt.colorbar(pos, ax = ax, label = 'Threshold DAC')
-    cbar.set_ticks([0, 1])
-    cbar.set_ticklabels([np.min(keptvths), np.max(keptvths)])
-    ax.set_title(f'Mean TOT values v. Mean TOA Values {loc_title}\nDelay = {delay}, Qinj = {q}')
+    chargeidx = df.charge== q
+    i = df[(chargeidx)].hits.argmax()
+    n = int(np.min([30, len(df[(chargeidx)].hits) - i - 1]))
+    while df[(chargeidx)].hits.iloc[i] > df[(chargeidx)].hits.iloc[i+n]:
+        n = n//2
+    i+=n
+    x = np.array(df.toa.iloc[i])
+    y = np.array(df.tot.iloc[i])
+    cal = np.array(df.cal.iloc[i])
+    caldiff = np.abs(cal - calcut) < callim
+    toadiff = np.abs(x - np.mean(x)) < toalim*np.std(x)
+    totdiff = np.abs(y - np.mean(y)) < totlim*np.std(y)
+    idx = caldiff*totdiff*toadiff
+    x = x[idx]
+    y = y[idx]
+    cal = cal[idx]
+    tbin = 3.125/cal
+    x = tbin*x
+    y = tbin*(2*y-y//32)
+    fig, ax = plt.subplots()
+    h = ax.hist2d(x, y, bins = [50, 50])#, norm = 'log')
+    fig.colorbar(h[3], ax = ax)
+    ax.set_title(f'TOT v. TOA {loc_title}\nHits = {len(x)}/{df.hits.iloc[i]}, Qinj = {q}\nDAC = {df.vth.iloc[i]}')
     ax.set_xlabel('Mean TOT')
     ax.set_ylabel('Mean TOA')
-    plt.savefig(f'{store}/TOT_v_TOA_{q}.png')
+    plt.show()
+    plt.savefig(f'{store}/TOT_v_TOA_single_q{q}.png')
+    plt.savefig(f'{store}/TOT_v_TOA_single_q{q}.pdf')
+    plt.close()
+
+
+
+for q in np.unique(df.charge):
+    x = []
+    y = []
+    cal = []
+    chargeidx = df.charge== q
+    i = df[(chargeidx)].hits.argmax()
+    for i in range(len(df[(chargeidx)].hits)):
+        x += df[(chargeidx)].toa.iloc[i]
+        y += df[(chargeidx)].tot.iloc[i]
+        cal += df[(chargeidx)].cal.iloc[i]
+    x = np.array(x)
+    y = np.array(y)
+    cal = np.array(cal)
+    caldiff = np.abs(cal - calcut) < callim
+    toadiff = np.abs(x - np.mean(x)) < toalim*np.std(x)
+    totdiff = np.abs(y - np.mean(y)) < totlim*np.std(y)
+    idx = caldiff*totdiff*toadiff
+    x = x[idx]
+    y = y[idx]
+    cal = cal[idx]
+    tbin = 3.125/cal
+    x = tbin*x
+    y = tbin*(2*y-y//32)
+    fig, ax = plt.subplots()
+    h = ax.hist2d(x, y, bins = [50, 50])#, norm = 'log')
+    fig.colorbar(h[3], ax = ax)
+    ax.set_title(f'TOT v. TOA {loc_title}\nHits = {len(x)}/{df.hits.iloc[i]}, Qinj = {q}\nDAC = {df.vth.iloc[i]}')
+    ax.set_xlabel('Mean TOT')
+    ax.set_ylabel('Mean TOA')
+    plt.show()
+    plt.savefig(f'{store}/TOT_v_TOA_q{q}.png')
     plt.savefig(f'{store}/TOT_v_TOA_q{q}.pdf')
     plt.close()
 
-fig, ax = plt.subplots(figsize = figsize)
-for q in np.unique(df.charge):
-    x = []
-    y = []
-    idx = [df.charge.iloc[i] == q for i in range(len(df.hits))]
-    lim = np.max(df.hits[idx])
-    idx = [df.charge.iloc[i] == q and df.hits.iloc[i] == lim for i in range(len(df.hits))]
-    sub = df[idx]
-    for i in range(len(sub.vth)):
-        if np.abs(sub.hits.iloc[i] -  np.max(sub.hits))/np.max(sub.hits) < 0.05:
-            x += sub.tot.iloc[i]
-            y += sub.toa.iloc[i]
-    plt.plot(x, y, 'o-', label = f'Qinj = {q}')
-    
-ax.set_title(f'TOT values v. TOA Values {loc_title}\nDelay = {delay}')
-ax.set_xlabel('Time over Threshold')
-ax.set_ylabel('Time of Arrival')
-plt.legend()
-plt.savefig(f'{store}/TOT_v_TOA_full.png')
-plt.savefig(f'{store}/TOT_v_TOA_full.pdf')
-plt.close()
 '''

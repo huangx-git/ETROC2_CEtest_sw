@@ -6,6 +6,8 @@ import numpy as np
 
 from tamalero.utils import load_yaml, ffs, bit_count
 from tamalero.colors import red, green, yellow
+from yaml import load, dump
+from yaml import CLoader as Loader, CDumper as Dumper
 import os
 from random import randrange
 
@@ -29,6 +31,8 @@ class ETROC():
             vtemp = None,
             chip_id = 0,
             no_init = False,
+            hard_reset = False,
+            no_hard_reset_on_init = False,
     ):
         self.QINJ_delay = 504  # this is a fixed value for the default settings of ETROC2
         self.isfake = False
@@ -50,6 +54,8 @@ class ETROC():
             self.ver = "X-X-X"
 
         self.chip_id = chip_id
+        self.module_id = chip_id >> 2
+        self.chip_no = chip_id & 0x3
         self.regs = load_yaml(os.path.join(here, '../address_table/ETROC2_example.yaml'))
 
         self.DAC_min  = 600  # in mV
@@ -62,12 +68,24 @@ class ETROC():
         if no_init:
             return
 
+        if hard_reset and not no_hard_reset_on_init:
+            print(f"Hard resetting the ETROCs on module {self.module_id}")
+            self.reset(hard=True)
+            time.sleep(1)
+        #    self.reset(hard=True)
+        #    time.sleep(1)
+
         # NOTE: some ETROCs need to be hard reset, otherwise the I2C target does not come alive.
         # This actually solves this issue, so please don't take it out (Chesterton's Fence, anyone?)
         for i in range(2):
             if self.is_connected():
                 break
-            print("Resetting ETROC")
+            if no_hard_reset_on_init:
+                if verbose:
+                    print("I would have to hard reset the ETROC, but was instructed not to do so!")
+                break
+            if verbose:
+                print("Resetting ETROC")
             self.reset(hard=True)
             time.sleep(0.1)
 
@@ -79,7 +97,7 @@ class ETROC():
 
         self.get_elink_status()
         try:
-            self.default_config()
+            self.default_config(no_reset=no_hard_reset_on_init)
         except TimeoutError:
             if verbose or True:
                 print("Warning: ETROC default configuration failed!")
@@ -87,7 +105,7 @@ class ETROC():
 
         if self.connected:
             if not self.is_good():
-                raise RuntimeError(f"ETROC is not in the expected status! {self.controllerState=}")
+                raise RuntimeError(f"ETROC {self.chip_id} is not in the expected status! {self.controllerState=}")
 
         if strict:
             self.consistency(verbose=verbose)
@@ -137,14 +155,32 @@ class ETROC():
             #print ("writing fake")
             self.write_adr(adr, val)
         else:
-            self.I2C_write(adr, val)
+            success = False
+            start_time = time.time()
+            while not success:
+                try:
+                    self.I2C_write(adr, val)
+                    success = True
+                except:
+                    #print(f"I2C write has failed in ETROC {self.chip_id}, retrying")
+                    if time.time() - start_time > 2:
+                        print(f"I2C write has failed in ETROC {self.chip_id} and retries have timed out.")
+                        return 0
 
     def rd_adr(self, adr):
         if self.isfake:
             #print ("reading fake")
             return self.read_adr(adr)
         else:
-            return self.I2C_read(adr)
+            start_time = time.time()
+            while True:
+                try:
+                    return self.I2C_read(adr)
+                except:
+                    #print(f"I2C read has failed in ETROC {self.chip_id}, retrying")
+                    if time.time() - start_time > 2:
+                        print(f"I2C read has failed in ETROC {self.chip_id} and retries have timed out")
+                        return 0
 
     # read & write using register name & pix num
     def wr_reg(self, reg, val, row=0, col=0, broadcast=False):
@@ -334,9 +370,10 @@ class ETROC():
                 time.sleep(0.1)
                 self.rb.SCA.set_gpio(self.reset_pin, 1)
             else:
-                self.wr_reg("asyResetGlobalReadout", 0)
-                time.sleep(0.1)
-                self.wr_reg("asyResetGlobalReadout", 1)
+                if self.is_connected():
+                    self.wr_reg("asyResetGlobalReadout", 0)
+                    time.sleep(0.1)
+                    self.wr_reg("asyResetGlobalReadout", 1)
         if not self.isfake:
             self.rb.rerun_bitslip()  # NOTE this is necessary to get the links to lock again
 
@@ -369,7 +406,7 @@ class ETROC():
             self.connected = False
         return self.connected
 
-    def get_elink_status(self):
+    def get_elink_status(self, summary=False):
         if self.isfake:
             for i in self.elinks:
                 self.links_locked = {i: [True for x in self.elinks[i]]}
@@ -386,7 +423,13 @@ class ETROC():
 
             #self.trig_locked = ((locked_slave >> self.elink) & 1) == True
             #self.daq_locked = ((locked >> self.elink) & 1) == True
-        return self.links_locked
+        if summary:
+            all_good = True
+            for link in self.links_locked:
+                all_good &= self.links_locked[link][0]
+            return all_good
+        else:
+            return self.links_locked
 
     def get_ver(self):
         try:
@@ -482,6 +525,7 @@ class ETROC():
             self.wr_reg("lowerCalTrig", 0, broadcast=True)
 
             self.reset()  # soft reset of the global readout, 2nd reset needed for some ETROCs
+            self.reset_fast_command()
             #
             # FIXME this is where the module_reset should happen if links are not locked??
             if not no_reset:
@@ -511,62 +555,64 @@ class ETROC():
         '''
         custom made test configuration
         '''
-        if full_chip:
-            self.enable_data_readout(broadcast=True)
-            self.wr_reg("workMode", 1, broadcast=True)
-            self.wr_reg("selfTestOccupancy", occupancy, broadcast=True)
+        if self.is_connected():
+            if full_chip:
+                self.enable_data_readout(broadcast=True)
+                self.wr_reg("workMode", 1, broadcast=True)
+                self.wr_reg("selfTestOccupancy", occupancy, broadcast=True)
 
-        else:
-            test_pixels = [
-                (0,0),
-                (7,7),
-                (7,8),
-                (8,8),
-                (8,7),
-                (0,15),
-                (15,0),
-                (15,15),
-            ]
-            self.disable_data_readout(broadcast=True)
-            self.wr_reg("workMode", 0, broadcast=True)
-            self.wr_reg("selfTestOccupancy", 0, broadcast=True)
-            for row, col in test_pixels:
-                self.enable_data_readout(row=row, col=col, broadcast=False)
-                self.wr_reg("workMode", 1, row=row, col=col, broadcast=False)
-                self.wr_reg("selfTestOccupancy", occupancy, row=row, col=col, broadcast=False)
+            else:
+                test_pixels = [
+                    (0,0),
+                    (7,7),
+                    (7,8),
+                    (8,8),
+                    (8,7),
+                    (0,15),
+                    (15,0),
+                    (15,15),
+                ]
+                self.disable_data_readout(broadcast=True)
+                self.wr_reg("workMode", 0, broadcast=True)
+                self.wr_reg("selfTestOccupancy", 0, broadcast=True)
+                for row, col in test_pixels:
+                    self.enable_data_readout(row=row, col=col, broadcast=False)
+                    self.wr_reg("workMode", 1, row=row, col=col, broadcast=False)
+                    self.wr_reg("selfTestOccupancy", occupancy, row=row, col=col, broadcast=False)
 
-    def physics_config(self, subset=False, offset=3, L1Adelay=None, thresholds=None, powerMode='high'):
+    def physics_config(self, subset=False, offset=3, L1Adelay=None, thresholds=None, powerMode='high', out_dir=None):
         '''
         subset is either False or a list of pixels, [(1,1), (1,2), ..]
         '''
-        if powerMode == 'high':
-            print("Making ETROC go wroom!")
-            self.wr_reg("IBSel", 0, broadcast=True)  # set into high power mode (I1 in the manual)
-        else:
-            self.wr_reg("IBSel", 7, broadcast=True)  # set into low power mode (I4 in the manual, default)
-
-        if L1Adelay == None:
-            L1Adelay = self.QINJ_delay
-        if not subset:
-            self.enable_data_readout(broadcast=True)
-            self.wr_reg("workMode", 0, broadcast=True)
-            self.set_L1Adelay(delay=L1Adelay, broadcast=True)
-            if thresholds == None :
-                self.run_threshold_scan(offset=offset) 
+        if self.is_connected():
+            if powerMode == 'high':
+                print("Making ETROC go wroom!")
+                self.wr_reg("IBSel", 0, broadcast=True)  # set into high power mode (I1 in the manual)
             else:
-                for row in range(16):
-                    for col in range(16):
-                      self.wr_reg('DAC', int(thresholds[row][col]), row=row, col=col) # want to get some noise
-        else:
-            self.disable_data_readout(broadcast=True)
-            self.wr_reg("workMode", 0, broadcast=True)
-            self.set_L1Adelay(delay=L1Adelay, broadcast=True)
-            for row, col in subset:
-                self.enable_data_readout(row=row, col=col, broadcast=False)
-                if thresholds == None:
-                    self.auto_threshold_scan(row=row, col=col, broadcast=False, offset=offset)
+                self.wr_reg("IBSel", 7, broadcast=True)  # set into low power mode (I4 in the manual, default)
+
+            if L1Adelay == None:
+                L1Adelay = self.QINJ_delay
+            if not subset:
+                self.enable_data_readout(broadcast=True)
+                self.wr_reg("workMode", 0, broadcast=True)
+                self.set_L1Adelay(delay=L1Adelay, broadcast=True)
+                if thresholds == None :
+                    self.run_threshold_scan(offset=offset, out_dir=out_dir)
                 else:
-                    self.wr_reg('DAC', int(thresholds[row][col]), row=row, col=col)
+                    for row in range(16):
+                        for col in range(16):
+                            self.wr_reg('DAC', int(thresholds[row][col]), row=row, col=col) # want to get some noise
+            else:
+                self.disable_data_readout(broadcast=True)
+                self.wr_reg("workMode", 0, broadcast=True)
+                self.set_L1Adelay(delay=L1Adelay, broadcast=True)
+                for row, col in subset:
+                    self.enable_data_readout(row=row, col=col, broadcast=False)
+                    if thresholds == None:
+                        self.auto_threshold_scan(row=row, col=col, broadcast=False, offset=offset)
+                    else:
+                        self.wr_reg('DAC', int(thresholds[row][col]), row=row, col=col)
 
     # =======================
     # === HIGH-LEVEL FUNC ===
@@ -611,7 +657,7 @@ class ETROC():
         else:
             return self.get_QInj(row=row, col=col)
 
-    def run_threshold_scan(self, offset='auto', use=True):
+    def run_threshold_scan(self, offset='auto', use=True, out_dir=None):
         from tqdm import tqdm
         baseline = np.empty([16, 16])
         noise_width = np.empty([16, 16])
@@ -626,11 +672,25 @@ class ETROC():
                 pbar.update()
         self.baseline = baseline
         self.noise_width = noise_width
+
+        if offset == 'auto':
+            thresholds = baseline + noise_width
+        else:
+            thresholds = baseline + offset
+
+        if out_dir is not None:
+            with open(f'{out_dir}/thresholds_module_{self.module_id}_etroc_{self.chip_no}.yaml', 'w') as f:
+                dump(thresholds.tolist(), f, Dumper=Dumper,)
+            with open(f'{out_dir}/baseline_module_{self.module_id}_etroc_{self.chip_no}.yaml', 'w') as f:
+                dump(baseline.tolist(), f, Dumper=Dumper,)
+            with open(f'{out_dir}/noise_width_module_{self.module_id}_etroc_{self.chip_no}.yaml', 'w') as f:
+                dump(noise_width.tolist(), f, Dumper=Dumper,)
+
         return baseline, noise_width
 
     def plot_threshold(self, outdir='../results/', noise_width=False):
         from matplotlib import pyplot as plt
-        fig, ax = plt.subplots(1,1,figsize=(7,7))
+        fig, ax = plt.subplots(1,1,figsize=(15,15))
         matrix = self.baseline if not noise_width else self.noise_width
         cax = ax.matshow(matrix)
         fig.colorbar(cax,ax=ax)
@@ -640,9 +700,9 @@ class ETROC():
                         ha="center", va="center", color="w", fontsize="xx-small")
 
         if noise_width:
-            fig.savefig(f'{outdir}/noise_width.png')
+            fig.savefig(f'{outdir}/module_{self.module_id}_etroc_{self.chip_no}_noise_width.png')
         else:
-            fig.savefig(f'{outdir}/baseline.png')
+            fig.savefig(f'{outdir}/module_{self.module_id}_etroc_{self.chip_no}_baseline.png')
 
 
     def auto_threshold_scan(self, row=0, col=0, broadcast=False, offset='auto', time_out=3, verbose=False, use=True):

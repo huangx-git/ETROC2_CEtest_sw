@@ -83,6 +83,8 @@ class ReadoutBoard:
             if not self.TRIG_LPGBT.power_up_done():
                 self.TRIG_LPGBT.power_up_init()
 
+            self.TRIG_LPGBT.invert_links()
+
         if not self.is_configured:
             self.configure()
 
@@ -728,12 +730,21 @@ class ReadoutBoard:
         '''
         self.kcu.write_node(f"READOUT_BOARD_{self.rb}.EVENT_CNT_RESET", 0x1)
 
-    def connect_modules(self, power_board=False, moduleids=[9996,9997,9998,9999]):
+    def connect_modules(self, power_board=False, moduleids=[9996,9997,9998,9999], hard_reset=False, ext_vref=False):
         self.modules = []
         for i in range(self.nmodules):
-            self.modules.append(Module(self, i+1, enable_power_board=power_board, moduleid=moduleids[i]))
+            self.modules.append(
+                Module(
+                    self,
+                    i+1,
+                    enable_power_board=power_board,
+                    moduleid=moduleids[i],
+                    hard_reset = hard_reset,
+                    ext_vref=ext_vref,
+                ),
+            )
             if self.modules[-1].connected:
-                print(f"Readout Board {self.rb}: Found connected Module {i}")
+                print(f"Readout Board {self.rb}: Found connected Module {i+1}")
 
     def dark_mode(self):
         self.DAQ_LPGBT.set_gpio("LED_RHETT", 0)  # rhett

@@ -4,9 +4,13 @@ RB0 and RB1 connected to KCU 192.168.0.10
 on PSU 192.168.2.1 ch1 and ch2
 '''
 import time
+import os
 import copy
+import glob
 from emoji import emojize
 
+from yaml import load
+from yaml import CLoader as Loader, CDumper as Dumper
 from tamalero.ReadoutBoard import ReadoutBoard
 from tamalero.utils import get_kcu, load_yaml
 from tamalero.FIFO import FIFO
@@ -17,28 +21,6 @@ from cocina.PowerSupply import PowerSupply
 '''
 Configuration of the telescope
 '''
-layers = [
-    [
-        [37],
-        [],
-        [],
-    ],
-    [
-        [36],  # 36
-        [],
-        [],
-    ],
-    [
-        [38],  # 38
-        [],
-        []
-    ],
-#    [
-#        [39],
-#        [],
-#        []
-#    ],
-]
 
 if __name__ == '__main__':
 
@@ -46,25 +28,52 @@ if __name__ == '__main__':
     import argparse
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--kcu', action='store', default='192.168.0.10', help="IP Address of KCU105 board")
-    argParser.add_argument('--configuration', action='store', default='modulev0b', choices=['modulev0', 'modulev0b'], help="Board configuration to be loaded")
+    argParser.add_argument('--configuration', action='store', default='desy', help="Telescope configuration to be loaded")
     argParser.add_argument('--host', action='store', default='localhost', help="Hostname for control hub")
     argParser.add_argument('--enable_power_board', action='store_true', help="Enable Power Board (all modules). Jumpers must still be set as well.")
     argParser.add_argument('--test_config', action='store_true', help="Use a test configuration.")
     argParser.add_argument('--power_up', action='store_true', help="Turn power on (BU setup only)")
     argParser.add_argument('--power_down', action='store_true', help="Turn power off (BU setup only)")
     argParser.add_argument('--subset', action='store_true', help="Use subset of pixels for tests")
+    argParser.add_argument('--reuse_thresholds', action='store_true', help="Reuse thresholds from last run")
     argParser.add_argument('--offset', action='store', default='auto', help="The offset from the baseline")
     argParser.add_argument('--delay', action='store', default=15, type=int, help="Set the L1A delay")
     args = argParser.parse_args()
 
 
+    config = load_yaml(f"configs/telescope_{args.configuration}.yaml")
+
     shut_down = False
     connect_modules = True
+    timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
+
+    all_out_dir = glob.glob(f'telescope_config_data/{args.configuration}*')
+    all_out_dir.sort(reverse=True)
+    if len(all_out_dir) > 0:
+        latest_out_dir = all_out_dir[0]
+    else:
+        out_dir = f"telescope_config_data/{args.configuration}_{timestamp}"
+
+    if args.reuse_thresholds:
+        print(f"Using thresholds from {latest_out_dir}")
+    else:
+        out_dir = f"telescope_config_data/{args.configuration}_{timestamp}"
+        if not os.path.isdir(out_dir):
+            os.makedirs(out_dir)
+
 
     print(emojize(':atom_symbol:'), " Telescope code draft")
+    print(f"Using time stamp: {timestamp}")
 
     if args.power_up:
         print(emojize(':battery:'), " Power Supply")
+        #for layer in config:
+        #    if "psu" in config[layer]:
+        #        for psu_ip, psu_ch in config[layer]["psu"]:
+        #            psu_tmp = PowerSupply(ip=psu_ip, name='PSU')
+        #            psu_tmp.power_up(psu_ch)
+        #            del psu_tmp  # ???
+
         psu1 = PowerSupply(ip='192.168.2.1', name='PS1')
         psu1.power_up('ch1')
         psu1.power_up('ch2')
@@ -79,9 +88,9 @@ if __name__ == '__main__':
 
     print("Configuring Readout Boards")
     rbs = {}
-    for i, layer in enumerate(layers):
-        print(i)
-        rbs[i] = ReadoutBoard(rb=i, trigger=True, kcu=kcu, config=args.configuration, verbose=False)
+    for layer in config:
+        print(layer)
+        rbs[layer] = ReadoutBoard(rb=layer, trigger=True, kcu=kcu, config=config[layer]['type'], verbose=False)
 
 
     #print("Scanning Readout Boards")
@@ -108,7 +117,7 @@ if __name__ == '__main__':
 
         print("Connecting Modules")
         for rb in rbs:
-            moduleids = [x[0] if len(x)>0 else 0 for x in layers[rb]]
+            moduleids = [x[0] if len(x)>0 else 0 for x in config[rb]['modules']]
             print(moduleids)
             rbs[rb].connect_modules(moduleids=moduleids)
         #    rb.rerun_bitslip()
@@ -121,7 +130,8 @@ if __name__ == '__main__':
             for mod in rbs[rb].modules:
                 if mod.connected:
                     if args.test_config:
-                        mod.ETROCs[0].test_config(occupancy=10)
+                        for etroc in mod.ETROCs:
+                            etroc.test_config(occupancy=10)
                     else:
                         if args.subset:
                             test_pixels = [
@@ -141,43 +151,61 @@ if __name__ == '__main__':
                             offset = args.offset
                         else:
                             offset = int(args.offset)
-                        mod.ETROCs[0].physics_config(offset=offset, L1Adelay=int(args.delay), subset=test_pixels)
-                    mod.ETROCs[0].reset()
+                        for etroc in mod.ETROCs:
+                            if args.reuse_thresholds:
+                                with open(f'{latest_out_dir}/thresholds_module_{etroc.module_id}_etroc_{etroc.chip_no}.yaml', 'r') as f:
+                                    thresholds = load(f, Loader=Loader)
+                                etroc.physics_config(offset=offset, L1Adelay=int(args.delay), subset=test_pixels, thresholds=thresholds, out_dir=latest_out_dir)
+                            else:
+                                etroc.physics_config(offset=offset, L1Adelay=int(args.delay), subset=test_pixels, out_dir=out_dir)
+                    for etroc in mod.ETROCs:
+                        etroc.reset()
 
-        fifo_0 = FIFO(rbs[0])
-        fifo_1 = FIFO(rbs[1])
-        fifo_2 = FIFO(rbs[2])
+        fifos = []
+        for rb in rbs:
+            fifos.append(FIFO(rbs[rb]))
+        #fifo_0 = FIFO(rbs[0])
+        #fifo_1 = FIFO(rbs[1])
+        #fifo_2 = FIFO(rbs[2])
         df = DataFrame("ETROC2")
 
-        fifo_0.send_l1a(1)
-        fifo_0.reset()
-        fifo_1.reset()
-        fifo_2.reset()
+        fifos[0].send_l1a(1)
+        for fifo in fifos:
+            fifo.reset()
+        #fifo_0.reset()
+        #fifo_1.reset()
+        #fifo_2.reset()
 
-        rbs[1].modules[0].ETROCs[0].wr_reg("readoutClockDelayGlobal", 1)
+        #rbs[1].modules[0].ETROCs[0].wr_reg("readoutClockDelayGlobal", 1)
+        #rbs[0].modules[0].ETROCs[0].wr_reg("readoutClockDelayGlobal", 31)
 
-        rbs[0].modules[0].ETROCs[0].reset()
-        rbs[1].modules[0].ETROCs[0].reset()
-        rbs[2].modules[0].ETROCs[0].reset()
+        for rb in rbs:
+            for mod in rbs[rb].modules:
+                for etroc in mod.ETROCs:
+                    etroc.reset()
+        #rbs[0].modules[0].ETROCs[0].reset()
+        #rbs[1].modules[0].ETROCs[0].reset()
+        #rbs[2].modules[0].ETROCs[0].reset()
 
         # doesn't matter which FIFO to choose, the L1A is universial
         print(emojize(':factory:'), " Producing some test data")
-        fifo_0.send_l1a(10)
+        fifos[0].send_l1a(10)
 
-        print(emojize(':closed_mailbox_with_raised_flag:'), " Data in FIFO 0:")
-        for x in fifo_0.pretty_read(df):
-            #if x[0] == 'data': print ('!!!!!!!!!!', x)
-            print(x)
+        for i, fifo in enumerate(fifos):
+            print(emojize(':closed_mailbox_with_raised_flag:'), f" Data in FIFO {i}:")
+            for x in fifos[i].pretty_read(df):
+                #if x[0] == 'data': print ('!!!!!!!!!!', x)
+                print(x)
 
-        print(emojize(':closed_mailbox_with_raised_flag:'), " Data in FIFO 1:")
-        for x in fifo_1.pretty_read(df):
-            #if x[0] == 'data': print ('!!!!!!!!!!', x)
-            print(x)
+        #print(emojize(':closed_mailbox_with_raised_flag:'), " Data in FIFO 1:")
+        #for x in fifo_1.pretty_read(df):
+        #    #if x[0] == 'data': print ('!!!!!!!!!!', x)
+        #    print(x)
 
-        print(emojize(':closed_mailbox_with_raised_flag:'), " Data in FIFO 2:")
-        for x in fifo_2.pretty_read(df):
-            #if x[0] == 'data': print ('!!!!!!!!!!', x)
-            print(x)
+        #print(emojize(':closed_mailbox_with_raised_flag:'), " Data in FIFO 2:")
+        #for x in fifo_2.pretty_read(df):
+        #    #if x[0] == 'data': print ('!!!!!!!!!!', x)
+        #    print(x)
 
         # This script was verified to work with noise at the BU test stands
         # and it actually sees noise on the wirebonded pixels, as expected

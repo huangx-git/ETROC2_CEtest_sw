@@ -335,16 +335,13 @@ def get_kcu(kcu_address, control_hub=True, host='localhost', verbose=False, quie
                     # if control hub is running, try again to establish a connection
                     pass
                 else:
-                    print("Controlhub is not running. Start it with: /opt/cactus/bin/controlhub_start")
-                    print("Exiting.")
-                    return 0
+                    raise RuntimeError("Controlhub is not running. Start it with: /opt/cactus/bin/controlhub_start")
 
             trycnt += 1
             time.sleep(1)
             if (trycnt > 10):
                 if control_hub: print("controlhub status:", "running" if control_hub_running else "not running")
-                print ("Could not establish connection with KCU. Exiting.")
-                return 0
+                raise RuntimeError(f"Could not establish connection with KCU board {ipb_path}")
 
         #raise
     xml_sha     = kcu_tmp.get_xml_sha()
@@ -360,6 +357,11 @@ def get_kcu(kcu_address, control_hub=True, host='localhost', verbose=False, quie
     kcu = KCU(name="my_device",
               ipb_path=ipb_path,
               adr_table=f"address_table/{xml_sha}/etl_test_fw.xml")
+
+    data = 0xabcd1234
+    kcu.write_node("LOOPBACK.LOOPBACK", data)
+    if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
+        raise RuntimeError(f"No communication with KCU board {ipb_path} established.")
 
     kcu.get_firmware_version(string=False)
 
