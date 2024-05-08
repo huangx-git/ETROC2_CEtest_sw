@@ -237,6 +237,8 @@ if __name__ == '__main__':
     argParser.add_argument('--run', action='store', default=1, type=int, help="Run number")
     args = argParser.parse_args()
 
+    start_time = time.time()
+
     kcu = get_kcu(args.kcu)
 
     rbs = [int(x) for x in args.rb.split(',')]
@@ -262,7 +264,8 @@ if __name__ == '__main__':
     #print(f"Resetting global event counter of RB #{rb}")
     #kcu.write_node(f"READOUT_BOARD_{rb}.EVENT_CNT_RESET", 0x1)
 
-    print(f"Taking data now.\n ...")
+
+    print(f"Preparing DAQ streams.\n ...")
 
     streams = []
     for rb in rbs:
@@ -282,7 +285,9 @@ if __name__ == '__main__':
             )
         )
 
-    print("Taking data")
+    init_time = time.time()
+    print(f"Init of ETROC DAQ took {round(init_time-start_time, 1)}s")
+    print("Taking data now")
 
     while any([stream._running for stream in streams]):
        # stream_0._running or stream_1._running:
