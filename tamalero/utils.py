@@ -231,7 +231,6 @@ def download_address_table(version, quiet=False):
     import json
     import urllib.parse
 
-    print(f"address_table/{version}")
     if not os.path.isdir(f"address_table/{version}"):
         last_commit_sha = get_last_commit_sha(version)
         r = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/tree?ref={version}&&path=address_tables&&recursive=True")
