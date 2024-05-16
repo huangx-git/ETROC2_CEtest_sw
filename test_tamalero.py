@@ -158,7 +158,7 @@ if __name__ == '__main__':
     argParser.add_argument('--eyescan', action='store_true', default=False, help="Run eyescan?")
     argParser.add_argument('--recal_lpgbt', action='store_true', default=False, help="Recalibrate ADC in LPGBT? (instead of using saved values)")
     argParser.add_argument('--host', action='store', default='localhost', help="Specify host for control hub")
-    argParser.add_argument('--configuration', action='store', default='default', choices=['default', 'emulator', 'modulev0', 'modulev0b', 'multimodule', 'mux64'], help="Specify a configuration of the RB, e.g. emulator or modulev0")
+    argParser.add_argument('--configuration', action='store', default='default', choices=['default', 'emulator', 'modulev0', 'modulev0b', 'multimodule', 'mux64', 'modulev1'], help="Specify a configuration of the RB, e.g. emulator or modulev0")
     argParser.add_argument('--devel', action='store_true', default=False, help="Don't check repo status (not recommended)")
     argParser.add_argument('--monitor', action='store_true', default=False, help="Start up montoring threads in the background")
     argParser.add_argument('--strict', action='store_true', default=False, help="Enforce strict limits on ADC reads for SCA and LPGBT")
@@ -317,7 +317,7 @@ if __name__ == '__main__':
         print("Link inversions")
         rb.DAQ_LPGBT.invert_links()
         if rb.trigger:
-            rb.TRIG_LPGBT.invert_links(trigger=rb.trigger)
+            rb.TRIG_LPGBT.invert_links()
 
     #-------------------------------------------------------------------------------
     # Module Status
@@ -446,5 +446,11 @@ if __name__ == '__main__':
         if args.power_up:
             from tamalero.Monitoring import Monitoring, blink_rhett
             print("RB configured successfully. Rhett is happy " + emojize(":dog_face:"))
-            b = blink_rhett(rb, iterations=3)
-
+            rb.disable_rhett()
+            time.sleep(0.5)
+            rb.enable_rhett()
+            time.sleep(0.5)
+            rb.disable_rhett()
+            time.sleep(0.5)
+            rb.enable_rhett()
+            #b = blink_rhett(rb, iterations=3)

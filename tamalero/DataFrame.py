@@ -53,7 +53,10 @@ class DataFrame:
             return None, res
 
         if data_type == 'data':
-            datatypelist = self.format['types'][self.type]
+            try:
+                datatypelist = self.format['types'][self.type]
+            except KeyError:
+                datatypelist = self.format['types'][0]  # assume a default
         else:
             datatypelist = self.format['data'][data_type]
 
@@ -63,6 +66,7 @@ class DataFrame:
         if data_type == 'header':
             self.type = res['type']
         res['raw'] = hex(val&0xFFFFFFFFFF)
+        res['raw_full'] = hex(val)
         res['meta'] = hex((val>>40)&0xFFFFFF)
 
         if not quiet:

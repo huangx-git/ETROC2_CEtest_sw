@@ -7,7 +7,7 @@ from tamalero.Monitoring import Lock
 from time import sleep
 
 class Module:
-    def __init__(self, rb, i=1, strict=False, enable_power_board=False, moduleid=0, poke=False):
+    def __init__(self, rb, i=1, strict=False, enable_power_board=False, moduleid=0, poke=False, hard_reset=False, ext_vref=False):
         # don't like that this also needs a RB
         # think about a better solution
         self.config = rb.configuration['modules'][i]
@@ -24,6 +24,7 @@ class Module:
             sleep(0.1)  # enough time to let the ETROC power up?
 
         self.ETROCs = []
+        all_good = True
         for j in range(len(self.config['addresses'])):
             if self.config['i2c']['master']=='fake':
                 self.ETROCs.append(
@@ -37,25 +38,38 @@ class Module:
                         breed = 'software'
                     ))
             else:
-                self.ETROCs.append(
-                    ETROC(
-                        rb          = rb,
-                        master      = self.config['i2c']['master'],
-                        i2c_channel = self.config['i2c']['channel'],
-                        elinks={k: self.config['elinks'][j][k] for k in range(len(self.config['elinks'][j]))},
-                        #elinks      = self.config['elinks'][j],
-                        i2c_adr     = self.config['addresses'][j],
-                        strict      = strict,
-                        reset = self.config['reset'],
-                        breed = self.breed,
-                        vref = self.config['vref'][j],
-                        vref_pd = self.config['disable_vref_gen'][j],
-                        vtemp = self.config['vtemp'][j],
-                        chip_id = (self.id << 2) | j,  # this gives every ETROC a unique ID, based on module ID and ETROC number on the module
-                        no_init = poke,
-                    ))
+                try:
+                    self.ETROCs.append(
+                        ETROC(
+                            rb          = rb,
+                            master      = self.config['i2c']['master'],
+                            i2c_channel = self.config['i2c']['channel'],
+                            elinks={k: self.config['elinks'][j][k] for k in range(len(self.config['elinks'][j]))},
+                            #elinks      = self.config['elinks'][j],
+                            i2c_adr     = self.config['addresses'][j],
+                            strict      = strict,
+                            reset = self.config['reset'],
+                            breed = self.breed,
+                            vref = self.config['vref'][j],
+                            vref_pd = self.config['disable_vref_gen'][j] if ext_vref is False else True,
+                            vtemp = self.config['vtemp'][j],
+                            chip_id = (self.id << 2) | j,  # this gives every ETROC a unique ID, based on module ID and ETROC number on the module
+                            no_init = poke,
+                            hard_reset = hard_reset,
+                            no_hard_reset_on_init = (j != 0),
+                        ))
+                    all_good &= self.ETROCs[-1].get_elink_status(summary=True)
+                except RuntimeError:
+                    print("Couldn't add ETROC", j)
 
         self.connected = any([etroc.is_connected() for etroc in self.ETROCs])
+
+        if not all_good and self.connected and not poke:
+            for etroc in self.ETROCs:
+                etroc.default_config()
+            for etroc in self.ETROCs:
+                etroc.default_config(no_reset=True)
+
 
     #def configure(self):
     #    if self.connected:
@@ -105,7 +119,10 @@ class Module:
         return self.rb.SCA.set_gpio(self.config['power_board'], 0)
 
     def get_power_good(self):
-        return self.rb.SCA.read_gpio(self.config['pgood'])
+        if self.rb.config.count('modulev0'):
+            return self.rb.SCA.read_gpio(self.config['pgood'])
+        else:
+            return False
 
     def get_locked_links(self):
         self.locked = {0:[], 1:[]}
@@ -131,7 +148,7 @@ class Module:
 
         print ('┏━┳━' + 25*'━' + '━┳━┓')
         print ('┃○┃ ' + 25*' ' + ' ┃○┃')
-        print ('┃ ┃ ' + '{:10}{:<15}'.format("Module:", self.i) + ' ┃ ┃' )
+        print ('┃ ┃ ' + '{:10}{:<5}{:4}{:<6}'.format("Module:", self.i, "ID:", self.id) + ' ┃ ┃' )
         # this was useful for the emulator, but version numbers haven't
         # been updated anyway...
         # no FW version for the actual ETROCs

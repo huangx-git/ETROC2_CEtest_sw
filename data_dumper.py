@@ -68,7 +68,7 @@ if __name__ == '__main__':
 
     do_double_trigger_check = not args.skip_trigger_check
 
-    events_per_rb = []
+    events_all_rb = []
     all_runs_good = True
 
     for irb, rb in enumerate(rbs):
@@ -116,9 +116,20 @@ if __name__ == '__main__':
 
 
         uuid = []
+        all_raw = []
+
+        t_tmp = None
 
         for t, d in unpacked_data:
             sus = False
+            if d['raw_full'] in all_raw[-50:] and not t in ['trailer', 'filler']:  # trailers often look the same
+                #print("Potential double counting", t, d)
+                #all_raw.append(d['raw_full'])
+                continue
+            if t not in ['trailer', 'filler']:
+                all_raw.append(d['raw_full'])
+
+
             if t == 'header':
                 hit_counter = 0
                 uuid_tmp = d['l1counter'] | d['bcid']<<8
@@ -131,7 +142,7 @@ if __name__ == '__main__':
                 if d['l1counter'] == l1a:
                     # this just skips additional headers for the same event
                     counter_h[-1] += 1
-                    raw[-1].append(d['raw'])
+                    raw[-1].append(d['raw_full'])
                     if skip_event:
                         #print("Skipping event (same l1a counter)", d['l1counter'], d['bcid'], bcid_t)
                         continue
@@ -150,6 +161,7 @@ if __name__ == '__main__':
                         continue
                     else:
                         uuid.append(d['l1counter'] | d['bcid']<<8)
+                    #hit_counter = 0
                     #if (abs(d['bcid']-bcid_t)<40) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
                     #if (abs(d['bcid']-bcid_t)<500) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
                     if (((abs(d['bcid']-bcid_t)<150) or (abs(d['bcid']+3564-bcid_t)<50)) and not (d['bcid'] == bcid_t) and do_double_trigger_check):
@@ -174,7 +186,7 @@ if __name__ == '__main__':
                     toa_code.append([])
                     cal_code.append([])
                     elink.append([])
-                    raw.append([d['raw']])
+                    raw.append([d['raw_full']])
                     nhits.append(0)
                     nhits_trail.append([])
                     chipid.append([])
@@ -199,23 +211,33 @@ if __name__ == '__main__':
                 row[-1].append(d['row_id'])
                 col[-1].append(d['col_id'])
                 elink[-1].append(d['elink'])
-                raw[-1].append(d['raw'])
+                raw[-1].append(d['raw_full'])
                 nhits[-1] += 1
                 if nhits[-1] > 256:
                     print("This event already has more than 256 events. Breaking.")
                     bad_run = True
                     break
 
-            if t == 'trailer':
-                trailers.append(d['raw'])
+            if t == 'trailer' and t_tmp != 'trailer':
+                trailers.append(d['raw_full'])
                 trailer_counter += 1
                 if not skip_event:
-                    counter_t[-1] += 1
-                    if hit_counter > 0:
-                        chipid[-1].append(hit_counter*d['chipid'])
-                    nhits_trail[-1].append(d['hits'])
-                    raw[-1].append(d['raw'])
-                    crc[-1].append(d['crc'])
+                    try:
+                        counter_t[-1] += 1
+                        if hit_counter > 0:
+                            #print(hit_counter)
+                            #chipid[-1].append(hit_counter*d['chipid'])
+                            chipid[-1] += hit_counter*[d['chipid']]
+                            #print(l1counter[-1], bcid[-1], chipid[-1])
+                        #else:
+                        #    chipid[-1].append()
+                        nhits_trail[-1].append(d['hits'])
+                        raw[-1].append(d['raw'])
+                        crc[-1].append(d['crc'])
+                    except IndexError:
+                        print("Data stream started with a trailer, that is weird.")
+
+            t_tmp = t
 
 
         if not bad_run or args.force:
@@ -236,28 +258,27 @@ if __name__ == '__main__':
                 'chipid': chipid,
                 'bcid': bcid,
                 'counter_a': counter_a,
-                'nhits': nhits,
+                'nhits': ak.singletons(nhits),
                 'nhits_trail': ak.sum(ak.Array(nhits_trail), axis=-1),
             })
 
             total_events = len(events)
             # NOTE the check below is only valid for single ETROC
-            consistent_events = len(events[((events.nheaders==2)&(events.ntrailers==2)&(events.nhits==events.nhits_trail))])
-
-            print(total_events, consistent_events)
+            #consistent_events = len(events[((events.nheaders==2)&(events.ntrailers==2)&(events.nhits==events.nhits_trail))])
+            #
+            #print(total_events, consistent_events)
 
             print(f"Done with {len(events)} events. " + emojize(":check_mark_button:"))
-            print(f" - skipped {skip_counter/events.nheaders[0]} events that were identified as duplicate / spurious " + emojize(":check_mark_button:"))
+            #print(f" - skipped {skip_counter/events.nheaders[0]} events that were identified as double-triggered " + emojize(":check_mark_button:"))
             if header_counter == trailer_counter:
                 print(f" - found same number of headers and trailers! " + emojize(":check_mark_button:"))
             else:
                 print(f" - found {header_counter} headers and {trailer_counter} trailers. Please check. " + emojize(":warning:"))
-                # print(skipped_events)
 
-            with open(f"{here}/ETROC_output/output_run_{args.input}_rb{rb}.json", "w") as f:
+            with open(f"ETROC_output/{args.input}_rb{rb}.json", "w") as f:
                 json.dump(ak.to_json(events), f)
 
-            print(f"Mean number of hits:", np.mean(events.nhits))
+            events_all_rb.append(events)
 
             # make some plots
             import matplotlib.pyplot as plt
@@ -266,19 +287,23 @@ if __name__ == '__main__':
 
             hits = np.zeros([16, 16])
 
+
+            if rb=='2':
+                mask = [(11,5)]
+            else:
+                mask = []
             for ev in events:
                 for row, col in zip(ev.row, ev.col):
-                    hits[row][col] += 1
+                    if (row, col) not in mask:
+                        hits[row][col] += 1
 
             fig, ax = plt.subplots(1,1,figsize=(7,7))
             cax = ax.matshow(hits)
             ax.set_ylabel(r'$Row$')
             ax.set_xlabel(r'$Column$')
             fig.colorbar(cax,ax=ax)
-            fig.savefig(f"{here}/ETROC_output/output_run_{args.input}_rb{rb}_heatmap.pdf")
-            fig.savefig(f"{here}/ETROC_output/output_run_{args.input}_rb{rb}_heatmap.png")
-
-            events_per_rb.append(events)
+            fig.savefig(f"ETROC_output/{args.input}_rb{rb}_heatmap.pdf")
+            fig.savefig(f"ETROC_output/{args.input}_rb{rb}_heatmap.png")
         else:
             print("Bad run detected. Not creating a json file.")
             all_runs_good = False
@@ -286,98 +311,134 @@ if __name__ == '__main__':
                 os.remove(f"{here}/ETROC_output/output_run_{args.input}_rb{rb}.json")
 
 
-    if len(events_per_rb)>1 and False:
-        merged_events = events_per_rb[0]
-        if all_runs_good:
-            event_l     = []
-            counter_h   = []  # double check the number of headers
-            counter_t   = []  # double check the number of trailers
-            l1counter   = []
-            row         = []
-            col         = []
-            tot_code    = []
-            toa_code    = []
-            cal_code    = []
-            elink       = []
-            raw         = []
-            nhits       = []
-            nhits_trail = []
-            chipid      = []
-            crc         = []
-            bcid        = []
-            counter_a   = []
+    if len(events_all_rb)>1:
+        event_number = []
+        bcid = []
+        nhits = []
+        row = []
+        col = []
+        chipid = []
 
-            header_counter = 0
-            trailer_counter = 0
-            for i, events_list in enumerate(events_per_rb):
-                #print ('rb', i)
-                j = 0
-                for event in events_list:
-                    #print ('event', j)
-                    if i == 0:
-                        event_l.append(j)
-                        l1counter.append(event.l1counter)
-                        counter_h.append(event.nheaders)
-                        counter_t.append(event.ntrailers)
-                        nhits.append(event.nhits)
-                        nhits_trail.append(event.nhits_trail)
-                        counter_a.append(list(event.counter_a))
+        sel = ak.flatten(events_all_rb[0].nhits>0)
+        events_with_hits = len(events_all_rb[0][sel])
 
-                        row.append(list(event.row))
-                        col.append(list(event.col))
-                        toa_code.append(list(event.toa_code))
-                        tot_code.append(list(event.tot_code))
-                        cal_code.append(list(event.cal_code))
-                        crc.append(list(event.crc))
-                        raw.append(list(event.raw))
-                        elink.append(list(event.elink))
-                        chipid.append(list(event.chipid))
-                        bcid.append(list(event.bcid))
-                    else:
-                        if not event.l1counter == events_per_rb[0][j].l1counter:
-                            j += 1
-                            print("skipped a spurious event", event.l1counter, j, events_per_rb[0][j].l1counter)
-                            continue
-                        counter_h[j] += (event.nheaders)
-                        counter_t[j] += (event.ntrailers)
-                        nhits[j] += (event.nhits)
-                        nhits_trail[j] += (event.nhits_trail)
+        for rb, events in enumerate(events_all_rb):
+            if rb == 0:
+                #sel = ak.flatten(events.nhits)>0
+                event_number = ak.to_list(events[sel].event)
+                l1counter = ak.to_list(events[sel].l1counter)
+                bcid = ak.to_list(events[sel].bcid)
+                nhits = ak.to_list(events[sel].nhits)
+                row = ak.to_list(events[sel].row)
+                col = ak.to_list(events[sel].col)
+                toa = ak.to_list(events[sel].toa_code)
+                tot = ak.to_list(events[sel].tot_code)
+                cal = ak.to_list(events[sel].cal_code)
+                elink = ak.to_list(events[sel].elink)
+                chipid = ak.to_list(events[sel].chipid)
 
-                        counter_a[j] += list(event.counter_a)
-                        row[j] += list(event.row)
-                        col[j] += list(event.col)
-                        toa_code[j] += list(event.toa_code)
-                        tot_code[j] += list(event.tot_code)
-                        cal_code[j] += list(event.cal_code)
-                        crc[j] += list(event.crc)
-                        raw[j] += list(event.raw)
-                        elink[j] += list(event.elink)
-                        chipid[j] += list(event.chipid)
-                        bcid[j] += list(event.bcid)
-                    j += 1
+            else:
+                # loop through rb0 events, and find corresponding entries in the other layers
+
+                print(f"Merging events from RB {rb}")
+
+                from tqdm import tqdm
+                with tqdm(total=events_with_hits, bar_format='{l_bar}{bar:20}{r_bar}{bar:-20b}') as pbar:
+                    for i, ev in enumerate(event_number):
+                        for j, tmp_evt in enumerate(events_all_rb[rb][ak.flatten(events_all_rb[rb].bcid == events_all_rb[0].bcid[ev])]):
+                        #for j in events_all_rb[rb].event:
+                            if abs(tmp_evt.event - ev)<100:
+                            #if events_all_rb[rb].l1counter[j] == events_all_rb[0].l1counter[i] and events_all_rb[rb].bcid[j] == events_all_rb[0].bcid[i] and abs(j-i) < 100:
+                            #if events_all_rb[rb].bcid[j] == events_all_rb[0].bcid[ev] and abs(j-ev) < 100:
+                                nhits[i] += ak.to_list(tmp_evt.nhits)
+                                row[i] += ak.to_list(tmp_evt.row)
+                                col[i] += ak.to_list(tmp_evt.col)
+                                tot[i] += ak.to_list(tmp_evt.tot_code)
+                                toa[i] += ak.to_list(tmp_evt.toa_code)
+                                cal[i] += ak.to_list(tmp_evt.cal_code)
+                                elink[i] += ak.to_list(tmp_evt.elink)
+                                chipid[i] += ak.to_list(tmp_evt.chipid)
+                                #print(f"Found matching event for event {i} in rb {rb} stream")
+                                break
+
+                        pbar.update()
+
+                #for j in events.event:
+                #    if events.l1counter[j] == events_all_rb[0].l1counter[j] and events.bcid[j] == events_all_rb[0].bcid[j]:
+                #        nhits[j].append(events.nhits)
+                #        row[j].append(events.row)
+                #        col[j].append(events.col)
+                #        chipid[j].append(events.chipid)
+                #
+                #
+        print("Zipping again")
+        events = ak.Array({
+            'event': event_number,
+            'l1counter': l1counter,
+            #'nheaders': counter_h,
+            #'ntrailers': counter_t,
+            'row': row,
+            'col': col,
+            'tot_code': tot,
+            'toa_code': toa,
+            'cal_code': cal,
+            'elink': elink,
+            #'raw': raw,
+            #'crc': crc,
+            'chipid': chipid,
+            'bcid': bcid,
+            #'counter_a': counter_a,
+            'nhits': nhits,
+            #'nhits_trail': ak.sum(ak.Array(nhits_trail), axis=-1),
+        })
+
+        with open(f"ETROC_output/{args.input}_merged.json", "w") as f:
+            json.dump(ak.to_json(events), f)
+
+        # make a copy that is called rb0 for the merger
+        with open(f"{here}/ETROC_output/output_run_{args.input}_rb0.json", "w") as f:
+            json.dump(ak.to_json(events), f)
+
+        print("Done.")
+
+        all_layer_hit_candidates = events[ak.all(events.nhits==1, axis=1)]
+        all_layer_hit_candidates_no_noise_selection = (ak.num(all_layer_hit_candidates.col[((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] < 5))]) >0)
+
+        #((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] == 0) & ((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] == 10)))
+        # events[ak.all(events.nhits, axis=1)].toa_code
+        #
+        #
 
 
-            print("Zipping, again")
-            events = ak.Array({
-                'event': event_l,
-                'l1counter': l1counter,
-                'nheaders': counter_h,
-                'ntrailers': counter_t,
-                'row': row,
-                'col': col,
-                'tot_code': tot_code,
-                'toa_code': toa_code,
-                'cal_code': cal_code,
-                'elink': elink,
-                'raw': raw,
-                'crc': crc,
-                'chipid': chipid,
-                'bcid': bcid,
-                'nhits': nhits,
-                'counter_a': counter_a,
-                #'nhits_trail': ak.sum(ak.Array(nhits_trail), axis=-1),
-            })
+        hits0 = np.zeros([16, 16])
+        hits1 = np.zeros([16, 16])
+        hits2 = np.zeros([16, 16])
+        for ev in all_layer_hit_candidates[all_layer_hit_candidates_no_noise_selection]:
+            for row, col in zip(ev.row[ev.chipid==(38 << 2)], ev.col[ev.chipid==(38 << 2)]):
+                hits0[row,col]+=1
+            for row, col in zip(ev.row[ev.chipid==(36 << 2)], ev.col[ev.chipid==(36 << 2)]):
+                hits1[row,col]+=1
+            for row, col in zip(ev.row[ev.chipid==(37 << 2)], ev.col[ev.chipid==(37 << 2)]):
+                hits2[row,col]+=1
 
-            # call this rb0 for consistency
-            with open(f"{here}/ETROC_output/output_run_{args.input}_rb0.json", "w") as f:
-                json.dump(ak.to_json(events), f)
+
+
+        # make some plots
+        import matplotlib.pyplot as plt
+        import mplhep as hep
+        plt.style.use(hep.style.CMS)
+
+        fig, ax = plt.subplots(1,3,figsize=(15,5))
+        cax = ax[2].matshow(hits0)
+        ax[2].set_title("Module 38")
+        cax = ax[1].matshow(hits1)
+        ax[1].set_title("Module 36")
+        cax = ax[0].matshow(hits2)
+        ax[0].set_title("Module 37")
+        ax[0].set_ylabel(r'$Row$')
+        ax[0].set_xlabel(r'$Column$')
+        ax[1].set_xlabel(r'$Column$')
+        ax[2].set_xlabel(r'$Column$')
+        fig.colorbar(cax,ax=ax)
+        fig.savefig(f"ETROC_output/{args.input}_layers_heatmap.pdf")
+        fig.savefig(f"ETROC_output/{args.input}_layers_heatmap.png")

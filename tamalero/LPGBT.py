@@ -177,6 +177,8 @@ class LPGBT(RegParser):
             print("Running power up within LPGBT.configure()")
             self.power_up_init()
 
+        self.invert_links()
+
         self.set_dac(1.0)  # set the DAC / Vref to 1.0V.
         # Callibrate ADCs
         # will automatically load from the config file if it is found
@@ -332,6 +334,7 @@ class LPGBT(RegParser):
             elif self.ver == 1:
                 self.master.program_slave_from_file('configs/config_slave_v1.txt')
             sleep(0.1)
+            self.invert_links()
 
             # toggle the uplink to and from 40MHz clock, for some reason this is
             # needed for the mgt to lock
@@ -521,6 +524,9 @@ class LPGBT(RegParser):
     def set_uplink_invert(self, link, invert=True):
         self.wr_reg("LPGBT.RWF.EPORTRX.EPRX_CHN_CONTROL.EPRX%dINVERT" % link, invert)
 
+    #def set_downlink_invert(self, link, invert=True):
+    #    self.wr_reg("LPGBT.RWF.EPORTTX.EPTX{:02d}INVERT".format(link), invert)
+
     def set_downlink_invert(self, link, invert=True):
         group = link // 4
         elink = link % 4
@@ -529,8 +535,19 @@ class LPGBT(RegParser):
     def set_clock_invert(self, link, invert=True):
         self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dINVERT" % link, invert)
 
-    def invert_links(self, trigger=False):
-        if trigger:
+    def invert_links(self):
+        if self.trigger:
+            for link in range(28):
+                self.set_uplink_invert(link, invert=False)
+        else:
+            for link in range(28):
+                self.set_uplink_invert(link, invert=False)
+            #for link in [0,2,10,20,22,30]:
+            for link in [0,2,4,8,10,12]:
+                self.set_downlink_invert(link, invert=False)
+            for link in [0,1,2,3,4,5,22,23,24,25,26,27]:
+                self.set_clock_invert(link, invert=False)
+        if self.trigger:
             for link in self.link_inversions['trigger']:
                 self.set_uplink_invert(link)
         else:
@@ -576,7 +593,7 @@ class LPGBT(RegParser):
         #    return self.rd_adr(0xcc+link).value()
 
     def configure_clocks(self, en_mask):
-        for i in range(27):
+        for i in range(28):
             if 0x1 & (en_mask >> i):
                 self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dFREQ" % i, 1)
                 self.wr_reg("LPGBT.RWF.EPORTCLK.EPCLK%dDRIVESTRENGTH" % i, 4)
@@ -874,47 +891,45 @@ class LPGBT(RegParser):
         self.cal_offset = offset
         self.calibrated = True
 
+    def get_current_dac_status(self, channel=0, summary=False):
+        enabled = self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE")
+        currently_set = self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE")
+        if summary:
+            print("Current source enabled:", enabled==1)
+            print(f"- Current: {self.get_current_dac_uA()} uA")
+            for i in range(8):
+                stat = 'enabled' if (1 << i) & currently_set else 'disabled'
+                print(f"- Channel {i}: {stat}")
+        return (1 << channel) & currently_set
+
+    def enable_current_source(self):
+        self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE", 1)
+
+    def disable_current_source(self):
+        self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE", 0)
+
     def set_current_adc(self, channel):
-        assert channel in range(8), f"Can only choose from ADC0 to ADC7; ADC{channel} was given instead"
+        assert channel < 8, f"Can only choose from ADC0 to ADC7; ADC{channel} was given instead"
 
-        self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE", 0x1)
         if self.verbose:
-            print("Enable DAC current source...", self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE"))
-
-        if channel == 0:
-            adc_chn = self.LPGBT_CONST.CURDAC_CHN0_bm
-        elif channel == 1:
-            adc_chn = self.LPGBT_CONST.CURDAC_CHN1_bm
-        elif channel == 2:
-            adc_chn = self.LPGBT_CONST.CURDAC_CHN2_bm
-        elif channel == 3:
-            adc_chn = self.LPGBT_CONST.CURDAC_CHN3_bm
-        elif channel == 4:
-            adc_chn = self.LPGBT_CONST.CURDAC_CHN4_bm
-        elif channel == 5:
-            adc_chn = self.LPGBT_CONST.CURDAC_CHN5_bm
-        elif channel == 6:
-            adc_chn = self.LPGBT_CONST.CURDAC_CHN6_bm
-        elif channel == 7:
-            adc_chn = self.LPGBT_CONST.CURDAC_CHN7_bm
-        else:
-            raise Exception("Invalid lpGBT ADC channel selected")
+            print("Enable ADC current source, current status:", self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE"))
+        self.enable_current_source()
 
         currently_set = self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE")
 
         if self.verbose:
-            print(f"LPGBT.RWF.CUR_DAC.CURDACCHNENABLE currently set: {bin(currently_set)}")
-            print(f"Want to set {bin(adc_chn)}")
-            print(f"LPGBT.RWF.CUR_DAC.CURDACCHNENABLE new set: {bin(adc_chn | currently_set)}")
+            for i in range(8):
+                if (1 << i) & currently_set:
+                    print(f"Current source enabled for channel {i}")
 
-        self.wr_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE", adc_chn | currently_set) # Set pin ADC channel to current source
+        self.wr_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE", (1 << channel) | currently_set) # Set pin ADC channel to current source
         if self.verbose:
             print(f"Set current source to pin ADC{channel}...", bin(self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE")))
 
         current = 100 # Desired current of 100 uA
-        self.set_current_dac_uA(current)
         if self.verbose:
             print(f"Set current source value to {current} uA")
+        self.set_current_dac_uA(current)
 
     def set_dac(self, v_out):
         if v_out > 1.00:
@@ -1522,6 +1537,12 @@ class LPGBT(RegParser):
                self.rd_reg("LPGBT.RWF.CHIPID.USERID2") << 16 |\
                self.rd_reg("LPGBT.RWF.CHIPID.USERID1") << 8 |\
                self.rd_reg("LPGBT.RWF.CHIPID.USERID0")
+
+    def get_chip_id(self):
+        return self.rd_reg("LPGBT.RWF.CHIPID.CHIPID3") << 24 |\
+               self.rd_reg("LPGBT.RWF.CHIPID.CHIPID2") << 16 |\
+               self.rd_reg("LPGBT.RWF.CHIPID.CHIPID1") << 8 |\
+               self.rd_reg("LPGBT.RWF.CHIPID.CHIPID0")
 
     def get_chip_serial(self):
         if self.ver == 1:
