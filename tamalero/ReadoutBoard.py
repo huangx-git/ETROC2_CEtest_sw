@@ -563,16 +563,24 @@ class ReadoutBoard:
 
         elif rt==2:
 
-            rt2_voltage = self.SCA.read_adc(29)/(2**12-1) # FIXME: 29 should not be hardcoded
 
             if self.ver == 1:
+                rt2_voltage = self.SCA.read_adc(29)/(2**12-1) # FIXME: 29 should not be hardcoded
                 # https://www.digikey.com/en/products/detail/tdk-corporation/NTCG063UH103HTBX/8565486
                 return get_temp(rt2_voltage, v_ref, 10000, 25, 10000, 3900)  # this comes from the SCA ADC
             elif self.ver == 2:
+                rt2_voltage = self.SCA.read_adc(29)/(2**12-1) # FIXME: 29 should not be hardcoded
                 # https://www.digikey.com/en/products/detail/tdk-corporation/NTCG063JF103FTB/5872743
                 return get_temp(rt2_voltage, v_ref, 10000, 25, 10000, 3380)  # this comes from the SCA ADC
             elif self.ver == 3:
-                raise Exception("RB v3 does not have a second thermistor on board")
+                vref = 1.2
+                self.MUX64.select_channel(1)
+                rt2_voltage = self.DAQ_LPGBT.read_adc(1)*2/(2**10-1)
+                if False:
+                    # this is the direct way of reading the voltage on RT2
+                    self.MUX64.select_channel(0)  # make sure you're not selecting channel 1!
+                    rt2_voltage = self.DAQ_LPGBT.read_adc(5)/(2**10-1)
+                return get_temp(rt2_voltage, vref, 10000, 25, 10000, 3900)  # this comes from the lpGBT ADC
             else:
                 raise Exception("Unknown lpgbt version")
 
@@ -588,16 +596,16 @@ class ReadoutBoard:
         # internal temp from SCA
         t_vtrx = self.read_vtrx_temp()
         t_rt1 = self.read_rb_thermistor(1)
+        t_rt2 = self.read_rb_thermistor(2)
         if self.ver < 3:
-            t_rt2 = self.read_rb_thermistor(2)
             t_sca = self.SCA.read_temp()
 
         if verbose:
             print ("\nTemperature on RB RT1 is: %.1f C" % t_rt1)
+            print ("Temperature on RB RT2 is: %.1f C" % t_rt2)
             if self.ver < 3:
-                print ("Temperature on RB RT2 is: %.1f C" % t_rt2)
                 print ("Temperature on RB SCA is: %.1f C" % t_sca)
-            if self.ver==2:
+            if self.ver > 1:
                 print ("Temperature on RB VTRX is: %.1f C" % t_vtrx)
 
         res = {'t1': t_rt1, 't_VTRX': t_vtrx}
