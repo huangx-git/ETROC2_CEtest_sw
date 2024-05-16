@@ -881,47 +881,45 @@ class LPGBT(RegParser):
         self.cal_offset = offset
         self.calibrated = True
 
+    def get_current_dac_status(self, channel=0, summary=False):
+        enabled = self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE")
+        currently_set = self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE")
+        if summary:
+            print("Current source enabled:", enabled==1)
+            print(f"- Current: {self.get_current_dac_uA()} uA")
+            for i in range(8):
+                stat = 'enabled' if (1 << i) & currently_set else 'disabled'
+                print(f"- Channel {i}: {stat}")
+        return (1 << channel) & currently_set
+
+    def enable_current_source(self):
+        self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE", 1)
+
+    def disable_current_source(self):
+        self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE", 0)
+
     def set_current_adc(self, channel):
-        assert channel in range(8), f"Can only choose from ADC0 to ADC7; ADC{channel} was given instead"
+        assert channel < 8, f"Can only choose from ADC0 to ADC7; ADC{channel} was given instead"
 
-        self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE", 0x1)
         if self.verbose:
-            print("Enable DAC current source...", self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE"))
-
-        if channel == 0:
-            adc_chn = self.LPGBT_CONST.CURDAC_CHN0_bm
-        elif channel == 1:
-            adc_chn = self.LPGBT_CONST.CURDAC_CHN1_bm
-        elif channel == 2:
-            adc_chn = self.LPGBT_CONST.CURDAC_CHN2_bm
-        elif channel == 3:
-            adc_chn = self.LPGBT_CONST.CURDAC_CHN3_bm
-        elif channel == 4:
-            adc_chn = self.LPGBT_CONST.CURDAC_CHN4_bm
-        elif channel == 5:
-            adc_chn = self.LPGBT_CONST.CURDAC_CHN5_bm
-        elif channel == 6:
-            adc_chn = self.LPGBT_CONST.CURDAC_CHN6_bm
-        elif channel == 7:
-            adc_chn = self.LPGBT_CONST.CURDAC_CHN7_bm
-        else:
-            raise Exception("Invalid lpGBT ADC channel selected")
+            print("Enable ADC current source, current status:", self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE"))
+        self.enable_current_source()
 
         currently_set = self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE")
 
         if self.verbose:
-            print(f"LPGBT.RWF.CUR_DAC.CURDACCHNENABLE currently set: {bin(currently_set)}")
-            print(f"Want to set {bin(adc_chn)}")
-            print(f"LPGBT.RWF.CUR_DAC.CURDACCHNENABLE new set: {bin(adc_chn | currently_set)}")
+            for i in range(8):
+                if (1 << i) & currently_set:
+                    print(f"Current source enabled for channel {i}")
 
-        self.wr_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE", adc_chn | currently_set) # Set pin ADC channel to current source
+        self.wr_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE", (1 << channel) | currently_set) # Set pin ADC channel to current source
         if self.verbose:
             print(f"Set current source to pin ADC{channel}...", bin(self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE")))
 
         current = 100 # Desired current of 100 uA
-        self.set_current_dac_uA(current)
         if self.verbose:
             print(f"Set current source value to {current} uA")
+        self.set_current_dac_uA(current)
 
     def set_dac(self, v_out):
         if v_out > 1.00:
