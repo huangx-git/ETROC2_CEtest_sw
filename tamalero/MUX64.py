@@ -62,6 +62,7 @@ class MUX64:
     def is_connected(self):
         if self.LPGBT:
             print("Connected to LPGBT")
+            self.LPGBT.init_adc()
             return 1
         elif self.SCA:
             print("Connected to SCA")
@@ -92,10 +93,7 @@ class MUX64:
             voltage = 0.0
         return voltage
 
-    @channel_byname
-    def read_adc(self, channel):
-
-        #channel select
+    def select_channel(self, channel):
         s0 = (channel & 0x01)
         s1 = (channel & 0x02) >> 1
         s2 = (channel & 0x04) >> 2
@@ -110,7 +108,6 @@ class MUX64:
             self.SCA.set_gpio('mux_addr3', s3)
             self.SCA.set_gpio('mux_addr4', s4)
             self.SCA.set_gpio('mux_addr5', s5)
-            value = self.SCA.read_adc(0x12)
 
         if self.LPGBT:
             self.LPGBT.set_gpio('MUXCNT1', s0)
@@ -119,7 +116,17 @@ class MUX64:
             self.LPGBT.set_gpio('MUXCNT4', s3)
             self.LPGBT.set_gpio('MUXCNT5', s4)
             self.LPGBT.set_gpio('MUXCNT6', s5)
-            self.LPGBT.init_adc()
+    
+    @channel_byname
+    def read_adc(self, channel):
+
+        #channel select
+        select_channel(channel)
+
+        if self.SCA:
+            value = self.SCA.read_adc(0x12)
+
+        if self.LPGBT:
             value = self.LPGBT.read_adc(self.LPGBT.adc_mapping['MUX64OUT']['pin'])
         
         return value
