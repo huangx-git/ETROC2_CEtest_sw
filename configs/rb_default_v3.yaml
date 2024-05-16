@@ -2,9 +2,9 @@ MUX64:
     channel:
         A0:
             pin: 0x00
-            conv: 1.0
+            conv: 22.
             sig_name: unsed
-            comment: "lpGBT ADC2" 
+            comment: "LV RB"
             terminal_input: False
         A1:
             pin: 0x01
@@ -106,11 +106,11 @@ LPGBT:
         LVRB:
             pin: 0x02
             current: 0
-            conv: 1.0
-            min: 1.2
-            max: 1.8
+            conv: 11.0
+            min: 8.0
+            max: 10.0
             flavor: small
-            comment: LVRB * 1.0
+            comment: LVRB / 11.0
         2V5TX_ADC:
             pin: 0x03
             current: 0
