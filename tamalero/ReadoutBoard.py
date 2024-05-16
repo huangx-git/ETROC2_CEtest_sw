@@ -560,6 +560,10 @@ class ReadoutBoard:
                 current_rt1 = self.DAQ_LPGBT.set_current_dac_uA(50)
                 rt1_voltage = self.DAQ_LPGBT.read_adc(7)/(2**10-1) # FIXME: 7 should not be hardcoded
                 return get_temp_direct(rt1_voltage, current_rt1, thermistor="NTCG063JF103FTB")  # this comes from the lpGBT ADC
+            elif self.ver == 3:
+                rt1_voltage = self.DAQ_LPGBT.read_adc(7)/(2**10-1) # FIXME: 7 should not be hardcoded
+                #return get_temp(rt1_voltage, v_ref, 10000, 0, 0, 0, thermistor="NTCG063UH103HTBX")  # this comes from the lpGBT ADC
+                return get_temp(rt1_voltage, v_ref, 10000, 25, 10000, 3900)  # this comes from the lpGBT ADC
             else:
                 raise Exception("Unknown lpgbt version")
 
@@ -573,6 +577,8 @@ class ReadoutBoard:
             elif self.ver == 2:
                 # https://www.digikey.com/en/products/detail/tdk-corporation/NTCG063JF103FTB/5872743
                 return get_temp(rt2_voltage, v_ref, 10000, 25, 10000, 3380)  # this comes from the SCA ADC
+            elif self.ver == 3:
+                raise Exception("RB v3 does not have a second thermistor on board")
             else:
                 raise Exception("Unknown lpgbt version")
 

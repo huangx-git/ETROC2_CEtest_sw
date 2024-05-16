@@ -145,7 +145,7 @@ LPGBT:
             comment: 2V5RX * 0.33
         VTEMP_ADC:
             pin: 0x07
-            current: 1
+            current: 0
             conv: 1
             min: 0
             max: 1.0

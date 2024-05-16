@@ -14,7 +14,7 @@ except ImportError:
 
 here = os.path.dirname(os.path.abspath(__file__))
 
-def get_temp(v_out, v_ref, r_ref, t_1, r_1, b, celcius=True):
+def get_temp(v_out, v_ref, r_ref, t_1, r_1, b, celcius=True, thermistor=None):
     """
     Calculate the temperature of a thermistor, given the voltage measured on it.
 
@@ -34,7 +34,11 @@ def get_temp(v_out, v_ref, r_ref, t_1, r_1, b, celcius=True):
     try:
         r_t = r_ref / (v_ref/v_out - 1)
         # print(r_1, r_t, v_ref, v_out)
-        t_2 = b/((b/(t_1+delta_t)) - math.log(r_1) + math.log(r_t))
+        if thermistor is not None:
+            find_temp = temp_res_fit(thermistor=thermistor)
+            t_2 = find_temp(np.log10(r_t))
+        else:
+            t_2 = b/((b/(t_1+delta_t)) - math.log(r_1) + math.log(r_t))
     except ZeroDivisionError:
         print ("Temperature calculation failed!")
         return -999
