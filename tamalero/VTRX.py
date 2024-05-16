@@ -68,7 +68,7 @@ class VTRX:
             self.ver = "production"
         else:
             self.ver = "prototype"
-        print('VTRx+ Version is: '+self.ver)
+        print(' > VTRx+ version detected: '+self.ver)
 
         with open(os.path.expandvars('$TAMALERO_BASE/address_table/VTRX.yaml'), 'r') as f:
             self.regs = load(f, Loader=Loader)[self.ver]

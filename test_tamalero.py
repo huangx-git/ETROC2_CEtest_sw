@@ -239,7 +239,7 @@ if __name__ == '__main__':
         etroc=args.etroc,
         verbose=args.verbose,
         allow_bad_links = args.allow_bad_links,
-        ver=args.rbver,
+        #ver=args.rbver,
     )
     
     # IDEA Loop over boards for configuration?
@@ -360,8 +360,9 @@ if __name__ == '__main__':
     #-------------------------------------------------------------------------------
 
     if args.adcs:
-        print("\n\nReading GBT-SCA ADC values:")
-        rb.SCA.read_adcs(check=True, strict_limits=args.strict)
+        if rb.ver < 3:
+            print("\n\nReading GBT-SCA ADC values:")
+            rb.SCA.read_adcs(check=True, strict_limits=args.strict)
 
         print("\n\nReading DAQ lpGBT ADC values:")
         rb.DAQ_LPGBT.read_adcs(check=True, strict_limits=args.strict)

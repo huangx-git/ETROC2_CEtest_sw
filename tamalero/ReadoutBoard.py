@@ -26,14 +26,14 @@ flavors = {
 
 class ReadoutBoard:
 
-    def __init__(self, rb=0, trigger=True, flavor='small', kcu=None, config='default', alignment=False, data_mode=True, etroc='ETROC2', verbose=False, allow_bad_links=False, poke=False, ver = None):
+    def __init__(self, rb=0, trigger=True, flavor='small', kcu=None, config='default', alignment=False, data_mode=True, etroc='ETROC2', verbose=False, allow_bad_links=False, poke=False):
         '''
         create a readout board.
         trigger: if true, also configure a trigger lpGBT
         '''
         self.rb = rb
         self.flavor = flavor
-        self.ver = ver
+        self.ver = 2
         self.nmodules = flavors[flavor]
         self.config = config
 
@@ -54,20 +54,26 @@ class ReadoutBoard:
             self.kcu.readout_boards.append(self)
             self.DAQ_LPGBT.configure()
             # If version is undetermined or older than 3, get version from LPGBT and try to connect SCA to KCU
-            if self.ver==None or self.ver<3:
-                self.SCA = SCA(rb=rb, flavor=flavor, ver=self.DAQ_LPGBT.ver, config=self.config, poke=poke)
-                if self.DAQ_LPGBT.ver == 1:
-                    self.ver = 2
-                    self.SCA.update_ver(self.ver)
-                    self.DAQ_LPGBT.update_ver(self.ver-1)  #  FIXME we need to disentangle lpGBT version from RB version
-                elif self.DAQ_LPGBT.ver == 0:
-                    self.ver = 1
-                    self.SCA.update_ver(self.ver)
-                    self.DAQ_LPGBT.update_ver(self.ver-1)  # FIXME we need to disentangle lpGBT version from RB version
-                self.SCA.connect_KCU(kcu)
+            self.SCA = SCA(rb=rb, flavor=flavor, ver=self.DAQ_LPGBT.ver, config=self.config, poke=poke)
+            if self.DAQ_LPGBT.ver == 1:
+                self.ver = 2
+                self.SCA.update_ver(self.ver)
+                self.DAQ_LPGBT.update_rb_ver(self.ver)
+            elif self.DAQ_LPGBT.ver == 0:
+                self.ver = 1
+                self.SCA.update_ver(self.ver)
+                self.DAQ_LPGBT.update_rb_ver(self.ver)
+            self.SCA.connect_KCU(kcu)
+            try:
+                self.SCA.configure_control_registers()
+            except TimeoutError:
+                self.ver = 3
+                self.DAQ_LPGBT.update_rb_ver(self.ver)
             # If version newer than 3, connect MUX64
             if self.ver > 2:
                 self.MUX64 = MUX64(rb=self.rb, ver=1, config=self.config, rbver=self.ver, LPGBT=self.DAQ_LPGBT)
+
+        print(f" > Readout Board version detected: {self.ver}")
 
         self.configuration = get_config(self.config, version=f'v{self.ver}')
 
@@ -592,19 +598,25 @@ class ReadoutBoard:
         """
 
         # internal temp from SCA
-        t_sca = self.SCA.read_temp()
         t_vtrx = self.read_vtrx_temp()
         t_rt1 = self.read_rb_thermistor(1)
-        t_rt2 = self.read_rb_thermistor(2)
+        if self.ver < 3:
+            t_rt2 = self.read_rb_thermistor(2)
+            t_sca = self.SCA.read_temp()
 
         if verbose:
             print ("\nTemperature on RB RT1 is: %.1f C" % t_rt1)
-            print ("Temperature on RB RT2 is: %.1f C" % t_rt2)
-            print ("Temperature on RB SCA is: %.1f C" % t_sca)
+            if self.ver < 3:
+                print ("Temperature on RB RT2 is: %.1f C" % t_rt2)
+                print ("Temperature on RB SCA is: %.1f C" % t_sca)
             if self.ver==2:
                 print ("Temperature on RB VTRX is: %.1f C" % t_vtrx)
 
-        return {'t1': t_rt1, 't2': t_rt2, 't_SCA': t_sca, 't_VTRX': t_vtrx}
+        res = {'t1': t_rt1, 't_VTRX': t_vtrx}
+        if self.ver < 3:
+            res['t2'] = t_rt2
+            res['t_SCA'] = t_sca
+        return res
 
     def etroc_locked(self, elink, slave=False):
         if slave:

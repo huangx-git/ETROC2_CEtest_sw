@@ -266,9 +266,10 @@ class SCA:
             self.kcu.write_node("READOUT_BOARD_%d.SC.RX_RESET" % self.rb, 0x01)
             self.kcu.write_node("READOUT_BOARD_%d.SC.TX_RESET" % self.rb, 0x01)
             if time.time() - start_time > time_out:
-                print(f"data: {self.kcu.read_node('READOUT_BOARD_%d.SC.RX.RX_DATA' % self.rb)}")
-                print("SCA Read Error :: Transaction ID Does Not Match")
-                print("SCA Read Error :: Resetting RX/TX")
+                if verbose:
+                    print(f"data: {self.kcu.read_node('READOUT_BOARD_%d.SC.RX.RX_DATA' % self.rb)}")
+                    print("SCA Read Error :: Transaction ID Does Not Match")
+                    print("SCA Read Error :: Resetting RX/TX")
                 raise TimeoutError("SCA Error :: Transaction timed out.")
 
         return self.kcu.read_node("READOUT_BOARD_%d.SC.RX.RX_DATA" % self.rb)  # 32 bit read data

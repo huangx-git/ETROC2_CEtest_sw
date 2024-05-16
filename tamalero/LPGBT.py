@@ -49,9 +49,12 @@ class LPGBT(RegParser):
         self.gain = 1.85
         self.offset = 512
         self.verbose = verbose
-        self.rbver=rbver
         if ver is not None:
             self.ver = ver
+        if rbver is None:
+            self.rbver = self.ver + 1
+        else:
+            self.rbver = rbver
 
         if self.trigger:
             assert isinstance(master, LPGBT), "Trying to initialize a trigger lpGBT but got no lpGBT master."
@@ -204,7 +207,7 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.POWERUP.PLLCONFIGDONE", 0x1)
 
     def set_adc_mapping(self):
-        assert self.ver in [0, 1], f"Unrecognized version {self.ver}"
+        assert self.rbver in [1,2,3], f"Unrecognized version {self.rbver}"
         self.adc_mapping = get_config(self.config, version=f'v{self.rbver}')['LPGBT']['adc']
         for channel in self.adc_mapping:
             if self.adc_mapping[channel]['current'] == 1:
@@ -217,16 +220,16 @@ class LPGBT(RegParser):
         #    self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping_v2.yaml'), 'adc')
 
     def set_gpio_mapping(self):
-        assert self.ver in [0, 1], f"Unrecognized version {self.ver}"
+        assert self.rbver in [1,2,3], f"Unrecognized version {self.rbver}"
         self.gpio_mapping = get_config(self.config, version=f'v{self.rbver}')['LPGBT']['gpio']
         #if self.ver == 0:
         #    self.gpio_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping.yaml'), 'gpio')
         #elif self.ver == 1:
         #    self.gpio_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping_v2.yaml'), 'gpio')
 
-    def update_ver(self, new_ver):
-        assert new_ver in [0, 1], f"Unrecognized version {new_ver}"
-        self.ver = new_ver
+    def update_rb_ver(self, new_ver):
+        assert new_ver in [1,2,3], f"Unrecognized version {new_ver}"
+        self.rbver = new_ver
         self.set_adc_mapping()
         self.set_gpio_mapping()
 
