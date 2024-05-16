@@ -519,21 +519,7 @@ class ReadoutBoard:
         return 1
 
     def read_vtrx_temp(self):
-
-        # vtrx thermistors
-
-        v_ref = self.DAQ_LPGBT.read_dac()
-        if self.ver == 1:
-            #current_rt1 = self.DAQ_LPGBT.set_current_dac_uA(0)  # make sure the current source is turned OFF in ver 1
-            rt_vtrx_voltage = self.DAQ_LPGBT.read_adc(0)/(2**10-1) # FIXME: 0 should not be hardcoded
-            return get_temp(rt_vtrx_voltage, v_ref, 10000, 25, 10000, 3900)  # FIXME this uses the wrong thermistor, ignore value.
-            #return -1.0
-        elif self.ver == 2:
-            current_vtrx    = self.DAQ_LPGBT.set_current_dac_uA(600)
-            rt_vtrx_voltage = self.DAQ_LPGBT.read_adc(0)/(2**10-1) # FIXME: 0 should not be hardcoded
-            return get_temp_direct(rt_vtrx_voltage, current_vtrx, thermistor="NCP03XM102E05RL")  # this comes from the lpGBT ADC (VTRX TH)
-        else:
-            raise Exception("Unknown lpgbt version")
+        return self.VTRX.get_temp()
 
     def read_rb_thermistor(self, rt):
 

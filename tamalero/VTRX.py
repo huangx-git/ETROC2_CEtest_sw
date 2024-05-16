@@ -7,7 +7,7 @@ Production: https://edms.cern.ch/ui/file/1719330/1/VLplus_quadLDD_spec_v1.3.pdf
 from tamalero.colors import conditional
 import os
 import time
-from tamalero.utils import get_temp
+from tamalero.utils import get_temp, get_temp_direct
 from yaml import load, dump
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -208,13 +208,21 @@ class VTRX:
     def set_emphasis_amplitude(self, channel=0, amplitude=0x0):
         self.wr_reg_ch('CHxEMP', ch, amplitude)
 
+
     def get_temp(self):
-        adc_val = self.master.read_adc(0, convert=True)
-        return get_temp(
-            adc_val,
-            v_ref = 1,  # should be 1V
-            r_ref = 10,  # voltage divider resisitor has 10kOhm
-            t_1 = 25,  # reference temperature of NTC
-            r_1 = 10 if self.ver == 'prototype' else 1,  # resistance of NTC at reference temperature
-            b = 3380,  # b value (proto/production dependent?)
-        )
+        v_ref = self.master.read_dac()
+        if self.master.ver == 0:
+            #current_rt1 = self.DAQ_LPGBT.set_current_dac_uA(0)  # make sure the current source is turned OFF in ver 1
+            rt_vtrx_voltage = self.master.read_adc(0)/(2**10-1) # FIXME: 0 should not be hardcoded
+            return get_temp(rt_vtrx_voltage, v_ref, 10000, 25, 10000, 3900)  # FIXME this uses the wrong thermistor, ignore value.
+        elif self.master.ver > 0:
+            current_read    = self.master.get_current_dac()
+            current_vtrx    = self.master.set_current_dac_uA(600)
+            rt_vtrx_voltage = self.master.read_adc(0)/(2**10-1) # FIXME: 0 should not be hardcoded
+            res = get_temp_direct(rt_vtrx_voltage, current_vtrx, thermistor="NCP03XM102E05RL")  # this comes from the lpGBT ADC (VTRX TH)
+            current_vtrx    = self.master.set_current_dac(current_read)
+            return res
+
+        else:
+            raise Exception("Couldn't read VTRx+ temp because the lpGBT version is unknown.")
+    
