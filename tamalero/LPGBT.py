@@ -212,10 +212,15 @@ class LPGBT(RegParser):
         assert self.rbver in [1,2,3], f"Unrecognized version {self.rbver}"
         self.adc_mapping = get_config(self.config, version=f'v{self.rbver}')['LPGBT']['adc']
         for channel in self.adc_mapping:
-            if self.adc_mapping[channel]['current'] == 1:
-                if self.verbose:
-                    print(f'Setting {channel} to current DAC')
-                self.set_current_adc(self.adc_mapping[channel]['pin'])
+            if self.adc_mapping[channel]['pin'] < 8:  # ignore internal channels
+                if self.adc_mapping[channel]['current'] == 1:
+                    if self.verbose:
+                        print(f'Enabling current soure for ADC{channel}')
+                    self.set_current_adc(self.adc_mapping[channel]['pin'])
+                else:
+                    if self.verbose:
+                        print(f'Disabling current soure for ADC{channel}')
+                    self.set_current_adc(self.adc_mapping[channel]['pin'], to=0)
         #if self.ver == 0:
         #    self.adc_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping.yaml'), 'adc')
         #elif self.ver == 1:
@@ -908,7 +913,7 @@ class LPGBT(RegParser):
     def disable_current_source(self):
         self.wr_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE", 0)
 
-    def set_current_adc(self, channel):
+    def set_current_adc(self, channel, current=100, to=1):
         assert channel < 8, f"Can only choose from ADC0 to ADC7; ADC{channel} was given instead"
 
         if self.verbose:
@@ -922,11 +927,15 @@ class LPGBT(RegParser):
                 if (1 << i) & currently_set:
                     print(f"Current source enabled for channel {i}")
 
-        self.wr_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE", (1 << channel) | currently_set) # Set pin ADC channel to current source
-        if self.verbose:
-            print(f"Set current source to pin ADC{channel}...", bin(self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE")))
+        if to==1:
+            self.wr_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE", (1 << channel) | currently_set) # Set pin ADC channel to current source
+            if self.verbose:
+                print(f"Enable current source in pin ADC{channel}...", bin(self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE")))
+        else:
+            self.wr_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE", ~(1 << channel) & currently_set) # Set pin ADC channel to current source
+            if self.verbose:
+                print(f"Disable current source in pin ADC{channel}...", bin(self.rd_reg("LPGBT.RWF.CUR_DAC.CURDACCHNENABLE")))
 
-        current = 100 # Desired current of 100 uA
         if self.verbose:
             print(f"Set current source value to {current} uA")
         self.set_current_dac_uA(current)
