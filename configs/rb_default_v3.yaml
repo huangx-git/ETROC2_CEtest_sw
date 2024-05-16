@@ -2,7 +2,7 @@ MUX64:
     channel:
         A0:
             pin: 0x00
-            conv: 22.
+            conv: 11.
             sig_name: unsed
             comment: "LV RB"
             terminal_input: False
@@ -10,7 +10,7 @@ MUX64:
             pin: 0x01
             conv: 1.0
             sig_name: unsed 
-            comment: "lpGBT ADC5 (0.5 * 1V2RA)"
+            comment: "lpGBT ADC5 (RT2)"
             terminal_input: False
         A2:
             pin: 0x02

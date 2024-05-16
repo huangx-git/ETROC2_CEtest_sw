@@ -121,7 +121,7 @@ class MUX64:
     def read_adc(self, channel):
 
         #channel select
-        select_channel(channel)
+        self.select_channel(channel)
 
         if self.SCA:
             value = self.SCA.read_adc(0x12)
