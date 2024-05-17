@@ -246,7 +246,7 @@ if __name__ == '__main__':
     print(kcu.readout_boards)
 
     #is_configured = rb.DAQ_LPGBT.is_configured()
-    header(configured=rb.is_configured)
+    header(configured=rb.configured)
 
     if args.recal_lpgbt:
         rb.DAQ_LPGBT.calibrate_adc(recalibrate=True)
@@ -439,9 +439,8 @@ if __name__ == '__main__':
     #-------------------------------------------------------------------------------
     # Success LEDs
     #-------------------------------------------------------------------------------
-    if rb.DAQ_LPGBT.ver == 1:
-        if rb.ver < 3:
-            rb.DAQ_LPGBT.set_gpio("LED_1", 1) # Set LED1 after tamalero finishes succesfully
+    if rb.ver > 1:
+        rb.is_configured()
         t_end = time.time() + 10
         if args.power_up:
             from tamalero.Monitoring import Monitoring, blink_rhett

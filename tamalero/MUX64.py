@@ -86,9 +86,9 @@ class MUX64:
         if self.SCA:
             voltage = (value / (2**12 - 1) ) * self.channel_mapping[channel]['conv']
         elif self.LPGBT:
-            value_calibrated = value * self.LPGBT.cal_gain / 1.85 + (512 - self.LPGBT.cal_offset)
-            input_voltage = value_calibrated / (2**10 - 1) * self.LPGBT.adc_mapping['MUX64OUT']['conv']
-            voltage = input_voltage * self.channel_mapping[channel]['conv']
+            #value_calibrated = value * self.LPGBT.cal_gain / 1.85 + (512 - self.LPGBT.cal_offset)
+            #input_voltage = value_calibrated / (2**10 - 1) * self.LPGBT.adc_mapping['MUX64OUT']['conv']
+            voltage = value/(2**10 - 1) * self.get_conversion_factor(R1=self.channel_mapping[channel]['R1'], R2=self.channel_mapping[channel]['R2'])
         else:
             voltage = 0.0
         return voltage
@@ -159,7 +159,11 @@ class MUX64:
             for line in table:
                 print(data_string.format(*line))
 
-
-
-
-
+    def get_conversion_factor(self, R=82, R1=82, R2=82):
+        '''
+        resistance values in kOhm
+        R - voltage divider on the MUX output, should always be 82kOhm
+        R1 - resistor between measurement source and MUX input
+        R2 - resistor between MUX input and ground
+        '''
+        return 1/((1/2)*(2*R*R2)/(R1*(2*R+R1)+2*R*R2))

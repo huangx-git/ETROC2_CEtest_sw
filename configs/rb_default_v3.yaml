@@ -2,87 +2,17 @@ MUX64:
     channel:
         A0:
             pin: 0x00
-            conv: 11.
+            R1: 1
+            R2: 0.1
             sig_name: unsed
             comment: "LV RB"
             terminal_input: False
         A1:
             pin: 0x01
-            conv: 1.0
-            sig_name: unsed 
-            comment: "lpGBT ADC5 (RT2)"
-            terminal_input: False
-        A2:
-            pin: 0x02
-            conv: 2.0
-            sig_name: unsed 
-            comment: "MOD0A4 (AM1)"
-            terminal_input: False
-        A3:
-            pin: 0x03
-            conv: 2.0
-            sig_name: unsed 
-            comment: "MOD0A5 (AM2)"
-            terminal_input: False
-        A4:
-            pin: 0x04
-            conv: 2.0
-            sig_name: unsed 
-            comment: "MOD0A6 (AM3)"
-            terminal_input: False
-        A5:
-            pin: 0x05
-            conv: 2.0
-            sig_name: unsed 
-            comment: "MOD0A7 (AM4)"
-            terminal_input: False
-        A6:
-            pin: 0x06
-            conv: 2.0
-            sig_name: unsed 
-            comment: "MOD1A4 (AM5)"
-            terminal_input: False
-        A7:
-            pin: 0x07
-            conv: 2.0
-            sig_name: unsed 
-            comment: "MOD1A5 (AM6)"
-            terminal_input: False
-        A8:
-            pin: 0x08
-            conv: 2.0
-            sig_name: unsed 
-            comment: "MOD1A6 (AM7)"
-            terminal_input: False
-        A9:
-            pin: 0x09
-            conv: 2.0
-            sig_name: unsed 
-            comment: "MOD1A7 (AM8)"
-            terminal_input: False
-        A10:
-            pin: 0x0A
-            conv: 2.0
-            sig_name: unsed 
-            comment: "MOD2A4 (AM9)"
-            terminal_input: False
-        A11:
-            pin: 0x0B
-            conv: 2.0
-            sig_name: unsed 
-            comment: "MOD2A5 (AM10)"
-            terminal_input: False
-        A12:
-            pin: 0x0C
-            conv: 2.0
-            sig_name: unsed 
-            comment: "MOD2A6 (AM11)"
-            terminal_input: False
-        A13:
-            pin: 0x0D
-            conv: 2.0
-            sig_name: unsed 
-            comment: "MOD2A7 (AM12)"
+            R1: 10
+            R2: 1
+            sig_name: unsed
+            comment: "lpGBT ADC5 (RT2), R2 values is approximate"
             terminal_input: False
 
 LPGBT:
@@ -255,17 +185,32 @@ LPGBT:
             flavor: small
             comment: Reset
         LD_DIS:
-            pin: 0x0C
+            pin: 0x0D
             default: 0
             direction: out
             flavor: small
-            comment: LED
+            comment: LD_DIS
         LED_RHETT:
-            pin: 0x0E
+            pin: 0x0F
             default: 1
             direction: out
             flavor: small
             comment: success LED
+LPGBT2:
+    adc:
+    gpio:
+        LED_0:
+            pin: 0x0B
+            default: 1
+            direction: out
+            flavor: small
+            comment: LED 1 on schematic, GPIO config LED
+        LED_1:
+            pin: 0x0C
+            default: 0
+            direction: out
+            flavor: small
+            comment: LED 2 on schematic
 
 inversions:
    clocks: []

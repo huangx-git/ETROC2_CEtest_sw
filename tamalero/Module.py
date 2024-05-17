@@ -119,7 +119,7 @@ class Module:
         return self.rb.SCA.set_gpio(self.config['power_board'], 0)
 
     def get_power_good(self):
-        if self.rb.config.count('modulev0'):
+        if self.rb.config.count('modulev0') and self.rb.ver<3:
             return self.rb.SCA.read_gpio(self.config['pgood'])
         else:
             return False

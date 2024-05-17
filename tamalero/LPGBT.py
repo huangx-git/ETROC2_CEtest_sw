@@ -134,7 +134,7 @@ class LPGBT(RegParser):
                 sleep(0.05)
                 timeout += 1
                 if timeout > 50:
-                    raise Exception("Could not successfully read from lpGBT and failed to determine lpGBT version")
+                    raise Exception("Could not successfully read from lpGBT and failed to determine lpGBT version. Check optical links and power of RB.")
 
             if is_v0 and not is_v1:
                 print (" > lpGBT v0 detected")
@@ -174,7 +174,7 @@ class LPGBT(RegParser):
         self.link_inversions = get_config(self.config, version=f'v{self.ver+1}')['inversions']
 
         if not self.power_up_done():
-            print("Running power up within LPGBT.configure()")
+            print(" > Running power up within LPGBT.configure()")
             self.power_up_init()
 
         self.invert_links()
@@ -228,7 +228,10 @@ class LPGBT(RegParser):
 
     def set_gpio_mapping(self):
         assert self.rbver in [1,2,3], f"Unrecognized version {self.rbver}"
-        self.gpio_mapping = get_config(self.config, version=f'v{self.rbver}')['LPGBT']['gpio']
+        if self.rbver > 2 and self.trigger:
+            self.gpio_mapping = get_config(self.config, version=f'v{self.rbver}')['LPGBT2']['gpio']
+        else:
+            self.gpio_mapping = get_config(self.config, version=f'v{self.rbver}')['LPGBT']['gpio']
         #if self.ver == 0:
         #    self.gpio_mapping = read_mapping(os.path.expandvars('$TAMALERO_BASE/configs/LPGBT_mapping.yaml'), 'gpio')
         #elif self.ver == 1:
@@ -239,6 +242,7 @@ class LPGBT(RegParser):
         self.rbver = new_ver
         self.set_adc_mapping()
         self.set_gpio_mapping()
+        self.configure_gpios()
 
     def link_status(self):
         if self.trigger:
@@ -348,11 +352,12 @@ class LPGBT(RegParser):
 
         if not self.trigger:
             self.configure_gpios()
-            self.set_gpio(1, 1)  # Set LED0 after succesfull gpio configure
             self.initialize()
             self.config_eport_dlls()
             self.configure_eptx()
             self.configure_eprx()
+        elif self.rbver > 2 and self.trigger:
+            self.configure_gpios()
 
         self.set_power_up_done()
 
@@ -714,8 +719,8 @@ class LPGBT(RegParser):
             pin = adc_dict[adc_reg]['pin']
             comment = adc_dict[adc_reg]['comment']
             value = self.read_adc(pin)
-            value_calibrated = value * self.cal_gain / 1.85 + (512 - self.cal_offset)
-            input_voltage = value_calibrated / (2**10 - 1) * adc_dict[adc_reg]['conv']
+            #value_calibrated = value * self.cal_gain / 1.85 + (512 - self.cal_offset)  # FIXME this was applying twice
+            input_voltage = value / (2**10 - 1) * adc_dict[adc_reg]['conv']
             if check:
                 try:
                     min_v = adc_dict[adc_reg]['min']
@@ -895,6 +900,22 @@ class LPGBT(RegParser):
         self.cal_gain = gain
         self.cal_offset = offset
         self.calibrated = True
+
+    def load_calibration(self, fin="configs/lpgbt_calibration_latest.zip"):
+        # you can also download from https://lpgbt.web.cern.ch/lpgbt/calibration/lpgbt_calibration_latest.zip
+        # directly. slow, but works
+        import pandas as pd
+        if fin.count("https"):
+            print("Downloading latest calibration file. This works, but is slow.")
+        calib = pd.read_csv(fin, header=3)
+
+        if not hasattr(self, 'chip_serial'):
+            self.get_chip_serial()
+        if self.chip_serial in calib[['CHIPID']].values:
+            return calib[calib.CHIPID==self.chip_serial]
+        else:
+            print(f"Couldn't find the central calibration for lpGBT chip {self.chip_serial}. Is it from a pre-production series?")
+            return None
 
     def get_current_dac_status(self, channel=0, summary=False):
         enabled = self.rd_reg("LPGBT.RWF.VOLTAGE_DAC.CURDACENABLE")
@@ -1567,23 +1588,30 @@ class LPGBT(RegParser):
             # there's nothing else in the fuses that's non-zero
             for i in range(4):
                 self.wr_adr(0x11f, i)
-                chipids.append(self.rd_adr(0x1b2) << 24 | self.rd_adr(0x1b3) << 16 | self.rd_adr(0x1b4) << 8 | self.rd_adr(0x1b5) << 24)
+                #chipids_all.append((self.rd_adr(0x1b2).value(), self.rd_adr(0x1b3).value(), self.rd_adr(0x1b4).value(), self.rd_adr(0x1b5).value()))
+                chipids.append(self.rd_adr(0x1b2) << 0 | self.rd_adr(0x1b3) << 8 | self.rd_adr(0x1b4) << 16 | self.rd_adr(0x1b5) << 24)
 
             self.wr_adr(0x119, 0)  # write FuseRead https://lpgbt.web.cern.ch/lpgbt/v1/registermap.html#reg-fusecontrol
 
+            #print(chipids_all)
+
+
             if all([c==chipids[0] for c in chipids]):
-                return chipids[0]
+                self.chip_serial = hex(chipids[0]).upper()[2:]
+                return self.chip_serial
             else:
                 print("CHIPD serial needs majority vote")
-                return majority_vote(chipids, majority=3)
+                self.chip_serial = hex(majority_vote(chipids, majority=3)).upper()[2:]
+                return self.chip_serial
 
         elif self.ver == 0:
             # NOTE: this is what's supposed to work for lpGBT v0
             # but note sure if that's actually true
-            return self.rd_reg("LPGBT.RWF.CHIPID.CHIPID3") << 24 |\
+            self.chip_serial = self.rd_reg("LPGBT.RWF.CHIPID.CHIPID3") << 24 |\
                 self.rd_reg("LPGBT.RWF.CHIPID.CHIPID2") << 16 |\
                 self.rd_reg("LPGBT.RWF.CHIPID.CHIPID1") << 8 |\
                 self.rd_reg("LPGBT.RWF.CHIPID.CHIPID0")
+            return hex(chipid).upper()[2:]
 
     def get_power_up_state_machine(self, quiet=True):
 

@@ -65,7 +65,13 @@ class ReadoutBoard:
                 self.DAQ_LPGBT.update_rb_ver(self.ver)
             self.SCA.connect_KCU(kcu)
             try:
+                self.sca_hard_reset()
+                self.sca_setup(verbose=self.verbose)
+                self.SCA.reset()
+                self.SCA.connect()
                 self.SCA.configure_control_registers()
+                self.SCA.config_gpios()  # this sets the directions etc according to the mapping
+                print(" > GBT-SCA detected and configured")
             except TimeoutError:
                 self.ver = 3
                 self.DAQ_LPGBT.update_rb_ver(self.ver)
@@ -84,8 +90,8 @@ class ReadoutBoard:
         self.enable_etroc_readout()  # enable readout of all ETROCs by default
         self.enable_etroc_readout(slave=True)  # enable readout of all ETROCs by default
 
-        self.is_configured = self.DAQ_LPGBT.is_configured()
-        #if not self.is_configured:
+        self.configured = self.DAQ_LPGBT.is_configured()
+        #if not self.configured:
 
         self.VTRX.get_version()
 
@@ -97,12 +103,16 @@ class ReadoutBoard:
 
             self.TRIG_LPGBT.invert_links()
 
-        if not self.is_configured:
+        if not self.configured:
             self.configure()
+            self.configured = 1
 
         if self.ver == 2:
             # this method does not work for RB v1 / lpGBT v0
             self.reset_problematic_links(max_retries=10, allow_bad_links=allow_bad_links)
+
+        self.is_configured()
+
 
     def get_trigger(self, poke=False):
         # Self-check if a trigger lpGBT is present, if trigger is not explicitely set to False
@@ -112,7 +122,7 @@ class ReadoutBoard:
         except TimeoutError:
             test_read = None
         if test_read is not None and self.trigger and not poke:
-            print ("Found trigger lpGBT, will configure it now.")
+            print (" > Found trigger lpGBT, will configure it now.")
             self.trigger = True
             print (" > Enabling VTRX channel for trigger lpGBT")
             self.VTRX.enable(ch=1)
@@ -149,12 +159,24 @@ class ReadoutBoard:
 
     def sca_hard_reset(self):
         # should this live here? I suppose so...
+        # NOTE this is potentially dangerous if GPIO 0 does something on RBv3
+        # Luckily, it is only a MUX config pin we are toggling
         bit = 0
         self.DAQ_LPGBT.set_gpio(bit, 0)
         sleep(0.1)
         self.DAQ_LPGBT.set_gpio(bit, 1)
         sleep(0.1)
 
+    def ready_led(self, to=1):
+        if self.ver > 2 and self.trigger:
+            self.TRIG_LPGBT.set_gpio("LED_1", to)
+        else:
+            self.DAQ_LPGBT.set_gpio("LED_1", to)
+
+    def is_configured(self):
+        if self.configured:
+            self.ready_led()
+        
     def find_uplink_alignment(self, scan_time=0.01, default=0, data_mode=False, etroc='ETROC1'):  # default scan time of 0.01 is enough
         # TODO: check the FEC mode and set the number of links appropriately
         n_links = 24  #  NOTE: there are 28 e-links if the board is in FEC5 mode, but we are operating in FEC12 where there are only 24
@@ -327,25 +349,25 @@ class ReadoutBoard:
             self.get_FEC_error_count()
 
     def enable_rhett(self):
-        self.DAQ_LPGBT.set_gpio(3, 1)
+        self.DAQ_LPGBT.set_gpio('LED_RHETT', 1)
 
     def disable_rhett(self):
-        self.DAQ_LPGBT.set_gpio(3, 1)
+        self.DAQ_LPGBT.set_gpio('LED_RHETT', 0)
 
     def bad_boy(self, m=1):
         for x in range(60):
-            self.DAQ_LPGBT.set_gpio(3, 1)
+            self.enable_rhett()
             sleep(m*(0.000 + 0.0005*x))
-            self.DAQ_LPGBT.set_gpio(3, 0)
+            self.disable_rhett()
             sleep(m*0.005)
-        self.DAQ_LPGBT.set_gpio(3, 1)
+        self.enable_rhett()
         sleep(1)
         for x in range(60):
-            self.DAQ_LPGBT.set_gpio(3, 1)
+            self.enable_rhett()
             sleep(m*(0.030 - 0.0005*x))
-            self.DAQ_LPGBT.set_gpio(3, 0)
+            self.disable_rhett()
             sleep(m*0.005)
-        self.DAQ_LPGBT.set_gpio(3, 0)
+        self.disable_rhett()
         sleep(1)
 
     def configure(self):
@@ -366,17 +388,17 @@ class ReadoutBoard:
 
         # SCA init (only if version is newer than 2)
         #self.
-        if self.ver < 3:
-            self.sca_hard_reset()
-            self.sca_setup(verbose=self.verbose)
-            self.SCA.reset()
-            self.SCA.connect()
-            try:
-                #print("version in SCA", self.SCA.ver)
-                #print("config in SCA", self.SCA.config)
-                self.SCA.config_gpios()  # this sets the directions etc according to the mapping
-            except TimeoutError:
-                print ("SCA config failed. Will continue without SCA.")
+        #if self.ver < 3:
+        #    self.sca_hard_reset()
+        #    self.sca_setup(verbose=self.verbose)
+        #    self.SCA.reset()
+        #    self.SCA.connect()
+        #    try:
+        #        #print("version in SCA", self.SCA.ver)
+        #        #print("config in SCA", self.SCA.config)
+        #        self.SCA.config_gpios()  # this sets the directions etc according to the mapping
+        #    except TimeoutError:
+        #        print ("SCA config failed. Will continue without SCA.")
 
         #if self.trigger:
         #    self.DAQ_LPGBT.reset_trigger_mgts() 
@@ -770,10 +792,12 @@ class ReadoutBoard:
         self.DAQ_LPGBT.set_gpio("LED_RHETT", 0)  # rhett
         self.DAQ_LPGBT.set_gpio("LED_0", 0)  # Set LED0 after succesfull gpio configure
         self.DAQ_LPGBT.set_gpio("LED_1", 0) # Set LED1 after tamalero finishes succesfully
-        self.SCA.set_gpio("sca_led", 0)
+        if self.ver < 3:
+            self.SCA.set_gpio("sca_led", 0)
 
     def light_mode(self):
         self.DAQ_LPGBT.set_gpio("LED_RHETT", 1)  # rhett
         self.DAQ_LPGBT.set_gpio("LED_0", 1)  # Set LED0 after succesfull gpio configure
         self.DAQ_LPGBT.set_gpio("LED_1", 1) # Set LED1 after tamalero finishes succesfully
-        self.SCA.set_gpio("sca_led", 1)
+        if self.ver < 3:
+            self.SCA.set_gpio("sca_led", 1)

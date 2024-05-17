@@ -366,9 +366,17 @@ class ETROC():
         if self.breed not in ['software', 'emulator']:
             # the emulators are not going to be reset at all
             if hard:
-                self.rb.SCA.set_gpio(self.reset_pin, 0)
-                time.sleep(0.1)
-                self.rb.SCA.set_gpio(self.reset_pin, 1)
+                if self.rb.ver < 3:
+                    self.rb.SCA.set_gpio(self.reset_pin, 0)
+                    time.sleep(0.1)
+                    self.rb.SCA.set_gpio(self.reset_pin, 1)
+                else:
+                    # NOTE: I don't like this hard coded if/else.
+                    # Think about a more dynamic solution
+                    self.rb.DAQ_LPGBT.set_gpio(self.reset_pin, 0)
+                    time.sleep(0.1)
+                    self.rb.DAQ_LPGBT.set_gpio(self.reset_pin, 1)
+
             else:
                 if self.is_connected():
                     self.wr_reg("asyResetGlobalReadout", 0)
@@ -389,7 +397,10 @@ class ETROC():
         self.rb.kcu.write_node("READOUT_BOARD_%s.BITSLIP_AUTO_EN"%self.rb.rb, 0x0)
 
     def read_Vref(self):
-        return self.rb.SCA.read_adc(self.vref_pin)
+        if self.rb.ver<3:
+            return self.rb.SCA.read_adc(self.vref_pin)
+        else:
+            return self.rb.MUX64.read_adc(self.vref_pin)
 
     # ============================
     # === MONITORING FUNCTIONS ===
@@ -1719,7 +1730,10 @@ class ETROC():
         C2 = -0.0073
         C1 = 26
         qoK = 11604.5181
-        raw = self.rb.SCA.read_adc(self.vtemp, raw=True if mode=='bits' else False)
+        if self.rb.ver < 3:
+            raw = self.rb.SCA.read_adc(self.vtemp, raw=True if mode=='bits' else False)
+        else:
+            raw = self.rb.MUX64.read_adc(self.vtemp, raw=True if mode=='bits' else False)
         if mode == 'bits':
             return raw
         elif mode == 'volt':

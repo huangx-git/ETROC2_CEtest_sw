@@ -378,10 +378,10 @@ def get_config(config, version='v2', verbose=False):
     default_cfg = load_yaml(os.path.join(here, f'../configs/rb_default_{version}.yaml'))
     if config != 'default':
         updated_cfg = load_yaml(os.path.join(here, f'../configs/{config}_{version}.yaml'))
-        for chip in ['SCA', 'LPGBT']:
+        for chip in ['SCA', 'LPGBT', 'MUX64']:
             if chip not in updated_cfg:
                 continue
-            for interface in ['adc', 'gpio']:
+            for interface in ['adc', 'gpio', 'channel']:
                 if interface not in updated_cfg[chip]:
                     continue
                 if updated_cfg[chip][interface] is not None:
