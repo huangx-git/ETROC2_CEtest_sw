@@ -83,6 +83,8 @@ if __name__ == '__main__':
         mask.show()
         masked_pixels = mask.get_masked_pixels()
         etroc.deactivate_hot_pixels(pixels=masked_pixels)
+        for row, col in masked_pixels:
+            etroc.wr_reg("DAC", 1023, row=row, col=col, broadcast=False)
         #etroc.deactivate_hot_pixels([(7,5),(8,5),(10,6),(7,15),(14,8)])
 
     if args.change_timing>0:

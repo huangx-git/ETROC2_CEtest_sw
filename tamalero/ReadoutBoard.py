@@ -90,7 +90,7 @@ class ReadoutBoard:
 
         if self.ver == 2:
             # this method does not work for RB v1 / lpGBT v0
-            self.reset_problematic_links(max_retries=10, allow_bad_links=allow_bad_links)
+            self.reset_problematic_links(max_retries=50, allow_bad_links=allow_bad_links)
 
     def get_trigger(self, poke=False):
         # Self-check if a trigger lpGBT is present, if trigger is not explicitely set to False

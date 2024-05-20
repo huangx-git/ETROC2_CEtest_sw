@@ -683,7 +683,7 @@ if __name__ == '__main__':
     argParser.add_argument('--etrocs', action = 'store', nargs = '*', type = int, default = [0], help = 'ETROC to use on a multi-ETROC module')
     argParser.add_argument('--all-etrocs', action = 'store', type = int, default = 0, help = 'ETROC to use on a multi-ETROC module')
     argParser.add_argument('--run_tag', action = 'store', default = None, help = 'descriptive tag to identify run beyond timestamp')
-
+    argParser.add_argument('--rb', action='store', default=0, type = int, help="")
     #Task Set
     argParser.add_argument('--test_chip', action='store_true', default=False, help="Test simple read/write functionality for real chip?")
     argParser.add_argument('--config_chip', action='store_true')    
@@ -741,7 +741,7 @@ if __name__ == '__main__':
     kcu = get_kcu(args.kcu, control_hub=True, host=args.host, verbose=False)
     int_time = time.time()
     print("Getting RB")
-    rb = ReadoutBoard(0, kcu=kcu, config=args.configuration)
+    rb = ReadoutBoard(args.rb, kcu=kcu, config=args.configuration)
     int2_time = time.time()
     print("Connecting modules")
     moduleids = [0,0,0]
