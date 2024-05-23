@@ -334,7 +334,7 @@ modules:
       channel: 1
     reset: mod_d00
     vref: [mod_a04, mod_a05, mod_a06, mod_a07]
-    disable_vref_gen: [False, False, False, False]
+    disable_vref_gen: [True, True, True, True]
     power_board: mod_d01
     pgood: mod_d02
     vtemp: [mod_a00, mod_a01, mod_a02, mod_a03]
