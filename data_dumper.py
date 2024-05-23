@@ -4,11 +4,14 @@ import argparse
 import numpy as np
 import awkward as ak
 import json
+import yaml
+from yaml import Dumper, Loader
 from tamalero.DataFrame import DataFrame
 from emoji import emojize
 import os
 
 here = os.path.dirname(os.path.abspath(__file__))
+there = "/media/etl/Storage"
 
 def merge_words(res):
     empty_frame_mask = np.array(res[0::2]) > (2**8)  # masking empty fifo entries
@@ -57,6 +60,7 @@ if __name__ == '__main__':
     argParser.add_argument('--input', action='store', default='output_test2', help="Binary file to read from")
     argParser.add_argument('--rbs', action='store', default='0', help="RB numbers")
     argParser.add_argument('--skip_trigger_check', action='store_true', help="Skip the double trigger check.")
+    argParser.add_argument('--dump_mask', action='store_true', help="Skip the double trigger check.")
     argParser.add_argument('--verbose', action='store_true', help="Print every event number.")
     argParser.add_argument('--force', action='store_true', help="Don't care about inconsistencies, force produce output.")
     args = argParser.parse_args()
@@ -144,7 +148,7 @@ if __name__ == '__main__':
                     counter_h[-1] += 1
                     raw[-1].append(d['raw_full'])
                     if skip_event:
-                        #print("Skipping event (same l1a counter)", d['l1counter'], d['bcid'], bcid_t)
+                        print("Skipping event (same l1a counter)", d['l1counter'], d['bcid'], bcid_t)
                         continue
                     pass
                 #elif d['l1counter'] < l1a and d['l1counter']!=0:
@@ -155,7 +159,7 @@ if __name__ == '__main__':
 
                 else:
                     if uuid_tmp in uuid and abs(i - np.where(np.array(uuid) == uuid_tmp)[0][-1]) < 150:
-                        #print("Skipping duplicate event")
+                        print("Skipping duplicate event")
                         skip_counter += 1
                         skip_event = True
                         continue
@@ -166,7 +170,7 @@ if __name__ == '__main__':
                     #if (abs(d['bcid']-bcid_t)<500) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
                     if (((abs(d['bcid']-bcid_t)<150) or (abs(d['bcid']+3564-bcid_t)<50)) and not (d['bcid'] == bcid_t) and do_double_trigger_check):
                         skip_event = True
-                        #print("Skipping event", d['l1counter'], d['bcid'], bcid_t)
+                        print("Skipping event", d['l1counter'], d['bcid'], bcid_t)
                         skip_counter += 1
                         continue
                     else:
@@ -288,10 +292,13 @@ if __name__ == '__main__':
             hits = np.zeros([16, 16])
 
 
-            if rb=='2':
-                mask = [(11,5)]
-            else:
-                mask = []
+            #if rb=='2':
+            #    mask = [(11,5)]
+            mask = []
+            #if rb=='0':
+            #    mask = [(2,4), (3,4), (4,6), (3,11), (6,12)]
+            if rb=='1':
+                mask = [(4,0)]
             for ev in events:
                 for row, col in zip(ev.row, ev.col):
                     if (row, col) not in mask:
@@ -304,6 +311,13 @@ if __name__ == '__main__':
             fig.colorbar(cax,ax=ax)
             fig.savefig(f"ETROC_output/{args.input}_rb{rb}_heatmap.pdf")
             fig.savefig(f"ETROC_output/{args.input}_rb{rb}_heatmap.png")
+
+            # FIXME this only works for a single ETROC right now
+            if args.dump_mask:
+                with open(f"{here}/ETROC_output/mask_run{args.input}.yaml", 'w') as f:
+                    yaml.dump(hits.tolist(), f)
+                    #yaml.dump(hits, f)
+
         else:
             print("Bad run detected. Not creating a json file.")
             all_runs_good = False
@@ -319,7 +333,9 @@ if __name__ == '__main__':
         col = []
         chipid = []
 
-        sel = ak.flatten(events_all_rb[0].nhits>0)
+        #sel = ak.flatten(events_all_rb[0].nhits>0)
+        #sel = ak.flatten(ak.ones_like(events_all_rb[0].nhits))
+        sel = ak.flatten(ak.ones_like(events_all_rb[0].nhits, dtype=bool))
         events_with_hits = len(events_all_rb[0][sel])
 
         for rb, events in enumerate(events_all_rb):
@@ -345,7 +361,9 @@ if __name__ == '__main__':
                 from tqdm import tqdm
                 with tqdm(total=events_with_hits, bar_format='{l_bar}{bar:20}{r_bar}{bar:-20b}') as pbar:
                     for i, ev in enumerate(event_number):
-                        for j, tmp_evt in enumerate(events_all_rb[rb][ak.flatten(events_all_rb[rb].bcid == events_all_rb[0].bcid[ev])]):
+                        # print(i, ev)
+                        for j, tmp_evt in enumerate(events_all_rb[rb][ak.flatten(events_all_rb[rb].bcid + 1 == events_all_rb[0].bcid[ev])]):
+                            # print(j,tmp_evt)
                         #for j in events_all_rb[rb].event:
                             if abs(tmp_evt.event - ev)<100:
                             #if events_all_rb[rb].l1counter[j] == events_all_rb[0].l1counter[i] and events_all_rb[rb].bcid[j] == events_all_rb[0].bcid[i] and abs(j-i) < 100:
@@ -358,6 +376,7 @@ if __name__ == '__main__':
                                 cal[i] += ak.to_list(tmp_evt.cal_code)
                                 elink[i] += ak.to_list(tmp_evt.elink)
                                 chipid[i] += ak.to_list(tmp_evt.chipid)
+                                #print("--------------------------")
                                 #print(f"Found matching event for event {i} in rb {rb} stream")
                                 break
 

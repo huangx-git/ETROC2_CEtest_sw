@@ -27,13 +27,13 @@ fail_list=[]
 #TODO: reconfigure to work with glob for better flexibility in names
 if args.specific_runs:
     for run in args.specific_runs:
-        with open("{}/../ETROC_output/output_run_{}_rb{}.json".format(here, run, args.rb), "r") as f:
+        with open("{}/../ETROC_output/{}_rb{}.json".format(here, run, args.rb), "r") as f:
             files_to_stack.append(ak.from_json(json.load(f)))
         print("Run {} contains {} events".format(run,len(files_to_stack[-1])))
 else:
     for run in range(args.first_run, args.last_run+1):
         try:
-            with open("{}/../ETROC_output/output_run_{}_rb{}.json".format(here, run, args.rb), "r") as f:
+            with open("{}/../ETROC_output/{}_rb{}.json".format(here, run, args.rb), "r") as f:
                 files_to_stack.append(ak.from_json(json.load(f)))
             print("Run {} contains {} events".format(run,len(files_to_stack[-1])))
         except:
@@ -71,6 +71,10 @@ elif args.module == '37':
     masked = [(4,0)]
 elif args.module == '39':
     masked = [(11,15),(12,8),(12,15),(13,15),(14,15),(15,12),(15,14)]
+elif args.module == '106':
+    #masked = [(12,2),(4,15),(5,15)]
+    masked = [(10,4),(5,15)]
+    #masked = []
 else:
     masked = []
 
