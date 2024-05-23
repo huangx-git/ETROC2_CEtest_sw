@@ -23,16 +23,19 @@ powerMode=$9  # I1 (high) to I4 (low)
 isMulti=${10}
 run_number=`cat ../ETROC2_Test_Stand/ScopeHandler/Lecroy/Acquisition/next_run_number.txt`
 
+echo "Starting configuration for $run_number on KCU . Turn beam OFF!!"
+python3 telescope.py  --configuration cern_test --kcu 192.168.0.10 --offset $3 --delay 32 # --reuse_thresholds
+#python3 poke_board.py --configuration modulev1 --etrocs 0 --kcu 192.168.0.10 --dark_mode --mask telescope_config_data/cern_test_2024-05-13-20-07-26/noise_width_module_106_etroc_2.yaml
+python3 poke_board.py --configuration modulev1 --etrocs 0 --kcu 192.168.0.10 --dark_mode
+
+
 if [ "$isTrack" = true ]
 then
-    echo "You are starting a telescope run. Have you entered the run number $run_number on telescope? And turn the beam OFF"
+    echo "You are starting a telescope run. Have you entered the run number $run_number on telescope? And turn BEAM ON now"
     read dummy
 fi  
    
-python3 telescope.py --kcu 192.168.0.10 --offset $3 --delay 32
-python3 poke_board.py --kcu 192.168.0.10 --dark_mode
 
-echo "Turn the beam on now!"
 
 for i in $(seq 1 $1)
 do
@@ -41,10 +44,11 @@ do
     echo "___________________________________ "$i
     run_number=`cat ../ETROC2_Test_Stand/ScopeHandler/Lecroy/Acquisition/next_run_number.txt`
     echo "Run number: $run_number"
-    python3 poke_board.py --kcu 192.168.0.10 --rb 2 --bitslip
-    python3 poke_board.py --kcu 192.168.0.10 --rb 1 --bitslip
+    # python3 poke_board.py --configuration modulev0b --etrocs 0  --kcu 192.168.0.10 --rb 1 --bitslip
+    # python3 poke_board.py --configuration modulev1 --etrocs 2  --kcu 192.168.0.10 --rb 2 --bitslip
+    # python3 poke_board.py --configuration modulev1 --etrocs 2  --kcu 192.168.0.10 --rb 1 --bitslip
     ./autopilot.sh $n_events $offset
-    temperature=$(python3 poke_board.py --kcu 192.168.0.10 --temperature)
+    temperature=$(python3 poke_board.py --configuration modulev1 --etrocs 0 --rbs 0 --modules 0 --kcu 192.168.0.10 --temperature)
     sleep 7s
     kcu=`cat ./running_ETROC_acquisition.txt`
     scope=`cat ../ETROC2_Test_Stand/ScopeHandler/Lecroy/Acquisition/running_acquisition.txt`
@@ -70,6 +74,6 @@ do
 
     test_successful=`test "$merging_dir/run_$run_number.root"`
 
-    printf "$run_number,$bias_V,$offset,$n_events,$board_number,$bond,$energy,`date -u`,$isTrack,$powerMode,$temperature, $isMulti \n">>./run_log_DESY_March2024.csv
+    printf "$run_number,$bias_V,$offset,$n_events,$board_number,$bond,$energy,`date -u`,$isTrack,$powerMode,$temperature, $isMulti \n">>./run_log_SPS_May2024.csv
 
 done

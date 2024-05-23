@@ -235,23 +235,22 @@ def download_address_table(version, quiet=False):
     import json
     import urllib.parse
 
-    last_commit_sha = get_last_commit_sha(version)
-
-    r = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/tree?ref={version}&&path=address_tables&&recursive=True")
-    tree = json.loads(r.content)
-    if isinstance(tree, list):
-        if not quiet:
-            print ("Successfully got list of address table files from gitlab.")
-    else:
-        version = last_commit_sha
-        if os.path.isdir(f'address_table/{version}/'):
-            # already downloaded.
-            return version
-        r = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/tree?ref=devel&&path=address_tables&&recursive=True")
-        tree = json.loads(r.content)
-        print (f"Local firmware version detected. Will download address table corresponding to commit {version}.")
-
     if not os.path.isdir(f"address_table/{version}"):
+        last_commit_sha = get_last_commit_sha(version)
+        r = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/tree?ref={version}&&path=address_tables&&recursive=True")
+        tree = json.loads(r.content)
+        if isinstance(tree, list):
+            if not quiet:
+                print ("Successfully got list of address table files from gitlab.")
+        else:
+            version = last_commit_sha
+            if os.path.isdir(f'address_table/{version}/'):
+                # already downloaded.
+                return version
+            r = requests.get(f"https://gitlab.cern.ch/api/v4/projects/107856/repository/tree?ref=devel&&path=address_tables&&recursive=True")
+            tree = json.loads(r.content)
+            print (f"Local firmware version detected. Will download address table corresponding to commit {version}.")
+
         if not quiet:
             print (f"Downloading latest firmware version address table to address_table/{version}")
             print(f"Making directory: address_table/{version}")
@@ -352,11 +351,11 @@ def get_kcu(kcu_address, control_hub=True, host='localhost', verbose=False, quie
     if verbose:
         print (f"Address table hash: {xml_sha}")
 
-    last_commit = get_last_commit_sha(xml_sha)
-    if not os.path.isdir(f"address_table/{last_commit}"):
-        xml_sha = download_address_table(xml_sha, quiet=quiet)
-    else:
-        xml_sha = last_commit
+    #last_commit = get_last_commit_sha(xml_sha)
+    #if not os.path.isdir(f"address_table/{last_commit}"):
+    xml_sha = download_address_table(xml_sha, quiet=quiet)
+    #else:
+    #    xml_sha = last_commit
 
     kcu = KCU(name="my_device",
               ipb_path=ipb_path,
