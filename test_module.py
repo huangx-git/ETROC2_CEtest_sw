@@ -25,6 +25,10 @@ import matplotlib.pyplot as plt
 import mplhep as hep
 plt.style.use(hep.style.CMS)
 
+# NOTE this should be done
+#import logging
+#logger = logging.getLogger(__name__)
+
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
@@ -279,7 +283,7 @@ def plot_scan_results(etroc, max_matrix, noise_matrix, threshold_matrix, result_
     # for software emulator data below
     N_pix_w = len(max_matrix)
     
-    fig, ax = plt.subplots(2,1, figsize=(15,15))
+    fig, ax = plt.subplots(2,1, figsize=(8,15))
     ax[0].set_title("Peak values of threshold scan")
     ax[1].set_title("Noise width of threshold scan")
     cax1 = ax[0].matshow(max_matrix)
@@ -340,9 +344,7 @@ def isolate(etrocs, n):
                 e.wr_reg("disDataReadout", 0x1, broadcast=True)
 
 def check_temp(etroc):
-    etroc.power_up_TempSen()
     temp = etroc.check_temp()
-    etroc.power_down_TempSen()
     return temp
 
 def readout_tests(etroc, masked_pixels, rb_0, args, result_dir = None, out_dir = None):
@@ -353,6 +355,7 @@ def readout_tests(etroc, masked_pixels, rb_0, args, result_dir = None, out_dir =
     
     print("\n - Checking elinks")
     start_time = time.time()
+    temperatures = []
     while True:
         try:
             fifo.reset()
@@ -368,7 +371,9 @@ def readout_tests(etroc, masked_pixels, rb_0, args, result_dir = None, out_dir =
     etroc.reset()
     fifo.reset()
 
-    print('Current ETROC Temperature Reading:', check_temp(etroc))
+    tmp_temp = check_temp(etroc)
+    temperatures.append((time.time(), tmp_temp))
+    print('Current ETROC Temperature Reading:', tmp_temp)
     
     etroc.wr_reg("DAC", 0, broadcast=True)  # make sure that we're not additionally picking up any noise
     etroc.wr_reg("selfTestOccupancy", 2, broadcast=True)
@@ -526,16 +531,15 @@ def readout_tests(etroc, masked_pixels, rb_0, args, result_dir = None, out_dir =
     # Set the chip back into well-defined workMode 0
     etroc.wr_reg("workMode", 0x0, broadcast=True)
 
+    tmp_temp = check_temp(etroc)
+    temperatures.append((time.time(), tmp_temp))
+    print('Current ETROC Temperature Reading:', tmp_temp)
     if args.threshold == 'auto':
-        print('Current ETROC Temperature Reading:', check_temp(etroc))
         baseline, noise_width = etroc.run_threshold_scan()
         etroc.plot_threshold(outdir=result_dir, noise_width=False)
         etroc.plot_threshold(outdir=result_dir, noise_width=True)
-        print('Current ETROC Temperature Reading:', check_temp(etroc))
     elif args.threshold == "manual":
-        print('Current ETROC Temperature Reading:', check_temp(etroc))
         baseline, noise_width = manual_threshold_scan(etroc, fifo, rb_0, args)
-        print('Current ETROC Temperature Reading:', check_temp(etroc))
     else:
         raise NotImplementedError("This option is currently not expected to work")
         print(f"Trying to load tresholds from the following file: {args.threshold}")
@@ -545,6 +549,9 @@ def readout_tests(etroc, masked_pixels, rb_0, args, result_dir = None, out_dir =
         for row in range(16):
             for col in range(16):
                 etroc.wr_reg('DAC', int(threshold_matrix[row][col]), row=row, col=col)
+    tmp_temp = check_temp(etroc)
+    temperatures.append((time.time(), tmp_temp))
+    print('Current ETROC Temperature Reading:', tmp_temp)
 
     threshold_matrix = baseline+noise_width
     # store results
@@ -556,6 +563,10 @@ def readout_tests(etroc, masked_pixels, rb_0, args, result_dir = None, out_dir =
 
     with open(f'{result_dir}/{prefix}thresholds_{args.threshold}.yaml', 'w') as f:
         dump((baseline+noise_width).tolist(), f)
+
+    with open(f'{result_dir}/temperatures.log', 'w') as f:
+        for t_log, temp_log in temperatures:
+            f.writelines(f'{t_log}, {temp_log}\n')
 
     return threshold_matrix
 
