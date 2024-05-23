@@ -249,11 +249,6 @@ if __name__ == '__main__':
         fifo.send_l1a(1)
         fifo.reset()
 
-        is_configured = rb_0.DAQ_LPGBT.is_configured()
-        if not is_configured:
-            print("RB is not configured, exiting.")
-            exit(0)
-
         from tamalero.Module import Module
 
         print("\n - Getting modules")
@@ -310,11 +305,6 @@ if __name__ == '__main__':
             print("No communications with KCU105... quitting")
             sys.exit(1)
 
-        is_configured = rb_0.DAQ_LPGBT.is_configured()
-        if not is_configured:
-            print("RB is not configured, exiting.")
-            exit(0)
-
         from tamalero.Module import Module
 
         int2_time = time.time()
@@ -344,11 +334,6 @@ if __name__ == '__main__':
         if (data != kcu.read_node("LOOPBACK.LOOPBACK")):
             print("No communications with KCU105... quitting")
             sys.exit(1)
-
-        is_configured = rb_0.DAQ_LPGBT.is_configured()
-        if not is_configured:
-            print("RB is not configured, exiting.")
-            exit(0)
 
         from tamalero.Module import Module
 
