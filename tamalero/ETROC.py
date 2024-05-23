@@ -1726,6 +1726,7 @@ class ETROC():
         self.wr_reg('TS_PD', 1)
 
     def check_temp(self, mode = 'bits'):
+        self.power_up_TempSen()
         #C1 and C2 need to be calibrated
         C2 = -0.0073
         C1 = 26
@@ -1734,6 +1735,7 @@ class ETROC():
             raw = self.rb.SCA.read_adc(self.vtemp, raw=True if mode=='bits' else False)
         else:
             raw = self.rb.MUX64.read_adc(self.vtemp, raw=True if mode=='bits' else False)
+        self.power_down_TempSen()
         if mode == 'bits':
             return raw
         elif mode == 'volt':
