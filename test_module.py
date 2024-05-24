@@ -44,11 +44,11 @@ def run(ETROC, N, fifo=None):
         return fifo.pretty_read(None, raw=True)
 
 
-def toPixNum(row, col, w):
+def toPixNum(row, col, w=16):
     return col*w+row
 
 
-def fromPixNum(pix, w):
+def fromPixNum(pix, w=16):
     row = pix%w
     col = int(np.floor(pix/w))
     return row, col
@@ -125,7 +125,7 @@ def vth_scan_internal(ETROC2, row=0, col=0, dac_min=0, dac_max=500, dac_step=1):
     results = []
     for i in range(dac_min, dac_max+1, dac_step):
         results.append(
-            etroc.check_accumulator(DAC=i, row=row, col=col)
+            ETROC2.check_accumulator(DAC=i, row=row, col=col)
         )
     run_results = np.array(results)
     return [dac_axis, run_results]
@@ -273,7 +273,7 @@ def manual_threshold_scan(etroc, fifo, rb_0, args):
     #with open(f'{result_dir}/{prefix}noise_width.yaml', 'w') as f:
     #    dump(noise_matrix.tolist(), f)
         
-    return max_matrix, noise_matrix
+    return max_matrix, noise_matrix, vth_scan_data
 
 def plot_scan_results(etroc, max_matrix, noise_matrix, threshold_matrix, result_dir, out_dir, mode = None):
     prefix = f"module_{etroc.module_id}_etroc_{etroc.chip_no}_"
@@ -539,7 +539,7 @@ def readout_tests(etroc, masked_pixels, rb_0, args, result_dir = None, out_dir =
         etroc.plot_threshold(outdir=result_dir, noise_width=False)
         etroc.plot_threshold(outdir=result_dir, noise_width=True)
     elif args.threshold == "manual":
-        baseline, noise_width = manual_threshold_scan(etroc, fifo, rb_0, args)
+        baseline, noise_width, vth_scan_result = manual_threshold_scan(etroc, fifo, rb_0, args)
     else:
         raise NotImplementedError("This option is currently not expected to work")
         print(f"Trying to load tresholds from the following file: {args.threshold}")
@@ -568,7 +568,10 @@ def readout_tests(etroc, masked_pixels, rb_0, args, result_dir = None, out_dir =
         for t_log, temp_log in temperatures:
             f.writelines(f'{t_log}, {temp_log}\n')
 
-    return threshold_matrix
+    if args.threshold ==  'manual':
+        return threshold_matrix, vth_scan_result
+    else:
+        return threshold_matrix
 
 def qinj(etroc, mask, rb, thresholds, out_dir, result_dir, args):
     
@@ -709,6 +712,7 @@ if __name__ == '__main__':
     argParser.add_argument('--pixel_masks', action='store', nargs = '*', default=['None'], help="Pixel mask to apply")
     argParser.add_argument('--show_plots', action = 'store_true')
     argParser.add_argument('--external_vref', action = 'store_true')
+    argParser.add_argument('--run_internal', action = 'store_true')
 
     #Charge injection
     argParser.add_argument('--qinj', action='store_true')
@@ -801,5 +805,57 @@ if __name__ == '__main__':
                     etroc.pixel_sanity_check()
                 isolate(etrocs, i)
                 thresholds = readout_tests(etroc, mask, rb, args, result_dir =  result_dir, out_dir = out_dir)
+                if args.threshold == 'manual' and args.run_internal:
+                    os.makedirs(f'{result_dir}/pixels/')
+                    baseline, noise_width = etroc.run_threshold_scan()
+                    thresholds, vth_scan_results = thresholds
+                    dac_ext, res_ext = vth_scan_results
+                    with tqdm(total=256, bar_format='{l_bar}{bar:20}{r_bar}{bar:-20b}') as pbar:
+                        for pixel in range(256):
+                            row = pixel & 0xF
+                            col = (pixel & 0xF0) >> 4
+
+                            #res_ext_pixel =
+                            dac_mode_index = res_ext[pixel].index(max(res_ext[pixel]))
+                            dac_mode = int(dac_ext[dac_mode_index])
+
+                            dac_min = dac_mode - 30
+                            dac_max = dac_mode + 30
+
+                            dac, res = vth_scan_internal(
+                                etroc,
+                                row=row,
+                                col=col,
+                                dac_min=dac_min,
+                                dac_max=dac_max,
+                                dac_step=1,
+                            )
+                            res_normalized = res/max(res)
+
+                            res_ext_normalized = np.array(res_ext[pixel])/max(res_ext[pixel])
+
+                            fig, ax = plt.subplots()
+                            plt.title(f"S-curve for pixel ({row},{col})")
+                            ax.plot(dac, res_normalized, '.-', color='blue', label='internal (acc)')
+                            ax.plot(dac, res_ext_normalized[dac_mode_index-30:dac_mode_index+31], '.-', color='red', label='external')
+
+                            ax.set_ylim(0, 1.05)
+                            ax.set_xlim(dac_min, dac_max)
+                            ax.set_xlabel("DAC")
+                            ax.set_ylabel("normalized count")
+                            BL = int(baseline[row][col])
+                            NW = int(noise_width[row][col])
+                            ax.vlines(x=BL, ymin=0, ymax=1.05, color='green', label=f'BL +/- NW: {BL} +/- {NW}', lw=2)
+                            ax.vlines(x=BL+NW, ymin=0, ymax=1.05, color='green', lw=1, ls=':')
+                            ax.vlines(x=BL-NW, ymin=0, ymax=1.05, color='green', lw=1, ls=':')
+                            plt.legend()
+                            fig.savefig(f'{result_dir}/pixels/scan_internal_row_{row}_col_{col}.png')
+
+                            plt.close()
+                            del fig, ax
+
+                            pbar.update()
+
+
                 if args.qinj:
                     qinj(etroc, mask, rb, thresholds, out_dir, result_dir, args)
