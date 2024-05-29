@@ -136,12 +136,13 @@ if __name__ == '__main__':
     argParser.add_argument('--test_readwrite', action='store_true', default=False, help="Test simple read/write functionality?")
     argParser.add_argument('--test_chip', action='store_true', default=False, help="Test simple read/write functionality for real chip?")
     argParser.add_argument('--config_chip', action='store_true', default=False, help="Configure chip?")
-    argParser.add_argument('--configuration', action='store', default='modulev0', choices=['modulev0', 'modulev0b', 'multimodule'], help="Board configuration to be loaded")
+    argParser.add_argument('--configuration', action='store', default='modulev0', choices=['modulev0', 'modulev0b', 'multimodule', 'modulev1'], help="Board configuration to be loaded")
     argParser.add_argument('--vth', action='store_true', default=False, help="Parse Vth scan plots?")
     argParser.add_argument('--rerun', action='store_true', default=False, help="Rerun Vth scan and overwrite data?")
     argParser.add_argument('--fitplots', action='store_true', default=False, help="Create individual vth fit plots for all pixels?")
     argParser.add_argument('--kcu', action='store', default='192.168.0.10', help="IP Address of KCU105 board")
     argParser.add_argument('--module', action='store', default=0, choices=['1','2','3'], help="Module to test")
+    argParser.add_argument('--etroc', action='store', default=0, choices=['0','1','2','3'], help="Module to test")
     argParser.add_argument('--rb', action='store', default=0, choices=['0','1','2','3'], help="Module to test")
     argParser.add_argument('--host', action='store', default='localhost', help="Hostname for control hub")
     argParser.add_argument('--partial', action='store_true', default=False, help="Only read data from corners and edges")
@@ -172,6 +173,8 @@ if __name__ == '__main__':
         MID = args.moduleid
     else:
         MID = "software"
+
+    ietroc = int(args.etroc)
 
     timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
 
@@ -259,7 +262,7 @@ if __name__ == '__main__':
             moduleid = int(args.moduleid) if i==int(args.module) else (i+200)  # NOTE: at some point we should also include the RB number, e.g. (rb << 4) | (module)
             m_tmp = Module(rb=rb_0, i=i, enable_power_board=args.enable_power_board, moduleid = moduleid)
             modules.append(m_tmp)
-            if m_tmp.ETROCs[0].is_connected():  # NOTE assume that module is connected if first ETROC is connected
+            if m_tmp.ETROCs[ietroc].is_connected():  # NOTE assume that module is connected if first ETROC is connected
                 connected_modules.append(i)
                 for e_tmp in m_tmp.ETROCs:
                     if args.hard_reset:
@@ -312,7 +315,7 @@ if __name__ == '__main__':
         modules = []
         for i in [1,2,3]:
             m_tmp = Module(rb=rb_0, i=i)
-            if m_tmp.ETROCs[0].connected:  # NOTE assume that module is connected if first ETROC is connected
+            if m_tmp.ETROCs[ietroc].connected:  # NOTE assume that module is connected if first ETROC is connected
                 modules.append(m_tmp)
 
         end_time = time.time()
@@ -346,7 +349,7 @@ if __name__ == '__main__':
             moduleid = int(args.moduleid) if i==int(args.module) else (i+200)
             m_tmp = Module(rb=rb_0, i=i, enable_power_board=args.enable_power_board, moduleid = moduleid)
             modules.append(m_tmp)
-            if m_tmp.ETROCs[0].is_connected():  # NOTE assume that module is connected if first ETROC is connected
+            if m_tmp.ETROCs[ietroc].is_connected():  # NOTE assume that module is connected if first ETROC is connected
                 connected_modules.append(i)
                 for e_tmp in m_tmp.ETROCs:
                     if args.hard_reset:
@@ -375,7 +378,7 @@ if __name__ == '__main__':
         print("Module status:")
         modules[module-1].show_status()
 
-        etroc = modules[module-1].ETROCs[0]
+        etroc = modules[module-1].ETROCs[ietroc]
         if args.hard_reset:
             etroc.reset(hard=True)
             etroc.default_config()
