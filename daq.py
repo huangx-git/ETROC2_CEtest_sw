@@ -13,6 +13,8 @@ import pdb
 from time import sleep
 from tamalero.utils import get_kcu
 
+here = os.path.dirname(os.path.abspath(__file__))
+
 class MultiThread:
 
     def __init__(self, fun, args):
@@ -48,6 +50,11 @@ def get_kcu_flag(lock=os.path.expandvars('$TAMALERO_BASE/../ScopeHandler/Lecroy/
     return res
     #return open(f"/home/daq/ETROC2_Test_Stand/ScopeHandler/Lecroy/Acquisition/running_acquitision.txt").read()
 
+def write_run_done(log=os.path.expandvars(here+'/daq_log.txt'), run=0):
+    with open(log, 'a') as f:
+        f.write(f'{run}\n')
+    return run
+
 def get_occupancy(hw, rb):
     try:
         occupancy = hw.getNode(f"READOUT_BOARD_{rb}.RX_FIFO_OCCUPANCY").read()
@@ -58,7 +65,7 @@ def get_occupancy(hw, rb):
         occ = 0
     return occ * 4  # not sure where the factor of 4 comes from, but it's needed
 
-def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superblock=100, block=128, run=1, ext_l1a=False, lock=None, verbose=False):
+def stream_daq(kcu=None, rb=0, l1a_rate=0, run_time=10, n_events=1000, superblock=100, block=128, run=1, ext_l1a=False, lock=None, verbose=False):
 
     uhal.disableLogging()
     hw = kcu.hw
@@ -221,6 +228,8 @@ def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superb
         hw.dispatch()
 
     print(f"Data stored in {f_out}\n")
+    write_run_done(run=run)
+
     return f_out
 
 
@@ -229,7 +238,7 @@ if __name__ == '__main__':
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--kcu', action='store', default='192.168.0.10', help="KCU address")
     argParser.add_argument('--rb', action='store', default=0, help="RB numbers (default 0)")
-    argParser.add_argument('--l1a_rate', action='store', default=1000, type=int, help="L1A rate in Hz")
+    argParser.add_argument('--l1a_rate', action='store', default=0, type=int, help="L1A rate in Hz")
     argParser.add_argument('--ext_l1a', action='store_true', help="Enable external trigger input")
     argParser.add_argument('--run_time', action='store', default=10, type=int, help="Time in [s] to take data")
     argParser.add_argument('--n_events', action='store', default=1000, type=int, help="N events")

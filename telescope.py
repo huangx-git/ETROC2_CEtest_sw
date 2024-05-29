@@ -16,7 +16,6 @@ from tamalero.utils import get_kcu, load_yaml
 from tamalero.FIFO import FIFO
 from tamalero.DataFrame import DataFrame
 
-from cocina.PowerSupply import PowerSupply
 
 '''
 Configuration of the telescope
@@ -38,10 +37,12 @@ if __name__ == '__main__':
     argParser.add_argument('--reuse_thresholds', action='store_true', help="Reuse thresholds from last run")
     argParser.add_argument('--offset', action='store', default='auto', help="The offset from the baseline")
     argParser.add_argument('--delay', action='store', default=15, type=int, help="Set the L1A delay")
+    argParser.add_argument('--power_mode', action='store', default='high', choices=['low', 'high'], help="ETROC power mode")
     args = argParser.parse_args()
 
 
     config = load_yaml(f"configs/telescope_{args.configuration}.yaml")
+    pm = args.power_mode  # NOTE this selects the power mode
 
     shut_down = False
     connect_modules = True
@@ -66,6 +67,7 @@ if __name__ == '__main__':
     print(f"Using time stamp: {timestamp}")
 
     if args.power_up:
+        from cocina.PowerSupply import PowerSupply
         print(emojize(':battery:'), " Power Supply")
         #for layer in config:
         #    if "psu" in config[layer]:
@@ -155,9 +157,9 @@ if __name__ == '__main__':
                             if args.reuse_thresholds:
                                 with open(f'{latest_out_dir}/thresholds_module_{etroc.module_id}_etroc_{etroc.chip_no}.yaml', 'r') as f:
                                     thresholds = load(f, Loader=Loader)
-                                etroc.physics_config(offset=offset, L1Adelay=int(args.delay), subset=test_pixels, thresholds=thresholds, out_dir=latest_out_dir)
+                                etroc.physics_config(offset=offset, L1Adelay=int(args.delay), subset=test_pixels, thresholds=thresholds, out_dir=latest_out_dir, powerMode=pm)
                             else:
-                                etroc.physics_config(offset=offset, L1Adelay=int(args.delay), subset=test_pixels, out_dir=out_dir)
+                                etroc.physics_config(offset=offset, L1Adelay=int(args.delay), subset=test_pixels, out_dir=out_dir, powerMode=pm)
                     for etroc in mod.ETROCs:
                         etroc.reset()
 
