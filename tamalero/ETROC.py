@@ -71,7 +71,7 @@ class ETROC():
         if hard_reset and not no_hard_reset_on_init:
             print(f"Hard resetting the ETROCs on module {self.module_id}")
             self.reset(hard=True)
-            time.sleep(1)
+            time.sleep(0.5)
         #    self.reset(hard=True)
         #    time.sleep(1)
 
@@ -87,7 +87,7 @@ class ETROC():
             if verbose:
                 print("Resetting ETROC")
             self.reset(hard=True)
-            time.sleep(0.1)
+            time.sleep(0.05)
 
         if self.is_connected():
             if vref_pd:
@@ -133,6 +133,7 @@ class ETROC():
                 reg=adr,
                 master=self.i2c_channel,
                 slave_addr=self.i2c_adr,
+                timeout=0.1,
             )
 
     def get_adr(self, reg, row=0, col=0, broadcast=False):
@@ -368,13 +369,13 @@ class ETROC():
             if hard:
                 if self.rb.ver < 3:
                     self.rb.SCA.set_gpio(self.reset_pin, 0)
-                    time.sleep(0.1)
+                    time.sleep(0.05)
                     self.rb.SCA.set_gpio(self.reset_pin, 1)
                 else:
                     # NOTE: I don't like this hard coded if/else.
                     # Think about a more dynamic solution
                     self.rb.DAQ_LPGBT.set_gpio(self.reset_pin, 0)
-                    time.sleep(0.1)
+                    time.sleep(0.05)
                     self.rb.DAQ_LPGBT.set_gpio(self.reset_pin, 1)
 
             else:

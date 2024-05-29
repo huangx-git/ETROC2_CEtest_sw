@@ -7,7 +7,7 @@ from tamalero.Monitoring import Lock
 from time import sleep
 
 class Module:
-    def __init__(self, rb, i=1, strict=False, enable_power_board=False, moduleid=0, poke=False, hard_reset=False, ext_vref=False):
+    def __init__(self, rb, i=1, strict=False, enable_power_board=False, moduleid=0, poke=False, hard_reset=False, ext_vref=False, verbose=False):
         # don't like that this also needs a RB
         # think about a better solution
         self.config = rb.configuration['modules'][i]
@@ -39,6 +39,7 @@ class Module:
                     ))
             else:
                 try:
+                    if verbose: print(f"Working on ETROC {j} of module {self.id}")
                     self.ETROCs.append(
                         ETROC(
                             rb          = rb,

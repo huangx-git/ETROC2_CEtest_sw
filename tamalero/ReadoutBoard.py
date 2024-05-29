@@ -772,9 +772,11 @@ class ReadoutBoard:
         '''
         self.kcu.write_node(f"READOUT_BOARD_{self.rb}.EVENT_CNT_RESET", 0x1)
 
-    def connect_modules(self, power_board=False, moduleids=[9996,9997,9998,9999], hard_reset=False, ext_vref=False):
+    def connect_modules(self, power_board=False, moduleids=[9996,9997,9998,9999], hard_reset=False, ext_vref=False, verbose=False):
         self.modules = []
         for i in range(self.nmodules):
+            if verbose: print(f"Working on module {i}")
+            if i >= len(moduleids): break
             self.modules.append(
                 Module(
                     self,
@@ -783,6 +785,7 @@ class ReadoutBoard:
                     moduleid=moduleids[i],
                     hard_reset = hard_reset,
                     ext_vref=ext_vref,
+                    verbose=verbose,
                 ),
             )
             if self.modules[-1].connected:
