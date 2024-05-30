@@ -1254,7 +1254,7 @@ class LPGBT(RegParser):
                 if retries > 50:
                     raise TimeoutError(f"I2C write failed after 50 retries, status={status}")
 
-    def I2C_read(self, reg=0x0, master=2, slave_addr=0x70, nbytes=1, adr_nbytes=2, freq=2, verbose=False):
+    def I2C_read(self, reg=0x0, master=2, slave_addr=0x70, nbytes=1, adr_nbytes=2, freq=2, verbose=False, timeout=0.1):
         #https://gitlab.cern.ch/lpgbt/pigbt/-/blob/master/backend/apiapp/lpgbtLib/lowLevelDrivers/MASTERI2C.py#L83
 
         # debugging
