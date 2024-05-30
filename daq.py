@@ -47,7 +47,7 @@ def get_kcu_flag(lock=os.path.expandvars('$TAMALERO_BASE/../ScopeHandler/Lecroy/
     # NOTE where to put the locks?
     with open(lock) as f:
         res = f.read()
-    return res
+    return res.rstrip()
     #return open(f"/home/daq/ETROC2_Test_Stand/ScopeHandler/Lecroy/Acquisition/running_acquitision.txt").read()
 
 def write_run_done(log=os.path.expandvars(here+'/daq_log.txt'), run=0):
@@ -107,15 +107,15 @@ def stream_daq(kcu=None, rb=0, l1a_rate=0, run_time=10, n_events=1000, superbloc
         if lock is not None:
             iteration = 0
             Running = get_kcu_flag(lock=lock)
-            while (Running == "False"):
+            while (Running.lower() == "false" or Running.lower() == "stop"):
                 if iteration == 0:
-                    print("Waiting for the scope.")
+                    print("Waiting for the start command.")
                 Running = get_kcu_flag(lock=lock)
                 iteration += 1
 
+            print("Start data taking")
             Running = get_kcu_flag(lock=lock)
-            print(Running)
-            while (Running != "False"):
+            while (Running.lower() != "false" and Running.lower() != "stop"):
                 Running = get_kcu_flag(lock=lock)
                 num_blocks_to_read = 0
                 occupancy = get_occupancy(hw, rb)

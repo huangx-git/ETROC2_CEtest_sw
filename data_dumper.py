@@ -7,7 +7,11 @@ import json
 import yaml
 from yaml import Dumper, Loader
 from tamalero.DataFrame import DataFrame
-from emoji import emojize
+try:
+    from emoji import emojize
+except ModuleNotFoundError:
+    def emojize(in_string):
+        return ''
 import os
 
 here = os.path.dirname(os.path.abspath(__file__))
