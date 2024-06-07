@@ -96,6 +96,7 @@ def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superb
     f_out = f"ETROC_output/output_run_{run}_rb{rb}.dat"
     #f_out = f"output/output_rb_{rb}_run_{run}_time_{start}.dat"  # USED TO BE THIS, keeping for reference and debugging
     occupancy_block = []
+    reads = []
     with open(f_out, mode="wb") as f:
         if lock is not None:
             iteration = 0
@@ -143,20 +144,28 @@ def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superb
                     if num_blocks_to_read>1 and verbose:
                         print(occupancy, num_blocks_to_read)
                     try:
-                        reads = num_blocks_to_read * [hw.getNode(f"DAQ_RB{rb}").readBlock(block)]
-                        hw.dispatch()
-                        for read in reads:
-                            data += read.value()
+                        #reads = []
+                        #for x in range(num_blocks_to_read):
+                        #    reads += [hw.getNode(f"DAQ_RB{rb}").readBlock(block)]
+                        reads += num_blocks_to_read * [hw.getNode(f"DAQ_RB{rb}").readBlock(block)]
+                        #hw.dispatch()
+                        #for read in reads:
+                        #    data += read.value()
                     except uhal._core.exception:
                         print("uhal UDP error in reading FIFO")
 
-                    # Write data to disk
-                    try:
-                        f.write(struct.pack('<{}I'.format(len(data)), *data))
-                        data = []
-                    except:
-                        print("Error writing to file")
+                    ## Write data to disk
+                    #try:
+                    #    f.write(struct.pack('<{}I'.format(len(data)), *data))
+                    #    data = []
+                    #except:
+                    #    print("Error writing to file")
 
+        print(len(reads))
+        #hw.dispatch()
+        #for i, read in enumerate(reads):
+        #    #print(i)
+        #    data+= read.value()
         
         print("Resetting L1A rate back to 0")
         hw.getNode("SYSTEM.L1A_RATE").write(0)
@@ -166,16 +175,42 @@ def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superb
         # Read data that might still be in the FIFO
         occupancy = get_occupancy(hw, rb)
         print(f"Occupancy before last read: {occupancy}")
-        reads = [hw.getNode(f"DAQ_RB{rb}").readBlock(occupancy)]
+        num_blocks_to_read = occupancy // block
+        remainder = occupancy % block
+        print(num_blocks_to_read, remainder)
+        #reads = []
+        print(len(reads))
+        if (num_blocks_to_read)>0:
+            for x in range(num_blocks_to_read):
+                print(x)
+                reads += [hw.getNode(f"DAQ_RB{rb}").readBlock(block)]
+            #reads = [hw.getNode(f"DAQ_RB{rb}").readBlock(block) for x in range(num_blocks_to_read)]
+            reads += [hw.getNode(f"DAQ_RB{rb}").readBlock(remainder)]
+        else:
+            reads += [hw.getNode(f"DAQ_RB{rb}").readBlock(occupancy)]
+
+
+        print(len(reads))
         hw.dispatch()
-        for read in reads:
-            data += read.value()
+        for i, read in enumerate(reads):
+            #print(i)
+            data+= read.value()
+
+
+
+        #hw.dispatch()
+        #for read in reads:
+        #    data += read.value()
         #print(data)
         len_data += len(data)
+        print(len_data)
+        print(data[:10])
+        print(data[-10:])
 
 
         #print(data)
         occupancy = get_occupancy(hw, rb)
+        print(occupancy)
         while occupancy>0:
             print("Found stuff in FIFO. This should not have happened!")
             num_blocks_to_read = occupancy // block
@@ -281,6 +316,7 @@ if __name__ == '__main__':
                     'run':args.run,
                     'ext_l1a':args.ext_l1a,
                     'lock': args.lock,
+                    'verbose': True,
                 },
             )
         )

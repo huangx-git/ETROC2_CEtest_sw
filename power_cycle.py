@@ -2,6 +2,7 @@
 
 from cocina.PowerSupply import PowerSupply
 import argparse
+import time
 
 if __name__ == '__main__':
 
@@ -12,7 +13,7 @@ if __name__ == '__main__':
     argParser.add_argument('--ch', action='store', default="ch1,ch2", help="Channels of PSU to power cycle")
     args = argParser.parse_args()
 
-    assert args.ch in "ch1,ch2", "Only channel 1 and channel 2 are available."
+    assert args.ch in "ch1,ch2,ch3", "Only channel 1 and channel 2 are available."
 
     if args.ip == "192.168.2.1":
         name = "Readout"
@@ -29,8 +30,10 @@ if __name__ == '__main__':
     channels = [ch for ch in args.ch.split(',')]
 
     for ch in channels:
+        print("Channel", ch)
         if args.power_down:
             psu.power_down(channel=ch)
+            time.sleep(1.0)
         else:
             psu.cycle(channel=ch)
     if args.verbose:

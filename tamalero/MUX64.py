@@ -11,13 +11,13 @@ except ModuleNotFoundError:
 
 def channel_byname(channel_func):
     @wraps(channel_func)
-    def wrapper(mux64, channel):
+    def wrapper(mux64, channel, calibrate):
         if isinstance(channel, str):
             channel_dict = mux64.channel_mapping
             pin = channel_dict[channel]['pin']
-            return channel_func(mux64, pin)
+            return channel_func(mux64, pin, calibrate)
         elif isinstance(channel, int):
-            return channel_func(mux64, channel)
+            return channel_func(mux64, channel, calibrate)
         else:
             invalid_type = type(channel)
             raise TypeError(f"{channel_func.__name__} can only take positional arguments of type int or str, but argument of type {invalid_type} was given.")
@@ -25,16 +25,16 @@ def channel_byname(channel_func):
 
 def channel_bypin(channel_func):
     @wraps(channel_func)
-    def wrapper(mux64, value, channel):
+    def wrapper(mux64, value, channel, direct):
         if isinstance(channel, int):
             channel_dict = mux64.channel_mapping
             for ch in channel_dict.keys():
                 if channel_dict[ch]["pin"] == channel:
                     name = ch
                     break
-            return channel_func(mux64, value, ch)
+            return channel_func(mux64, value, ch, direct)
         elif isinstance(channel, str):
-            return channel_func(mux64, value, channel)
+            return channel_func(mux64, value, channel, direct)
         else:
             invalid_type = type(channel)
             raise TypeError(f"{channel_func.__name__} can only take positional arguments of type int or str, but argument of type {invalid_type} was given.")
@@ -82,13 +82,17 @@ class MUX64:
         self.channel_mapping = get_config(self.config, version=f'v{self.rbver}')['MUX64']['channel']
    
     @channel_bypin
-    def volt_conver(self,value,channel):
+    def volt_conver(self,value,channel,direct):
         if self.SCA:
-            voltage = (value / (2**12 - 1) ) * self.channel_mapping[channel]['conv']
+            voltage = (value / (2**12 - 1) )
+            if not direct:
+                voltage = voltage * self.channel_mapping[channel]['conv']
         elif self.LPGBT:
             #value_calibrated = value * self.LPGBT.cal_gain / 1.85 + (512 - self.LPGBT.cal_offset)
             #input_voltage = value_calibrated / (2**10 - 1) * self.LPGBT.adc_mapping['MUX64OUT']['conv']
-            voltage = value/(2**10 - 1) * self.get_conversion_factor(R1=self.channel_mapping[channel]['R1'], R2=self.channel_mapping[channel]['R2'])
+            voltage = value/(2**10 - 1)
+            if not direct:
+                voltage = voltage * self.get_conversion_factor(R1=self.channel_mapping[channel]['R1'], R2=self.channel_mapping[channel]['R2'])
         else:
             voltage = 0.0
         return voltage
@@ -118,7 +122,7 @@ class MUX64:
             self.LPGBT.set_gpio('MUXCNT6', s5)
     
     @channel_byname
-    def read_adc(self, channel):
+    def read_adc(self, channel, calibrate=False):
 
         #channel select
         self.select_channel(channel)
@@ -127,14 +131,14 @@ class MUX64:
             value = self.SCA.read_adc(0x12)
 
         if self.LPGBT:
-            value = self.LPGBT.read_adc(self.LPGBT.adc_mapping['MUX64OUT']['pin'])
+            value = self.LPGBT.read_adc(self.LPGBT.adc_mapping['MUX64OUT']['pin'], calibrate=calibrate)
         
         return value
 
-    def read_channel(self, channel):
-        value = self.read_adc(channel)
-        voltage = self.volt_conver(value,channel)
-        return voltage
+    def read_channel(self, channel, calibrate=True, direct=False):
+        value = self.read_adc(channel, calibrate=calibrate)
+        value = self.volt_conver(value,channel, direct=direct)
+        return value
 
     def read_channels(self): #read and print all adc values
         self.set_channel_mapping()
@@ -144,17 +148,19 @@ class MUX64:
         for channel in channel_dict.keys():
             pin = channel_dict[channel]['pin']
             comment = channel_dict[channel]['comment']
-            value = self.read_adc(pin)
+            value = self.read_adc(pin, calibrate=True)
+            value_raw = self.read_adc(pin, calibrate=False)
             voltage = self.read_channel(pin)
-            table.append([channel, pin, value, voltage, comment])
+            voltage_direct = self.read_channel(pin, direct=True)
+            table.append([channel, pin, value_raw, value, voltage_direct, voltage, comment])
 
-        headers = ["Channel","Pin", "Reading", "Voltage", "Comment"]
+        headers = ["Channel","Pin", "Reading (raw)", "Reading (calib)", "Voltage (direct)", "Voltage (conv)", "Comment"]
 
         if has_tabulate:
             print(tabulate(table, headers=headers,  tablefmt="simple_outline"))
         else:
             header_string = "{:<20}"*len(headers)
-            data_string = "{:<20}{:<20}{:<20.0f}{:<20.3f}{:<20}"
+            data_string = "{:<20}{:<20}{:<20.0f}{:<20.0f}{:<20.3f}{:<20.3f}{:<20}"
             print(header_string.format(*headers))
             for line in table:
                 print(data_string.format(*line))

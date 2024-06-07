@@ -10,7 +10,7 @@ MUX64:
         A1:
             pin: 0x01
             R1: 10
-            R2: 1
+            R2: 10
             sig_name: unsed
             comment: "lpGBT ADC5 (RT2), R2 values is approximate"
             terminal_input: False
