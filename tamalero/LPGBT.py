@@ -1613,7 +1613,7 @@ class LPGBT(RegParser):
                 self.rd_reg("LPGBT.RWF.CHIPID.CHIPID2") << 16 |\
                 self.rd_reg("LPGBT.RWF.CHIPID.CHIPID1") << 8 |\
                 self.rd_reg("LPGBT.RWF.CHIPID.CHIPID0")
-            return hex(chipid).upper()[2:]
+            return hex(self.chip_serial).upper()[2:]
 
     def get_power_up_state_machine(self, quiet=True):
 
