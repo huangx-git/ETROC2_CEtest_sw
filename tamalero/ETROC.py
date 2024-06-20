@@ -1769,8 +1769,15 @@ class ETROC():
         # kept for compatibility
         return self.read_temp(mode=mode)
 
+    def read_TempSen_status(self):
+        return self.rd_reg("TS_PD")==0
+
     def read_temp(self, mode = 'bits'):
-        self.power_up_TempSen()
+        if not self.read_TempSen_status():
+            if self.verbose:
+                print("Sensor was powered down, don't expect valid results")
+            self.power_up_TempSen()  # NOTE power up for next time
+            return 0
         #C1 and C2 need to be calibrated
         C2 = -0.0073
         C1 = 26
@@ -1779,7 +1786,7 @@ class ETROC():
             raw = self.rb.SCA.read_adc(self.vtemp, raw=True if mode=='bits' else False)
         else:
             raw = self.rb.MUX64.read_adc(self.vtemp, raw=True if mode=='bits' else False)
-        self.power_down_TempSen()
+        #self.power_down_TempSen()  # NOTE this was removed because powering up the temperature sensor can take a considerable amount of time
         if mode.lower() == 'bits' or mode.lower() == 'raw':
             return raw
         elif mode.lower().count('volt'):
