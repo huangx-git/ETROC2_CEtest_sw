@@ -64,7 +64,7 @@ def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superb
     hw = kcu.hw
 
     rate_setting = l1a_rate / 25E-9 / (0xffffffff) * 10000
-    print(rate_setting)
+    #print(rate_setting)
 
     print(f"Start data taking with rb {rb}")
 
@@ -81,6 +81,8 @@ def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superb
     # set l1a rate
     hw.getNode("SYSTEM.L1A_RATE").write(int(rate_setting))
     hw.dispatch()
+
+    time.sleep(0.05)
 
     if ext_l1a:
         # enable external trigger
@@ -99,6 +101,7 @@ def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superb
     reads = []
     with open(f_out, mode="wb") as f:
         if lock is not None:
+            # External lock file based DAQ
             iteration = 0
             Running = get_kcu_flag(lock=lock)
             while (Running == "False"):
@@ -134,6 +137,9 @@ def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superb
                         print("Error writing to file")
         else:
             while (start + run_time > time.time()):
+                # Time based DAQ
+                # We read the data into memory (small)
+                # and write to disk once we're done
                 num_blocks_to_read = 0
                 occupancy = get_occupancy(hw, rb)
                 num_blocks_to_read = occupancy // block
@@ -141,32 +147,16 @@ def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superb
 
                 # read the blocks
                 if (num_blocks_to_read)>0:
-                    if num_blocks_to_read>1 and verbose:
-                        print(occupancy, num_blocks_to_read)
+                    #if num_blocks_to_read>1 and verbose:
+                    #    print(occupancy, num_blocks_to_read)
                     try:
-                        #reads = []
-                        #for x in range(num_blocks_to_read):
-                        #    reads += [hw.getNode(f"DAQ_RB{rb}").readBlock(block)]
-                        reads += num_blocks_to_read * [hw.getNode(f"DAQ_RB{rb}").readBlock(block)]
-                        #hw.dispatch()
-                        #for read in reads:
-                        #    data += read.value()
+                        for x in range(num_blocks_to_read):
+                            reads += [hw.getNode(f"DAQ_RB{rb}").readBlock(block)]
+                            hw.dispatch()  # NOTE this is necessary
                     except uhal._core.exception:
                         print("uhal UDP error in reading FIFO")
 
-                    ## Write data to disk
-                    #try:
-                    #    f.write(struct.pack('<{}I'.format(len(data)), *data))
-                    #    data = []
-                    #except:
-                    #    print("Error writing to file")
 
-        print(len(reads))
-        #hw.dispatch()
-        #for i, read in enumerate(reads):
-        #    #print(i)
-        #    data+= read.value()
-        
         print("Resetting L1A rate back to 0")
         hw.getNode("SYSTEM.L1A_RATE").write(0)
         hw.dispatch()
@@ -177,54 +167,40 @@ def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superb
         print(f"Occupancy before last read: {occupancy}")
         num_blocks_to_read = occupancy // block
         remainder = occupancy % block
-        print(num_blocks_to_read, remainder)
-        #reads = []
-        print(len(reads))
         if (num_blocks_to_read)>0:
             for x in range(num_blocks_to_read):
-                print(x)
                 reads += [hw.getNode(f"DAQ_RB{rb}").readBlock(block)]
-            #reads = [hw.getNode(f"DAQ_RB{rb}").readBlock(block) for x in range(num_blocks_to_read)]
+                hw.dispatch()
             reads += [hw.getNode(f"DAQ_RB{rb}").readBlock(remainder)]
         else:
             reads += [hw.getNode(f"DAQ_RB{rb}").readBlock(occupancy)]
 
-
-        print(len(reads))
         hw.dispatch()
         for i, read in enumerate(reads):
-            #print(i)
             data+= read.value()
 
-
-
-        #hw.dispatch()
-        #for read in reads:
-        #    data += read.value()
-        #print(data)
         len_data += len(data)
-        print(len_data)
-        print(data[:10])
-        print(data[-10:])
+        # The two prints below can be useful to check if we miss the first or last event
+        # when we convert in the following steps
+        #print(data[:10])
+        #print(data[-10:])
 
-
-        #print(data)
+        # The FIFO should be empty by now, but we do check another time
         occupancy = get_occupancy(hw, rb)
-        print(occupancy)
         while occupancy>0:
             print("Found stuff in FIFO. This should not have happened!")
             num_blocks_to_read = occupancy // block
             last_block = occupancy % block
-            if num_blocks_to_read > 0:
-                print(occupancy, num_blocks_to_read, last_block)
             if (num_blocks_to_read or last_block):
-                reads = num_blocks_to_read * [hw.getNode(f"DAQ_RB{rb}").readBlock(block)]
+                reads = []
+                for x in range(num_blocks_to_read):
+                    reads += [hw.getNode(f"DAQ_RB{rb}").readBlock(block)]
+                    hw.dispatch()
                 reads += [hw.getNode(f"DAQ_RB{rb}").readBlock(last_block)]
                 hw.dispatch()
                 for read in reads:
                     data += read.value()
-            occupancy = hw.getNode(f"READOUT_BOARD_{rb}.RX_FIFO_OCCUPANCY").read()
-            hw.dispatch()
+            occupancy = get_occupancy(hw, rb)
 
         # Get some stats
         timediff = time.time() - start
@@ -244,7 +220,7 @@ def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superb
         print("Packet rate = %d Hz" % rate.value())
         print("Speed = %f Mbps" % speed)
 
-        # write to disk
+        # Actually write to disk
         f.write(struct.pack('<{}I'.format(len(data)), *data))
 
     hw.getClient().write(hw.getNode(f"READOUT_BOARD_{rb}.FIFO_RESET").getAddress(), 0x1)
@@ -277,7 +253,7 @@ if __name__ == '__main__':
     kcu = get_kcu(args.kcu)
 
     rbs = [int(x) for x in args.rb.split(',')]
-    print(rbs)
+    #print(rbs)
 
     # scanning the RBs can cause problems with the trigger link, not exactly sure why.
     # therefore, it's safer to just give a list of RBs that are connected
@@ -330,20 +306,5 @@ if __name__ == '__main__':
         time.sleep(1)
     print("Done with all streams")
 
-
-    #f_out = stream_daq(
-    #    kcu=kcu,
-    #    rb=0,
-    #    l1a_rate = args.l1a_rate,
-    #    run_time = args.run_time,
-    #    n_events = args.n_events,
-    #    run = args.run,
-    #    ext_l1a = args.ext_l1a,
-    #    lock = args.lock,
-    #)
-
-    #print(f"Run {args.run} has ended.")
-    #print(f"Stored data in file: {f_out}")
-    #nevents = kcu.read_node(f"READOUT_BOARD_{rb}.EVENT_CNT").value()
-    #print(f"Recorded {nevents=}")
+    print(f"Run {args.run} has ended.")
     ## NOTE this would be the place to also dump the ETROC configs
