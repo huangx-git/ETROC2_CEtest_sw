@@ -12,6 +12,11 @@ import time
 import pdb
 from time import sleep
 from tamalero.utils import get_kcu
+from yaml import load, dump
+try:
+    from yaml import CLoader as Loader, CDumper as Dumper
+except ImportError:
+    from yaml import Loader, Dumper
 
 here = os.path.dirname(os.path.abspath(__file__))
 
@@ -94,13 +99,17 @@ def stream_daq(kcu=None, rb=0, l1a_rate=0, run_time=10, n_events=1000, superbloc
         hw.getNode("SYSTEM.EN_EXT_TRIGGER").write(0x1)
         hw.dispatch()
 
+    log = {}
+
     start = time.time()
+    log['start_time'] = start
 
     len_data = 0
     data = []
 
     occupancy = 0
     f_out = f"ETROC_output/output_run_{run}_rb{rb}.dat"
+    log_out = f"ETROC_output/log_run_{run}_rb{rb}.yaml"
     #f_out = f"output/output_rb_{rb}_run_{run}_time_{start}.dat"  # USED TO BE THIS, keeping for reference and debugging
     occupancy_block = []
     reads = []
@@ -213,6 +222,7 @@ def stream_daq(kcu=None, rb=0, l1a_rate=0, run_time=10, n_events=1000, superbloc
         print(len_data)
         print(data[:10])
         print(data[-10:])
+        #len_data += len(data)  # NOTE this was the prev position
 
 
         #print(data)
@@ -233,6 +243,8 @@ def stream_daq(kcu=None, rb=0, l1a_rate=0, run_time=10, n_events=1000, superbloc
             occupancy = hw.getNode(f"READOUT_BOARD_{rb}.RX_FIFO_OCCUPANCY").read()
             hw.dispatch()
 
+        len_data += len(data)
+
         # Get some stats
         timediff = time.time() - start
         speed = 32*len_data  / timediff / 1E6
@@ -244,11 +256,15 @@ def stream_daq(kcu=None, rb=0, l1a_rate=0, run_time=10, n_events=1000, superbloc
 
         nevents = kcu.read_node(f"READOUT_BOARD_{rb}.EVENT_CNT").value()
 
-        print("L1A rate = %f kHz" % (l1a_rate_cnt.value()/1000.0))
-        print("Occupancy = %d words" % occupancy.value())
+        l1a_rate = l1a_rate_cnt.value()/1000.0
+        occ = occupancy.value()
+        lost_events = lost.value()
+        rate_log = rate.value()
+        print("L1A rate = %f kHz" % (l1a_rate))
+        print("Occupancy = %d words" % occ)
         print("Number of events = %d"%nevents)
-        print("Lost events = %d events" % lost.value())
-        print("Packet rate = %d Hz" % rate.value())
+        print("Lost events = %d events" % lost_events)
+        print("Packet rate = %d Hz" % rate_log)
         print("Speed = %f Mbps" % speed)
 
         # write to disk
@@ -261,6 +277,18 @@ def stream_daq(kcu=None, rb=0, l1a_rate=0, run_time=10, n_events=1000, superbloc
         # disable external trigger again
         hw.getNode("SYSTEM.EN_EXT_TRIGGER").write(0x0)
         hw.dispatch()
+
+    log['l1a_rate'] = l1a_rate
+    log['occupancy'] = occ
+    log['nevents'] = nevents
+    log['lost_events'] = lost_events
+    log['rate'] = rate_log
+    log['speed'] = speed
+    log['stop_time'] = time.time()
+
+    with open(log_out, 'w') as f:
+        dump(log, f)
+
 
     print(f"Data stored in {f_out}\n")
     write_run_done(run=run)

@@ -13,6 +13,7 @@ except ModuleNotFoundError:
     def emojize(in_string):
         return ''
 import os
+import glob
 
 here = os.path.dirname(os.path.abspath(__file__))
 there = "/media/etl/Storage"
@@ -25,63 +26,25 @@ def merge_words(res):
     else:
         return []
 
-#class Event:
-#    def __init__(self, event, l1counter, bcid, raw):
-#        self.event = event
-#        self.l1counter = l1counter
-#        self.bcid = bcid
-#        self.row = []
-#        self.col = []
-#        self.tot_code = []
-#        self.toa_code = []
-#        self.cal_code = []
-#        self.elink = []
-#        self.nhits = 0
-#        self.nhits_trailer = 0
-#        self.chipid = []
-#        self.raw = [raw]
-#
-#
-#    def add_hit(self, row, col, tot_code, toa_code, cal_code, elink, raw):
-#        self.row.append(row)
-#        self.col.append(col)
-#        self.tot_code.append(tot_code)
-#        self.toa_code.append(toa_code)
-#        self.cal_code.append(cal_code)
-#        self.elink.append(elink)
-#        self.raw.append(raw)
-#        self.nhits += 1
-#
-#    def parse_trailer(self, chipid, hits, crc, raw):
-#        self.nhits_trailer += hits
-#        self.chipid += [chipid]*hits
-#        self.crc = crc
-#        self.raw.append(raw)
-
-if __name__ == '__main__':
-
-    argParser = argparse.ArgumentParser(description = "Argument parser")
-    argParser.add_argument('--input', action='store', default='output_test2', help="Binary file to read from")
-    argParser.add_argument('--rbs', action='store', default='0', help="RB numbers")
-    argParser.add_argument('--skip_trigger_check', action='store_true', help="Skip the double trigger check.")
-    argParser.add_argument('--dump_mask', action='store_true', help="Skip the double trigger check.")
-    argParser.add_argument('--verbose', action='store_true', help="Print every event number.")
-    argParser.add_argument('--force', action='store_true', help="Don't care about inconsistencies, force produce output.")
-    args = argParser.parse_args()
-
-    rbs = args.rbs.split(',')
-
-    verbose = args.verbose
+def data_dumper(
+        input_file,
+        #output_file,
+        verbose=False,
+        skip_trigger_check=False,
+        force=False,
+):
+    # NOTE find all files (i.e. layers) for the specified input file
     df = DataFrame('ETROC2')
-
-    do_double_trigger_check = not args.skip_trigger_check
 
     events_all_rb = []
     all_runs_good = True
 
-    for irb, rb in enumerate(rbs):
+    in_files = glob.glob(input_file.replace('rb0', 'rb*'))
+    out_files = [x.replace('.dat', '.json') for x in in_files]
 
-        f_in = f'{here}/ETROC_output/output_run_{args.input}_rb{rb}.dat'
+    for irb, f_in in enumerate(in_files):
+
+        #f_in = f'{here}/ETROC_output/output_run_{args.input}_rb{rb}.dat'
 
         with open(f_in, 'rb') as f:
             print("Reading from {}".format(f_in))
@@ -172,7 +135,7 @@ if __name__ == '__main__':
                     #hit_counter = 0
                     #if (abs(d['bcid']-bcid_t)<40) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
                     #if (abs(d['bcid']-bcid_t)<500) and (d['bcid'] - bcid_t)>0 and not (d['bcid'] == bcid_t):
-                    if (((abs(d['bcid']-bcid_t)<150) or (abs(d['bcid']+3564-bcid_t)<50)) and not (d['bcid'] == bcid_t) and do_double_trigger_check):
+                    if (((abs(d['bcid']-bcid_t)<150) or (abs(d['bcid']+3564-bcid_t)<50)) and not (d['bcid'] == bcid_t) and not skip_trigger_check):
                         skip_event = True
                         print("Skipping event", d['l1counter'], d['bcid'], bcid_t)
                         skip_counter += 1
@@ -222,9 +185,11 @@ if __name__ == '__main__':
                 raw[-1].append(d['raw_full'])
                 nhits[-1] += 1
                 if nhits[-1] > 256:
-                    print("This event already has more than 256 events. Breaking.")
-                    bad_run = True
-                    break
+                    print("This event already has more than 256 hits. Skipping event.")
+                    skip_event = True
+                    continue
+                    #bad_run = True
+                    #break
 
             if t == 'trailer' and t_tmp != 'trailer':
                 trailers.append(d['raw_full'])
@@ -248,7 +213,7 @@ if __name__ == '__main__':
             t_tmp = t
 
 
-        if not bad_run or args.force:
+        if not bad_run or force:
             print("Zipping")
             events = ak.Array({
                 'event': event,
@@ -283,8 +248,11 @@ if __name__ == '__main__':
             else:
                 print(f" - found {header_counter} headers and {trailer_counter} trailers. Please check. " + emojize(":warning:"))
 
-            with open(f"ETROC_output/{args.input}_rb{rb}.json", "w") as f:
+            with open(out_files[irb], "w") as f:
                 json.dump(ak.to_json(events), f)
+
+            #with open(f"ETROC_output/{args.input}_rb{rb}.json", "w") as f:
+            #    json.dump(ak.to_json(events), f)
 
             events_all_rb.append(events)
 
@@ -301,8 +269,8 @@ if __name__ == '__main__':
             mask = []
             #if rb=='0':
             #    mask = [(2,4), (3,4), (4,6), (3,11), (6,12)]
-            if rb=='1':
-                mask = [(4,0)]
+            #if rb=='1':
+            #    mask = [(4,0)]
             for ev in events:
                 for row, col in zip(ev.row, ev.col):
                     if (row, col) not in mask:
@@ -313,14 +281,15 @@ if __name__ == '__main__':
             ax.set_ylabel(r'$Row$')
             ax.set_xlabel(r'$Column$')
             fig.colorbar(cax,ax=ax)
-            fig.savefig(f"ETROC_output/{args.input}_rb{rb}_heatmap.pdf")
-            fig.savefig(f"ETROC_output/{args.input}_rb{rb}_heatmap.png")
+            plot_file = f_in.replace('.dat', '_heatmap.png')
+            fig.savefig(plot_file)
+            #fig.savefig(f"ETROC_output/{args.input}_rb{rb}_heatmap.png")
 
             # FIXME this only works for a single ETROC right now
-            if args.dump_mask:
-                with open(f"{here}/ETROC_output/mask_run{args.input}.yaml", 'w') as f:
-                    yaml.dump(hits.tolist(), f)
-                    #yaml.dump(hits, f)
+            #if args.dump_mask:
+            #    with open(f"{here}/ETROC_output/mask_run{args.input}.yaml", 'w') as f:
+            #        yaml.dump(hits.tolist(), f)
+            #        #yaml.dump(hits, f)
 
             total_hits = np.sum(hits)
             print("Total number of hits:", total_hits)
@@ -328,8 +297,8 @@ if __name__ == '__main__':
         else:
             print("Bad run detected. Not creating a json file.")
             all_runs_good = False
-            if os.path.isfile(f"{here}/ETROC_output/output_run_{args.input}_rb{rb}.json"):
-                os.remove(f"{here}/ETROC_output/output_run_{args.input}_rb{rb}.json")
+            #if os.path.isfile(f"{here}/ETROC_output/output_run_{args.input}_rb{rb}.json"):
+            #    os.remove(f"{here}/ETROC_output/output_run_{args.input}_rb{rb}.json")
 
 
     if len(events_all_rb)>1:
@@ -468,3 +437,30 @@ if __name__ == '__main__':
         fig.colorbar(cax,ax=ax)
         fig.savefig(f"ETROC_output/{args.input}_layers_heatmap.pdf")
         fig.savefig(f"ETROC_output/{args.input}_layers_heatmap.png")
+
+    if not bad_run:
+        return len(events)
+    else:
+        return 0
+
+
+if __name__ == '__main__':
+
+    argParser = argparse.ArgumentParser(description = "Argument parser")
+    argParser.add_argument('--input_file', action='store', default='output_test2', help="Binary file to read from")
+    argParser.add_argument('--rbs', action='store', default='0', help="RB numbers")
+    argParser.add_argument('--skip_trigger_check', action='store_true', help="Skip the double trigger check.")
+    argParser.add_argument('--dump_mask', action='store_true', help="Skip the double trigger check.")
+    argParser.add_argument('--verbose', action='store_true', help="Print every event number.")
+    argParser.add_argument('--force', action='store_true', help="Don't care about inconsistencies, force produce output.")
+    args = argParser.parse_args()
+
+    rbs = args.rbs.split(',')
+
+    nevents = data_dumper(
+        args.input_file,
+        #output_file,
+        verbose=args.verbose,
+        skip_trigger_check=args.skip_trigger_check,
+        force=args.force,
+    )

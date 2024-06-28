@@ -25,7 +25,9 @@ if __name__ == '__main__':
     argParser.add_argument('--etrocs', action='store', default='0', help="ETROCs to read from")
     argParser.add_argument('--change_timing', action='store', type=int, default=-1, help="ETROCs to read from")
     argParser.add_argument('--mask', action='store', default=None, help="Pixel mask to apply to a single ETROC")
+    argParser.add_argument('--run', action='store', default=None, help="Run number for book keeping")
     argParser.add_argument('--temperature', action='store_true', help="Read temperature from ETROC")
+    argParser.add_argument('--time', action='store_true', help="Show time stamp")
     argParser.add_argument('--dark_mode', action='store_true', help="Turn off all LEDs on the RB")
     argParser.add_argument('--light_mode', action='store_true', help="Turn on all LEDs on the RB")
     argParser.add_argument('--bitslip', action='store_true', help="Rerun the bitslip")
@@ -68,8 +70,16 @@ if __name__ == '__main__':
         if args.bitslip:
             rb.rerun_bitslip()
 
+    s=time.gmtime(time.time())
+    current=time.strftime("%Y-%m-%d %H:%M:%S", s)
+    ret_string = ''
+    if args.time:
+        ret_string += f'{current} '
+    if args.run != None:
+        ret_string += f'{args.run} '
     if args.temperature:
-        print(temps)
+        ret_string += str(temps)
+        print(ret_string)
 
     if args.mask:
         rb = ReadoutBoard(rb=rbs[0], trigger=True, kcu=kcu, config=args.configuration, verbose=False, poke=True)

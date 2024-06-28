@@ -38,6 +38,7 @@ if __name__ == '__main__':
     argParser.add_argument('--offset', action='store', default='auto', help="The offset from the baseline")
     argParser.add_argument('--delay', action='store', default=15, type=int, help="Set the L1A delay")
     argParser.add_argument('--power_mode', action='store', default='high', choices=['low', 'high'], help="ETROC power mode")
+    argParser.add_argument('--dark_mode', action='store_true', help="Turn all LEDs off that can be turned off.")
     args = argParser.parse_args()
 
 
@@ -169,6 +170,11 @@ if __name__ == '__main__':
                                 etroc.physics_config(offset=offset, L1Adelay=int(args.delay), subset=test_pixels, out_dir=out_dir, powerMode=pm)
                     for etroc in mod.ETROCs:
                         etroc.reset()
+
+        if args.dark_mode:
+            for rb in rbs:
+                rbs[rb].dark_mode()
+
 
         fifos = []
         for rb in rbs:
