@@ -5,6 +5,7 @@ import json
 import awkward as ak
 import numpy as np
 import argparse
+import hist
 
 if __name__ == '__main__':
 
@@ -21,24 +22,24 @@ here = os.path.dirname(os.path.abspath(__file__))
 files_to_stack = []
 stacked = ak.Array([])
 
-fail_string=""
+fail_string="_missing"
 fail_list=[]
 
 #TODO: reconfigure to work with glob for better flexibility in names
 if args.specific_runs:
     for run in args.specific_runs:
-        with open("{}/../ETROC_output/{}_rb{}.json".format(here, run, args.rb), "r") as f:
+        with open("{}/../ETROC_output/output_run_{}_rb{}.json".format(here, run, args.rb), "r") as f:
             files_to_stack.append(ak.from_json(json.load(f)))
         print("Run {} contains {} events".format(run,len(files_to_stack[-1])))
 else:
     for run in range(args.first_run, args.last_run+1):
         try:
-            with open("{}/../ETROC_output/{}_rb{}.json".format(here, run, args.rb), "r") as f:
+            with open("{}/../ETROC_output/output_run_{}_rb{}.json".format(here, run, args.rb), "r") as f:
                 files_to_stack.append(ak.from_json(json.load(f)))
             print("Run {} contains {} events".format(run,len(files_to_stack[-1])))
         except:
             print("Run {} failed to be added to the stack, will continue without it".format(run))
-            fail_string+="_missing_{}".format(run)
+            fail_string+="_{}".format(run)
             fail_list.append(run)
 
 stacked = ak.concatenate(files_to_stack)
@@ -75,13 +76,25 @@ elif args.module == '106':
     #masked = [(12,2),(4,15),(5,15)]
     masked = [(10,4),(5,15)]
     #masked = []
+elif args.module == '111':
+    masked = [(3,6)]
 else:
     masked = []
+
+
+row_axis = hist.axis.Integer(0, 15, name='row', label=r"row")
+col_axis = hist.axis.Integer(0, 15, name='col', label=r"col")
+
+hit_hist = hist.Hist(row_axis, col_axis)
 
 for event in stacked:
     for row, col in zip(event.row, event.col):
         if not (row, col) in masked:
             hits[row][col] += 1
+            hit_hist.fill(row=row, col=col)
+
+total_hits = np.sum(hits)
+print(f"Total number of hits: {total_hits}")
 
 fig, ax = plt.subplots(1,1,figsize=(15,15))
 cax = ax.matshow(hits)
@@ -94,10 +107,18 @@ for i in range(16):
         text = ax.text(j, i, int(hits[i,j]),
                 ha="center", va="center", color="w", fontsize="xx-small")
 
+out_name = specific_name if args.specific_runs else stacked_name
+
 fig.colorbar(cax,ax=ax, label='Hits')
-if args.specific_runs:
-    fig.savefig(specific_name+".pdf")
-    fig.savefig(specific_name+".png")
-else:
-    fig.savefig(stacked_name+".pdf")
-    fig.savefig(stacked_name+".png")
+fig.savefig(out_name+".pdf")
+fig.savefig(out_name+".png")
+
+
+fig, ax = plt.subplots(1,1,figsize=(15,15))
+hit_hist[{'row':sum}].plot1d(ax=ax)
+fig.savefig(out_name+"_col.png")
+
+
+fig, ax = plt.subplots(1,1,figsize=(15,15))
+hit_hist[{'col':sum}].plot1d(ax=ax)
+fig.savefig(out_name+"_row.png")
