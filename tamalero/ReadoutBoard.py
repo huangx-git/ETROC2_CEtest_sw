@@ -71,7 +71,8 @@ class ReadoutBoard:
                 self.SCA.connect()
                 self.SCA.configure_control_registers()
                 self.SCA.config_gpios()  # this sets the directions etc according to the mapping
-                print(" > GBT-SCA detected and configured")
+                if self.verbose:
+                    print(" > GBT-SCA detected and configured")
             except TimeoutError:
                 self.ver = 3
                 self.DAQ_LPGBT.update_rb_ver(self.ver)
@@ -79,7 +80,8 @@ class ReadoutBoard:
             if self.ver > 2:
                 self.MUX64 = MUX64(rb=self.rb, ver=1, config=self.config, rbver=self.ver, LPGBT=self.DAQ_LPGBT)
 
-        print(f" > Readout Board version detected: {self.ver}")
+        if self.verbose:
+            print(f" > Readout Board version detected: {self.ver}")
 
         self.configuration = get_config(self.config, version=f'v{self.ver}')
 
