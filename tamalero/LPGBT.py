@@ -719,8 +719,10 @@ class LPGBT(RegParser):
             pin = adc_dict[adc_reg]['pin']
             comment = adc_dict[adc_reg]['comment']
             value = self.read_adc(pin)
+            value_raw = self.read_adc(pin, calibrate=False)
             #value_calibrated = value * self.cal_gain / 1.85 + (512 - self.cal_offset)  # FIXME this was applying twice
-            input_voltage = value / (2**10 - 1) * adc_dict[adc_reg]['conv']
+            input_voltage_direct = value / (2**10 - 1)
+            input_voltage = input_voltage_direct * adc_dict[adc_reg]['conv']
             if check:
                 try:
                     min_v = adc_dict[adc_reg]['min']
@@ -730,20 +732,20 @@ class LPGBT(RegParser):
                         will_fail = True
                 except KeyError:
                     status = "N/A"
-                table.append([adc_reg, pin, value, input_voltage, status, comment])
+                table.append([adc_reg, pin, value_raw, value, input_voltage_direct, input_voltage, status, comment])
             else:
-                table.append([adc_reg, pin, value, input_voltage, comment])
+                table.append([adc_reg, pin, value_raw, value, input_voltage_direct, input_voltage, comment])
 
         if check:
-            headers = ["Register","Pin", "Reading", "Voltage", "Status", "Comment"]
+            headers = ["Register","Pin", "Reading (raw)", "Reading (calib)", "Voltage (direct)", "Voltage (conv)", "Status", "Comment"]
         else:
-            headers = ["Register","Pin", "Reading", "Voltage", "Comment"]
+            headers = ["Register","Pin", "Reading (raw)", "Reading (calib)", "Voltage (direct)", "Voltage (conv)", "Comment"]
 
         if has_tabulate:
             print(tabulate(table, headers=headers,  tablefmt="simple_outline"))
         else:
             header_string = "{:<20}"*len(headers)
-            data_string = "{:<20}{:<20}{:<20.0f}{:<20.3f}{:<20}"
+            data_string = "{:<20}{:<20}{:<20.0f}{:<20.0f}{:<20.3f}{:<20.3f}{:<20}"
             if check:
                 data_string += "{:<20}"
             print(header_string.format(*headers))
@@ -1611,7 +1613,7 @@ class LPGBT(RegParser):
                 self.rd_reg("LPGBT.RWF.CHIPID.CHIPID2") << 16 |\
                 self.rd_reg("LPGBT.RWF.CHIPID.CHIPID1") << 8 |\
                 self.rd_reg("LPGBT.RWF.CHIPID.CHIPID0")
-            return hex(chipid).upper()[2:]
+            return hex(self.chip_serial).upper()[2:]
 
     def get_power_up_state_machine(self, quiet=True):
 

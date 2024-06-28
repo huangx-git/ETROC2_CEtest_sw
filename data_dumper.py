@@ -322,6 +322,9 @@ if __name__ == '__main__':
                     yaml.dump(hits.tolist(), f)
                     #yaml.dump(hits, f)
 
+            total_hits = np.sum(hits)
+            print("Total number of hits:", total_hits)
+
         else:
             print("Bad run detected. Not creating a json file.")
             all_runs_good = False

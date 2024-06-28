@@ -89,58 +89,62 @@ The threshold scans will produce S-curves for each pixel.
 
 ### With a physical Readout Board
 
-A minimal example of usage of this package with a physical readout board (v1 or v2) is given in `test_tamalero.py`, which can be run as:
-`ipython3 -i test_tamalero.py`
+A minimal example of usage of this package with a physical readout board (v1, v2 or v3) is given in `test_tamalero.py`, which can be run as:
+`ipython3 -i test_tamalero.py -- --kcu 192.168.0.10`
 
 The code is organized similar to the physical objects.
-The 0th readout board object can be initialized with
-```
-rb_0 = ReadoutBoard(0, trigger=False, flavor='small')
-```
-where `trigger=False` defines that we don't deal with the trigger lpGBT (not yet fully implemented).
-The current RB prototype is of the small flavor (3 modules, 12 ETROCs). We anticipate implementing different flavors in the future.
 
-To interact with `rb_0` we need to initialize a control board (KCU105)
+You can easily interact with all frontend and backend components using interactive python (ipython is recommended). Start an ipython session, e.g. `ipython3` and follow the instructions below.
+
+To interact with the ETL front end (Readout Board and ETROC) we need to initialize a control board (KCU105) at its correct IP address (192.168.0.10 in this example, the default IP address of KCU boards in our setup):
+```python
+from tamalero.utils import get_kcu
+
+kcu = get_kcu(
+                "192.168.0.10",
+                control_hub = True,
+                host = 'localhost',
+                verbose = False,
+            )
 ```
-kcu = KCU(name="my_device",
-          ipb_path="chtcp-2.0://localhost:10203?target=192.168.0.11:50001",
-          adr_table="module_test_fw/address_tables/etl_test_fw.xml",
-	  dummy=False)
-```
-and connect it to the readout board
-```
-rb_0.connect_KCU(kcu)
-```
+This function will automatically download the appropriate version of the address table of the KCU Firmware.
+You can poll the status of the KCU by using `kcu.status()`.
 
 **Note:** Control hub is now required for using the KCU, as shown in the default `ipb_path` of the KCU (i.e. `"chtcp-2.0://localhost:10203?target=192.168.0.11:50001"` instead of `"ipbusudp-2.0://192.168.0.11:50001"`). `tamalero` won't run otherwise.
 Control hub is part of the IPbus package and can be started with e.g. `/opt/cactus/bin/controlhub_start`.
 
-We can then configure the RB and get a status of the lpGBT:
-```
-rb_0.configure()
-rb_0.DAQ_LPGBT.status()
+You can then instantiate a readout board. The default number is "0" if the RB is connected through the SFP optical transceiver module. For connections through the KCU Firefly Mezzanine board, please refer to documentation [here](docs/multi_rb.md).
+The configuration corresponds to what is connected to the RB: nothing connected ("default"), module v0/v0b/v1 ("modulev0"/"modulev0b"/"modulev1") or emulator ("emulator").
+``` python
+from tamalero.ReadoutBoard import ReadoutBoard
+rb = ReadoutBoard(
+                    0,
+                    kcu = kcu,
+                    config = "modulev1",
+                )
 ```
 
-Now we're all set! Some high level functions are currently being implemented.
+Now we're all set to use the readout board!
+One can interact with the lpGBT and SCA directly, either via `rb.DAQ_LPGBT` or `rb.SCA`.
+The classes are defined in [here](https://gitlab.cern.ch/cms-etl-electronics/module_test_sw/-/tree/master/tamalero).
+
+Some high level functions are implemented to simplify configuration and monitoring.
 An example is the following:
 ```
 rb_0.read_temp(verbose=1)
 ```
 that reads the temperature of all the available sensors on the board. The output looks like this
 ```
-V_ref is set to: 0.900 V
-
-Temperature on RB RT1 is: 33.513 C
-Temperature on RB RT2 is: 34.138 C
-Temperature on RB SCA is: 32.668 C
+Temperature on RB RT1 is: 28.8 C
+Temperature on RB RT2 is: 32.0 C
+Temperature on RB SCA is: 30.1 C
+Temperature on RB VTRX is: 29.0 C
 ```
 
-One can interact with the lpGBT and SCA directly, either via `rb_0.DAQ_LPGBT` or `rb_0.SCA`.
-The classes are defined in [here](https://gitlab.cern.ch/cms-etl-electronics/module_test_sw/-/tree/master/tamalero).
 
 The current reading of the SCA ADCs can be obtained with
 ```
-rb_0.SCA.read_adcs()
+rb.SCA.read_adcs()
 ```
 which reads all ADC lines that are connected, according to the mapping given in [configs/SCA_mapping.yaml](https://gitlab.cern.ch/cms-etl-electronics/module_test_sw/-/blob/master/configs/SCA_mapping.yaml) or [configs/SCA_mapping_v2.yaml](https://gitlab.cern.ch/cms-etl-electronics/module_test_sw/-/blob/master/configs/SCA_mapping_v2.yaml) depending on the readout board version.
 An example is given here:
@@ -160,6 +164,29 @@ adc:
         flavor: small
         comment: monitoring for BV line 0
 ```
+
+### Connecting an ETROC on module v0 or v1
+
+With a readout board instance initialized in the right configuration (modulev0/v0b/v1), a physically connected ETROC chip can be instantiated like this:
+
+``` python
+from tamalero.Module import Module
+module = Module(
+                rb,
+                i = 1,
+                moduleid = 100,
+)
+```
+`i` corresponds to the slot the module is connected to on the RB, where counting at 1 starts with the slot below the VTRx+ optical transceiver.
+The connection status can be shown using `module.show_status()`.
+All ETROCs that are successfully connected will be added to the `module.ETROCs` list, and will be configured in a default configuration.
+
+``` python
+my_etroc = module.ETROCs[0]
+```
+All configuration and status registers can be used, and direct interaction works through the `rd_reg` and `wr_reg` functions. For in-pixel registers, a row and column should be specified.
+
+
 ## Developing the code
 
 While developing software for `tamalero`, it is necessary to test new features with the `tests/startup.sh` script before opening a merge request. Both `tamalero` (`setup.sh`) and Vivado must be sourced first. To use `startup.sh`, source the script and pass the appropriate options:
@@ -179,30 +206,6 @@ It is generally recommended to power cycle the Power Supply Units when testing a
 source tests/startup.sh -i 210308B0B4F5 -k 192.168.0.12 -p 192.168.2.3:ch2
 ```
 
-## Fermilab test beam simulation
-
-To use the Fermilab test beam simulation, we rely on the `Beam.py` class and the `beam_utils.py` auxiliary functions. A simple script `test_beam.py` is available for quick testing. In addition to the simulation, the Beam class implements a UI monitoring dashboard for real-time checks of useful RB parameters. To use `test_beam.py`, pass the appropriate options:
-```
-Usage:
-        test_beam
-       Options:
-        [--kcu KCU]              Specify the IP address of KCU. Default: 192.168.0.11
-        [--host HOST]		 Specify host for control hub. Default: localhost
-        [--l1a_rate L1A_RATE]    Level-1 Accept rate in kHz. Default: 1000
-        [--time TIME]            Time in minutes that the beam will run. Default: 1
-        [--verbosity]            Verbosity information
-        [--dashboard]            UI Monitoring dashboard on?
-        [--configuration]        Specify the readout board config file from "default, emulator, modulev0". Default: default
-```
-`test_beam.py` will simulate Fermilab's test beam of 4s on-time and 56s off-time spills, at the specified L1A rate and number of spills. The simulation will produce a compressed zip file after each spill and save it in the `outputs` directory with a time stamp. The dashboard currently monitors the number of cycles (i.e. spills), L1A rate count, FIFO occupancy, thermistor temperatures (RT1, RT2, SCA and VTRX), lost FIFO words and packet rate. The dashboard heavily relies on the [Rich Python library](https://github.com/Textualize/rich); for development of the dashboard see [docs](https://rich.readthedocs.io/en/stable/introduction.html).
-
-### Test beam output
-
-![](output/TestBeamVerbosity.png)
-
-### UI monitoring dashboard output
-
-![](output/TestBeamDashboard.png)
 
 ## Notebook
 
@@ -246,7 +249,6 @@ cd module_test_sw
 source setup.sh
 ipython -i test_tamalero.py -- --control_hub --kcu 192.168.0.10 --verbose --configuration modulev0 --power_up
 ```
-
 
 ## Useful block diagrams for connectivity and data flow
 

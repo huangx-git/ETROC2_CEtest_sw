@@ -66,19 +66,26 @@ if __name__ == '__main__':
     print(emojize(':atom_symbol:'), " Telescope code draft")
     print(f"Using time stamp: {timestamp}")
 
+    PSUs = {}
     if args.power_up:
         from cocina.PowerSupply import PowerSupply
         print(emojize(':battery:'), " Power Supply")
-        #for layer in config:
-        #    if "psu" in config[layer]:
-        #        for psu_ip, psu_ch in config[layer]["psu"]:
-        #            psu_tmp = PowerSupply(ip=psu_ip, name='PSU')
-        #            psu_tmp.power_up(psu_ch)
+        for layer in config:
+            if "psu" in config[layer]:
+                for psu_ip, psu_ch in config[layer]["psu"]:
+                    if psu_ip not in PSUs:
+                        PSUs[psu_ip] = PowerSupply(ip=psu_ip, name='PSU')
+                    print(f"Powering up channel {psu_ch} of PSU at {psu_ip}")
+                    #psu_tmp = PowerSupply(ip=psu_ip, name='PSU')
+                    PSUs[psu_ip].power_up(psu_ch)
+                    time.sleep(1)  # PSUs are sloooow
         #            del psu_tmp  # ???
 
-        psu1 = PowerSupply(ip='192.168.2.1', name='PS1')
-        psu1.power_up('ch1')
-        psu1.power_up('ch2')
+        for ip in PSUs:
+            PSUs[ip].monitor()
+        #psu1 = PowerSupply(ip='192.168.2.1', name='PS1')
+        #psu1.power_up('ch1')
+        #psu1.power_up('ch2')
         #psu2 = PowerSupply(ip='192.168.2.2', name='PS2')
         #psu2.power_up('ch1')
         time.sleep(1)

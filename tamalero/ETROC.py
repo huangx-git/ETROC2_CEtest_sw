@@ -240,8 +240,12 @@ class ETROC():
             n_bits_total += n_bits[i]
         return tmp
 
-    def print_reg_doc(self, reg):
-        print(self.regs[reg]['doc'])
+    def print_reg_doc(self, reg=None):
+        if reg==None:
+            for reg in self.regs:
+                self.print_reg_doc(reg)
+        else:
+            print("{:20s}".format(reg), [hex(x) for x in self.regs[reg]['address']], "DOC:", self.regs[reg]['doc'])
 
     def reset_perif(self):
         for reg in self.regs:
@@ -598,11 +602,7 @@ class ETROC():
         subset is either False or a list of pixels, [(1,1), (1,2), ..]
         '''
         if self.is_connected():
-            if powerMode == 'high':
-                print("Making ETROC go wroom!")
-                self.wr_reg("IBSel", 0, broadcast=True)  # set into high power mode (I1 in the manual)
-            else:
-                self.wr_reg("IBSel", 7, broadcast=True)  # set into low power mode (I4 in the manual, default)
+            self.set_power_mode(powerMode)
 
             if L1Adelay == None:
                 L1Adelay = self.QINJ_delay
@@ -820,6 +820,21 @@ class ETROC():
         else:
             return -1
 
+    def internal_threshold_scan(self, row=0, col=0, dac_start=0, dac_stop=1000, dac_step=1):
+        from tqdm import tqdm
+        self.setup_accumulator(row=row, col=col)
+        N_steps  = int((dac_stop-dac_start)/dac_step)+1 # number of steps
+        dac_axis = np.linspace(dac_start, dac_stop, N_steps)
+        results = []
+        with tqdm(total=N_steps, bar_format='{l_bar}{bar:20}{r_bar}{bar:-20b}') as pbar:
+            for i in range(dac_start, dac_stop+1, dac_step):
+                results.append(
+                    self.check_accumulator(DAC=i, row=row, col=col)
+                )
+                pbar.update()
+        run_results = np.array(results)
+        return [dac_axis, run_results]
+
     def get_elink_for_pixel(self, row, col):
         elinks = self.elinks[0] + self.elinks[1]
         slaves = len(self.elinks[0])*[False] + len(self.elinks[1])*[True]
@@ -833,6 +848,30 @@ class ETROC():
     # ***********************
     # *** IN-PIXEL CONFIG ***
     # ***********************
+
+    def set_power_mode(self, mode="high", row=0, col=0, broadcast=True):
+        if mode == "high":
+            self.wr_reg("IBSel", 0, row=row, col=col, broadcast=broadcast)  # set into high power mode (I1 in the manual)
+        elif mode == "medium":
+            self.wr_reg("IBSel", 2, row=row, col=col, broadcast=broadcast)  # set into medium power mode (I2 in the manual)
+        elif mode == "low":
+            self.wr_reg("IBSel", 5, row=row, col=col, broadcast=broadcast)  # set into low power mode (I3 in the manual)
+        elif mode == "default":
+            self.wr_reg("IBSel", 7, row=row, col=col, broadcast=broadcast)  # set into default power mode (I4 in the manual)
+        else:
+            print(f"Don't know power mode {mode}")
+        return self.rd_reg("IBSel", row=row, col=col)
+
+    def get_power_mode(self, row=0, col=0):
+        res = self.rd_reg("IBSel", row=row, col=col)
+        if res == 0:
+            return "high"
+        elif res in [1,2,4]:
+            return "medium"
+        elif res in [3,5,6]:
+            return "low"
+        elif res == 7:
+            return "default"
 
     # (FOR ALL PIXELS) set/get load capacitance of preamp first stage
     # 0, 80, 80, or 160 fC FIXME typo? 80 appears twice in doc
@@ -1728,7 +1767,18 @@ class ETROC():
         self.wr_reg('TS_PD', 1)
 
     def check_temp(self, mode = 'bits'):
-        self.power_up_TempSen()
+        # kept for compatibility
+        return self.read_temp(mode=mode)
+
+    def read_TempSen_status(self):
+        return self.rd_reg("TS_PD")==0
+
+    def read_temp(self, mode = 'bits'):
+        if not self.read_TempSen_status():
+            if self.verbose:
+                print("Sensor was powered down, don't expect valid results")
+            self.power_up_TempSen()  # NOTE power up for next time
+            return 0
         #C1 and C2 need to be calibrated
         C2 = -0.0073
         C1 = 26
@@ -1737,11 +1787,13 @@ class ETROC():
             raw = self.rb.SCA.read_adc(self.vtemp, raw=True if mode=='bits' else False)
         else:
             raw = self.rb.MUX64.read_adc(self.vtemp, raw=True if mode=='bits' else False)
-        self.power_down_TempSen()
-        if mode == 'bits':
+        #self.power_down_TempSen()  # NOTE this was removed because powering up the temperature sensor can take a considerable amount of time
+        if mode.lower() == 'bits' or mode.lower() == 'raw':
             return raw
-        elif mode == 'volt':
+        elif mode.lower().count('volt'):
             return raw
+        elif mode.lower() == 'celsius':
+            return (raw - C2)*qoK/C1 - 273.15
         else:
             return (raw - C2)*qoK/C1
 

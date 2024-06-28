@@ -33,7 +33,7 @@ if __name__ == '__main__':
     args = argParser.parse_args()
 
     rbs = [int(m) for m in args.rbs.split(',')]
-    modules = [int(m)+1 for m in args.modules.split(',')]
+    modules = [int(m) for m in args.modules.split(',')]
     etrocs = [int(m) for m in args.etrocs.split(',')]
     temps = []
 
