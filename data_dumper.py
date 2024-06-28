@@ -2,6 +2,7 @@
 import struct
 import argparse
 import numpy as np
+import pandas as pd
 import awkward as ak
 import json
 import yaml
@@ -74,6 +75,7 @@ if __name__ == '__main__':
 
     events_all_rb = []
     all_runs_good = True
+    missing_l1counter = []
 
     for irb, rb in enumerate(rbs):
 
@@ -117,7 +119,8 @@ if __name__ == '__main__':
         skip_event = False
         skip_counter = 0
         bad_run = False
-
+        last_missing = False
+        elink_report = {}
 
         uuid = []
         all_raw = []
@@ -125,6 +128,8 @@ if __name__ == '__main__':
         t_tmp = None
 
         for t, d in unpacked_data:
+            if d['elink'] not in elink_report:
+                elink_report[d['elink']] = {'nheader':0, 'nhits':0, 'ntrailer':0}
             sus = False
             if d['raw_full'] in all_raw[-50:] and not t in ['trailer', 'filler']:  # trailers often look the same
                 #print("Potential double counting", t, d)
@@ -135,6 +140,7 @@ if __name__ == '__main__':
 
 
             if t == 'header':
+                elink_report[d['elink']]['nheader'] += 1
                 hit_counter = 0
                 uuid_tmp = d['l1counter'] | d['bcid']<<8
                 headers.append(d['raw'])
@@ -143,6 +149,10 @@ if __name__ == '__main__':
                 #    skip_event = True
                 #    print("Skipping event")
                 #    continue
+                if d['bcid'] != bcid_t and last_missing:
+                    missing_l1counter[-1].append(d['bcid'])
+                    last_missing = False
+
                 if d['l1counter'] == l1a:
                     # this just skips additional headers for the same event
                     counter_h[-1] += 1
@@ -158,6 +168,9 @@ if __name__ == '__main__':
                 #    print("Skipping event", d['l1counter'], d['bcid'], bcid_t)
 
                 else:
+                    if abs(l1a - d['l1counter']) not in [1,255] and l1a>=0:
+                        missing_l1counter.append([d['l1counter'], d['bcid'], i, d['l1counter'] - l1a])  # this checks if we miss any event according to the counter
+                        last_missing = True
                     if uuid_tmp in uuid and abs(i - np.where(np.array(uuid) == uuid_tmp)[0][-1]) < 150:
                         print("Skipping duplicate event")
                         skip_counter += 1
@@ -200,6 +213,11 @@ if __name__ == '__main__':
                     i += 1
                     if verbose or sus:
                         print("New event:", l1a, i, d['bcid'])
+
+            if t == 'data':
+                elink_report[d['elink']]['nhits'] += 1
+            if t == 'trailer':
+                elink_report[d['elink']]['ntrailer'] += 1
 
             if t == 'data' and not skip_event:
                 hit_counter += 1
@@ -275,9 +293,22 @@ if __name__ == '__main__':
             print(f"Done with {len(events)} events. " + emojize(":check_mark_button:"))
             #print(f" - skipped {skip_counter/events.nheaders[0]} events that were identified as double-triggered " + emojize(":check_mark_button:"))
             if header_counter == trailer_counter:
-                print(f" - found same number of headers and trailers! " + emojize(":check_mark_button:"))
+                print(f" - found same number of headers and trailers!: {header_counter} " + emojize(":check_mark_button:"))
             else:
                 print(f" - found {header_counter} headers and {trailer_counter} trailers. Please check. " + emojize(":warning:"))
+
+            print(f" - found {len(missing_l1counter)} missing events (irregular increase of L1counter).")
+            if len(missing_l1counter)>0:
+                print("   L1counter, BCID, event number and step size of these events are:")
+                for ml1,mbcid,mev,mdelta,mbcidt in missing_l1counter:
+                    if mbcidt - mbcid<7:
+                        print("Expected issue because of missing L1A dead time:", ml1, mbcid, mev,mdelta,mbcidt)
+                    else:
+                        print(ml1, mbcid, mev,mdelta,mbcidt)
+
+            print(f" - Total expected events is {total_events+len(missing_l1counter)}")
+            print(f" - elink report:")
+            print(pd.DataFrame(elink_report))
 
             with open(f"ETROC_output/{args.input}_rb{rb}.json", "w") as f:
                 json.dump(ak.to_json(events), f)
