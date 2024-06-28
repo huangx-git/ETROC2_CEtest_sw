@@ -29,6 +29,7 @@ if __name__ == '__main__':
     argParser.add_argument('--dark_mode', action='store_true', help="Turn off all LEDs on the RB")
     argParser.add_argument('--light_mode', action='store_true', help="Turn on all LEDs on the RB")
     argParser.add_argument('--bitslip', action='store_true', help="Rerun the bitslip")
+    argParser.add_argument('--reset_fifo', action='store_true', help="Rerun the bitslip")
     argParser.add_argument('--verbose', action='store_true', help="Rerun the bitslip")
     args = argParser.parse_args()
 
@@ -96,6 +97,13 @@ if __name__ == '__main__':
         print(f"Changing L1Adelay from {delay_now} to {timing}.")
         etroc.disable_data_readout(row=4, col=14, broadcast=False)
         etroc.wr_reg("L1Adelay", timing, broadcast=True)
+
+    if args.reset_fifo:
+        fifo = FIFO(rb)
+        df = DataFrame("ETROC2")
+        fifo.reset()
+        fifo.send_l1a(2)
+        fifo.reset()
 
     final_time = time.time()
 
