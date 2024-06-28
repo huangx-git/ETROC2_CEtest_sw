@@ -8,10 +8,11 @@ try:
 except ImportError:
     from yaml import Loader, Dumper
 
+here = os.path.dirname(os.path.abspath(__file__))
 
 class DataFrame:
     def __init__(self, version='ETROC2'):
-        with open(os.path.expandvars('$TAMALERO_BASE/configs/dataformat.yaml'), 'r') as f:
+        with open(os.path.expandvars(f'{here}/../configs/dataformat.yaml'), 'r') as f:
             self.format = load(f, Loader=Loader)[version]
         self.type = 0
 
