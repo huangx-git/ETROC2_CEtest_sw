@@ -14,17 +14,16 @@ def setVector(v_, l_):
     for i in l_:
         v_.push_back(i)
 
-def dump_to_root(output_root_path, input_file, link_path):
+def dump_to_root(output, input_file):
     # Create an empty root file so that the merger step is always happy and does not get stuck
     filename = os.path.basename(input_file)
     name, ext = os.path.splitext(filename)
     if ext != '.json':
         raise ValueError("Inputted file needs to be json from data dumper")
 
-    output = os.path.join(output_root_path, name +'.root')
-
     f = rt.TFile(output, "RECREATE")
     tree = rt.TTree("pulse", "pulse")
+    print(output)
 
     if os.path.isfile(input_file):
         with open(input_file) as f_in:
@@ -62,7 +61,8 @@ def dump_to_root(output_root_path, input_file, link_path):
             tree.Branch("chipid",      chipid_)
             tree.Branch("bcid",        bcid_, "bcid/I")
             #tree.Branch("counter_a",   counter_a_)
-            tree.Branch("nhits",       nhits_, "nhits/I")
+            # tree.Branch("nhits",       nhits_, "nhits/I")
+            tree.Branch("nhits",       nhits_)
             tree.Branch("nhits_trail", nhits_trail_)
 
             for i, event in enumerate(jsonData):
@@ -86,40 +86,14 @@ def dump_to_root(output_root_path, input_file, link_path):
                 # setVector(nhits_trail_, event["nhits_trail"])
 
                 tree.Fill()
+    print(f"Found {i+1} events")
     f.WriteObject(tree, "pulse")
     print(f"Output written to {output} ...")
-    lnk_cmd = f"ln -s {output} {link_path}{name}.root"
-    os.system(lnk_cmd)
-    print(f"and linked back to {link_path}{name}.root\n")
 
 if __name__ == '__main__':
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--input_file', action='store', help="Input full path to json file to be dumped") # , default='output_run_10117'
+    argParser.add_argument('--output_file', action='store', help="Input full path to json file to be dumped") # , default='output_run_10117'
     args = argParser.parse_args()
 
-    input_json_path = '/home/etl/Test_Stand/module_test_sw/ETROC_output/' #from data_dumper
-    output_root_path = '/media/etl/Storage/ScopeHandler/ScopeData/ETROCData/' #to here
-    linking_path = '/home/etl/Test_Stand/ETROC2_Test_Stand/ScopeHandler/ScopeData/ETROCData/'
-
-    while True:
-        if args.input_file:
-            dump_to_root(output_root_path, args.input_file, linking_path)
-            break
-        else:
-            json_files = glob.glob(input_json_path+'/*_rb*.json')
-            #new json is all the json files that have not been converted to root
-            new_json = [f_jsn for f_jsn in json_files if os.path.splitext(os.path.basename(f_jsn))[0]+'.root' not in os.listdir(output_root_path)]
-            print("Root dumping...")
-            print('\n'.join(new_json))
-
-            for f_jsn in new_json:
-                #need rb0 for bad implementation reasons, contains both rb merged ETROC
-                #this line in merge_scope_etroc etroc_tree = f"{base}/ScopeData/ETROCData/output_run_{f_index}_rb0.root"
-                filename = os.path.basename(f_jsn)
-                name, f_ext = os.path.splitext(filename)
-
-                dump_to_root(output_root_path, f_jsn, linking_path)
-    
-        print("Next check in 15 seconds")
-        time.sleep(15)
-        
+    dump_to_root(args.output_file, args.input_file)
