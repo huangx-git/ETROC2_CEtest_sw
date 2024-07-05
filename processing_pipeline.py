@@ -27,8 +27,9 @@ if __name__ == '__main__':
     from root_dumper import dump_to_root
     from data_dumper import data_dumper
 
+    skip_stageout = True
     td02_dir = '/home/daq/ETROC_output/'
-    data_dir = '/home/daq/ETROC2_Test_Stand/module_test_sw/ETROC_output/'
+    data_dir = './ETROC_output/'
 
     while True:
 
@@ -85,6 +86,7 @@ if __name__ == '__main__':
                         f'{data_dir}/output_run_{run}_rb0.json',
                     )
 
+                if not skip_stageout:
                     print(f" > Stage out root file.")
                     subprocess.call(f"scp {data_dir}/{outfile} daq@timingdaq02.dhcp.fnal.gov:{td02_dir}/{outfile}", shell=True)
 

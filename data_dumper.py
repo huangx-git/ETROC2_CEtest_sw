@@ -40,6 +40,7 @@ def data_dumper(
     all_runs_good = True
 
     in_files = glob.glob(input_file.replace('rb0', 'rb*'))
+    #print(in_files)
     out_files = [x.replace('.dat', '.json') for x in in_files]
 
     for irb, f_in in enumerate(in_files):
