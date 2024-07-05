@@ -100,10 +100,11 @@ class ReadoutBoard:
         if trigger:
             self.get_trigger()
 
-            if not self.TRIG_LPGBT.power_up_done():
-                self.TRIG_LPGBT.power_up_init()
+            if self.trigger:
+                if not self.TRIG_LPGBT.power_up_done():
+                    self.TRIG_LPGBT.power_up_init()
 
-            self.TRIG_LPGBT.invert_links()
+                self.TRIG_LPGBT.invert_links()
 
         if not self.configured:
             self.configure()
