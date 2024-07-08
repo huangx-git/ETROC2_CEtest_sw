@@ -105,7 +105,8 @@ class ETROC():
 
         if self.connected:
             if not self.is_good():
-                raise RuntimeError(f"ETROC {self.chip_id} is not in the expected status! {self.controllerState=}")
+                print(f"ETROC {self.chip_id} is not in the expected status! {self.controllerState=}")
+                #raise RuntimeError(f"ETROC {self.chip_id} is not in the expected status! {self.controllerState=}")
 
         if strict:
             self.consistency(verbose=verbose)

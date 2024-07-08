@@ -12,6 +12,13 @@ import time
 import pdb
 from time import sleep
 from tamalero.utils import get_kcu
+from yaml import load, dump
+try:
+    from yaml import CLoader as Loader, CDumper as Dumper
+except ImportError:
+    from yaml import Loader, Dumper
+
+here = os.path.dirname(os.path.abspath(__file__))
 
 class MultiThread:
 
@@ -45,8 +52,13 @@ def get_kcu_flag(lock=os.path.expandvars('$TAMALERO_BASE/../ScopeHandler/Lecroy/
     # NOTE where to put the locks?
     with open(lock) as f:
         res = f.read()
-    return res
+    return res.rstrip()
     #return open(f"/home/daq/ETROC2_Test_Stand/ScopeHandler/Lecroy/Acquisition/running_acquitision.txt").read()
+
+def write_run_done(log=os.path.expandvars(here+'/daq_log.txt'), run=0):
+    with open(log, 'a') as f:
+        f.write(f'{run}\n')
+    return run
 
 def get_occupancy(hw, rb):
     try:
@@ -58,7 +70,7 @@ def get_occupancy(hw, rb):
         occ = 0
     return occ * 4  # not sure where the factor of 4 comes from, but it's needed
 
-def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superblock=100, block=128, run=1, ext_l1a=False, lock=None, verbose=False):
+def stream_daq(kcu=None, rb=0, l1a_rate=0, run_time=10, n_events=1000, superblock=100, block=128, run=1, ext_l1a=False, lock=None, verbose=False):
 
     uhal.disableLogging()
     hw = kcu.hw
@@ -89,13 +101,17 @@ def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superb
         hw.getNode("SYSTEM.EN_EXT_TRIGGER").write(0x1)
         hw.dispatch()
 
+    log = {}
+
     start = time.time()
+    log['start_time'] = start
 
     len_data = 0
     data = []
 
     occupancy = 0
     f_out = f"ETROC_output/output_run_{run}_rb{rb}.dat"
+    log_out = f"ETROC_output/log_run_{run}_rb{rb}.yaml"
     #f_out = f"output/output_rb_{rb}_run_{run}_time_{start}.dat"  # USED TO BE THIS, keeping for reference and debugging
     occupancy_block = []
     reads = []
@@ -104,15 +120,15 @@ def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superb
             # External lock file based DAQ
             iteration = 0
             Running = get_kcu_flag(lock=lock)
-            while (Running == "False"):
+            while (Running.lower() == "false" or Running.lower() == "stop"):
                 if iteration == 0:
-                    print("Waiting for the scope.")
+                    print("Waiting for the start command.")
                 Running = get_kcu_flag(lock=lock)
                 iteration += 1
 
+            print("Start data taking")
             Running = get_kcu_flag(lock=lock)
-            print(Running)
-            while (Running != "False"):
+            while (Running.lower() != "false" and Running.lower() != "stop"):
                 Running = get_kcu_flag(lock=lock)
                 num_blocks_to_read = 0
                 occupancy = get_occupancy(hw, rb)
@@ -202,6 +218,8 @@ def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superb
                     data += read.value()
             occupancy = get_occupancy(hw, rb)
 
+        len_data += len(data)
+
         # Get some stats
         timediff = time.time() - start
         speed = 32*len_data  / timediff / 1E6
@@ -213,11 +231,15 @@ def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superb
 
         nevents = kcu.read_node(f"READOUT_BOARD_{rb}.EVENT_CNT").value()
 
-        print("L1A rate = %f kHz" % (l1a_rate_cnt.value()/1000.0))
-        print("Occupancy = %d words" % occupancy.value())
+        l1a_rate = l1a_rate_cnt.value()/1000.0
+        occ = occupancy.value()
+        lost_events = lost.value()
+        rate_log = rate.value()
+        print("L1A rate = %f kHz" % (l1a_rate))
+        print("Occupancy = %d words" % occ)
         print("Number of events = %d"%nevents)
-        print("Lost events = %d events" % lost.value())
-        print("Packet rate = %d Hz" % rate.value())
+        print("Lost events = %d events" % lost_events)
+        print("Packet rate = %d Hz" % rate_log)
         print("Speed = %f Mbps" % speed)
 
         # Actually write to disk
@@ -231,7 +253,21 @@ def stream_daq(kcu=None, rb=0, l1a_rate=1000, run_time=10, n_events=1000, superb
         hw.getNode("SYSTEM.EN_EXT_TRIGGER").write(0x0)
         hw.dispatch()
 
+    log['l1a_rate'] = l1a_rate
+    log['occupancy'] = occ
+    log['nevents'] = nevents
+    log['lost_events'] = lost_events
+    log['rate'] = rate_log
+    log['speed'] = speed
+    log['stop_time'] = time.time()
+
+    with open(log_out, 'w') as f:
+        dump(log, f)
+
+
     print(f"Data stored in {f_out}\n")
+    write_run_done(run=run)
+
     return f_out
 
 
@@ -240,7 +276,7 @@ if __name__ == '__main__':
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('--kcu', action='store', default='192.168.0.10', help="KCU address")
     argParser.add_argument('--rb', action='store', default=0, help="RB numbers (default 0)")
-    argParser.add_argument('--l1a_rate', action='store', default=1000, type=int, help="L1A rate in Hz")
+    argParser.add_argument('--l1a_rate', action='store', default=0, type=int, help="L1A rate in Hz")
     argParser.add_argument('--ext_l1a', action='store_true', help="Enable external trigger input")
     argParser.add_argument('--run_time', action='store', default=10, type=int, help="Time in [s] to take data")
     argParser.add_argument('--n_events', action='store', default=1000, type=int, help="N events")
