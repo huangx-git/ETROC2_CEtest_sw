@@ -69,7 +69,7 @@ if __name__ == '__main__':
                     print("Couldn't find log")
 
                 print(f" > Converting binary to json")
-                n_events = data_dumper(
+                n_events, events = data_dumper(
                     f"{data_dir}/output_run_{run}_rb0.dat",
                     skip_trigger_check=True,
                 )
@@ -85,14 +85,14 @@ if __name__ == '__main__':
                         f'{data_dir}/{outfile}',
                         f'{data_dir}/output_run_{run}_rb0.json',
                     )
+                else:
+                    print(" ! Data and number of L1As not in agreement, did not further process!")
 
                 if not skip_stageout:
                     print(f" > Stage out root file.")
                     subprocess.call(f"scp {data_dir}/{outfile} daq@timingdaq02.dhcp.fnal.gov:{td02_dir}/{outfile}", shell=True)
-
                     #print(f" > Backup of raw data to EOS")
-                else:
-                    print(" ! Data and number of L1As not in agreement, did not further process!")
+
 
                 with open('process_log.txt', 'a') as f:
                     f.write(f'{run}\n')

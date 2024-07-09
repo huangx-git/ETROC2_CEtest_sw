@@ -333,7 +333,7 @@ def data_dumper(
             #    os.remove(f"{here}/ETROC_output/output_run_{args.input}_rb{rb}.json")
 
 
-    if len(events_all_rb)>1:
+    if len(events_all_rb)>1 or True:
         event_number = []
         bcid = []
         nhits = []
@@ -419,61 +419,62 @@ def data_dumper(
             #'nhits_trail': ak.sum(ak.Array(nhits_trail), axis=-1),
         })
 
-        with open(f"ETROC_output/{args.input}_merged.json", "w") as f:
+        with open(out_files[0].replace('rb0', 'merged'), "w") as f:
             json.dump(ak.to_json(events), f)
 
         # make a copy that is called rb0 for the merger
-        with open(f"{here}/ETROC_output/output_run_{args.input}_rb0.json", "w") as f:
+        with open(out_files[0], "w") as f:
             json.dump(ak.to_json(events), f)
 
         print("Done.")
 
-        all_layer_hit_candidates = events[ak.all(events.nhits==1, axis=1)]
-        all_layer_hit_candidates_no_noise_selection = (ak.num(all_layer_hit_candidates.col[((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] < 5))]) >0)
+        if False:
+            all_layer_hit_candidates = events[ak.all(events.nhits==1, axis=1)]
+            all_layer_hit_candidates_no_noise_selection = (ak.num(all_layer_hit_candidates.col[((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] < 5))]) >0)
 
-        #((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] == 0) & ((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] == 10)))
-        # events[ak.all(events.nhits, axis=1)].toa_code
-        #
-        #
-
-
-        hits0 = np.zeros([16, 16])
-        hits1 = np.zeros([16, 16])
-        hits2 = np.zeros([16, 16])
-        for ev in all_layer_hit_candidates[all_layer_hit_candidates_no_noise_selection]:
-            for row, col in zip(ev.row[ev.chipid==(38 << 2)], ev.col[ev.chipid==(38 << 2)]):
-                hits0[row,col]+=1
-            for row, col in zip(ev.row[ev.chipid==(36 << 2)], ev.col[ev.chipid==(36 << 2)]):
-                hits1[row,col]+=1
-            for row, col in zip(ev.row[ev.chipid==(37 << 2)], ev.col[ev.chipid==(37 << 2)]):
-                hits2[row,col]+=1
+            #((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] == 0) & ((all_layer_hit_candidates.row[all_layer_hit_candidates.chipid==(38<<2)] == 10)))
+            # events[ak.all(events.nhits, axis=1)].toa_code
+            #
+            #
 
 
+            hits0 = np.zeros([16, 16])
+            hits1 = np.zeros([16, 16])
+            hits2 = np.zeros([16, 16])
+            for ev in all_layer_hit_candidates[all_layer_hit_candidates_no_noise_selection]:
+                for row, col in zip(ev.row[ev.chipid==(38 << 2)], ev.col[ev.chipid==(38 << 2)]):
+                    hits0[row,col]+=1
+                for row, col in zip(ev.row[ev.chipid==(36 << 2)], ev.col[ev.chipid==(36 << 2)]):
+                    hits1[row,col]+=1
+                for row, col in zip(ev.row[ev.chipid==(37 << 2)], ev.col[ev.chipid==(37 << 2)]):
+                    hits2[row,col]+=1
 
-        # make some plots
-        import matplotlib.pyplot as plt
-        import mplhep as hep
-        plt.style.use(hep.style.CMS)
 
-        fig, ax = plt.subplots(1,3,figsize=(15,5))
-        cax = ax[2].matshow(hits0)
-        ax[2].set_title("Module 38")
-        cax = ax[1].matshow(hits1)
-        ax[1].set_title("Module 36")
-        cax = ax[0].matshow(hits2)
-        ax[0].set_title("Module 37")
-        ax[0].set_ylabel(r'$Row$')
-        ax[0].set_xlabel(r'$Column$')
-        ax[1].set_xlabel(r'$Column$')
-        ax[2].set_xlabel(r'$Column$')
-        fig.colorbar(cax,ax=ax)
-        fig.savefig(f"ETROC_output/{args.input}_layers_heatmap.pdf")
-        fig.savefig(f"ETROC_output/{args.input}_layers_heatmap.png")
+
+            # make some plots
+            import matplotlib.pyplot as plt
+            import mplhep as hep
+            plt.style.use(hep.style.CMS)
+
+            fig, ax = plt.subplots(1,3,figsize=(15,5))
+            cax = ax[2].matshow(hits0)
+            ax[2].set_title("Module 38")
+            cax = ax[1].matshow(hits1)
+            ax[1].set_title("Module 36")
+            cax = ax[0].matshow(hits2)
+            ax[0].set_title("Module 37")
+            ax[0].set_ylabel(r'$Row$')
+            ax[0].set_xlabel(r'$Column$')
+            ax[1].set_xlabel(r'$Column$')
+            ax[2].set_xlabel(r'$Column$')
+            fig.colorbar(cax,ax=ax)
+            fig.savefig(f"ETROC_output/{args.input}_layers_heatmap.pdf")
+            fig.savefig(f"ETROC_output/{args.input}_layers_heatmap.png")
 
     if not bad_run:
-        return len(events)
+        return len(events), events
     else:
-        return 0
+        return 0, []
 
 
 if __name__ == '__main__':
@@ -489,7 +490,7 @@ if __name__ == '__main__':
 
     rbs = args.rbs.split(',')
 
-    nevents = data_dumper(
+    nevents, events = data_dumper(
         args.input_file,
         #output_file,
         verbose=args.verbose,
