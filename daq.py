@@ -138,19 +138,12 @@ def stream_daq(kcu=None, rb=0, l1a_rate=0, run_time=10, n_events=1000, superbloc
                 # read the blocks
                 if (num_blocks_to_read)>0:
                     try:
-                        reads = num_blocks_to_read * [hw.getNode(f"DAQ_RB{rb}").readBlock(block)]
-                        hw.dispatch()
-                        for read in reads:
-                            data += read.value()
+                        for x in range(num_blocks_to_read):
+                            reads += [hw.getNode(f"DAQ_RB{rb}").readBlock(block)]
+                            hw.dispatch()  # NOTE this is necessary
                     except uhal._core.exception:
                         print("uhal UDP error in reading FIFO")
 
-                    # Write data to disk
-                    try:
-                        f.write(struct.pack('<{}I'.format(len(data)), *data))
-                        data = []
-                    except:
-                        print("Error writing to file")
         else:
             while (start + run_time > time.time()):
                 # Time based DAQ
