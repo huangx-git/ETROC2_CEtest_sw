@@ -131,7 +131,7 @@ The classes are defined in [here](https://gitlab.cern.ch/cms-etl-electronics/mod
 Some high level functions are implemented to simplify configuration and monitoring.
 An example is the following:
 ```
-rb_0.read_temp(verbose=1)
+rb.read_temp(verbose=1)
 ```
 that reads the temperature of all the available sensors on the board. The output looks like this
 ```
