@@ -140,6 +140,7 @@ class SCA:
         self.set_adc_mapping()
         self.set_gpio_mapping()
         self.verbose = verbose
+        self.i2c_enabled = 0
         if poke:
             self.verbose = False
 
@@ -351,6 +352,8 @@ class SCA:
         self.rw_reg(SCA_CONTROL.CTRL_W_CRC, crc << 24)
         self.rw_reg(SCA_CONTROL.CTRL_W_CRD, crd << 24)
 
+        self.i2c_enabled = self.i2c_enabled | ( 1 << channel )
+
     def enable_gpio(self):
         crb, crc, crd = self.read_control_registers()
         crb |= 1 << SCA_CRB.ENGPIO
@@ -548,6 +551,7 @@ class SCA:
 
     def disable_adc(self):
         self.configure_control_registers(en_adc=0)
+        self.i2c_enabled = 0
 
     def config_gpios(self, verbose=False): #read and print all adc values
         gpio_dict = self.gpio_mapping
@@ -601,7 +605,8 @@ class SCA:
             return self.I2C_read_single_byte(channel=master, servant=slave_addr, reg=reg, freq=freq)
 
     def I2C_read_single_byte(self, channel=3, servant=0x48, reg=0x00, freq=2):
-        self.enable_I2C(channel=channel)
+        if (self.i2c_enabled & (1<<channel)) == 0:
+            self.enable_I2C(channel=channel)
 
         # write to the pointer reg
         self.I2C_write_single_byte(channel=channel, servant=servant, data=reg)
@@ -624,7 +629,8 @@ class SCA:
 
     def I2C_write_single_byte(self, channel, servant, data, freq=2):
         #enable channel
-        self.enable_I2C(channel=channel)
+        if (self.i2c_enabled & (1<<channel)) == 0:
+            self.enable_I2C(channel=channel)
         #single byte write
         data_field = (servant<<24) | ((data & 255) << 16) #[31:24] is servant address, [23:16] is data byte
         res = self.rw_cmd(
@@ -641,7 +647,8 @@ class SCA:
 
     def I2C_write_ctrl(self, channel, data):
         #enable channel
-        self.enable_I2C(channel=channel)
+        if (self.i2c_enabled & (1<<channel)) == 0:
+            self.enable_I2C(channel=channel)
         #write control register
         data_field = data << 24
         res = self.rw_cmd(SCA_I2C.I2C_W_CTRL, self.get_I2C_channel(channel), data_field).value()
@@ -649,7 +656,8 @@ class SCA:
 
     def I2C_read_ctrl(self, channel):
         #enable channel
-        self.enable_I2C(channel=channel)
+        if (self.i2c_enabled & (1<<channel)) == 0:
+            self.enable_I2C(channel=channel)
         #read control register
         res = self.rw_cmd(SCA_I2C.I2C_R_CTRL, self.get_I2C_channel(channel), 0x0).value()
         return res >> 24
@@ -657,7 +665,9 @@ class SCA:
     def I2C_read_multi(self, channel=3, servant=0x48, nbytes=1, reg=0x0, adr_nbytes=2, freq=2):
         adr_bytes = [ ((reg >> (8*i)) & 0xff) for i in range(adr_nbytes) ]
         #enable channel
-        self.enable_I2C(channel=channel)
+        if (self.i2c_enabled & (1<<channel)) == 0:
+            self.enable_I2C(channel=channel)
+
         #configure NBYTES in the control register
         self.I2C_write_ctrl(channel, nbytes<<2 | freq)
         # write to the pointer reg
@@ -699,7 +709,8 @@ class SCA:
             data = [data]
         nbytes = len(data)
         #enable channel
-        self.enable_I2C(channel=channel)
+        if (self.i2c_enabled & (1<<channel)) == 0:
+            self.enable_I2C(channel=channel)
         #configure NBYTES in the control register
         self.I2C_write_ctrl(channel, nbytes<<2 | freq)
         #begin writing to the data registers [I2C_W_DATA0, I2C_W_DATA1, I2C_W_DATA2, I2C_W_DATA3]
