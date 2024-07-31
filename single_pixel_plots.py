@@ -16,9 +16,9 @@ import sys
 import yaml
 
 def loadData(path):
-    fileform = f'Qinj_scan_L1A_'
+    fileform = f'Qinj_scan_'
     files = [f for f in os.listdir(path) if fileform in f]
-    
+
     #Loading In Data
     if len(files) == 0:
         print('No files here.')
@@ -34,7 +34,7 @@ def loadData(path):
 
     for f in files:
         print(f)
-        charge = int(f.split('_')[4].split('.')[0])
+        charge = int(f.split('_')[-1].split('.')[0])
         if '.pkl' in f:
             sub = pickle.load(open(path+f, 'rb'))
             outfile = f.replace('.pkl', '.json')
@@ -78,7 +78,7 @@ def makeCodeCuts(df, args):
             cal = np.array(sub.cal.iloc[i])
             u, c = np.unique(cal, return_counts = True)
             calmode = u[np.argmax(c)]
-            #idx = idx&(np.abs(cal - calmode) < 2)
+            idx = idx&(np.abs(cal - calmode) < 2)
             idx = idx&(totcode < args.tot_high)
             idx = idx&(totcode > args.tot_low)
             idx = idx&(toacode < args.toa_high)
@@ -210,23 +210,41 @@ def plotCodesvDAC(df, pa, args, code):
         data[q]['calstd'] = [np.std(dat) for dat in cal]
         
         for att in atts:
+            x = data[q]['vth']
+            y = data[q][att + 'avg']
+            yerr = data[q][att + 'std']
+            ymax = np.max(np.array(y)[np.isfinite(y)])
+            ymin = np.min(np.array(y)[np.isfinite(y)])
             fig = plt.figure(figsize = pa['errorbarsize'])
-            plt.errorbar(data[q]['vth'], data[q][att + 'avg'], data[q][att + 'std'], fmt = 'o-', capsize = 3)
+            plt.errorbar(x, y, yerr, fmt = 'o-', capsize = 3)
             plt.xlabel('Threshold DAC', fontsize = pa['labfontsize'])
             plt.ylabel(f'{att.upper()} {mode} Mean', fontsize = pa['labfontsize'])
             plt.title(f'Mean {att.upper()} {mode} vs. Theshold DAC for Delay = {args.delay} {pa["loc_title"]}, Qinj = {q}', fontsize = pa['titfontsize'])
+            bar = 0.15*ymax
+            plt.ylim([ymin - bar, ymax + bar])
             plt.savefig(f'{pa["store"]}/DAC_v_{att.upper()}{mode}_q{q}.pdf')
             plt.savefig(f'{pa["store"]}/DAC_v_{att.upper()}{mode}_q{q}.png')
             plt.close()
 
     for att in atts:
         fig = plt.figure(figsize = pa['errorbarsize'])
+        ymax = 0
+        ymin = 1e10
         for q in tqdm(np.unique(df.charge)):
+            x = data[q]['vth']
+            y = data[q][att + 'avg']
+            yerr = data[q][att + 'std']
+            ymaxt = np.max(np.array(y)[np.isfinite(y)])
+            ymax = np.max([ymaxt, ymax])
+            ymint = np.min(np.array(y)[np.isfinite(y)])
+            ymin = np.min([ymint, ymin])
             plt.errorbar(data[q]['vth'], data[q][att + 'avg'], data[q][att + 'std'], fmt = 'o-', capsize = 3, label = f'Qinj = {q}')
         plt.xlabel('Threshold DAC', fontsize = pa['labfontsize'])
         plt.ylabel(f'{att.upper()} {mode} Mean', fontsize = pa['labfontsize'])
         plt.title(f'Mean {att.upper()} vs. Theshold DAC for Delay = {args.delay} {pa["loc_title"]}', fontsize = pa['titfontsize'])
         plt.legend()
+        bar = 0.15*ymax
+        plt.ylim([ymin - bar, ymax + bar])
         plt.savefig(f'{pa["store"]}/DAC_v_{att.upper()}{mode}.pdf')
         plt.savefig(f'{pa["store"]}/DAC_v_{att.upper()}{mode}.png')
         if args.show_plots:
@@ -248,7 +266,7 @@ def plotTOASDvDAC(df, pa, args):
         plt.plot(data[q]['vth'], data[q]['toastd'], 'o-')
         plt.xlabel('Threshold DAC', fontsize = pa['labfontsize'])
         plt.ylabel('TOA Standard Deviation', fontsize = pa['labfontsize'])
-        plt.title(f'TOA Standard Deviation vs. Theshold DAC for Delay = {args.delay} {pa["loc_title"]}, Qinj = {q}', fontsize = pa['titfontsize'])
+        plt.title(f'TOA Standard Deviation vs. Theshold DAC\n for Delay = {args.delay} {pa["loc_title"]}, Qinj = {q}', fontsize = pa['titfontsize'])
         plt.savefig(f'{pa["store"]}/DAC_v_TOASD_q{q}.pdf')
         plt.savefig(f'{pa["store"]}/DAC_v_TOASD_q{q}.png')
         plt.close()
@@ -257,9 +275,9 @@ def plotTOASDvDAC(df, pa, args):
         plt.plot(data[q]['vth'], data[q]['toacodestd'], 'o-')
         plt.xlabel('Threshold DAC', fontsize = pa['labfontsize'])
         plt.ylabel('TOA Code Standard Deviation', fontsize = pa['labfontsize'])
-        plt.title(f'TOA Code Standard Deviation vs. Theshold DAC for Delay = {args.delay} {pa["loc_title"]}, Qinj = {q}', fontsize = pa['titfontsize'])
-        plt.savefig(f'{pa["store"]}/DAC_v_TOASD_q{q}.pdf')
-        plt.savefig(f'{pa["store"]}/DAC_v_TOASD_q{q}.png')
+        plt.title(f'TOA Code Standard Deviation vs. Theshold DAC\n for Delay = {args.delay} {pa["loc_title"]}, Qinj = {q}', fontsize = pa['titfontsize'])
+        plt.savefig(f'{pa["store"]}/DAC_v_TOACODESD_q{q}.pdf')
+        plt.savefig(f'{pa["store"]}/DAC_v_TOACODESD_q{q}.png')
         plt.close()
 
 
@@ -268,10 +286,10 @@ def plotTOASDvDAC(df, pa, args):
         plt.plot(data[q]['vth'], data[q]['toastd'], 'o-', label = f'Qinj = {q}')
     plt.xlabel('Threshold DAC', fontsize = pa['labfontsize'])
     plt.ylabel('TOA Standard Deviation', fontsize = pa['labfontsize'])
-    plt.title(f'TOA Standard Deviation vs. Theshold DAC for Delay = {args.delay} {pa["loc_title"]}, Qinj = {q}', fontsize = pa['titfontsize'])
+    plt.title(f'TOA Standard Deviation vs. Theshold DAC\n for Delay = {args.delay} {pa["loc_title"]}, Qinj = {q}', fontsize = pa['titfontsize'])
     plt.legend()
-    plt.savefig(f'{pa["store"]}/DAC_v_TOASD_q{q}.pdf')
-    plt.savefig(f'{pa["store"]}/DAC_v_TOASD_q{q}.png')
+    plt.savefig(f'{pa["store"]}/DAC_v_TOASD.pdf')
+    plt.savefig(f'{pa["store"]}/DAC_v_TOASD.png')
     if args.show_plots:
         plt.show()
     plt.close()
@@ -281,10 +299,10 @@ def plotTOASDvDAC(df, pa, args):
         plt.plot(data[q]['vth'], data[q]['toacodestd'], 'o-', label = f'Qinj = {q}')
     plt.xlabel('Threshold DAC', fontsize = pa['labfontsize'])
     plt.ylabel('TOA Code Standard Deviation', fontsize = pa['labfontsize'])
-    plt.title(f'TOA Code Standard Deviation vs. Theshold DAC for Delay = {args.delay} {pa["loc_title"]}, Qinj = {q}', fontsize = pa['titfontsize'])
+    plt.title(f'TOA Code Standard Deviation vs. Theshold DAC\n for Delay = {args.delay} {pa["loc_title"]}, Qinj = {q}', fontsize = pa['titfontsize'])
     plt.legend()
-    plt.savefig(f'{pa["store"]}/DAC_v_TOASD_q{q}.pdf')
-    plt.savefig(f'{pa["store"]}/DAC_v_TOASD_q{q}.png')
+    plt.savefig(f'{pa["store"]}/DAC_v_TOACODESD.pdf')
+    plt.savefig(f'{pa["store"]}/DAC_v_TOACODESD.png')
     if args.show_plots:
         plt.show()
     plt.close()

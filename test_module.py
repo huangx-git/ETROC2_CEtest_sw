@@ -856,6 +856,8 @@ if __name__ == '__main__':
 
                             pbar.update()
 
-
                 if args.qinj:
                     qinj(etroc, mask, rb, thresholds, out_dir, result_dir, args)
+                    
+            else:
+                    print('ETROC', i, 'is not connected')
