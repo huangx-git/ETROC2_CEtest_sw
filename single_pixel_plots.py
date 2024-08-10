@@ -50,7 +50,7 @@ def loadData(path):
             with open(path + f, 'r') as infile:
                 sub = pd.DataFrame(json.load(infile))
         sub['charge'] = [charge]*len(sub.vth)
-        if not len(np.unique(sub.hits)) == 1:
+        if True:#not len(np.unique(sub.hits)) == 1:
             df = pd.concat([df, sub])
     return df
 
@@ -101,14 +101,14 @@ def makeCodeCuts(df, args):
                 n += 1
     return new
 
-def plotHitsvDAC(df, pa, args):
-    HitsvDACplotter(df, pa, args)
+def plotHitsvDAC(df, pa, args, mode):
+    HitsvDACplotter(df, pa, args, mode=mode)
     for q in np.unique(df.charge):
-        HitsvDACplotter(df, pa, args, charge = q)
+        HitsvDACplotter(df, pa, args, charge = q, mode=mode)
 
-def HitsvDACplotter(df, pa, args, charge = None):
+def HitsvDACplotter(df, pa, args, charge = None, mode = 'pre'):
     fig = plt.figure(figsize = pa['figsize'])
-    plt.title(f'Hits v. Threshold DAC {pa["loc_title"]}\nDelay = {args.delay}, # of L1A triggers: {args.nl1a}', fontsize = pa['titfontsize'])
+    plt.title(f'Hits v. Threshold DAC for {pa["loc_title"]}\nDelay = {args.delay}, # of L1A triggers: {args.nl1a}', fontsize = pa['titfontsize'])
     plt.xlabel('Threshold DAC Values', fontsize = pa['labfontsize'])
     plt.ylabel('Hits',  fontsize = pa['labfontsize'])
     if not charge:
@@ -120,16 +120,22 @@ def HitsvDACplotter(df, pa, args, charge = None):
             y = df.hits[idx]
             plt.plot(x, y, 'o-', label = f'Qinj = {q}')
         plt.legend()
-        savename = f'{pa["store"]}/DAC_v_Hits.pdf'
+        if mode == 'pre': 
+            savename = f'{pa["store"]}/DAC_v_Hits.pdf'
+        else:
+            savename = f'{pa["store"]}/DAC_v_Hits_redux.pdf'
     else:
         idx = df.charge == charge
         x = df.vth[idx]
         y = df.hits[idx]
         plt.plot(x, y, 'o-')
-        savename = f'{pa["store"]}/DAC_v_Hits_q_{charge}.pdf'
+        if mode == 'pre': 
+            savename = f'{pa["store"]}/DAC_v_Hits_q_{charge}.pdf'
+        else:
+            savename = f'{pa["store"]}/DAC_v_Hits_q_{charge}_redux.pdf'
     plt.legend()
     plt.savefig(savename)
-    plt.savefig(savename)
+    plt.savefig(savename.replace('pdf', 'png'))
     if args.show_plots:
         plt.show()
     plt.close()
@@ -221,7 +227,7 @@ def plotCodesvDAC(df, pa, args, code):
             plt.ylabel(f'{att.upper()} {mode} Mean', fontsize = pa['labfontsize'])
             plt.title(f'Mean {att.upper()} {mode} vs. Theshold DAC for Delay = {args.delay} {pa["loc_title"]}, Qinj = {q}', fontsize = pa['titfontsize'])
             bar = 0.15*ymax
-            plt.ylim([ymin - bar, ymax + bar])
+            #plt.ylim([ymin - bar, ymax + bar])
             plt.savefig(f'{pa["store"]}/DAC_v_{att.upper()}{mode}_q{q}.pdf')
             plt.savefig(f'{pa["store"]}/DAC_v_{att.upper()}{mode}_q{q}.png')
             plt.close()
@@ -244,7 +250,7 @@ def plotCodesvDAC(df, pa, args, code):
         plt.title(f'Mean {att.upper()} vs. Theshold DAC for Delay = {args.delay} {pa["loc_title"]}', fontsize = pa['titfontsize'])
         plt.legend()
         bar = 0.15*ymax
-        plt.ylim([ymin - bar, ymax + bar])
+        #plt.ylim([ymin - bar, ymax + bar])
         plt.savefig(f'{pa["store"]}/DAC_v_{att.upper()}{mode}.pdf')
         plt.savefig(f'{pa["store"]}/DAC_v_{att.upper()}{mode}.png')
         if args.show_plots:
@@ -286,7 +292,7 @@ def plotTOASDvDAC(df, pa, args):
         plt.plot(data[q]['vth'], data[q]['toastd'], 'o-', label = f'Qinj = {q}')
     plt.xlabel('Threshold DAC', fontsize = pa['labfontsize'])
     plt.ylabel('TOA Standard Deviation', fontsize = pa['labfontsize'])
-    plt.title(f'TOA Standard Deviation vs. Theshold DAC\n for Delay = {args.delay} {pa["loc_title"]}, Qinj = {q}', fontsize = pa['titfontsize'])
+    plt.title(f'TOA Standard Deviation vs. Theshold DAC\n for Delay = {args.delay} {pa["loc_title"]}', fontsize = pa['titfontsize'])
     plt.legend()
     plt.savefig(f'{pa["store"]}/DAC_v_TOASD.pdf')
     plt.savefig(f'{pa["store"]}/DAC_v_TOASD.png')
@@ -334,7 +340,7 @@ if args.loc == 'broadcast':
 else:
     i = int(args.loc.split(',')[0])
     j = int(args.loc.split(',')[1])
-    loc_title = f'ETROC {args.etroc} Row {i} Col {j}'
+    loc_title = f'ETROC {args.etroc}, Row {i} Col {j}'
     pix_path = f'/r{i}c{j}/'
 
 pa = {
@@ -361,11 +367,11 @@ if df.empty:
 #Slide 3 S Curve Plots
 #Hits v. Threshold DAC Values, All QSel
 
-plotHitsvDAC(df, pa, args)
+plotHitsvDAC(df, pa, args, mode = 'pre')
 
 df = makeDFCuts(df, args)
 
-plotHitsvDAC(df, pa, args)
+plotHitsvDAC(df, pa, args, mode = 'redux')
 
 plotFallingEdge(df, pa, args)
 

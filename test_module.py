@@ -583,9 +583,10 @@ def qinj(etroc, mask, rb, thresholds, out_dir, result_dir, args):
     i = int(args.row)
     j = int(args.col)
     L1Adelay = 501
+    RBL1Adelay = 504
     
     if args.threshold == 'auto':
-        etroc.apply_THCal()
+        etroc.bypass_THCal()
     print('Starting Charge Injection run using the following configurations')
     if len(args.vth_axis) < 2:
         vth_axis = range(int(np.max([np.min(thresholds) - 20, 0])), int(np.min([np.max(thresholds) + 350, 1000]))) 
@@ -611,6 +612,7 @@ def qinj(etroc, mask, rb, thresholds, out_dir, result_dir, args):
     TOT =  [[] for i in range(0,len(charges))]
     CAL = [[] for i in range(0,len(charges))]
     k=0
+    
     for q in charges:
         print(f"\n - Will send L1a/QInj pulse with delay of {delay} cycles and charge of {q} fC")
         print(f"\n - to pixel at Row {i}, Col {j}.")
@@ -621,7 +623,8 @@ def qinj(etroc, mask, rb, thresholds, out_dir, result_dir, args):
                 try:
                     etroc.QInj_set(q, delay, L1Adelay, row=i, col=j, broadcast = False) #set reg on ETROC
                     etroc.wr_reg('DAC', int(vth), row=i, col=j, broadcast=False) #set vth on ETROC
-                    fifo.send_QInj(count=int(args.nl1a), delay=504) #send Qinj pulses with L1Adelay
+                    #print(etroc.rd_reg('DAC', row=i, col=j)) #read vth on ETROC
+                    fifo.send_QInj(count=int(args.nl1a), delay=RBL1Adelay) #send Qinj pulses with L1Adelay
                     result = fifo.pretty_read(df)
                     worked = True
                 except KeyboardInterrupt:
@@ -654,7 +657,7 @@ def qinj(etroc, mask, rb, thresholds, out_dir, result_dir, args):
             'tot' : TOT[k-1],
             'cal' : CAL[k-1]}
 
-        with open(f"{out_dir}/Qinj_scan_ETROC_{etroc.chip_no}_L1A_504_{q}.json", 'w') as f:
+        with open(f"{out_dir}/Qinj_scan_ETROC_{etroc.chip_no}_L1A_{L1Adelay}_{q}.json", 'w') as f:
             json.dump(scan_df, f)
         
     fig, ax = plt.subplots()
