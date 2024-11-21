@@ -1,7 +1,11 @@
 import os
 import random
+import time, datetime
+import json
 from tamalero.utils import read_mapping, get_config
 from functools import wraps
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 try:
     from tabulate import tabulate
     has_tabulate = True
@@ -165,11 +169,71 @@ class MUX64:
             for line in table:
                 print(data_string.format(*line))
 
-    def get_conversion_factor(self, R=82, R1=82, R2=82):
+    def get_conversion_factor(self, R=0, R1=82, R2=82):
         '''
         resistance values in kOhm
-        R - voltage divider on the MUX output, should always be 82kOhm
+        R - voltage divider on the MUX output
         R1 - resistor between measurement source and MUX input
         R2 - resistor between MUX input and ground
         '''
-        return 1/((1/2)*(2*R*R2)/(R1*(2*R+R1)+2*R*R2))
+        if R==0:
+            return (R1+R2)/R2
+        else:
+            return 1/((1/2)*(2*R*R2)/(R1*(2*R+R1)+2*R*R2))
+
+    def monitor_channels(self, channels = ['mod0_a5', 'mod1_a5', 'mod2_a5'], lat = 1.0, time_max = 60.0, plot = True):
+        # time is given in seconds
+        self.set_channel_mapping()
+        channel_dict = self.channel_mapping
+        mntr = {}
+        print(channels)
+        for channel in channels:
+            mntr[channel] = []
+        mntr['time'] = []
+        start_time = time.time()
+        now_time = time.time()
+        while ((now_time - start_time) < time_max):
+            #if (t%(60*5)==0):
+            #    print(f'Monitoring: {t}/{tmax} secs')
+            try:
+                for channel in channels:
+                    pin = channel_dict[channel]['pin']
+                    value = self.read_adc(pin, calibrate=True)
+                    value_raw = self.read_adc(pin, calibrate=False)
+                    voltage = self.read_channel(pin)
+                    voltage_direct = self.read_channel(pin, direct=True)
+                    mntr[channel].append(voltage)
+                mntr['time'].append(datetime.datetime.now().isoformat())
+                time.sleep(lat)
+            except:
+                print("NonValidatedMemory exception: sleeping 0.1 secs...")
+                time.sleep(0.1)
+            now_time = time.time()
+        with open("mux64_mntr_%.2fmin.json".format(time_max/60.0), "w") as f:
+            json.dump(mntr, f)
+        if plot:
+            fig, ax = plt.subplots(figsize=(10, 4))
+            plt.title("MUX64 channel monitoring")
+            plt.xlabel("Time")
+            plt.ylabel("Voltage (V)")
+            ymin = 9999.0
+            ymax = 0.0
+            for channel in channels:
+                vec = [mntr[channel][x] for x in range(len(mntr[channel]))]
+                vtime = [datetime.datetime.fromisoformat(mntr['time'][x]) for x in range(len(mntr['time']))]
+                plt.plot(vtime, vec, '.-', label=f"Channel: {channel}")
+                if min(vec) < ymin:
+                    ymin = min(vec)
+                if max(vec) > ymax:
+                    ymax = max(vec)
+            ax.set_ylim(0.98*ymin, 1.02*ymax)
+            locator = mdates.AutoDateLocator(minticks=3, maxticks=7)
+            formatter = mdates.ConciseDateFormatter(locator)
+            ax.xaxis.set_major_locator(locator)
+            ax.xaxis.set_major_formatter(formatter)
+            #print(ymin, ymax)
+            plt.grid(True)
+            plt.legend(loc='best')
+            fig.savefig('rb3_mux64_mntr_{:.2f}min.png'.format(time_max/60.0), dpi=600)
+            plt.close(fig) 
+        return 1

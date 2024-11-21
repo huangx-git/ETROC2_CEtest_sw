@@ -2,8 +2,8 @@ MUX64:
     channel:
         A0:
             pin: 0x00
-            R1: 1
-            R2: 0.1
+            R1: 10
+            R2: 1
             sig_name: unsed
             comment: "LV RB"
             terminal_input: False
@@ -28,11 +28,11 @@ LPGBT:
         MUX64OUT:
             pin: 0x01
             current: 0
-            conv: 2.0
+            conv: 1.0
             min: 1.12
             max: 1.68
             flavor: small
-            comment: MUX64OUT * 0.5
+            comment: MUX64OUT
         LVRB:
             pin: 0x02
             current: 0

@@ -600,7 +600,7 @@ class ReadoutBoard:
             elif self.ver == 3:
                 vref = 1.2
                 self.MUX64.select_channel(1)
-                rt2_voltage = self.DAQ_LPGBT.read_adc(1)*2/(2**10-1)
+                rt2_voltage = self.DAQ_LPGBT.read_adc(1)/(2**10-1)
                 if False:
                     # this is the direct way of reading the voltage on RT2
                     self.MUX64.select_channel(0)  # make sure you're not selecting channel 1!

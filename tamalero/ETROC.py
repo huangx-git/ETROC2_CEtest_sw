@@ -1786,7 +1786,7 @@ class ETROC():
         if self.rb.ver < 3:
             raw = self.rb.SCA.read_adc(self.vtemp, raw=True if mode=='bits' else False)
         else:
-            raw = self.rb.MUX64.read_adc(self.vtemp, raw=True if mode=='bits' else False)
+            raw = self.rb.MUX64.read_adc(self.vtemp, calibrate=False if mode=='bits' else True)
         #self.power_down_TempSen()  # NOTE this was removed because powering up the temperature sensor can take a considerable amount of time
         if mode.lower() == 'bits' or mode.lower() == 'raw':
             return raw

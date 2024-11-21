@@ -794,7 +794,10 @@ if __name__ == '__main__':
     print("Module init done in  {:.2f}s".format(end_time-int2_time))  # default config is what's slow
 
     print("ADC status:")
-    rb.SCA.read_adcs()
+    if rb.ver < 3:
+        rb.SCA.read_adcs()
+    else:
+        rb.MUX64.read_channels()
     rb.DAQ_LPGBT.read_adcs()
 
     if args.test_chip:
