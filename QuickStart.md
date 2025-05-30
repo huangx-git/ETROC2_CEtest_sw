@@ -1,4 +1,4 @@
-# Quick start guidance for ETROC2 cabel and eliminator test stand.
+# Quick Start Guidance for ETROC2 Cabel and Eliminator Test Stand Setup
 
 ## Preparation
 
@@ -7,3 +7,33 @@ Tested on python 3.8.10. Install the software with all its dependencies except I
 ```
 git clone https://github.com/huangx-git/ETROC2_CEtest_sw.git
 ```
+
+First, update the system and install git and python
+
+```
+sudo apt update
+sudo apt upgrade
+sudo apt install git
+sudo apt install python3.8
+```
+
+THe update step might do the python3.8, but this is fine.
+
+Next, install the packages needed to compile the ipbus software
+
+```sudo apt-get install -y make erlang g++ libboost-all-dev libpugixml-dev python-all-dev rsyslog```
+
+with the needed packages ready, download, compile, and install ipbus
+```
+git clone --depth=1 -b v2.8.3 --recurse-submodules https://github.com/ipbus/ipbus-software.git
+cd ipbus-software
+sudo make PYTHON=python3
+sudo make install PYTHON=python3
+```
+With this finished, check that the install worked. Use the first command to temporarily set the ipbus path, then open a session of python and import uhal
+```
+export LD_LIBRARY_PATH=/opt/cactus/lib:$LD_LIBRARY_PATH
+python3
+import uhal
+```
+If there are no errors while importing, everthing worked and you can continue the installation process.
