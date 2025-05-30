@@ -9,14 +9,14 @@ Python environment, tested on **python 3.8.10**.
 **Vivado 2021.1** version of the package. [Vivado ML Edition - 2021.1](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/vivado-design-tools/archive.html) Choose _Xilinx Unified Installer 2021.1: Linux Self Extracting Web Installer (BIN - 301.28 MB)._ Enterprise version. You will likely need to install this package sudo apt install libtinfo5 otherwise the installation will not complete, hanging on the finishing stage of generating installed device list.
 
 
-#### Software clone
+## Software clone
  Install the software with all its dependencies except IPbus:
 
 ```
 git clone https://github.com/huangx-git/ETROC2_CEtest_sw.git
 ```
 
-#### IPbus installation
+## IPbus installation
 
 First, update the system and install git and python
 
