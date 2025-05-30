@@ -373,9 +373,9 @@ class ETROC():
             # the emulators are not going to be reset at all
             if hard:
                 if self.rb.ver < 3:
-                    self.rb.SCA.set_gpio(self.reset_pin, 0)
+                    # self.rb.SCA.set_gpio(self.reset_pin, 0)
                     time.sleep(0.05)
-                    self.rb.SCA.set_gpio(self.reset_pin, 1)
+                    # self.rb.SCA.set_gpio(self.reset_pin, 1)
                 else:
                     # NOTE: I don't like this hard coded if/else.
                     # Think about a more dynamic solution
@@ -402,11 +402,11 @@ class ETROC():
         time.sleep(0.1)
         self.rb.kcu.write_node("READOUT_BOARD_%s.BITSLIP_AUTO_EN"%self.rb.rb, 0x0)
 
-    def read_Vref(self):
-        if self.rb.ver<3:
-            return self.rb.SCA.read_adc(self.vref_pin)
-        else:
-            return self.rb.MUX64.read_adc(self.vref_pin)
+    # def read_Vref(self):
+    #     if self.rb.ver<3:
+    #         return self.rb.SCA.read_adc(self.vref_pin)
+    #     else:
+    #         return self.rb.MUX64.read_adc(self.vref_pin)
 
     # ============================
     # === MONITORING FUNCTIONS ===
@@ -1783,19 +1783,19 @@ class ETROC():
         C2 = -0.0073
         C1 = 26
         qoK = 11604.5181
-        if self.rb.ver < 3:
-            raw = self.rb.SCA.read_adc(self.vtemp, raw=True if mode=='bits' else False)
-        else:
-            raw = self.rb.MUX64.read_adc(self.vtemp, calibrate=False if mode=='bits' else True)
+        # if self.rb.ver < 3:
+        #     raw = self.rb.SCA.read_adc(self.vtemp, raw=True if mode=='bits' else False)
+        # else:
+        #     raw = self.rb.MUX64.read_adc(self.vtemp, calibrate=False if mode=='bits' else True)
         #self.power_down_TempSen()  # NOTE this was removed because powering up the temperature sensor can take a considerable amount of time
-        if mode.lower() == 'bits' or mode.lower() == 'raw':
-            return raw
-        elif mode.lower().count('volt'):
-            return raw
-        elif mode.lower() == 'celsius':
-            return (raw - C2)*qoK/C1 - 273.15
-        else:
-            return (raw - C2)*qoK/C1
+        # if mode.lower() == 'bits' or mode.lower() == 'raw':
+        #     return raw
+        # elif mode.lower().count('volt'):
+        #     return raw
+        # elif mode.lower() == 'celsius':
+        #     return (raw - C2)*qoK/C1 - 273.15
+        # else:
+        #     return (raw - C2)*qoK/C1
 
     # The TDC clock testing enable.
     # 1'b1: sending TDC clock at the left serial port;

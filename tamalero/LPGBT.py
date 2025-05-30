@@ -42,6 +42,7 @@ class LPGBT(RegParser):
         Initialize lpGBT for a certain readout board number (rb).
         The trigger lpGBT is accessed through I2C of the master (= DAQ lpGBT).
         '''
+        print('############################LPGBT Initialization############################')
         self.nodes = {}
         self.rb = rb
         self.trigger = trigger
@@ -80,6 +81,8 @@ class LPGBT(RegParser):
 
 
     def configure(self, do_adc_calibration=True):
+        print('############################configure debug############################')
+        print(self, hasattr(self, 'kcu'))
         if not hasattr(self, 'kcu'):
             raise Exception("Connect to KCU first.")
 
@@ -93,8 +96,10 @@ class LPGBT(RegParser):
             return
 
         # Get LPGBT Version
+        print('############################get lpgbt version debug############################')
         timeout = 0
         if not hasattr(self, 'ver'):
+            print('############################get lpgbt version debug############################')
             if self.verbose:
                 print ("Figuring out lpGBT version by reading from ROMREG")
             while True:
@@ -128,19 +133,29 @@ class LPGBT(RegParser):
                 sleep(0.01)
                 is_v1 = (self.rd_adr(0x1d7) == 0xa6)
 
-                if is_v0 ^ is_v1:
+                is_v2 = (self.rd_adr(0x1d7) == 0xae)
+
+                print("0x1d7 readback value is", self.rd_adr(0x1d7))
+
+                print("lpGBT version found", is_v0 ^ is_v1 ^ is_v2)
+
+                if is_v0 ^ is_v1 ^ is_v2:
                     break
                 self.reset_daq_mgts()
                 sleep(0.05)
                 timeout += 1
+                print(timeout)
                 if timeout > 50:
                     raise Exception("Could not successfully read from lpGBT and failed to determine lpGBT version. Check optical links and power of RB.")
 
-            if is_v0 and not is_v1:
+            if is_v0 and not is_v1 and not is_v2:
                 print (" > lpGBT v0 detected")
                 self.ver = 0
-            elif is_v1 and not is_v0:
+            elif is_v1 and not is_v0 and not is_v2:
                 print (" > lpGBT v1 detected")
+                self.ver = 1
+            elif is_v2 and not is_v0 and not is_v1:
+                print (" > lpGBT v2 detected")
                 self.ver = 1
             else:
                 print (" > unsure about lpGBT version. This case should have been impossible to reach.")
@@ -149,8 +164,8 @@ class LPGBT(RegParser):
         if self.rbver is None:
             self.rbver = self.ver + 1
 
-        self.base_config = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/lpgbt_config.yaml'))['base'][f'v{self.ver}']
-        self.ec_config = load_yaml(os.path.expandvars('$TAMALERO_BASE/configs/lpgbt_config.yaml'))['ec'][f'v{self.ver}']
+        self.base_config = load_yaml(os.path.expandvars('./configs/lpgbt_config.yaml'))['base'][f'v{self.ver}']
+        self.ec_config = load_yaml(os.path.expandvars('./configs/lpgbt_config.yaml'))['ec'][f'v{self.ver}']
 
         self.kcu.write_node("READOUT_BOARD_%d.SC.FRAME_FORMAT" % self.rb, self.ver)
         self.parse_xml(ver=self.ver)
@@ -207,6 +222,7 @@ class LPGBT(RegParser):
             self.wr_reg("LPGBT.RWF.CHIPCONFIG.HIGHSPEEDDATAOUTINVERT", 0x1)  # this is already done for v1
         self.wr_reg("LPGBT.RWF.POWERUP.DLLCONFIGDONE", 0x1)  # NOTE untested change
         self.wr_reg("LPGBT.RWF.POWERUP.PLLCONFIGDONE", 0x1)
+
 
     def set_adc_mapping(self):
         assert self.rbver in [1,2,3], f"Unrecognized version {self.rbver}"
@@ -427,29 +443,29 @@ class LPGBT(RegParser):
             read = self.kcu.read_node("READOUT_BOARD_%d.SC.RX_DATA_FROM_GBTX" % self.rb)
             i = i + 1
 
-#    def configure_gpio_outputs(self, outputs=0x2401, defaults=0x0401):
-#        # NOTE: v0: defaults = 0x0401, outputs = 0x2401  (Rhett LED off)
-#        #       v1: defaults = 0x0409, outputs = 0x2409  (Rhett LED on)
-#        # have to first set defaults, then switch to outputs otherwise we reset the VTRx+
-#        self.wr_reg('LPGBT.RWF.PIO.PIOOUTH', defaults >> 8)
-#        self.wr_reg('LPGBT.RWF.PIO.PIOOUTL', defaults & 0xFF)
-#        self.wr_reg('LPGBT.RWF.PIO.PIODIRH', outputs >> 8)
-#        self.wr_reg('LPGBT.RWF.PIO.PIODIRL', outputs & 0xFF)
+# #    def configure_gpio_outputs(self, outputs=0x2401, defaults=0x0401):
+# #        # NOTE: v0: defaults = 0x0401, outputs = 0x2401  (Rhett LED off)
+# #        #       v1: defaults = 0x0409, outputs = 0x2409  (Rhett LED on)
+# #        # have to first set defaults, then switch to outputs otherwise we reset the VTRx+
+# #        self.wr_reg('LPGBT.RWF.PIO.PIOOUTH', defaults >> 8)
+# #        self.wr_reg('LPGBT.RWF.PIO.PIOOUTL', defaults & 0xFF)
+# #        self.wr_reg('LPGBT.RWF.PIO.PIODIRH', outputs >> 8)
+# #        self.wr_reg('LPGBT.RWF.PIO.PIODIRL', outputs & 0xFF)
 
-#    def gpio_byname(self, gpio_func):
-#        @wraps(gpio_func)
-#        def wrapper(*args, **kwargs):
-#            if all([type(arg) == str for arg in args]):
-#                gpio_dict = self.gpio_mapping
-#                pin = gpio_dict[list(args)[0]]['pin']
-#                return gpio_func(pin, **kwargs)
-#            elif all([type(arg) == int for arg in args]):
-#                return gpio_func(*args, **kwargs)
-#            else:
-#                invalid_type = type(list(args)[0])
-#                raise TypeError(f"{gpio_func.__name__} can only take positional arguments of type int or str, but argument of type {invalid_type} was given.")
-#
-#        return wrapper
+# #    def gpio_byname(self, gpio_func):
+# #        @wraps(gpio_func)
+# #        def wrapper(*args, **kwargs):
+# #            if all([type(arg) == str for arg in args]):
+# #                gpio_dict = self.gpio_mapping
+# #                pin = gpio_dict[list(args)[0]]['pin']
+# #                return gpio_func(pin, **kwargs)
+# #            elif all([type(arg) == int for arg in args]):
+# #                return gpio_func(*args, **kwargs)
+# #            else:
+# #                invalid_type = type(list(args)[0])
+# #                raise TypeError(f"{gpio_func.__name__} can only take positional arguments of type int or str, but argument of type {invalid_type} was given.")
+# #
+# #        return wrapper
 
     def configure_gpios(self): #read and print all adc values
         gpio_dict = self.gpio_mapping
@@ -684,31 +700,31 @@ class LPGBT(RegParser):
         self.wr_reg("LPGBT.RWF.CALIBRATION.VREFENABLE", 0x1)  # vref enable
         self.wr_reg("LPGBT.RWF.CALIBRATION.VREFTUNE", 0x63)
 
-    #def read_adcs(self):
-    #    self.init_adc()
-    #    print("ADC Readings:")
-    #    for i in range(16):
-    #        name = ""
-    #        conv = 0
-    #        if (i==0 ): conv=1;      name="VTRX TH1"
-    #        if (i==1 ): conv=1/0.55; name="1V4D * 0.55"
-    #        if (i==2 ): conv=1/0.55; name="1V5A * 0.55"
-    #        if (i==3 ): conv=1/0.33; name="2V5TX * 0.33"
-    #        if (i==4 ): conv=1;      name="RSSI"
-    #        if (i==5 ): conv=1;      name="N/A"
-    #        if (i==6 ): conv=1/0.33; name="2V5RX * 0.33"
-    #        if (i==7 ): conv=1;      name="RT1"
-    #        if (i==8 ): conv=1;      name="EOM DAC (internal signal)"
-    #        if (i==9 ): conv=1/0.42; name="VDDIO * 0.42 (internal signal)"
-    #        if (i==10): conv=1/0.42; name="VDDTX * 0.42 (internal signal)"
-    #        if (i==11): conv=1/0.42; name="VDDRX * 0.42 (internal signal)"
-    #        if (i==12): conv=1/0.42; name="VDD * 0.42 (internal signal)"
-    #        if (i==13): conv=1/0.42; name="VDDA * 0.42 (internal signal)"
-    #        if (i==14): conv=1;      name="Temperature sensor (internal signal)"
-    #        if (i==15): conv=1/0.50; name="VREF/2 (internal signal)"
-    #
-    #        read = self.read_adc(i)
-    #        print("\tch %X: 0x%03X = %f, reading = %f (%s)" % (i, read, read/1024., conv*read/1024., name))
+#     #def read_adcs(self):
+#     #    self.init_adc()
+#     #    print("ADC Readings:")
+#     #    for i in range(16):
+#     #        name = ""
+#     #        conv = 0
+#     #        if (i==0 ): conv=1;      name="VTRX TH1"
+#     #        if (i==1 ): conv=1/0.55; name="1V4D * 0.55"
+#     #        if (i==2 ): conv=1/0.55; name="1V5A * 0.55"
+#     #        if (i==3 ): conv=1/0.33; name="2V5TX * 0.33"
+#     #        if (i==4 ): conv=1;      name="RSSI"
+#     #        if (i==5 ): conv=1;      name="N/A"
+#     #        if (i==6 ): conv=1/0.33; name="2V5RX * 0.33"
+#     #        if (i==7 ): conv=1;      name="RT1"
+#     #        if (i==8 ): conv=1;      name="EOM DAC (internal signal)"
+#     #        if (i==9 ): conv=1/0.42; name="VDDIO * 0.42 (internal signal)"
+#     #        if (i==10): conv=1/0.42; name="VDDTX * 0.42 (internal signal)"
+#     #        if (i==11): conv=1/0.42; name="VDDRX * 0.42 (internal signal)"
+#     #        if (i==12): conv=1/0.42; name="VDD * 0.42 (internal signal)"
+#     #        if (i==13): conv=1/0.42; name="VDDA * 0.42 (internal signal)"
+#     #        if (i==14): conv=1;      name="Temperature sensor (internal signal)"
+#     #        if (i==15): conv=1/0.50; name="VREF/2 (internal signal)"
+#     #
+#     #        read = self.read_adc(i)
+#     #        print("\tch %X: 0x%03X = %f, reading = %f (%s)" % (i, read, read/1024., conv*read/1024., name))
 
     def read_adcs(self, check=False, strict_limits=False): #read and print all adc values
         self.init_adc()
@@ -1680,9 +1696,9 @@ class LPGBT(RegParser):
     def power_up_done(self):
         return self.rd_reg("LPGBT.RWF.CHIPID.USERID1") == 0xAA
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
 
-    lpgbt = LPGBT()
-    lpgbt.get_version()
-    lpgbt.parse_xml(self.ver)
-    lpgbt.dump(nMax=10)
+#     lpgbt = LPGBT()
+#     lpgbt.get_version()
+#     lpgbt.parse_xml(ver=1)
+#     lpgbt.dump(nMax=10)
