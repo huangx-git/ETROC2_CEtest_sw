@@ -53,6 +53,10 @@ import uhal
 ```
 If there are no errors while importing, everthing worked and you can continue the installation process.
 
+Control hub is part of the IPbus package and can be started with e.g. ``` /opt/cactus/bin/controlhub_start.```
+
+Check the control hub's status, ``` /opt/cactus/bin/controlhub_status```
+
 ## KCU105 Loading Firmware
 
 Assuming you have set up the clock of KCU105 board,the KCU105 firmware can be loaded following procedures described [here](https://etl-rb.docs.cern.ch/Firmware/rb-firmware/#firmware-for-kcu-105).
