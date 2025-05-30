@@ -47,3 +47,11 @@ python3
 import uhal
 ```
 If there are no errors while importing, everthing worked and you can continue the installation process.
+
+## KCU105 Loading Firmware
+
+Assuming you have set up the clock of KCU105 board,the KCU105 firmware can be loaded following procedures described [here](https://etl-rb.docs.cern.ch/Firmware/rb-firmware/#firmware-for-kcu-105).
+
+## KCU105 Network Configuration
+The IP address of the board is set by a 4 bit switch SW12. The 4 bit switch is interpreted as a 4 bit offset which is added to a base IP address (`192.168.0.10+offset`). and a MAC of `00_08_20_83_53_00+offset`.
+
