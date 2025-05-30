@@ -6,7 +6,7 @@ Operation system, using Ubuntu 20.04 LTS. Newer Ubuntu versions have trouble wit
 
 Python environment, tested on python 3.8.10.
 
-Vivado version, 2021.1 version of the package. https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/vivado-design-tools/archive.html Choose  Xilinx Unified Installer 2021.1: Linux Self Extracting Web Installer (BIN - 301.28 MB). 
+Vivado version, 2021.1 version of the package. [Vivado ML Edition - 2021.1](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/vivado-design-tools/archive.html) Choose __Xilinx Unified Installer 2021.1: Linux Self Extracting Web Installer (BIN - 301.28 MB).__ 
 
 
 #### Software clone
