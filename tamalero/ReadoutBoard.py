@@ -113,9 +113,9 @@ class ReadoutBoard:
         #     self.configure()
         #     self.configured = 1
 
-        if self.ver == 2:
-            # this method does not work for RB v1 / lpGBT v0
-            self.reset_problematic_links(max_retries=50, allow_bad_links=allow_bad_links)
+        # if self.ver == 2:
+        #     # this method does not work for RB v1 / lpGBT v0
+        #     self.reset_problematic_links(max_retries=50, allow_bad_links=allow_bad_links)
 
         # print('############################ReadoutBoard self.is_configured Debug############################')
         self.is_configured()
