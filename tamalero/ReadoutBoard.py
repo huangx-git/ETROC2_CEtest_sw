@@ -109,13 +109,13 @@ class ReadoutBoard:
 
                 self.TRIG_LPGBT.invert_links()
 
-        if not self.configured:
-            self.configure()
-            self.configured = 1
+        # if not self.configured:
+        #     self.configure()
+        #     self.configured = 1
 
-        # if self.ver == 2:
+        if self.ver == 2:
             # this method does not work for RB v1 / lpGBT v0
-            # self.reset_problematic_links(max_retries=50, allow_bad_links=allow_bad_links)
+            self.reset_problematic_links(max_retries=50, allow_bad_links=allow_bad_links)
 
         # print('############################ReadoutBoard self.is_configured Debug############################')
         self.is_configured()
@@ -383,7 +383,7 @@ class ReadoutBoard:
     def configure(self):
 
         # configure the VTRX
-        # self.VTRX.configure(trigger=self.trigger)
+        self.VTRX.configure(trigger=self.trigger)
 
         # the logic here is as follows:
         # dict -> load the provided alignment
