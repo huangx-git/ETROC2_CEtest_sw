@@ -57,4 +57,4 @@ The IP address of the board is set by a 4 bit switch SW12. The 4 bit switch is i
 Next, configure the ethernet of your PC to be able to communicate with the board. Open your PC network settings, naviate to the IPv4 tab, switch to 'Manual'. Set the address to `192.168.0.0` and Netmask to `255.255.0.0` can be any value not already taken on the network. 
 
 ## Quick Test
-Run the Jupyter Notebook file of `etroc2_ceTest.ipynb' step by step, if no error occurs, that mean you have the uplink and downlink set up successfully.
+Run the Jupyter Notebook file of __etroc2_ceTest.ipynb__ step by step, if no error occurs, that mean you have the uplink and downlink set up successfully.
