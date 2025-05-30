@@ -2,9 +2,15 @@
 
 ## Preparation
 
-#### Software clone
+Operation system, using Ubuntu 20.04 LTS. Newer Ubuntu versions have trouble with the IPBUS software compilation.
 
-Tested on python 3.8.10. Install the software with all its dependencies except IPbus:
+Python environment, tested on python 3.8.10.
+
+Vivado version, 2021.1 version of the package. https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/vivado-design-tools/archive.html Choose  Xilinx Unified Installer 2021.1: Linux Self Extracting Web Installer (BIN - 301.28 MB). 
+
+
+#### Software clone
+ Install the software with all its dependencies except IPbus:
 
 ```
 git clone https://github.com/huangx-git/ETROC2_CEtest_sw.git
