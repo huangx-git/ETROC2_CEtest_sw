@@ -8,6 +8,11 @@ Python environment, tested on **python 3.8.10**.
 
 **Vivado 2021.1** version of the package. [Vivado ML Edition - 2021.1](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/vivado-design-tools/archive.html) Choose _Xilinx Unified Installer 2021.1: Linux Self Extracting Web Installer (BIN - 301.28 MB)._ Enterprise version. You will likely need to install this package sudo apt install libtinfo5 otherwise the installation will not complete, hanging on the finishing stage of generating installed device list.
 
+To install the Linux driver, do the [following](https://docs.amd.com/r/2021.1-English/ug973-vivado-release-notes-install-license/Installing-Cable-Drivers): 
+```
+${vivado_install_dir}/data/xicom/cable_drivers/lin64/install_script/install_drivers/install_drivers
+```
+
 
 ## Software clone
  Install the software with all its dependencies except IPbus:
