@@ -55,7 +55,7 @@ If there are no errors while importing, everthing worked and you can continue th
 
 Control hub is part of the IPbus package and can be started with e.g. ``` /opt/cactus/bin/controlhub_start```
 
-Check the control hub's status, ``` /opt/cactus/bin/controlhub_status```
+Check the control hub's status using ``` /opt/cactus/bin/controlhub_status```
 
 ## KCU105 Loading Firmware
 
