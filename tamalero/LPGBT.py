@@ -42,7 +42,7 @@ class LPGBT(RegParser):
         Initialize lpGBT for a certain readout board number (rb).
         The trigger lpGBT is accessed through I2C of the master (= DAQ lpGBT).
         '''
-        print('############################LPGBT Initialization############################')
+        # print('############################LPGBT Initialization############################')
         self.nodes = {}
         self.rb = rb
         self.trigger = trigger
@@ -81,7 +81,7 @@ class LPGBT(RegParser):
 
 
     def configure(self, do_adc_calibration=True):
-        print('############################configure debug############################')
+        # print('############################configure debug############################')
         print(self, hasattr(self, 'kcu'))
         if not hasattr(self, 'kcu'):
             raise Exception("Connect to KCU first.")
@@ -96,10 +96,10 @@ class LPGBT(RegParser):
             return
 
         # Get LPGBT Version
-        print('############################get lpgbt version debug############################')
+        # print('############################get lpgbt version debug############################')
         timeout = 0
         if not hasattr(self, 'ver'):
-            print('############################get lpgbt version debug############################')
+            # print('############################get lpgbt version debug############################')
             if self.verbose:
                 print ("Figuring out lpGBT version by reading from ROMREG")
             while True:

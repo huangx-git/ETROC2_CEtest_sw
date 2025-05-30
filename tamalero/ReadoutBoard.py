@@ -31,7 +31,7 @@ class ReadoutBoard:
         create a readout board.
         trigger: if true, also configure a trigger lpGBT
         '''
-        print('############################version check############################')
+        # print('############################version check############################')
         self.rb = rb
         self.flavor = flavor
         self.ver = 2
@@ -39,9 +39,9 @@ class ReadoutBoard:
         self.config = config
 
         self.trigger = trigger
-        print('############################ReadoutBoard LPGBT Instantiation############################')
+        # print('############################ReadoutBoard LPGBT Instantiation############################')
         self.DAQ_LPGBT = LPGBT(rb=rb, flavor=flavor, kcu=kcu, config=self.config, poke=poke, rbver=self.ver)
-        print('############################ReadoutBoard VTRX Instantiation############################')
+        # print('############################ReadoutBoard VTRX Instantiation############################')
         self.VTRX = VTRX(self.DAQ_LPGBT)
         # This is not yet recommended:
         #for adr in [0x06, 0x0A, 0x0E, 0x12]:
@@ -113,11 +113,11 @@ class ReadoutBoard:
             self.configure()
             self.configured = 1
 
-        if self.ver == 2:
+        # if self.ver == 2:
             # this method does not work for RB v1 / lpGBT v0
-            self.reset_problematic_links(max_retries=50, allow_bad_links=allow_bad_links)
+            # self.reset_problematic_links(max_retries=50, allow_bad_links=allow_bad_links)
 
-        print('############################ReadoutBoard self.is_configured Debug############################')
+        # print('############################ReadoutBoard self.is_configured Debug############################')
         self.is_configured()
 
 
@@ -175,7 +175,7 @@ class ReadoutBoard:
         sleep(0.1)
 
     def ready_led(self, to=1):
-        print('############################ReadoutBoard ready_led Debug############################')
+        # print('############################ReadoutBoard ready_led Debug############################')
         print(self.ver)
         if self.ver > 2 and self.trigger:
             self.TRIG_LPGBT.set_gpio("LED_1", to)
@@ -183,7 +183,7 @@ class ReadoutBoard:
             self.DAQ_LPGBT.set_gpio("LED_1", to)
 
     def is_configured(self):
-        print('############################ReadoutBoard is_configured Debug############################')
+        # print('############################ReadoutBoard is_configured Debug############################')
         if self.configured:
             self.ready_led()
         
@@ -383,7 +383,7 @@ class ReadoutBoard:
     def configure(self):
 
         # configure the VTRX
-        self.VTRX.configure(trigger=self.trigger)
+        # self.VTRX.configure(trigger=self.trigger)
 
         # the logic here is as follows:
         # dict -> load the provided alignment
