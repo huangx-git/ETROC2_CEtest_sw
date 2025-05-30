@@ -53,7 +53,7 @@ import uhal
 ```
 If there are no errors while importing, everthing worked and you can continue the installation process.
 
-Control hub is part of the IPbus package and can be started with e.g. ``` /opt/cactus/bin/controlhub_start.```
+Control hub is part of the IPbus package and can be started with e.g. ``` /opt/cactus/bin/controlhub_start```
 
 Check the control hub's status, ``` /opt/cactus/bin/controlhub_status```
 
