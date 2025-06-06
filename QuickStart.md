@@ -19,7 +19,7 @@ ${vivado_install_dir}/data/xicom/cable_drivers/lin64/install_script/install_driv
 ```
 git clone https://github.com/huangx-git/ETROC2_CEtest_sw.git
 ```
-Note: GitHub is moving away from password authentication for Git operations and API access. You could use personal access tokens (PATs) instead of your password when cloning, pushing, or pulling over HTTPS.  Here’s [torurial link](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) and [direct link] (https://github.com/settings/tokens/new) to set up a GitHub Personal Access Token.
+Note: GitHub is moving away from password authentication for Git operations and API access. You could use personal access tokens (PATs) instead of your password when cloning, pushing, or pulling over HTTPS.  Here’s [torurial link](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) and [direct link](https://github.com/settings/tokens/new) to set up a GitHub Personal Access Token.
 
 ## IPbus installation
 
