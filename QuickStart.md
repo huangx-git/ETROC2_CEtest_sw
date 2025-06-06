@@ -14,7 +14,7 @@ ${vivado_install_dir}/data/xicom/cable_drivers/lin64/install_script/install_driv
 ```
 
 ## Software clone
- Install the software with all its dependencies except IPbus: 
+ Install the [software](https://github.com/huangx-git/ETROC2_CEtest_sw/tree/master) with all its dependencies except IPbus: 
 
 ```
 git clone https://github.com/huangx-git/ETROC2_CEtest_sw.git
