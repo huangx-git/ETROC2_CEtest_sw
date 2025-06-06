@@ -61,7 +61,11 @@ Check the control hub's status using ``` /opt/cactus/bin/controlhub_status```
 ```
 git clone https://github.com/CMS-ETROC/module_test_fw.git
 ```
-Currently, I used devel branch.
+Currently, I used devel branch. To build the firmware, simply clone the repository and run:
+```
+make init
+make impl
+```
 
 
 ## KCU105 Loading Firmware
