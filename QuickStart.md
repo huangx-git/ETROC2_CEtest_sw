@@ -78,3 +78,5 @@ Next, configure the ethernet of your PC to be able to communicate with the board
 
 ## Quick Test
 Run the Jupyter Notebook file of __etroc2_ceTest.ipynb__ step by step, if no error occurs, that mean you have the uplink and downlink set up successfully.
+
+## Reference
